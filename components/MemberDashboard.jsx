@@ -56,27 +56,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     loadData()
   }, [])
 
-  const setupChatSubscription = () => {
-    const channel = supabase
-      .channel('member_chat')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'chat_messages',
-        filter: `member_id=eq.${user.id}`
-      }, (payload) => {
-        setChatMessages(prev => [...prev, payload.new])
-        scrollToBottom()
-      })
-      .subscribe()
-
-    return () => supabase.removeChannel(channel)
-  }
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   const loadData = async () => {
     await Promise.all([
       loadFeed(),
@@ -85,7 +64,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       loadProgress(),
       loadNotices(),
       loadMyTrainer(),
-      loadChatMessages(),
       loadStoreProducts()
     ])
   }
@@ -100,22 +78,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .single()
     
     if (data) setMyTrainer(data.trainer)
-  }
-
-  const loadChatMessages = async () => {
-    const { data } = await supabase
-      .from('chat_messages')
-      .select(`
-        *,
-        sender:profiles!chat_messages_sender_id_fkey(name, role)
-      `)
-      .eq('member_id', user.id)
-      .order('created_at', { ascending: true })
-    
-    if (data) {
-      setChatMessages(data)
-      setTimeout(scrollToBottom, 100)
-    }
   }
 
   const loadStoreProducts = async () => {
