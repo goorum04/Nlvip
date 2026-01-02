@@ -44,26 +44,6 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
     loadData()
   }, [])
 
-  const setupChatSubscription = () => {
-    const channel = supabase
-      .channel('trainer_chat')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'chat_messages',
-        filter: `trainer_id=eq.${user.id}`
-      }, () => {
-        if (selectedMember) loadChatMessages(selectedMember.id)
-      })
-      .subscribe()
-
-    return () => supabase.removeChannel(channel)
-  }
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   const loadData = async () => {
     await Promise.all([loadMembers(), loadWorkoutTemplates(), loadDietTemplates(), loadNotices()])
   }
@@ -91,23 +71,6 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
     const { data } = await supabase.from('trainer_notices').select('*').eq('trainer_id', user.id).order('created_at', { ascending: false }).limit(10)
     if (data) setNotices(data)
   }
-
-  const loadChatMessages = async (memberId) => {
-    const { data } = await supabase
-      .from('chat_messages')
-      .select(`*, sender:profiles!chat_messages_sender_id_fkey(name, role)`)
-      .eq('trainer_id', user.id)
-      .eq('member_id', memberId)
-      .order('created_at', { ascending: true })
-    
-    if (data) {
-      setChatMessages(data)
-      setTimeout(scrollToBottom, 100)
-    }
-  }
-
-  const handleSelectMemberChat = (member) => {
-    setSelectedMember(member)
     loadChatMessages(member.id)
   }
 
