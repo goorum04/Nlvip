@@ -54,7 +54,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
   useEffect(() => {
     loadData()
-    setupChatSubscription()
   }, [])
 
   const setupChatSubscription = () => {
