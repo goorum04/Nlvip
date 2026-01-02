@@ -597,8 +597,8 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             </Card>
             </TabsContent>
 
-            {/* Avisos */}
-            <TabsContent value="notices" className="space-y-4">
+          {/* Avisos */}
+          <TabsContent value="notices" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
               <CardHeader>
                 <CardTitle className="text-[#C9A24D]">Crear Aviso</CardTitle>
