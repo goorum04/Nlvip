@@ -66,34 +66,43 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
 
   const loadUnreadCount = async () => {
     if (userRole === 'member') {
-      const { count } = await supabase
-        .from('chat_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('member_id', userId)
-        .eq('is_read', false)
-        .neq('sender_id', userId)
-      
-      setUnreadCount(count || 0)
+      try {
+        const { count } = await supabase
+          .from('chat_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('member_id', userId)
+          .eq('is_read', false)
+          .neq('sender_id', userId)
+        
+        setUnreadCount(count || 0)
+      } catch (e) {
+        // Table might not exist yet
+        console.log('Chat table not available')
+      }
     }
   }
 
   const loadMessages = async () => {
-    const { data } = await supabase
-      .from('chat_messages')
-      .select(`*, sender:profiles!chat_messages_sender_id_fkey(name, role)`)
-      .eq('member_id', userId)
-      .order('created_at', { ascending: true })
-    
-    if (data) {
-      setMessages(data)
-      scrollToBottom()
-      // Mark as read
-      await supabase
+    try {
+      const { data } = await supabase
         .from('chat_messages')
-        .update({ is_read: true })
+        .select(`*, sender:profiles!chat_messages_sender_id_fkey(name, role)`)
         .eq('member_id', userId)
-        .neq('sender_id', userId)
-      setUnreadCount(0)
+        .order('created_at', { ascending: true })
+      
+      if (data) {
+        setMessages(data)
+        scrollToBottom()
+        // Mark as read
+        await supabase
+          .from('chat_messages')
+          .update({ is_read: true })
+          .eq('member_id', userId)
+          .neq('sender_id', userId)
+        setUnreadCount(0)
+      }
+    } catch (e) {
+      console.log('Chat table not available')
     }
   }
 
