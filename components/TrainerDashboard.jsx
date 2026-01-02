@@ -700,7 +700,6 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             </Card>
             </TabsContent>
           </Tabs>
-        </div>
       </main>
 
       <Toaster />
