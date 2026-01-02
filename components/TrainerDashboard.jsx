@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,22 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { 
-  Dumbbell, Users, Bell, LogOut, Plus, Apple, MessageCircle, Send, 
-  Crown, Sparkles, Flame, Target, Zap, Star, ChevronRight, Eye
+  Dumbbell, Users, Bell, LogOut, Plus, Apple, 
+  Sparkles, Eye, Send
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
+import FloatingChat from './FloatingChat'
 
 export default function TrainerDashboard({ user, profile, onLogout }) {
   const [members, setMembers] = useState([])
   const [workoutTemplates, setWorkoutTemplates] = useState([])
   const [dietTemplates, setDietTemplates] = useState([])
   const [notices, setNotices] = useState([])
-  const [selectedMember, setSelectedMember] = useState(null)
-  const [chatMessages, setChatMessages] = useState([])
-  const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
-  const messagesEndRef = useRef(null)
   const { toast } = useToast()
 
   // Form states
@@ -45,7 +42,6 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
 
   useEffect(() => {
     loadData()
-    setupChatSubscription()
   }, [])
 
   const setupChatSubscription = () => {
