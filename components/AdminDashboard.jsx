@@ -622,6 +622,241 @@ export default function AdminDashboard({ user, profile, onLogout }) {
             </Card>
           </TabsContent>
 
+          {/* Progreso Global */}
+          <TabsContent value="progress" className="space-y-4">
+            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+              <CardHeader>
+                <CardTitle className="text-[#C9A24D]">Progreso de Todos los Socios</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Visualiza el progreso de todos los miembros del gimnasio
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {allProgress.map((record) => (
+                    <div key={record.id} className="p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-semibold text-white">{record.member?.name}</p>
+                          <p className="text-xs text-gray-400">{record.member?.email}</p>
+                          <p className="text-sm text-[#C9A24D] mt-1">
+                            {new Date(record.date).toLocaleDateString()}
+                          </p>
+                        </div>
+                        {record.weight_kg && (
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-[#C9A24D]">{record.weight_kg} kg</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-sm">
+                        {record.chest_cm && <p className="text-gray-400">Pecho: {record.chest_cm}cm</p>}
+                        {record.waist_cm && <p className="text-gray-400">Cintura: {record.waist_cm}cm</p>}
+                        {record.hips_cm && <p className="text-gray-400">Cadera: {record.hips_cm}cm</p>}
+                      </div>
+                      {record.notes && (
+                        <p className="text-sm text-gray-300 mt-2 italic">{record.notes}</p>
+                      )}
+                    </div>
+                  ))}
+                  {allProgress.length === 0 && (
+                    <p className="text-center text-gray-400 py-8">No hay registros de progreso</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Rutinas y Dietas Asignadas */}
+          <TabsContent value="assignments" className="space-y-4">
+            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+              <CardHeader>
+                <CardTitle className="text-[#C9A24D]">Rutinas Asignadas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {allAssignments.workouts?.map((assignment) => (
+                    <div key={assignment.id} className="p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-semibold text-white">{assignment.member?.name}</p>
+                          <p className="text-sm text-[#C9A24D] mt-1">{assignment.workout?.name}</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Asignado por: {assignment.assigned?.name}
+                          </p>
+                        </div>
+                        <div className="text-right text-xs text-gray-400">
+                          {new Date(assignment.assigned_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {(!allAssignments.workouts || allAssignments.workouts.length === 0) && (
+                    <p className="text-center text-gray-400 py-8">No hay rutinas asignadas</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+              <CardHeader>
+                <CardTitle className="text-[#C9A24D]">Dietas Asignadas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {allAssignments.diets?.map((assignment) => (
+                    <div key={assignment.id} className="p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-semibold text-white">{assignment.member?.name}</p>
+                          <p className="text-sm text-[#C9A24D] mt-1">
+                            {assignment.diet?.name} - {assignment.diet?.calories} kcal
+                          </p>
+                          <div className="flex gap-3 mt-1 text-xs text-gray-400">
+                            <span>P: {assignment.diet?.protein_g}g</span>
+                            <span>C: {assignment.diet?.carbs_g}g</span>
+                            <span>G: {assignment.diet?.fat_g}g</span>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Asignado por: {assignment.assigned?.name}
+                          </p>
+                        </div>
+                        <div className="text-right text-xs text-gray-400">
+                          {new Date(assignment.assigned_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {(!allAssignments.diets || allAssignments.diets.length === 0) && (
+                    <p className="text-center text-gray-400 py-8">No hay dietas asignadas</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Videos de Entrenamiento */}
+          <TabsContent value="videos" className="space-y-4">
+            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+              <CardHeader>
+                <CardTitle className="text-[#C9A24D]">Publicar Video de Entrenamiento</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Como admin, tus videos se publican automáticamente
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCreateVideo} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-gray-200">Título del Video</Label>
+                    <Input
+                      value={videoTitle}
+                      onChange={(e) => setVideoTitle(e.target.value)}
+                      placeholder="Ej: Técnica correcta de sentadilla"
+                      required
+                      className="bg-black border-[#C9A24D]/20 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-gray-200">Descripción</Label>
+                    <Textarea
+                      value={videoDescription}
+                      onChange={(e) => setVideoDescription(e.target.value)}
+                      placeholder="Describe el contenido del video..."
+                      className="bg-black border-[#C9A24D]/20 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-gray-200">URL del Video (YouTube, Vimeo, etc.)</Label>
+                    <Input
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      placeholder="https://youtube.com/watch?v=..."
+                      required
+                      className="bg-black border-[#C9A24D]/20 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-gray-200">URL de la Miniatura (opcional)</Label>
+                    <Input
+                      value={videoThumbnail}
+                      onChange={(e) => setVideoThumbnail(e.target.value)}
+                      placeholder="https://..."
+                      className="bg-black border-[#C9A24D]/20 text-white"
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="bg-[#C9A24D] hover:bg-[#D4AF37] text-black"
+                    disabled={loading}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Publicar Video
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+              <CardHeader>
+                <CardTitle className="text-[#C9A24D]">Todos los Videos</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Gestiona y aprueba videos de entrenadores
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {trainingVideos.map((video) => (
+                    <div key={video.id} className="p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="font-semibold text-white">{video.title}</p>
+                          <p className="text-sm text-gray-400 mt-1">{video.description}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Subido por: {video.uploader?.name} ({video.uploader?.role === 'admin' ? 'Admin' : 'Trainer'})
+                          </p>
+                          {video.is_approved && (
+                            <p className="text-xs text-[#C9A24D] mt-1">
+                              ✓ Aprobado por {video.approver?.name}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          {!video.is_approved && (
+                            <Button
+                              size="sm"
+                              className="bg-[#C9A24D] hover:bg-[#D4AF37] text-black"
+                              onClick={() => handleApproveVideo(video.id)}
+                            >
+                              Aprobar
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteVideo(video.id)}
+                          >
+                            Eliminar
+                          </Button>
+                        </div>
+                      </div>
+                      <a 
+                        href={video.video_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-[#C9A24D] hover:underline"
+                      >
+                        Ver video →
+                      </a>
+                    </div>
+                  ))}
+                  {trainingVideos.length === 0 && (
+                    <p className="text-center text-gray-400 py-8">No hay videos publicados</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Feed / Moderación */}
           <TabsContent value="feed" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
