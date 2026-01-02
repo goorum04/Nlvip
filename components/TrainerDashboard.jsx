@@ -474,8 +474,8 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             </Card>
             </TabsContent>
 
-            {/* Dietas */}
-            <TabsContent value="diets" className="space-y-4">
+          {/* Dietas */}
+          <TabsContent value="diets" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
               <CardHeader>
                 <CardTitle className="text-[#C9A24D]">Crear Nueva Dieta</CardTitle>
