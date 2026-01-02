@@ -1011,9 +1011,9 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                 </div>
               </CardContent>
             </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
+          </TabsContent>
+        </Tabs>
+      </div>
       </main>
 
       <Toaster />
