@@ -71,30 +71,6 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
     const { data } = await supabase.from('trainer_notices').select('*').eq('trainer_id', user.id).order('created_at', { ascending: false }).limit(10)
     if (data) setNotices(data)
   }
-    loadChatMessages(member.id)
-  }
-
-  const handleSendMessage = async (e) => {
-    e.preventDefault()
-    if (!newMessage.trim() || !selectedMember) return
-
-    setLoading(true)
-    try {
-      const { error } = await supabase.from('chat_messages').insert([{
-        sender_id: user.id,
-        trainer_id: user.id,
-        member_id: selectedMember.id,
-        message: newMessage
-      }])
-      if (error) throw error
-      setNewMessage('')
-      loadChatMessages(selectedMember.id)
-    } catch (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleCreateWorkout = async (e) => {
     e.preventDefault()
