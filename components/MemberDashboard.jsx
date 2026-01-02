@@ -151,31 +151,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     }
   }
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault()
-    if (!newMessage.trim() || !myTrainer) return
-
-    setLoading(true)
-    try {
-      const { error } = await supabase
-        .from('chat_messages')
-        .insert([{
-          sender_id: user.id,
-          trainer_id: myTrainer.id,
-          member_id: user.id,
-          message: newMessage
-        }])
-
-      if (error) throw error
-      setNewMessage('')
-      loadChatMessages()
-    } catch (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleCreatePost = async (e) => {
     e.preventDefault()
     setLoading(true)
