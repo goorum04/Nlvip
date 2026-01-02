@@ -384,62 +384,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             ))}
           </TabsContent>
 
-          {/* CHAT TAB - ULTRA MODERN */}
-          <TabsContent value="chat" className="space-y-4">
-            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden h-[600px] flex flex-col">
-              <CardHeader className="border-b border-[#2a2a2a] pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C9A24D] to-[#D4AF37] flex items-center justify-center">
-                    <MessageCircle className="w-6 h-6 text-black" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-white">Chat con {myTrainer?.name || 'tu Entrenador'}</CardTitle>
-                    <p className="text-xs text-gray-500">{myTrainer ? 'En línea' : 'Sin entrenador asignado'}</p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col p-0">
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {chatMessages.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-gray-500">
-                      <div className="text-center">
-                        <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                        <p>Inicia una conversación con tu entrenador</p>
-                      </div>
-                    </div>
-                  ) : (
-                    chatMessages.map((msg) => {
-                      const isMe = msg.sender_id === user.id
-                      return (
-                        <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[75%] ${isMe ? 'bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black' : 'bg-[#2a2a2a] text-white'} rounded-2xl px-4 py-3 ${isMe ? 'rounded-br-md' : 'rounded-bl-md'}`}>
-                            <p className="text-sm">{msg.message}</p>
-                            <p className={`text-xs mt-1 ${isMe ? 'text-black/60' : 'text-gray-500'}`}>
-                              {new Date(msg.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                        </div>
-                      )
-                    })
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-                <form onSubmit={handleSendMessage} className="p-4 border-t border-[#2a2a2a] flex gap-2">
-                  <Input
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder={myTrainer ? "Escribe un mensaje..." : "Necesitas un entrenador asignado"}
-                    disabled={!myTrainer || loading}
-                    className="bg-black/50 border-[#2a2a2a] rounded-2xl text-white"
-                  />
-                  <Button type="submit" disabled={!myTrainer || loading || !newMessage.trim()} className="bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black rounded-2xl px-6">
-                    <Send className="w-5 h-5" />
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* WORKOUT TAB */}
           <TabsContent value="workout" className="space-y-4">
             {myWorkout ? (
