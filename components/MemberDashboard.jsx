@@ -429,6 +429,13 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                 <span className="hidden md:inline">Feed</span>
               </TabsTrigger>
               <TabsTrigger 
+                value="chat" 
+                className="rounded-xl data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black data-[state=active]:shadow-lg transition-all"
+              >
+                <MessageCircle className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Chat</span>
+              </TabsTrigger>
+              <TabsTrigger 
                 value="workout" 
                 className="rounded-xl data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black data-[state=active]:shadow-lg transition-all"
               >
