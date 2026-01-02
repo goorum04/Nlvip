@@ -354,8 +354,8 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
               </TabsTrigger>
             </TabsList>
 
-          {/* Socios */}
-          <TabsContent value="members" className="space-y-4">
+            {/* Socios */}
+            <TabsContent value="members" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
               <CardHeader>
                 <CardTitle className="text-[#C9A24D]">Mis Socios ({members.length})</CardTitle>
