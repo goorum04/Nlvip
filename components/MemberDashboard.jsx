@@ -1013,6 +1013,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             </Card>
           </TabsContent>
         </Tabs>
+      </div>
       </main>
 
       <Toaster />
