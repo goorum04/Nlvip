@@ -320,42 +320,25 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        {/* Modern Tab Navigation */}
-        <div className="bg-[#1a1a1a] rounded-2xl p-2 mb-6 shadow-lg border border-[#C9A24D]/10">
-          <Tabs defaultValue="members" className="space-y-6">
-            <TabsList className="bg-transparent grid grid-cols-2 md:grid-cols-4 gap-2 p-0">
-              <TabsTrigger 
-                value="members" 
-                className="rounded-xl data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black data-[state=active]:shadow-lg transition-all"
-              >
-                <Users className="w-4 h-4 md:mr-2" />
-                <span className="hidden md:inline">Mis Socios</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="workouts" 
-                className="rounded-xl data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black data-[state=active]:shadow-lg transition-all"
-              >
-                <Dumbbell className="w-4 h-4 md:mr-2" />
-                <span className="hidden md:inline">Rutinas</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="diets" 
-                className="rounded-xl data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black data-[state=active]:shadow-lg transition-all"
-              >
-                <Apple className="w-4 h-4 md:mr-2" />
-                <span className="hidden md:inline">Dietas</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="notices" 
-                className="rounded-xl data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black data-[state=active]:shadow-lg transition-all"
-              >
-                <Bell className="w-4 h-4 md:mr-2" />
-                <span className="hidden md:inline">Avisos</span>
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Socios */}
-            <TabsContent value="members" className="space-y-4">
+        <Tabs defaultValue="members" className="space-y-6">
+          <TabsList className="bg-[#1a1a1a] border border-[#C9A24D]/20">
+            <TabsTrigger value="members" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+              <Users className="w-4 h-4 mr-2" />
+              Mis Socios
+            </TabsTrigger>
+            <TabsTrigger value="workouts" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+              <Dumbbell className="w-4 h-4 mr-2" />
+              Rutinas
+            </TabsTrigger>
+            <TabsTrigger value="diets" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+              <Apple className="w-4 h-4 mr-2" />
+              Dietas
+            </TabsTrigger>
+            <TabsTrigger value="notices" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+              <Bell className="w-4 h-4 mr-2" />
+              Avisos
+            </TabsTrigger>
+          </TabsList>
             <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
               <CardHeader>
                 <CardTitle className="text-[#C9A24D]">Mis Socios ({members.length})</CardTitle>
