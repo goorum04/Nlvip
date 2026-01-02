@@ -47,7 +47,10 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       loadTrainers(),
       loadCodes(),
       loadMembers(),
-      loadFeedPosts()
+      loadFeedPosts(),
+      loadAllProgress(),
+      loadAllAssignments(),
+      loadTrainingVideos()
     ])
   }
 
