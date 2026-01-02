@@ -26,10 +26,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [unreadNotices, setUnreadNotices] = useState(0)
   const [loading, setLoading] = useState(false)
   const [myTrainer, setMyTrainer] = useState(null)
-  const [chatMessages, setChatMessages] = useState([])
-  const [newMessage, setNewMessage] = useState('')
   const [storeProducts, setStoreProducts] = useState([])
-  const messagesEndRef = useRef(null)
   const { toast } = useToast()
 
   // Feed form
