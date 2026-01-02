@@ -361,50 +361,58 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
   return (
     <div className="min-h-screen bg-[#0B0B0B]">
-      {/* Hero Header */}
+      {/* Modern Hero Header */}
       <header 
-        className="relative bg-cover bg-center border-b border-[#C9A24D]/20"
+        className="relative bg-cover bg-center"
         style={{
           backgroundImage: 'url(https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1920&q=80)',
-          minHeight: '300px'
+          minHeight: '280px'
         }}
       >
-        <div className="absolute inset-0 bg-black/60" />
-        <div className="relative container mx-auto px-4 py-8 flex flex-col justify-between min-h-[300px]">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <Dumbbell className="w-8 h-8 text-[#C9A24D]" />
-              <div>
-                <h1 className="text-3xl font-bold text-[#C9A24D]">NL VIP CLUB</h1>
-                <p className="text-sm text-gray-300">Tu gimnasio premium</p>
-              </div>
-            </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-[#0B0B0B]" />
+        <div className="relative container mx-auto px-4 py-6">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between mb-8">
             <Button 
-              variant="outline" 
-              size="sm"
-              className="border-[#C9A24D]/40 text-[#C9A24D] hover:bg-[#C9A24D]/10"
-              onClick={onLogout}
+              variant="ghost" 
+              size="icon"
+              className="text-white hover:bg-white/10 rounded-full"
             >
-              <LogOut className="w-4 h-4 mr-2" />
-              Salir
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
             </Button>
-          </div>
-          <Card className="bg-black/90 border-[#C9A24D]/20 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-white">{profile.name}</h2>
-                  <p className="text-[#C9A24D]">Socio VIP</p>
+            <div className="flex items-center gap-2">
+              {unreadNotices > 0 && (
+                <div className="relative">
+                  <Bell className="w-6 h-6 text-[#C9A24D]" />
+                  <span className="absolute -top-1 -right-1 bg-[#C9A24D] text-black text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                    {unreadNotices}
+                  </span>
                 </div>
-                {unreadNotices > 0 && (
-                  <div className="bg-[#C9A24D] text-black px-4 py-2 rounded-lg">
-                    <Bell className="w-5 h-5 inline mr-2" />
-                    {unreadNotices} avisos nuevos
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              )}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="text-white hover:bg-white/10 rounded-full"
+                onClick={onLogout}
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Welcome Card */}
+          <div className="space-y-2">
+            <p className="text-gray-300 text-sm">Hola,</p>
+            <h2 className="text-4xl font-bold text-white">{profile.name}!</h2>
+            <div className="flex items-center gap-2 mt-3">
+              <Crown className="w-5 h-5 text-[#C9A24D]" />
+              <p className="text-[#C9A24D] font-semibold">Socio VIP</p>
+            </div>
+          </div>
         </div>
       </header>
 
