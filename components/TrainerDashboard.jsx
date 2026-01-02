@@ -426,10 +426,10 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+            </TabsContent>
 
-          {/* Rutinas */}
-          <TabsContent value="workouts" className="space-y-4">
+            {/* Rutinas */}
+            <TabsContent value="workouts" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
               <CardHeader>
                 <CardTitle className="text-[#C9A24D]">Crear Nueva Rutina</CardTitle>
