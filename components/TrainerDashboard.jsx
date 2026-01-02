@@ -3,17 +3,14 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { 
-  Dumbbell, Users, Bell, LogOut, Plus, Apple, 
-  Sparkles, Eye, Send
-} from 'lucide-react'
+import { Dumbbell, Users, Bell, LogOut, Plus, Apple, Sparkles, Eye, Send } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import FloatingChat from './FloatingChat'
@@ -26,7 +23,6 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
-  // Form states
   const [newWorkoutName, setNewWorkoutName] = useState('')
   const [newWorkoutDesc, setNewWorkoutDesc] = useState('')
   const [newDietName, setNewDietName] = useState('')
@@ -53,7 +49,6 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
       .from('trainer_members')
       .select(`member_id, member:profiles!trainer_members_member_id_fkey(id, name, email, created_at)`)
       .eq('trainer_id', user.id)
-    
     if (data) setMembers(data.map(tm => tm.member))
   }
 
@@ -148,7 +143,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a]">
-      {/* ULTRA MODERN HEADER */}
+      {/* HEADER */}
       <header className="relative overflow-hidden border-b border-[#2a2a2a]">
         <div className="absolute inset-0 bg-gradient-to-br from-[#C9A24D]/10 via-transparent to-[#C9A24D]/5" />
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#C9A24D]/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
@@ -186,7 +181,6 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
                 { value: 'members', icon: Users, label: 'Mis Socios' },
-                { value: 'chat', icon: MessageCircle, label: 'Chat' },
                 { value: 'workouts', icon: Dumbbell, label: 'Rutinas' },
                 { value: 'diets', icon: Apple, label: 'Dietas' },
                 { value: 'notices', icon: Bell, label: 'Avisos' }
@@ -267,82 +261,6 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-
-          {/* CHAT TAB */}
-          <TabsContent value="chat" className="space-y-4">
-            <div className="grid md:grid-cols-3 gap-4 h-[600px]">
-              {/* Members List */}
-              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl md:col-span-1 overflow-hidden">
-                <CardHeader className="border-b border-[#2a2a2a]">
-                  <CardTitle className="text-white text-lg">Conversaciones</CardTitle>
-                </CardHeader>
-                <CardContent className="p-2 overflow-y-auto h-[calc(100%-80px)]">
-                  {members.map(member => (
-                    <div 
-                      key={member.id}
-                      onClick={() => handleSelectMemberChat(member)}
-                      className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all ${selectedMember?.id === member.id ? 'bg-[#C9A24D]/20 border border-[#C9A24D]/30' : 'hover:bg-black/30'}`}
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C9A24D]/20 to-[#D4AF37]/10 flex items-center justify-center text-[#C9A24D] font-bold text-sm">
-                        {member.name?.charAt(0)}
-                      </div>
-                      <p className="font-medium text-white text-sm">{member.name}</p>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Chat Area */}
-              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl md:col-span-2 flex flex-col overflow-hidden">
-                {selectedMember ? (
-                  <>
-                    <CardHeader className="border-b border-[#2a2a2a] py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C9A24D] to-[#D4AF37] flex items-center justify-center text-black font-bold">
-                          {selectedMember.name?.charAt(0)}
-                        </div>
-                        <div>
-                          <CardTitle className="text-white text-lg">{selectedMember.name}</CardTitle>
-                          <p className="text-xs text-gray-500">{selectedMember.email}</p>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 flex flex-col p-0">
-                      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                        {chatMessages.map((msg) => {
-                          const isMe = msg.sender_id === user.id
-                          return (
-                            <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                              <div className={`max-w-[75%] ${isMe ? 'bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black' : 'bg-[#2a2a2a] text-white'} rounded-2xl px-4 py-3 ${isMe ? 'rounded-br-md' : 'rounded-bl-md'}`}>
-                                <p className="text-sm">{msg.message}</p>
-                                <p className={`text-xs mt-1 ${isMe ? 'text-black/60' : 'text-gray-500'}`}>
-                                  {new Date(msg.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                                </p>
-                              </div>
-                            </div>
-                          )
-                        })}
-                        <div ref={messagesEndRef} />
-                      </div>
-                      <form onSubmit={handleSendMessage} className="p-4 border-t border-[#2a2a2a] flex gap-2">
-                        <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Escribe un mensaje..." className="bg-black/50 border-[#2a2a2a] rounded-2xl text-white" />
-                        <Button type="submit" disabled={loading || !newMessage.trim()} className="bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black rounded-2xl px-6">
-                          <Send className="w-5 h-5" />
-                        </Button>
-                      </form>
-                    </CardContent>
-                  </>
-                ) : (
-                  <CardContent className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
-                      <MessageCircle className="w-20 h-20 mx-auto text-[#C9A24D]/20 mb-4" />
-                      <p className="text-gray-500">Selecciona un socio para chatear</p>
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
-            </div>
           </TabsContent>
 
           {/* WORKOUTS TAB */}
@@ -519,6 +437,14 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Floating Chat Widget */}
+      <FloatingChat 
+        userId={user.id}
+        userRole="trainer"
+        members={members}
+      />
+
       <Toaster />
     </div>
   )
