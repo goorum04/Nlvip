@@ -222,6 +222,130 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     }
   }
 
+  const loadAllProgress = async () => {
+    const { data, error } = await supabase
+      .from('progress_records')
+      .select(`
+        *,
+        member:profiles!progress_records_member_id_fkey(name, email)
+      `)
+      .order('date', { ascending: false })
+      .limit(100)
+    
+    if (data) setAllProgress(data)
+  }
+
+  const loadAllAssignments = async () => {
+    const { data: workouts } = await supabase
+      .from('member_workouts')
+      .select(`
+        *,
+        member:profiles!member_workouts_member_id_fkey(name, email),
+        workout:workout_templates(name, description),
+        assigned:profiles!member_workouts_assigned_by_fkey(name)
+      `)
+    
+    const { data: diets } = await supabase
+      .from('member_diets')
+      .select(`
+        *,
+        member:profiles!member_diets_member_id_fkey(name, email),
+        diet:diet_templates(name, calories, protein_g, carbs_g, fat_g),
+        assigned:profiles!member_diets_assigned_by_fkey(name)
+      `)
+    
+    setAllAssignments({ workouts: workouts || [], diets: diets || [] })
+  }
+
+  const loadTrainingVideos = async () => {
+    const { data, error } = await supabase
+      .from('training_videos')
+      .select(`
+        *,
+        uploader:profiles!training_videos_uploaded_by_fkey(name, role),
+        approver:profiles!training_videos_approved_by_fkey(name)
+      `)
+      .order('created_at', { ascending: false })
+    
+    if (data) setTrainingVideos(data)
+  }
+
+  const handleCreateVideo = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+
+    try {
+      const { error } = await supabase
+        .from('training_videos')
+        .insert([{
+          title: videoTitle,
+          description: videoDescription,
+          video_url: videoUrl,
+          thumbnail_url: videoThumbnail,
+          uploaded_by: user.id,
+          is_approved: true,
+          approved_by: user.id,
+          approved_at: new Date().toISOString()
+        }])
+
+      if (error) throw error
+
+      toast({
+        title: '¡Video publicado!',
+        description: 'El video ya está disponible para todos'
+      })
+
+      setVideoTitle('')
+      setVideoDescription('')
+      setVideoUrl('')
+      setVideoThumbnail('')
+      loadTrainingVideos()
+
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApproveVideo = async (videoId) => {
+    const { error } = await supabase
+      .from('training_videos')
+      .update({
+        is_approved: true,
+        approved_by: user.id,
+        approved_at: new Date().toISOString()
+      })
+      .eq('id', videoId)
+
+    if (!error) {
+      toast({
+        title: 'Video aprobado',
+        description: 'El video ya está visible para todos'
+      })
+      loadTrainingVideos()
+    }
+  }
+
+  const handleDeleteVideo = async (videoId) => {
+    const { error } = await supabase
+      .from('training_videos')
+      .delete()
+      .eq('id', videoId)
+
+    if (!error) {
+      toast({
+        title: 'Video eliminado',
+        description: 'El video ha sido eliminado'
+      })
+      loadTrainingVideos()
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#0B0B0B]">
       {/* Modern Admin Header */}
