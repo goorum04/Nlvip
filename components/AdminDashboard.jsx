@@ -18,6 +18,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [codes, setCodes] = useState([])
   const [members, setMembers] = useState([])
   const [feedPosts, setFeedPosts] = useState([])
+  const [allProgress, setAllProgress] = useState([])
+  const [allAssignments, setAllAssignments] = useState([])
+  const [trainingVideos, setTrainingVideos] = useState([])
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
@@ -28,6 +31,12 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [selectedTrainerId, setSelectedTrainerId] = useState('')
   const [codeMaxUses, setCodeMaxUses] = useState('10')
   const [codeExpireDays, setCodeExpireDays] = useState('30')
+  
+  // Video form
+  const [videoTitle, setVideoTitle] = useState('')
+  const [videoDescription, setVideoDescription] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
+  const [videoThumbnail, setVideoThumbnail] = useState('')
 
   useEffect(() => {
     loadData()
