@@ -666,48 +666,82 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           {/* Mi Dieta */}
           <TabsContent value="diet" className="space-y-4">
             {myDiet ? (
-              <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
-                <CardHeader>
-                  <CardTitle className="text-[#C9A24D]">{myDiet.diet?.name}</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Asignada el {new Date(myDiet.assigned_at).toLocaleDateString()}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
-                      <p className="text-sm text-gray-400">Calorías</p>
-                      <p className="text-2xl font-bold text-[#C9A24D]">{myDiet.diet?.calories}</p>
-                      <p className="text-xs text-gray-500">kcal</p>
-                    </div>
-                    <div className="text-center p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
-                      <p className="text-sm text-gray-400">Proteína</p>
-                      <p className="text-2xl font-bold text-white">{myDiet.diet?.protein_g}</p>
-                      <p className="text-xs text-gray-500">gramos</p>
-                    </div>
-                    <div className="text-center p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
-                      <p className="text-sm text-gray-400">Carbohidratos</p>
-                      <p className="text-2xl font-bold text-white">{myDiet.diet?.carbs_g}</p>
-                      <p className="text-xs text-gray-500">gramos</p>
-                    </div>
-                    <div className="text-center p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
-                      <p className="text-sm text-gray-400">Grasas</p>
-                      <p className="text-2xl font-bold text-white">{myDiet.diet?.fat_g}</p>
-                      <p className="text-xs text-gray-500">gramos</p>
+              <>
+                <Card className="bg-[#1a1a1a] border-[#C9A24D]/10 rounded-2xl shadow-lg overflow-hidden">
+                  <div className="relative h-48 bg-gradient-to-br from-[#C9A24D]/20 to-[#D4AF37]/10">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Apple className="w-20 h-20 text-[#C9A24D] opacity-50" />
                     </div>
                   </div>
-                  <div>
-                    <h3 className="text-white font-semibold mb-3">Plan de Comidas</h3>
-                    <div className="prose prose-invert max-w-none">
-                      <p className="text-gray-200 whitespace-pre-wrap">{myDiet.diet?.content}</p>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-[#C9A24D] text-2xl">{myDiet.diet?.name}</CardTitle>
+                        <CardDescription className="text-gray-400 mt-2">
+                          Asignada el {new Date(myDiet.assigned_at).toLocaleDateString('es-ES', { 
+                            day: 'numeric', 
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </CardDescription>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Macros Cards - Modern */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#C9A24D]/20 to-[#C9A24D]/5 p-4 border border-[#C9A24D]/20">
+                        <div className="text-center">
+                          <p className="text-xs text-gray-400 mb-1">Calorías</p>
+                          <p className="text-3xl font-bold text-[#C9A24D]">{myDiet.diet?.calories}</p>
+                          <p className="text-xs text-gray-500 mt-1">kcal</p>
+                        </div>
+                      </div>
+                      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-white/10 to-white/5 p-4 border border-white/10">
+                        <div className="text-center">
+                          <p className="text-xs text-gray-400 mb-1">Proteína</p>
+                          <p className="text-3xl font-bold text-white">{myDiet.diet?.protein_g}</p>
+                          <p className="text-xs text-gray-500 mt-1">gramos</p>
+                        </div>
+                      </div>
+                      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-white/10 to-white/5 p-4 border border-white/10">
+                        <div className="text-center">
+                          <p className="text-xs text-gray-400 mb-1">Carbos</p>
+                          <p className="text-3xl font-bold text-white">{myDiet.diet?.carbs_g}</p>
+                          <p className="text-xs text-gray-500 mt-1">gramos</p>
+                        </div>
+                      </div>
+                      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-white/10 to-white/5 p-4 border border-white/10">
+                        <div className="text-center">
+                          <p className="text-xs text-gray-400 mb-1">Grasas</p>
+                          <p className="text-3xl font-bold text-white">{myDiet.diet?.fat_g}</p>
+                          <p className="text-xs text-gray-500 mt-1">gramos</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Plan de comidas */}
+                    <div>
+                      <h3 className="text-white font-semibold mb-3 text-lg flex items-center gap-2">
+                        <Apple className="w-5 h-5 text-[#C9A24D]" />
+                        Plan de Comidas
+                      </h3>
+                      <div className="bg-black/30 p-6 rounded-xl border border-[#C9A24D]/10">
+                        <p className="text-gray-200 whitespace-pre-wrap leading-relaxed">{myDiet.diet?.content}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
             ) : (
-              <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
-                <CardContent className="py-12">
-                  <p className="text-center text-gray-400">Tu entrenador aún no te ha asignado una dieta</p>
+              <Card className="bg-[#1a1a1a] border-[#C9A24D]/10 rounded-2xl shadow-lg">
+                <CardContent className="py-16">
+                  <div className="text-center space-y-4">
+                    <div className="w-20 h-20 rounded-full bg-[#C9A24D]/10 flex items-center justify-center mx-auto">
+                      <Apple className="w-10 h-10 text-[#C9A24D]" />
+                    </div>
+                    <p className="text-gray-400">Tu entrenador aún no te ha asignado una dieta</p>
+                  </div>
                 </CardContent>
               </Card>
             )}
