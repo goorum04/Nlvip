@@ -698,8 +698,8 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                 </div>
               </CardContent>
             </Card>
-            </TabsContent>
-          </Tabs>
+          </TabsContent>
+        </Tabs>
       </main>
 
       <Toaster />
