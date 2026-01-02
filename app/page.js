@@ -38,14 +38,23 @@ export default function App() {
 
   const checkUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      console.log('Checking user...')
+      console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error) {
+        console.error('Auth error:', error)
+      }
       if (user) {
+        console.log('User found:', user.email)
         setUser(user)
         await loadProfile(user.id)
+      } else {
+        console.log('No user logged in')
       }
     } catch (error) {
       console.error('Error checking user:', error)
     } finally {
+      console.log('Setting loading to false')
       setLoading(false)
     }
   }
