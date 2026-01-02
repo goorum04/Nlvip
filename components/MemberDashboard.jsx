@@ -472,108 +472,126 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
           {/* Feed Social */}
           <TabsContent value="feed" className="space-y-4">
-            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
-              <CardHeader>
-                <CardTitle className="text-[#C9A24D]">Crear Post</CardTitle>
+            {/* Create Post Card - Modern */}
+            <Card className="bg-[#1a1a1a] border-[#C9A24D]/10 rounded-2xl shadow-lg overflow-hidden">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-[#C9A24D] text-lg">Compartir con la comunidad</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleCreatePost} className="space-y-4">
                   <Textarea
                     value={newPostContent}
                     onChange={(e) => setNewPostContent(e.target.value)}
-                    placeholder="Comparte tu progreso, logros o motivación..."
+                    placeholder="¿Qué logro quieres compartir hoy? 💪"
                     required
-                    className="bg-black border-[#C9A24D]/20 text-white min-h-[100px]"
+                    className="bg-black/50 border-[#C9A24D]/20 text-white rounded-xl min-h-[100px] resize-none focus:border-[#C9A24D] transition-colors"
                   />
                   <Button 
                     type="submit" 
-                    className="bg-[#C9A24D] hover:bg-[#D4AF37] text-black"
+                    className="w-full bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] hover:from-[#D4AF37] hover:to-[#C9A24D] text-black font-semibold rounded-xl py-6 shadow-lg"
                     disabled={loading}
                   >
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-5 h-5 mr-2" />
                     Publicar
                   </Button>
                 </form>
               </CardContent>
             </Card>
 
+            {/* Feed Posts - Modern Cards */}
             <div className="space-y-4">
               {feedPosts.map((post) => (
-                <Card key={post.id} className="bg-[#1a1a1a] border-[#C9A24D]/20">
-                  <CardContent className="pt-6">
+                <Card key={post.id} className="bg-[#1a1a1a] border-[#C9A24D]/10 rounded-2xl shadow-lg overflow-hidden hover:border-[#C9A24D]/30 transition-all">
+                  <CardContent className="p-6">
                     <div className="space-y-4">
+                      {/* Author Info */}
                       <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-semibold text-white">{post.author?.name}</p>
-                          <p className="text-xs text-gray-400">
-                            {new Date(post.created_at).toLocaleString()}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#C9A24D] to-[#D4AF37] flex items-center justify-center text-black font-bold text-lg">
+                            {post.author?.name?.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-white">{post.author?.name}</p>
+                            <p className="text-xs text-gray-400">
+                              {new Date(post.created_at).toLocaleString('es-ES', { 
+                                day: 'numeric', 
+                                month: 'short', 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </p>
+                          </div>
                         </div>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-gray-400 hover:text-red-400"
+                          className="text-gray-400 hover:text-[#C9A24D] hover:bg-[#C9A24D]/10 rounded-full"
                           onClick={() => handleReportPost(post.id)}
                         >
                           <Flag className="w-4 h-4" />
                         </Button>
                       </div>
                       
-                      <p className="text-gray-200">{post.content}</p>
+                      {/* Content */}
+                      <p className="text-gray-200 leading-relaxed">{post.content}</p>
                       
+                      {/* Image if exists */}
                       {post.image_url && (
-                        <img 
-                          src={post.image_url} 
-                          alt="Post" 
-                          className="rounded-lg max-h-96 w-full object-cover"
-                        />
+                        <div className="rounded-xl overflow-hidden">
+                          <img 
+                            src={post.image_url} 
+                            alt="Post" 
+                            className="w-full h-auto object-cover"
+                          />
+                        </div>
                       )}
 
-                      <div className="flex items-center gap-4 pt-2 border-t border-[#C9A24D]/10">
+                      {/* Actions */}
+                      <div className="flex items-center gap-6 pt-2 border-t border-[#C9A24D]/10">
                         <Button
                           size="sm"
                           variant="ghost"
-                          className={isLikedByMe(post) ? 'text-[#C9A24D]' : 'text-gray-400'}
+                          className={`${isLikedByMe(post) ? 'text-[#C9A24D]' : 'text-gray-400'} hover:text-[#C9A24D] hover:bg-[#C9A24D]/10 rounded-full`}
                           onClick={() => handleLikePost(post.id)}
                         >
-                          <Heart className="w-4 h-4 mr-1" fill={isLikedByMe(post) ? 'currentColor' : 'none'} />
-                          {post.feed_likes?.length || 0}
+                          <Heart className="w-5 h-5 mr-2" fill={isLikedByMe(post) ? 'currentColor' : 'none'} />
+                          <span className="font-semibold">{post.feed_likes?.length || 0}</span>
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-gray-400"
+                          className="text-gray-400 hover:text-[#C9A24D] hover:bg-[#C9A24D]/10 rounded-full"
                           onClick={() => setCommentingPost(post.id)}
                         >
-                          <MessageCircle className="w-4 h-4 mr-1" />
-                          {post.feed_comments?.length || 0}
+                          <MessageCircle className="w-5 h-5 mr-2" />
+                          <span className="font-semibold">{post.feed_comments?.length || 0}</span>
                         </Button>
                       </div>
 
                       {/* Comments */}
                       {post.feed_comments && post.feed_comments.length > 0 && (
-                        <div className="space-y-2 pl-4 border-l-2 border-[#C9A24D]/20">
+                        <div className="space-y-3 pl-4 border-l-2 border-[#C9A24D]/20 mt-4">
                           {post.feed_comments.map((comment) => (
                             <div key={comment.id} className="text-sm">
                               <span className="font-semibold text-[#C9A24D]">{comment.commenter?.name}</span>
-                              <span className="text-gray-300"> {comment.content}</span>
+                              <span className="text-gray-300 ml-2">{comment.content}</span>
                             </div>
                           ))}
                         </div>
                       )}
 
-                      {/* Comment form */}
+                      {/* Comment Form */}
                       {commentingPost === post.id && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 pt-2">
                           <Input
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
                             placeholder="Escribe un comentario..."
-                            className="bg-black border-[#C9A24D]/20 text-white"
+                            className="bg-black/50 border-[#C9A24D]/20 text-white rounded-xl focus:border-[#C9A24D]"
                           />
                           <Button
                             size="sm"
-                            className="bg-[#C9A24D] hover:bg-[#D4AF37] text-black"
+                            className="bg-[#C9A24D] hover:bg-[#D4AF37] text-black rounded-xl px-6"
                             onClick={() => handleComment(post.id)}
                           >
                             Enviar
@@ -585,9 +603,12 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                 </Card>
               ))}
               {feedPosts.length === 0 && (
-                <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
-                  <CardContent className="py-12">
-                    <p className="text-center text-gray-400">No hay posts aún. ¡Sé el primero en publicar!</p>
+                <Card className="bg-[#1a1a1a] border-[#C9A24D]/10 rounded-2xl shadow-lg">
+                  <CardContent className="py-16">
+                    <div className="text-center space-y-2">
+                      <Home className="w-12 h-12 text-[#C9A24D]/40 mx-auto" />
+                      <p className="text-gray-400">No hay posts aún. ¡Sé el primero en publicar!</p>
+                    </div>
                   </CardContent>
                 </Card>
               )}
