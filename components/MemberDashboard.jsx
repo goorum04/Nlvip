@@ -416,39 +416,59 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="feed" className="space-y-6">
-          <TabsList className="bg-[#1a1a1a] border border-[#C9A24D]/20 grid grid-cols-3 md:grid-cols-6">
-            <TabsTrigger value="feed" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
-              <Home className="w-4 h-4 md:mr-2" />
-              <span className="hidden md:inline">Feed</span>
-            </TabsTrigger>
-            <TabsTrigger value="workout" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
-              <Dumbbell className="w-4 h-4 md:mr-2" />
-              <span className="hidden md:inline">Mi Rutina</span>
-            </TabsTrigger>
-            <TabsTrigger value="diet" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
-              <Apple className="w-4 h-4 md:mr-2" />
-              <span className="hidden md:inline">Mi Dieta</span>
-            </TabsTrigger>
-            <TabsTrigger value="progress" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
-              <TrendingUp className="w-4 h-4 md:mr-2" />
-              <span className="hidden md:inline">Progreso</span>
-            </TabsTrigger>
-            <TabsTrigger value="calculator" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
-              <Calculator className="w-4 h-4 md:mr-2" />
-              <span className="hidden md:inline">Macros</span>
-            </TabsTrigger>
-            <TabsTrigger value="notices" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black relative">
-              <Bell className="w-4 h-4 md:mr-2" />
-              <span className="hidden md:inline">Avisos</span>
-              {unreadNotices > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {unreadNotices}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
+      <main className="container mx-auto px-4 py-6 -mt-8">
+        {/* Modern Tab Navigation */}
+        <div className="bg-[#1a1a1a] rounded-2xl p-2 mb-6 shadow-lg border border-[#C9A24D]/10">
+          <Tabs defaultValue="feed" className="space-y-6">
+            <TabsList className="bg-transparent grid grid-cols-3 md:grid-cols-6 gap-2 p-0">
+              <TabsTrigger 
+                value="feed" 
+                className="rounded-xl data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black data-[state=active]:shadow-lg transition-all"
+              >
+                <Home className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Feed</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="workout" 
+                className="rounded-xl data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black data-[state=active]:shadow-lg transition-all"
+              >
+                <Dumbbell className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Rutina</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="diet" 
+                className="rounded-xl data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black data-[state=active]:shadow-lg transition-all"
+              >
+                <Apple className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Dieta</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="progress" 
+                className="rounded-xl data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black data-[state=active]:shadow-lg transition-all"
+              >
+                <TrendingUp className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Progreso</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="calculator" 
+                className="rounded-xl data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black data-[state=active]:shadow-lg transition-all"
+              >
+                <Calculator className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Macros</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="notices" 
+                className="rounded-xl data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black data-[state=active]:shadow-lg transition-all relative"
+              >
+                <Bell className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Avisos</span>
+                {unreadNotices > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[#C9A24D] text-black text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-lg">
+                    {unreadNotices}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
 
           {/* Feed Social */}
           <TabsContent value="feed" className="space-y-4">
