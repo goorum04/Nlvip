@@ -20,7 +20,10 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       loadMessages()
       loadUnreadCount()
     }
-    setupSubscription()
+    // Only setup subscription if we have a valid setup
+    if ((userRole === 'member' && trainerId) || userRole === 'trainer') {
+      setupSubscription()
+    }
   }, [userId, trainerId])
 
   useEffect(() => {
