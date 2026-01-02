@@ -470,8 +470,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               </TabsTrigger>
             </TabsList>
 
-          {/* Feed Social */}
-          <TabsContent value="feed" className="space-y-4">
+            {/* Feed Social */}
+            <TabsContent value="feed" className="space-y-4">
             {/* Create Post Card - Modern */}
             <Card className="bg-[#1a1a1a] border-[#C9A24D]/10 rounded-2xl shadow-lg overflow-hidden">
               <CardHeader className="pb-3">
