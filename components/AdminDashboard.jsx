@@ -212,30 +212,34 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
   return (
     <div className="min-h-screen bg-[#0B0B0B]">
-      {/* Header */}
-      <header className="bg-black/50 border-b border-[#C9A24D]/20 sticky top-0 z-50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Crown className="w-8 h-8 text-[#C9A24D]" />
-            <div>
-              <h1 className="text-2xl font-bold text-[#C9A24D]">NL VIP CLUB</h1>
-              <p className="text-sm text-gray-400">Panel de Administrador</p>
+      {/* Modern Admin Header */}
+      <header className="bg-gradient-to-br from-black via-[#1a1a1a] to-black border-b border-[#C9A24D]/20 sticky top-0 z-50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#C9A24D] to-[#D4AF37] flex items-center justify-center shadow-lg">
+                <Crown className="w-6 h-6 text-black" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-[#C9A24D]">NL VIP CLUB</h1>
+                <p className="text-xs text-gray-400">Panel de Administrador</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm text-gray-300">{profile.name}</p>
-              <p className="text-xs text-[#C9A24D]">Administrador</p>
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden md:block">
+                <p className="text-sm text-gray-300 font-semibold">{profile.name}</p>
+                <p className="text-xs text-[#C9A24D]">Administrador</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="border-[#C9A24D]/40 text-[#C9A24D] hover:bg-[#C9A24D]/10 rounded-full"
+                onClick={onLogout}
+              >
+                <LogOut className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Salir</span>
+              </Button>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="border-[#C9A24D]/40 text-[#C9A24D] hover:bg-[#C9A24D]/10"
-              onClick={onLogout}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Salir
-            </Button>
           </div>
         </div>
       </header>
