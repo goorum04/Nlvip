@@ -301,7 +301,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
                 { value: 'feed', icon: Home, label: 'Feed' },
-                { value: 'chat', icon: MessageCircle, label: 'Chat' },
                 { value: 'workout', icon: Dumbbell, label: 'Rutina' },
                 { value: 'diet', icon: Apple, label: 'Dieta' },
                 { value: 'progress', icon: TrendingUp, label: 'Progreso' },
