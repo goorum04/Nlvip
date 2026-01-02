@@ -647,6 +647,15 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Floating Chat Widget */}
+      <FloatingChat 
+        userId={user.id}
+        userRole="member"
+        trainerId={myTrainer?.id}
+        trainerName={myTrainer?.name}
+      />
+
       <Toaster />
     </div>
   )
