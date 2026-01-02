@@ -618,23 +618,46 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           {/* Mi Rutina */}
           <TabsContent value="workout" className="space-y-4">
             {myWorkout ? (
-              <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+              <Card className="bg-[#1a1a1a] border-[#C9A24D]/10 rounded-2xl shadow-lg overflow-hidden">
+                <div className="relative h-48 bg-gradient-to-br from-[#C9A24D]/20 to-[#D4AF37]/10">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Dumbbell className="w-20 h-20 text-[#C9A24D] opacity-50" />
+                  </div>
+                </div>
                 <CardHeader>
-                  <CardTitle className="text-[#C9A24D]">{myWorkout.workout?.name}</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Asignada el {new Date(myWorkout.assigned_at).toLocaleDateString()}
-                  </CardDescription>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-[#C9A24D] text-2xl">{myWorkout.workout?.name}</CardTitle>
+                      <CardDescription className="text-gray-400 mt-2">
+                        Asignada el {new Date(myWorkout.assigned_at).toLocaleDateString('es-ES', { 
+                          day: 'numeric', 
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </CardDescription>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-[#C9A24D] flex items-center justify-center">
+                      <Calendar className="w-6 h-6 text-black" />
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="prose prose-invert max-w-none">
-                    <p className="text-gray-200 whitespace-pre-wrap">{myWorkout.workout?.description}</p>
+                    <div className="bg-black/30 p-6 rounded-xl border border-[#C9A24D]/10">
+                      <p className="text-gray-200 whitespace-pre-wrap leading-relaxed">{myWorkout.workout?.description}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ) : (
-              <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
-                <CardContent className="py-12">
-                  <p className="text-center text-gray-400">Tu entrenador aún no te ha asignado una rutina</p>
+              <Card className="bg-[#1a1a1a] border-[#C9A24D]/10 rounded-2xl shadow-lg">
+                <CardContent className="py-16">
+                  <div className="text-center space-y-4">
+                    <div className="w-20 h-20 rounded-full bg-[#C9A24D]/10 flex items-center justify-center mx-auto">
+                      <Dumbbell className="w-10 h-10 text-[#C9A24D]" />
+                    </div>
+                    <p className="text-gray-400">Tu entrenador aún no te ha asignado una rutina</p>
+                  </div>
                 </CardContent>
               </Card>
             )}
