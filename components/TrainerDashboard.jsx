@@ -712,7 +712,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                 </div>
               </CardContent>
             </Card>
-            </TabsContent>
+          </TabsContent>
           </Tabs>
         </div>
       </main>
