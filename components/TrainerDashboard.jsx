@@ -10,10 +10,16 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Dumbbell, Users, Bell, LogOut, Plus, Apple, Sparkles, Eye, Send } from 'lucide-react'
+import { 
+  Dumbbell, Users, Bell, LogOut, Plus, Apple, Sparkles, Eye, Send, 
+  Video, Camera, TrendingUp, Trash2, Loader2
+} from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import FloatingChat from './FloatingChat'
+import VideoUploader from './VideoUploader'
+import { VideoCard } from './VideoPlayer'
+import { ProgressPhotoGallery } from './ProgressPhotos'
 
 export default function TrainerDashboard({ user, profile, onLogout }) {
   const [members, setMembers] = useState([])
@@ -21,6 +27,11 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const [dietTemplates, setDietTemplates] = useState([])
   const [notices, setNotices] = useState([])
   const [loading, setLoading] = useState(false)
+  const [selectedMemberForProgress, setSelectedMemberForProgress] = useState(null)
+  const [memberProgressPhotos, setMemberProgressPhotos] = useState([])
+  const [selectedWorkoutForVideos, setSelectedWorkoutForVideos] = useState(null)
+  const [workoutVideos, setWorkoutVideos] = useState({})
+  const [showVideoUploader, setShowVideoUploader] = useState(null)
   const { toast } = useToast()
 
   const [newWorkoutName, setNewWorkoutName] = useState('')
@@ -54,7 +65,20 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
 
   const loadWorkoutTemplates = async () => {
     const { data } = await supabase.from('workout_templates').select('*').eq('trainer_id', user.id).order('created_at', { ascending: false })
-    if (data) setWorkoutTemplates(data)
+    if (data) {
+      setWorkoutTemplates(data)
+      // Load videos for each workout
+      const videos = {}
+      for (const workout of data) {
+        const { data: workoutVids } = await supabase
+          .from('workout_videos')
+          .select('*')
+          .eq('workout_template_id', workout.id)
+          .order('created_at')
+        if (workoutVids) videos[workout.id] = workoutVids
+      }
+      setWorkoutVideos(videos)
+    }
   }
 
   const loadDietTemplates = async () => {
@@ -65,6 +89,20 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const loadNotices = async () => {
     const { data } = await supabase.from('trainer_notices').select('*').eq('trainer_id', user.id).order('created_at', { ascending: false }).limit(10)
     if (data) setNotices(data)
+  }
+
+  const loadMemberProgressPhotos = async (memberId) => {
+    const { data } = await supabase
+      .from('progress_photos')
+      .select('*')
+      .eq('member_id', memberId)
+      .order('date', { ascending: false })
+    if (data) setMemberProgressPhotos(data)
+  }
+
+  const handleViewMemberProgress = (member) => {
+    setSelectedMemberForProgress(member)
+    loadMemberProgressPhotos(member.id)
   }
 
   const handleCreateWorkout = async (e) => {
@@ -119,6 +157,16 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
       toast({ title: '¡Dieta asignada!' })
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
+  }
+
+  const handleDeleteVideo = async (videoId) => {
+    if (!confirm('¿Eliminar este vídeo?')) return
+    
+    const { error } = await supabase.from('workout_videos').delete().eq('id', videoId)
+    if (!error) {
+      toast({ title: 'Vídeo eliminado' })
+      loadWorkoutTemplates()
     }
   }
 
@@ -183,6 +231,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                 { value: 'members', icon: Users, label: 'Mis Socios' },
                 { value: 'workouts', icon: Dumbbell, label: 'Rutinas' },
                 { value: 'diets', icon: Apple, label: 'Dietas' },
+                { value: 'progress', icon: TrendingUp, label: 'Progreso' },
                 { value: 'notices', icon: Bell, label: 'Avisos' }
               ].map(tab => (
                 <TabsTrigger 
@@ -289,15 +338,68 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
               </CardContent>
             </Card>
 
+            {/* Workout Templates with Videos */}
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white">Mis Rutinas ({workoutTemplates.length})</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {workoutTemplates.map(t => (
-                  <div key={t.id} className="p-4 bg-black/30 rounded-2xl border border-[#2a2a2a]">
-                    <h4 className="font-bold text-white mb-2">{t.name}</h4>
-                    <p className="text-sm text-gray-400 line-clamp-2">{t.description}</p>
+              <CardContent className="space-y-4">
+                {workoutTemplates.map(workout => (
+                  <div key={workout.id} className="p-4 bg-black/30 rounded-2xl border border-[#2a2a2a]">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="font-bold text-white">{workout.name}</h4>
+                        <p className="text-sm text-gray-400 line-clamp-2 mt-1">{workout.description}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Videos section */}
+                    <div className="mt-4 pt-4 border-t border-[#2a2a2a]">
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                          <Video className="w-4 h-4 text-[#C9A24D]" />
+                          Vídeos ({workoutVideos[workout.id]?.length || 0})
+                        </h5>
+                        <Button
+                          size="sm"
+                          onClick={() => setShowVideoUploader(workout.id)}
+                          className="bg-[#C9A24D]/20 text-[#C9A24D] hover:bg-[#C9A24D]/30 rounded-lg text-xs"
+                        >
+                          <Plus className="w-3 h-3 mr-1" /> Añadir
+                        </Button>
+                      </div>
+                      
+                      {showVideoUploader === workout.id ? (
+                        <VideoUploader
+                          workoutTemplateId={workout.id}
+                          uploaderId={user.id}
+                          onSuccess={() => {
+                            setShowVideoUploader(null)
+                            loadWorkoutTemplates()
+                            toast({ title: '¡Vídeo subido!' })
+                          }}
+                          onCancel={() => setShowVideoUploader(null)}
+                        />
+                      ) : workoutVideos[workout.id]?.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {workoutVideos[workout.id].map(video => (
+                            <div key={video.id} className="relative group">
+                              <VideoCard video={video} onClick={() => {}} />
+                              <Button
+                                size="icon"
+                                variant="destructive"
+                                onClick={() => handleDeleteVideo(video.id)}
+                                className="absolute top-2 right-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-sm text-center py-4">Sin vídeos aún</p>
+                      )}
+                    </div>
                   </div>
                 ))}
                 {workoutTemplates.length === 0 && <p className="text-center text-gray-500 py-8">No has creado rutinas aún</p>}
@@ -361,6 +463,77 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                   </div>
                 ))}
                 {dietTemplates.length === 0 && <p className="text-center text-gray-500 py-8">No has creado dietas aún</p>}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* PROGRESS TAB - View member progress photos */}
+          <TabsContent value="progress" className="space-y-4">
+            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Camera className="w-5 h-5 text-[#C9A24D]" />
+                  Fotos de Progreso de Socios
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!selectedMemberForProgress ? (
+                  <div className="space-y-3">
+                    <p className="text-gray-400 text-sm mb-4">Selecciona un socio para ver sus fotos de progreso:</p>
+                    {members.map(member => (
+                      <button
+                        key={member.id}
+                        onClick={() => handleViewMemberProgress(member)}
+                        className="w-full flex items-center justify-between p-4 bg-black/30 rounded-2xl border border-[#2a2a2a] hover:border-[#C9A24D]/30 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C9A24D]/20 to-[#D4AF37]/10 flex items-center justify-center text-[#C9A24D] font-bold">
+                            {member.name?.charAt(0)}
+                          </div>
+                          <div className="text-left">
+                            <p className="font-semibold text-white">{member.name}</p>
+                            <p className="text-xs text-gray-500">{member.email}</p>
+                          </div>
+                        </div>
+                        <Eye className="w-5 h-5 text-[#C9A24D]" />
+                      </button>
+                    ))}
+                    {members.length === 0 && (
+                      <div className="text-center py-8">
+                        <Users className="w-12 h-12 mx-auto text-[#C9A24D]/20 mb-2" />
+                        <p className="text-gray-500">No tienes socios asignados</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setSelectedMemberForProgress(null)
+                        setMemberProgressPhotos([])
+                      }}
+                      className="mb-4 text-[#C9A24D] hover:text-[#D4AF37]"
+                    >
+                      ← Volver a la lista
+                    </Button>
+                    
+                    <div className="flex items-center gap-3 mb-4 p-3 bg-black/30 rounded-xl">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#C9A24D] to-[#D4AF37] flex items-center justify-center text-black font-bold">
+                        {selectedMemberForProgress.name?.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-white">{selectedMemberForProgress.name}</p>
+                        <p className="text-xs text-gray-500">{memberProgressPhotos.length} fotos</p>
+                      </div>
+                    </div>
+                    
+                    <ProgressPhotoGallery
+                      photos={memberProgressPhotos}
+                      canDelete={false}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -438,7 +611,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
         </Tabs>
       </main>
 
-      {/* Floating Chat Widget */}
+      {/* Floating Chat */}
       <FloatingChat 
         userId={user.id}
         userRole="trainer"
