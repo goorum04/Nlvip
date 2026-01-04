@@ -11,23 +11,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle, 
-  Flag, Calculator, Crown, Sparkles, Flame, Target, Zap, Star, ShoppingBag
+  Flag, Calculator, Crown, Sparkles, Flame, Target, Zap, Star, ShoppingBag,
+  Camera, Video, Image as ImageIcon, Loader2
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import FloatingChat from './FloatingChat'
+import ImageUploader from './ImageUploader'
+import VideoPlayer, { VideoCard } from './VideoPlayer'
+import { ProgressPhotoUploader, ProgressPhotoGallery } from './ProgressPhotos'
+import { useFileUpload, useSignedUrl, generateFileId, getFileExtension } from '@/hooks/useStorage'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
   const [myWorkout, setMyWorkout] = useState(null)
+  const [workoutVideos, setWorkoutVideos] = useState([])
   const [myDiet, setMyDiet] = useState(null)
   const [progressRecords, setProgressRecords] = useState([])
+  const [progressPhotos, setProgressPhotos] = useState([])
   const [notices, setNotices] = useState([])
   const [unreadNotices, setUnreadNotices] = useState(0)
   const [loading, setLoading] = useState(false)
   const [myTrainer, setMyTrainer] = useState(null)
   const [storeProducts, setStoreProducts] = useState([])
+  const [feedImageUrls, setFeedImageUrls] = useState({})
   const { toast } = useToast()
+  const { getSignedUrl } = useSignedUrl()
+
+  // UI states
+  const [selectedVideo, setSelectedVideo] = useState(null)
+  const [showPhotoUploader, setShowPhotoUploader] = useState(false)
+  const [postImage, setPostImage] = useState(null)
 
   // Feed form
   const [newPostContent, setNewPostContent] = useState('')
@@ -52,6 +66,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [macroGoal, setMacroGoal] = useState('maintain')
   const [macroResults, setMacroResults] = useState(null)
 
+  const { uploadFile, uploading, progress } = useFileUpload()
+
   useEffect(() => {
     loadData()
   }, [])
@@ -62,6 +78,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       loadMyWorkout(),
       loadMyDiet(),
       loadProgress(),
+      loadProgressPhotos(),
       loadNotices(),
       loadMyTrainer(),
       loadStoreProducts()
@@ -71,39 +88,32 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const loadMyTrainer = async () => {
     const { data } = await supabase
       .from('trainer_members')
-      .select(`
-        trainer:profiles!trainer_members_trainer_id_fkey(id, name, email)
-      `)
+      .select(`trainer:profiles!trainer_members_trainer_id_fkey(id, name, email)`)
       .eq('member_id', user.id)
       .single()
-    
     if (data) setMyTrainer(data.trainer)
-  }
-
-  const loadStoreProducts = async () => {
-    const { data } = await supabase
-      .from('store_products')
-      .select('*')
-      .eq('is_active', true)
-      .order('category')
-    
-    if (data) setStoreProducts(data)
   }
 
   const loadFeed = async () => {
     const { data } = await supabase
       .from('feed_posts')
-      .select(`
-        *,
-        author:profiles!feed_posts_author_id_fkey(name),
-        feed_likes(id, user_id),
-        feed_comments(id, content, created_at, commenter:profiles!feed_comments_commenter_id_fkey(name))
-      `)
+      .select(`*, author:profiles!feed_posts_author_id_fkey(name), feed_likes(id, user_id), feed_comments(id, content, created_at, commenter:profiles!feed_comments_commenter_id_fkey(name))`)
       .eq('is_hidden', false)
       .order('created_at', { ascending: false })
       .limit(50)
     
-    if (data) setFeedPosts(data)
+    if (data) {
+      setFeedPosts(data)
+      // Load signed URLs for images
+      const urls = {}
+      for (const post of data) {
+        if (post.image_url) {
+          const url = await getSignedUrl('feed_images', post.image_url, 3600)
+          if (url) urls[post.id] = url
+        }
+      }
+      setFeedImageUrls(urls)
+    }
   }
 
   const loadMyWorkout = async () => {
@@ -113,7 +123,16 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .eq('member_id', user.id)
       .single()
     
-    if (data) setMyWorkout(data)
+    if (data) {
+      setMyWorkout(data)
+      // Load videos for this workout
+      const { data: videos } = await supabase
+        .from('workout_videos')
+        .select('*')
+        .eq('workout_template_id', data.workout.id)
+        .order('created_at')
+      if (videos) setWorkoutVideos(videos)
+    }
   }
 
   const loadMyDiet = async () => {
@@ -122,7 +141,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .select(`*, diet:diet_templates!member_diets_diet_template_id_fkey(id, name, calories, protein_g, carbs_g, fat_g, content)`)
       .eq('member_id', user.id)
       .single()
-    
     if (data) setMyDiet(data)
   }
 
@@ -133,8 +151,23 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .eq('member_id', user.id)
       .order('date', { ascending: false })
       .limit(20)
-    
     if (data) setProgressRecords(data)
+  }
+
+  const loadProgressPhotos = async () => {
+    const { data } = await supabase
+      .from('progress_photos')
+      .select('*')
+      .eq('member_id', user.id)
+      .order('date', { ascending: false })
+    if (data) setProgressPhotos(data)
+  }
+
+  const loadStoreProducts = async () => {
+    try {
+      const { data } = await supabase.from('store_products').select('*').eq('is_active', true).order('category')
+      if (data) setStoreProducts(data)
+    } catch (e) { /* Table may not exist */ }
   }
 
   const loadNotices = async () => {
@@ -153,12 +186,36 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
   const handleCreatePost = async (e) => {
     e.preventDefault()
+    if (!newPostContent.trim() && !postImage) return
+    
     setLoading(true)
     try {
-      const { error } = await supabase.from('feed_posts').insert([{ author_id: user.id, content: newPostContent }])
+      let imagePath = null
+      
+      // Upload image if selected
+      if (postImage) {
+        const fileId = generateFileId()
+        const ext = getFileExtension(postImage.name)
+        imagePath = `feed/${user.id}/${fileId}.${ext}`
+        
+        const result = await uploadFile('feed_images', imagePath, postImage, {
+          maxSize: 5 * 1024 * 1024,
+          allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+        })
+        
+        if (!result.success) throw new Error(result.error)
+      }
+
+      const { error } = await supabase.from('feed_posts').insert([{
+        author_id: user.id,
+        content: newPostContent,
+        image_url: imagePath
+      }])
+      
       if (error) throw error
       toast({ title: '¡Post publicado!' })
       setNewPostContent('')
+      setPostImage(null)
       loadFeed()
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -218,6 +275,14 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     }
   }
 
+  const handleDeletePhoto = async (photoId) => {
+    const { error } = await supabase.from('progress_photos').delete().eq('id', photoId)
+    if (!error) {
+      toast({ title: 'Foto eliminada' })
+      loadProgressPhotos()
+    }
+  }
+
   const calculateMacros = () => {
     const age = parseInt(macroAge), height = parseInt(macroHeight), weight = parseFloat(macroWeight)
     let bmr = macroGender === 'male' ? 10 * weight + 6.25 * height - 5 * age + 5 : 10 * weight + 6.25 * height - 5 * age - 161
@@ -239,11 +304,10 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a]">
-      {/* ULTRA MODERN HEADER */}
+      {/* HEADER */}
       <header className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#C9A24D]/20 via-transparent to-[#C9A24D]/10" />
         <div className="absolute top-0 left-0 w-96 h-96 bg-[#C9A24D]/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#C9A24D]/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
         
         <div className="relative container mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-8">
@@ -252,42 +316,27 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                 <Crown className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#C9A24D] to-[#D4AF37]">
-                  NL VIP CLUB
-                </h1>
+                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#C9A24D] to-[#D4AF37]">NL VIP CLUB</h1>
                 <p className="text-xs text-gray-500">Premium Fitness</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="relative">
-                {unreadNotices > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold animate-pulse">
-                    {unreadNotices}
-                  </span>
-                )}
-                <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-[#C9A24D] hover:bg-[#C9A24D]/10">
-                  <Bell className="w-5 h-5" />
-                </Button>
-              </div>
               <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
                 <LogOut className="w-5 h-5" />
               </Button>
             </div>
           </div>
 
-          {/* Welcome Section */}
-          <div className="relative">
-            <div className="flex items-end gap-4">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#C9A24D] to-[#D4AF37] flex items-center justify-center text-3xl font-black text-black shadow-xl shadow-[#C9A24D]/30">
-                {profile.name?.charAt(0)}
-              </div>
-              <div className="pb-1">
-                <p className="text-gray-400 text-sm">Bienvenido de vuelta,</p>
-                <h2 className="text-3xl font-black text-white">{profile.name?.split(' ')[0]}</h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <Sparkles className="w-4 h-4 text-[#C9A24D]" />
-                  <span className="text-sm text-[#C9A24D] font-semibold">Socio VIP</span>
-                </div>
+          <div className="flex items-end gap-4">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#C9A24D] to-[#D4AF37] flex items-center justify-center text-3xl font-black text-black shadow-xl shadow-[#C9A24D]/30">
+              {profile.name?.charAt(0)}
+            </div>
+            <div className="pb-1">
+              <p className="text-gray-400 text-sm">Bienvenido de vuelta,</p>
+              <h2 className="text-3xl font-black text-white">{profile.name?.split(' ')[0]}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <Sparkles className="w-4 h-4 text-[#C9A24D]" />
+                <span className="text-sm text-[#C9A24D] font-semibold">Socio VIP</span>
               </div>
             </div>
           </div>
@@ -296,7 +345,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
       <main className="container mx-auto px-4 py-6">
         <Tabs defaultValue="feed" className="space-y-6">
-          {/* MODERN PILL TABS */}
           <div className="overflow-x-auto pb-2 -mx-4 px-4">
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
@@ -333,8 +381,21 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                     placeholder="¿Qué logro compartes hoy? 💪"
                     className="bg-black/50 border-[#2a2a2a] text-white rounded-2xl min-h-[80px] resize-none focus:border-[#C9A24D] placeholder:text-gray-500"
                   />
-                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] hover:opacity-90 text-black font-bold rounded-2xl py-6 shadow-lg shadow-[#C9A24D]/20">
-                    <Zap className="w-5 h-5 mr-2" /> Publicar
+                  <ImageUploader
+                    onImageSelect={setPostImage}
+                    onImageRemove={() => setPostImage(null)}
+                    disabled={loading || uploading}
+                  />
+                  <Button 
+                    type="submit" 
+                    disabled={loading || uploading || (!newPostContent.trim() && !postImage)} 
+                    className="w-full bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] hover:opacity-90 text-black font-bold rounded-2xl py-6 shadow-lg shadow-[#C9A24D]/20"
+                  >
+                    {uploading ? (
+                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Subiendo {progress}%</>
+                    ) : (
+                      <><Zap className="w-5 h-5 mr-2" /> Publicar</>
+                    )}
                   </Button>
                 </form>
               </CardContent>
@@ -355,7 +416,20 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                       <Flag className="w-4 h-4" />
                     </Button>
                   </div>
-                  <p className="text-gray-200 mb-4 leading-relaxed">{post.content}</p>
+                  
+                  {post.content && <p className="text-gray-200 mb-4 leading-relaxed">{post.content}</p>}
+                  
+                  {/* Post Image */}
+                  {feedImageUrls[post.id] && (
+                    <div className="mb-4 rounded-2xl overflow-hidden border border-[#2a2a2a]">
+                      <img
+                        src={feedImageUrls[post.id]}
+                        alt="Post"
+                        className="w-full max-h-96 object-cover"
+                      />
+                    </div>
+                  )}
+                  
                   <div className="flex items-center gap-4 pt-3 border-t border-[#2a2a2a]">
                     <Button variant="ghost" size="sm" className={`rounded-xl ${isLikedByMe(post) ? 'text-[#C9A24D]' : 'text-gray-400'} hover:text-[#C9A24D]`} onClick={() => handleLikePost(post.id)}>
                       <Heart className="w-5 h-5 mr-2" fill={isLikedByMe(post) ? 'currentColor' : 'none'} />
@@ -387,23 +461,48 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           {/* WORKOUT TAB */}
           <TabsContent value="workout" className="space-y-4">
             {myWorkout ? (
-              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
-                <div className="h-40 bg-gradient-to-br from-[#C9A24D]/30 to-[#C9A24D]/5 flex items-center justify-center">
-                  <Dumbbell className="w-24 h-24 text-[#C9A24D]/30" />
-                </div>
-                <CardHeader>
-                  <CardTitle className="text-2xl text-white flex items-center gap-3">
-                    <Flame className="w-6 h-6 text-[#C9A24D]" />
-                    {myWorkout.workout?.name}
-                  </CardTitle>
-                  <CardDescription className="text-gray-500">Asignada el {new Date(myWorkout.assigned_at).toLocaleDateString()}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-black/30 rounded-2xl p-5 border border-[#2a2a2a]">
-                    <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{myWorkout.workout?.description}</p>
+              <>
+                <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
+                  <div className="h-32 bg-gradient-to-br from-[#C9A24D]/30 to-[#C9A24D]/5 flex items-center justify-center">
+                    <Dumbbell className="w-20 h-20 text-[#C9A24D]/30" />
                   </div>
-                </CardContent>
-              </Card>
+                  <CardHeader>
+                    <CardTitle className="text-2xl text-white flex items-center gap-3">
+                      <Flame className="w-6 h-6 text-[#C9A24D]" />
+                      {myWorkout.workout?.name}
+                    </CardTitle>
+                    <CardDescription className="text-gray-500">Asignada el {new Date(myWorkout.assigned_at).toLocaleDateString()}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="bg-black/30 rounded-2xl p-5 border border-[#2a2a2a]">
+                      <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{myWorkout.workout?.description}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Workout Videos */}
+                {workoutVideos.length > 0 && (
+                  <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Video className="w-5 h-5 text-[#C9A24D]" />
+                        Vídeos de la Rutina ({workoutVideos.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-3">
+                        {workoutVideos.map(video => (
+                          <VideoCard
+                            key={video.id}
+                            video={video}
+                            onClick={() => setSelectedVideo(video)}
+                          />
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             ) : (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
                 <CardContent className="py-20 text-center">
@@ -417,58 +516,33 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           {/* DIET TAB */}
           <TabsContent value="diet" className="space-y-4">
             {myDiet ? (
-              <>
-                <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
-                  <CardHeader>
-                    <CardTitle className="text-2xl text-white flex items-center gap-3">
-                      <Apple className="w-6 h-6 text-[#C9A24D]" />
-                      {myDiet.diet?.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-4 gap-3">
-                      {[
-                        { label: 'Calorías', value: myDiet.diet?.calories, icon: Flame, color: 'from-orange-500/20 to-orange-500/5' },
-                        { label: 'Proteína', value: `${myDiet.diet?.protein_g}g`, icon: Target, color: 'from-blue-500/20 to-blue-500/5' },
-                        { label: 'Carbos', value: `${myDiet.diet?.carbs_g}g`, icon: Zap, color: 'from-yellow-500/20 to-yellow-500/5' },
-                        { label: 'Grasas', value: `${myDiet.diet?.fat_g}g`, icon: Star, color: 'from-purple-500/20 to-purple-500/5' },
-                      ].map(m => (
-                        <div key={m.label} className={`bg-gradient-to-br ${m.color} rounded-2xl p-4 border border-white/5`}>
-                          <m.icon className="w-5 h-5 text-[#C9A24D] mb-2" />
-                          <p className="text-2xl font-black text-white">{m.value}</p>
-                          <p className="text-xs text-gray-500">{m.label}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="bg-black/30 rounded-2xl p-5 border border-[#2a2a2a]">
-                      <p className="text-gray-300 whitespace-pre-wrap">{myDiet.diet?.content}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Store Products */}
-                {storeProducts.length > 0 && (
-                  <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
-                    <CardHeader>
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <ShoppingBag className="w-5 h-5 text-[#C9A24D]" />
-                        Suplementos Recomendados
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {storeProducts.slice(0, 6).map(product => (
-                          <div key={product.id} className="bg-black/30 rounded-2xl p-4 border border-[#2a2a2a] hover:border-[#C9A24D]/30 transition-all">
-                            <p className="font-semibold text-white text-sm">{product.name}</p>
-                            <p className="text-xs text-gray-500 mt-1">{product.category}</p>
-                            {product.price && <p className="text-[#C9A24D] font-bold mt-2">€{product.price}</p>}
-                          </div>
-                        ))}
+              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="text-2xl text-white flex items-center gap-3">
+                    <Apple className="w-6 h-6 text-[#C9A24D]" />
+                    {myDiet.diet?.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      { label: 'Calorías', value: myDiet.diet?.calories, icon: Flame, color: 'from-orange-500/20 to-orange-500/5' },
+                      { label: 'Proteína', value: `${myDiet.diet?.protein_g}g`, icon: Target, color: 'from-blue-500/20 to-blue-500/5' },
+                      { label: 'Carbos', value: `${myDiet.diet?.carbs_g}g`, icon: Zap, color: 'from-yellow-500/20 to-yellow-500/5' },
+                      { label: 'Grasas', value: `${myDiet.diet?.fat_g}g`, icon: Star, color: 'from-purple-500/20 to-purple-500/5' },
+                    ].map(m => (
+                      <div key={m.label} className={`bg-gradient-to-br ${m.color} rounded-2xl p-4 border border-white/5`}>
+                        <m.icon className="w-5 h-5 text-[#C9A24D] mb-2" />
+                        <p className="text-2xl font-black text-white">{m.value}</p>
+                        <p className="text-xs text-gray-500">{m.label}</p>
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </>
+                    ))}
+                  </div>
+                  <div className="bg-black/30 rounded-2xl p-5 border border-[#2a2a2a]">
+                    <p className="text-gray-300 whitespace-pre-wrap">{myDiet.diet?.content}</p>
+                  </div>
+                </CardContent>
+              </Card>
             ) : (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
                 <CardContent className="py-20 text-center">
@@ -481,11 +555,51 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
           {/* PROGRESS TAB */}
           <TabsContent value="progress" className="space-y-4">
+            {/* Photos Section */}
+            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-[#C9A24D]" />
+                    Fotos de Progreso
+                  </CardTitle>
+                  {!showPhotoUploader && (
+                    <Button
+                      onClick={() => setShowPhotoUploader(true)}
+                      className="bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black rounded-xl"
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Subir
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {showPhotoUploader ? (
+                  <ProgressPhotoUploader
+                    memberId={user.id}
+                    onSuccess={() => {
+                      setShowPhotoUploader(false)
+                      loadProgressPhotos()
+                      toast({ title: '¡Foto guardada!' })
+                    }}
+                    onCancel={() => setShowPhotoUploader(false)}
+                  />
+                ) : (
+                  <ProgressPhotoGallery
+                    photos={progressPhotos}
+                    canDelete={true}
+                    onDelete={handleDeletePhoto}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Measurements Section */}
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-[#C9A24D]" />
-                  Registrar Progreso
+                  <TrendingUp className="w-5 h-5 text-[#C9A24D]" />
+                  Registrar Medidas
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -510,7 +624,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                     <Textarea value={progressNotes} onChange={(e) => setProgressNotes(e.target.value)} placeholder="¿Cómo te sientes?" className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1" />
                   </div>
                   <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black font-bold rounded-2xl py-6">
-                    Guardar Progreso
+                    Guardar Medidas
                   </Button>
                 </form>
               </CardContent>
@@ -519,7 +633,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             {progressRecords.length > 0 && (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
                 <CardHeader>
-                  <CardTitle className="text-white">Historial</CardTitle>
+                  <CardTitle className="text-white">Historial de Medidas</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {progressRecords.map(r => (
@@ -648,7 +762,15 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         </Tabs>
       </main>
 
-      {/* Floating Chat Widget */}
+      {/* Video Player Modal */}
+      {selectedVideo && (
+        <VideoPlayer
+          video={selectedVideo}
+          onClose={() => setSelectedVideo(null)}
+        />
+      )}
+
+      {/* Floating Chat */}
       <FloatingChat 
         userId={user.id}
         userRole="member"
