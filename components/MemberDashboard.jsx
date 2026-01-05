@@ -345,7 +345,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                 { value: 'workout', icon: Dumbbell, label: 'Rutina' },
                 { value: 'diet', icon: Apple, label: 'Dieta' },
                 { value: 'progress', icon: TrendingUp, label: 'Progreso' },
-                { value: 'calculator', icon: Calculator, label: 'Macros' },
                 { value: 'notices', icon: Bell, label: 'Avisos', badge: unreadNotices }
               ].map(tab => (
                 <TabsTrigger 
