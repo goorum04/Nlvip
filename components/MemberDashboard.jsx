@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle, 
-  Flag, Calculator, Crown, Sparkles, Flame, Target, Zap, Star, ShoppingBag,
+  Flag, Crown, Sparkles, Flame, Target, Zap, Star, ShoppingBag,
   Camera, Video, Image as ImageIcon, Loader2
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
