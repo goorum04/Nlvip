@@ -241,6 +241,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                 { value: 'members', icon: Users, label: 'Mis Socios' },
                 { value: 'workouts', icon: Dumbbell, label: 'Rutinas' },
                 { value: 'diets', icon: Apple, label: 'Dietas' },
+                { value: 'calculator', icon: Calculator, label: 'Macros' },
                 { value: 'progress', icon: TrendingUp, label: 'Progreso' },
                 { value: 'notices', icon: Bell, label: 'Avisos' }
               ].map(tab => (
