@@ -47,6 +47,16 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const [noticePriority, setNoticePriority] = useState('normal')
   const [noticeRecipient, setNoticeRecipient] = useState('all')
 
+  // Macro calculator states
+  const [macroGender, setMacroGender] = useState('male')
+  const [macroAge, setMacroAge] = useState('')
+  const [macroHeight, setMacroHeight] = useState('')
+  const [macroWeight, setMacroWeight] = useState('')
+  const [macroActivity, setMacroActivity] = useState('moderate')
+  const [macroGoal, setMacroGoal] = useState('maintain')
+  const [macroResults, setMacroResults] = useState(null)
+  const [selectedMemberForMacros, setSelectedMemberForMacros] = useState('')
+
   useEffect(() => {
     loadData()
   }, [])
