@@ -478,6 +478,10 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               <Users className="w-4 h-4 mr-2" />
               Videos
             </TabsTrigger>
+            <TabsTrigger value="calculator" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+              <Calculator className="w-4 h-4 mr-2" />
+              Macros
+            </TabsTrigger>
             <TabsTrigger value="feed" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
               <Shield className="w-4 h-4 mr-2" />
               Moderación
