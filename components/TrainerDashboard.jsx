@@ -537,6 +537,118 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             </Card>
           </TabsContent>
 
+          {/* CALCULATOR TAB - Macro calculator for trainers */}
+          <TabsContent value="calculator" className="space-y-4">
+            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Calculator className="w-5 h-5 text-[#C9A24D]" />
+                  Calculadora de Macros
+                </CardTitle>
+                <p className="text-sm text-gray-500">Fórmula Mifflin-St Jeor • Calcula y asigna macros a tus socios</p>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-gray-400 text-xs">Género</Label>
+                    <Select value={macroGender} onValueChange={setMacroGender}>
+                      <SelectTrigger className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Hombre</SelectItem>
+                        <SelectItem value="female">Mujer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-gray-400 text-xs">Edad (años)</Label>
+                    <Input type="number" placeholder="25" value={macroAge} onChange={(e) => setMacroAge(e.target.value)} className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-gray-400 text-xs">Altura (cm)</Label>
+                    <Input type="number" placeholder="175" value={macroHeight} onChange={(e) => setMacroHeight(e.target.value)} className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-gray-400 text-xs">Peso (kg)</Label>
+                    <Input type="number" placeholder="70" value={macroWeight} onChange={(e) => setMacroWeight(e.target.value)} className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-gray-400 text-xs">Nivel de Actividad</Label>
+                    <Select value={macroActivity} onValueChange={setMacroActivity}>
+                      <SelectTrigger className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sedentary">Sedentario (poco ejercicio)</SelectItem>
+                        <SelectItem value="light">Ligera (1-3 días/sem)</SelectItem>
+                        <SelectItem value="moderate">Moderada (3-5 días/sem)</SelectItem>
+                        <SelectItem value="active">Activa (6-7 días/sem)</SelectItem>
+                        <SelectItem value="very_active">Muy activa (atleta)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-gray-400 text-xs">Objetivo</Label>
+                    <Select value={macroGoal} onValueChange={setMacroGoal}>
+                      <SelectTrigger className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cut">Definición (-15%)</SelectItem>
+                        <SelectItem value="maintain">Mantener peso</SelectItem>
+                        <SelectItem value="bulk">Volumen (+15%)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Button onClick={calculateMacros} className="w-full bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black font-bold rounded-2xl py-6">
+                  <Calculator className="w-5 h-5 mr-2" /> Calcular Macros
+                </Button>
+
+                {macroResults && (
+                  <div className="space-y-4 pt-4 border-t border-[#2a2a2a]">
+                    <h3 className="text-white font-bold text-lg">Resultados del Cálculo</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[
+                        { label: 'Calorías', value: macroResults.calories, unit: 'kcal', color: 'from-orange-500/20' },
+                        { label: 'Proteína', value: macroResults.protein, unit: 'g', color: 'from-blue-500/20' },
+                        { label: 'Carbohidratos', value: macroResults.carbs, unit: 'g', color: 'from-yellow-500/20' },
+                        { label: 'Grasas', value: macroResults.fat, unit: 'g', color: 'from-purple-500/20' },
+                      ].map(m => (
+                        <div key={m.label} className={`bg-gradient-to-br ${m.color} to-transparent rounded-2xl p-4 border border-white/5`}>
+                          <p className="text-2xl font-black text-white">{m.value}<span className="text-sm font-normal text-gray-400 ml-1">{m.unit}</span></p>
+                          <p className="text-xs text-gray-500">{m.label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="bg-black/30 rounded-2xl p-5 border border-[#2a2a2a] space-y-4">
+                      <h4 className="text-white font-semibold flex items-center gap-2">
+                        <Send className="w-4 h-4 text-[#C9A24D]" />
+                        Asignar a un Socio
+                      </h4>
+                      <Select value={selectedMemberForMacros} onValueChange={setSelectedMemberForMacros}>
+                        <SelectTrigger className="bg-black/50 border-[#2a2a2a] rounded-xl text-white">
+                          <SelectValue placeholder="Selecciona un socio..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {members.map(m => (
+                            <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        onClick={assignMacrosToMember} 
+                        disabled={loading || !selectedMemberForMacros}
+                        className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold rounded-2xl py-5"
+                      >
+                        {loading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Send className="w-5 h-5 mr-2" />}
+                        Crear y Asignar Dieta
+                      </Button>
+                      <p className="text-xs text-gray-500 text-center">Se creará una nueva dieta con estos macros y se asignará automáticamente al socio</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* PROGRESS TAB - View member progress photos */}
           <TabsContent value="progress" className="space-y-4">
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
