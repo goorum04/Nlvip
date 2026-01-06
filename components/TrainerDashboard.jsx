@@ -199,6 +199,65 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
     }
   }
 
+  const calculateMacros = () => {
+    const age = parseInt(macroAge), height = parseInt(macroHeight), weight = parseFloat(macroWeight)
+    if (!age || !height || !weight) {
+      toast({ title: 'Error', description: 'Por favor completa todos los campos', variant: 'destructive' })
+      return
+    }
+    let bmr = macroGender === 'male' ? 10 * weight + 6.25 * height - 5 * age + 5 : 10 * weight + 6.25 * height - 5 * age - 161
+    const multipliers = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9 }
+    let tdee = bmr * multipliers[macroActivity]
+    if (macroGoal === 'cut') tdee *= 0.85
+    else if (macroGoal === 'bulk') tdee *= 1.15
+    const protein = weight * 1.8, fat = weight * 0.8
+    const carbs = (tdee - protein * 4 - fat * 9) / 4
+    setMacroResults({ calories: Math.round(tdee), protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat) })
+  }
+
+  const assignMacrosToMember = async () => {
+    if (!selectedMemberForMacros || !macroResults) {
+      toast({ title: 'Error', description: 'Selecciona un socio y calcula los macros primero', variant: 'destructive' })
+      return
+    }
+    setLoading(true)
+    try {
+      const member = members.find(m => m.id === selectedMemberForMacros)
+      const dietName = `Plan Nutricional - ${member?.name || 'Socio'}`
+      
+      // Create the diet template
+      const { data: diet, error: dietError } = await supabase.from('diet_templates').insert([{
+        trainer_id: user.id,
+        name: dietName,
+        calories: macroResults.calories,
+        protein_g: macroResults.protein,
+        carbs_g: macroResults.carbs,
+        fat_g: macroResults.fat,
+        content: `Plan personalizado:\n- Calorías: ${macroResults.calories} kcal\n- Proteína: ${macroResults.protein}g\n- Carbohidratos: ${macroResults.carbs}g\n- Grasas: ${macroResults.fat}g`
+      }]).select().single()
+      
+      if (dietError) throw dietError
+
+      // Assign to member
+      const { error: assignError } = await supabase.from('member_diets').upsert([{
+        member_id: selectedMemberForMacros,
+        diet_template_id: diet.id,
+        assigned_by: user.id
+      }], { onConflict: 'member_id' })
+
+      if (assignError) throw assignError
+
+      toast({ title: '¡Macros asignados!', description: `Se ha creado y asignado la dieta a ${member?.name}` })
+      setSelectedMemberForMacros('')
+      setMacroResults(null)
+      loadDietTemplates()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a]">
       {/* HEADER */}
