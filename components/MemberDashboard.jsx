@@ -387,7 +387,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C9A24D] to-[#D4AF37] flex items-center justify-center shadow-lg shadow-[#C9A24D]/20">
-                <Crown className="w-6 h-6 text-black" />
+                <span className="text-black font-black text-sm">NL</span>
               </div>
               <div>
                 <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#C9A24D] to-[#D4AF37]">NL VIP CLUB</h1>
