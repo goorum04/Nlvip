@@ -341,8 +341,11 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
                 { value: 'feed', icon: Home, label: 'Feed' },
+                { value: 'challenges', icon: Target, label: 'Retos' },
+                { value: 'badges', icon: Trophy, label: 'Logros' },
                 { value: 'workout', icon: Dumbbell, label: 'Rutina' },
                 { value: 'diet', icon: Apple, label: 'Dieta' },
+                { value: 'stats', icon: BarChart3, label: 'Estadísticas' },
                 { value: 'progress', icon: TrendingUp, label: 'Progreso' },
                 { value: 'notices', icon: Bell, label: 'Avisos', badge: unreadNotices }
               ].map(tab => (
