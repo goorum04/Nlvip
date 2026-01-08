@@ -370,7 +370,7 @@ export default function App() {
                     className="w-full border-[#C9A24D]/40 text-[#C9A24D] hover:bg-[#C9A24D]/10"
                     onClick={() => handleDemoLogin('admin')}
                   >
-                    <Crown className="w-4 h-4 mr-2" />
+                    <Shield className="w-4 h-4 mr-2" />
                     Entrar como Admin Demo
                   </Button>
                 </div>
