@@ -267,7 +267,7 @@ export default function App() {
       <div 
         className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: 'url(https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1920&q=80)',
+          backgroundImage: 'url(https://customer-assets.emergentagent.com/job_39287fc6-01ac-45b2-aba3-268b6afd68e6/artifacts/6b3h6oyj_unnamed.webp)',
           backgroundPosition: 'center',
           backgroundSize: 'cover'
         }}
