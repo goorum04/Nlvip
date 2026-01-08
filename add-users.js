@@ -118,8 +118,9 @@ async function main() {
   
   if (trainerResult.success) {
     console.log('   ✅ Usuario Auth creado')
+    const userId = trainerResult.data.user?.id || trainerResult.data.id
     const profileResult = await insertProfile(
-      trainerResult.data.user.id,
+      userId,
       'carlos@demo.com',
       'Carlos',
       'trainer'
@@ -135,8 +136,9 @@ async function main() {
   
   if (memberResult.success) {
     console.log('   ✅ Usuario Auth creado')
+    const memberId = memberResult.data.user?.id || memberResult.data.id
     const profileResult = await insertProfile(
-      memberResult.data.user.id,
+      memberId,
       'maria@demo.com',
       'María',
       'member'
