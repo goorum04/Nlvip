@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle, 
   Flag, Crown, Sparkles, Flame, Target, Zap, Star, ShoppingBag,
-  Camera, Video, Image as ImageIcon, Loader2
+  Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
@@ -21,6 +21,8 @@ import ImageUploader from './ImageUploader'
 import VideoPlayer, { VideoCard } from './VideoPlayer'
 import { ProgressPhotoUploader, ProgressPhotoGallery } from './ProgressPhotos'
 import { useFileUpload, useSignedUrl, generateFileId, getFileExtension } from '@/hooks/useStorage'
+import { ChallengesSection, BadgesGallery } from './ChallengesBadges'
+import ProgressCharts from './ProgressCharts'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
