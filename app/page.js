@@ -282,12 +282,14 @@ export default function App() {
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-md bg-black/90 border-[#C9A24D]/20">
           <CardHeader className="space-y-4 text-center">
-            <div className="flex items-center justify-center gap-2">
-              <Crown className="w-10 h-10 text-[#C9A24D]" />
-              <Sparkles className="w-6 h-6 text-[#C9A24D]" />
+            <div className="flex items-center justify-center">
+              <div className="text-4xl font-black tracking-tight">
+                <span className="text-white">NL</span>
+                <span className="text-[#C9A24D]"> VIP</span>
+              </div>
             </div>
             <CardTitle className="text-3xl font-bold text-[#C9A24D]">
-              NL VIP CLUB
+              CLUB
             </CardTitle>
             <CardDescription className="text-gray-300">
               Tu gimnasio premium de alto nivel
