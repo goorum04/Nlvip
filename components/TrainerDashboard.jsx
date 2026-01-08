@@ -57,12 +57,78 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const [macroResults, setMacroResults] = useState(null)
   const [selectedMemberForMacros, setSelectedMemberForMacros] = useState('')
 
+  // Challenge states
+  const [challenges, setChallenges] = useState([])
+  const [challengeTitle, setChallengeTitle] = useState('')
+  const [challengeDesc, setChallengeDesc] = useState('')
+  const [challengeType, setChallengeType] = useState('workouts')
+  const [challengeTarget, setChallengeTarget] = useState('')
+  const [challengeDays, setChallengeDays] = useState('14')
+  const [challengeParticipants, setChallengeParticipants] = useState({})
+
   useEffect(() => {
     loadData()
   }, [])
 
   const loadData = async () => {
-    await Promise.all([loadMembers(), loadWorkoutTemplates(), loadDietTemplates(), loadNotices()])
+    await Promise.all([loadMembers(), loadWorkoutTemplates(), loadDietTemplates(), loadNotices(), loadChallenges()])
+  }
+
+  const loadChallenges = async () => {
+    const { data } = await supabase
+      .from('challenges')
+      .select('*')
+      .eq('created_by', user.id)
+      .order('created_at', { ascending: false })
+    
+    if (data) {
+      setChallenges(data)
+      // Load participants for each challenge
+      for (const challenge of data) {
+        const { data: parts } = await supabase
+          .from('challenge_participants')
+          .select('*, member:profiles!challenge_participants_member_id_fkey(name)')
+          .eq('challenge_id', challenge.id)
+        if (parts) {
+          setChallengeParticipants(prev => ({ ...prev, [challenge.id]: parts }))
+        }
+      }
+    }
+  }
+
+  const createChallenge = async (e) => {
+    e.preventDefault()
+    if (!challengeTitle || !challengeTarget) {
+      toast({ title: 'Error', description: 'Completa todos los campos', variant: 'destructive' })
+      return
+    }
+    setLoading(true)
+    try {
+      const startDate = new Date()
+      const endDate = new Date(startDate.getTime() + parseInt(challengeDays) * 86400000)
+      
+      const { error } = await supabase.from('challenges').insert([{
+        title: challengeTitle,
+        description: challengeDesc,
+        type: challengeType,
+        target_value: parseFloat(challengeTarget),
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0],
+        created_by: user.id,
+        is_active: true
+      }])
+      
+      if (error) throw error
+      toast({ title: '¡Reto creado!', description: 'Los socios ya pueden unirse' })
+      setChallengeTitle('')
+      setChallengeDesc('')
+      setChallengeTarget('')
+      loadChallenges()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const loadMembers = async () => {
