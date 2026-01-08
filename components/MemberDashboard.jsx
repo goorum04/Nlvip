@@ -85,8 +85,90 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       loadProgressPhotos(),
       loadNotices(),
       loadMyTrainer(),
-      loadStoreProducts()
+      loadStoreProducts(),
+      loadChartData()
     ])
+  }
+
+  const loadChartData = async () => {
+    try {
+      // Load workout checkins for charts
+      const { data: checkins } = await supabase
+        .from('workout_checkins')
+        .select('*')
+        .eq('member_id', user.id)
+        .order('checked_in_at', { ascending: true })
+
+      // Load progress records for weight chart
+      const { data: progressData } = await supabase
+        .from('progress_records')
+        .select('*')
+        .eq('member_id', user.id)
+        .order('date', { ascending: true })
+
+      // Transform weight data
+      const weightData = (progressData || []).map(p => ({
+        date: new Date(p.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
+        weight: p.weight_kg
+      }))
+
+      // Transform workout data by week
+      const workoutsByWeek = {}
+      const now = new Date()
+      ;(checkins || []).forEach(c => {
+        const date = new Date(c.checked_in_at)
+        const weekStart = new Date(date)
+        weekStart.setDate(date.getDate() - date.getDay())
+        const weekKey = weekStart.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+        workoutsByWeek[weekKey] = (workoutsByWeek[weekKey] || 0) + 1
+      })
+
+      const workoutsData = Object.entries(workoutsByWeek).map(([week, workouts]) => ({
+        week,
+        workouts,
+        date: new Date()
+      })).slice(-8)
+
+      // Calculate adherence (current month)
+      const currentMonth = now.getMonth()
+      const currentMonthCheckins = (checkins || []).filter(c => 
+        new Date(c.checked_in_at).getMonth() === currentMonth
+      ).length
+
+      // Calculate previous month data
+      const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1
+      const prevMonthCheckins = (checkins || []).filter(c => 
+        new Date(c.checked_in_at).getMonth() === prevMonth
+      )
+
+      const currentMonthDuration = (checkins || [])
+        .filter(c => new Date(c.checked_in_at).getMonth() === currentMonth)
+        .reduce((acc, c) => acc + (c.duration_minutes || 0), 0)
+
+      const prevMonthDuration = prevMonthCheckins.reduce((acc, c) => acc + (c.duration_minutes || 0), 0)
+
+      // Count active days
+      const currentActiveDays = new Set((checkins || [])
+        .filter(c => new Date(c.checked_in_at).getMonth() === currentMonth)
+        .map(c => new Date(c.checked_in_at).toDateString())
+      ).size
+
+      const prevActiveDays = new Set(prevMonthCheckins
+        .map(c => new Date(c.checked_in_at).toDateString())
+      ).size
+
+      setChartData({
+        weight: weightData,
+        workouts: workoutsData,
+        adherence: { completed: currentMonthCheckins, target: 12 },
+        comparison: {
+          current: { workouts: currentMonthCheckins, duration: currentMonthDuration, activeDays: currentActiveDays },
+          previous: { workouts: prevMonthCheckins.length, duration: prevMonthDuration, activeDays: prevActiveDays }
+        }
+      })
+    } catch (error) {
+      console.error('Error loading chart data:', error)
+    }
   }
 
   const loadMyTrainer = async () => {
