@@ -40,6 +40,16 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const { toast } = useToast()
   const { getSignedUrl } = useSignedUrl()
 
+  // Chart data states
+  const [workoutCheckins, setWorkoutCheckins] = useState([])
+  const [chartData, setChartData] = useState({
+    weight: [],
+    workouts: [],
+    adherence: { completed: 0, target: 12 },
+    comparison: { current: {}, previous: {} }
+  })
+  const { getSignedUrl } = useSignedUrl()
+
   // UI states
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [showPhotoUploader, setShowPhotoUploader] = useState(false)
