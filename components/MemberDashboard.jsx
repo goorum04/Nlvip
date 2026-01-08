@@ -557,6 +557,16 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             )}
           </TabsContent>
 
+          {/* STATS TAB - Advanced Charts */}
+          <TabsContent value="stats" className="space-y-4">
+            <ProgressCharts 
+              weightData={chartData.weight}
+              workoutsData={chartData.workouts}
+              adherenceData={chartData.adherence}
+              comparisonData={chartData.comparison}
+            />
+          </TabsContent>
+
           {/* PROGRESS TAB */}
           <TabsContent value="progress" className="space-y-4">
             {/* Photos Section */}
