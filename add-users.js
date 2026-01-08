@@ -147,11 +147,12 @@ async function main() {
 
     // Asignar María al entrenador Didac
     if (profileResult.status < 300) {
+      const memberId = memberResult.data.user?.id || memberResult.data.id
       const didacRes = await getRequest('/rest/v1/profiles?role=eq.trainer&name=eq.Didac&select=id')
       if (didacRes.data && didacRes.data[0]) {
         const assignResult = await postRequest('/rest/v1/trainer_members', {
           trainer_id: didacRes.data[0].id,
-          member_id: memberResult.data.user.id
+          member_id: memberId
         })
         console.log(`   ${assignResult.status < 300 ? '✅' : '❌'} Asignada a Didac`)
       }
@@ -163,7 +164,7 @@ async function main() {
         if (primerPaso) {
           await postRequest('/rest/v1/user_badges', {
             badge_id: primerPaso.id,
-            member_id: memberResult.data.user.id
+            member_id: memberId
           })
           console.log('   ✅ Badge "Primer Paso" asignado')
         }
@@ -174,7 +175,7 @@ async function main() {
       for (let i = 0; i < 5; i++) {
         const date = new Date(today.getTime() - (i * 2 + 1) * 86400000)
         await postRequest('/rest/v1/workout_checkins', {
-          member_id: memberResult.data.user.id,
+          member_id: memberId,
           checked_in_at: date.toISOString(),
           duration_minutes: 45 + Math.floor(Math.random() * 30),
           notes: `Entrenamiento ${i + 1}`
@@ -187,7 +188,7 @@ async function main() {
       if (challengesRes.data && challengesRes.data[0]) {
         await postRequest('/rest/v1/challenge_participants', {
           challenge_id: challengesRes.data[0].id,
-          member_id: memberResult.data.user.id,
+          member_id: memberId,
           progress_value: 2
         })
         console.log(`   ✅ Inscrita en reto: ${challengesRes.data[0].title}`)
