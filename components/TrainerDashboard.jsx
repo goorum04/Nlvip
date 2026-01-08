@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { 
   Dumbbell, Users, Bell, LogOut, Plus, Apple, Sparkles, Eye, Send, 
-  Video, Camera, TrendingUp, Trash2, Loader2, Calculator
+  Video, Camera, TrendingUp, Trash2, Loader2, Calculator, Target, Trophy
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
