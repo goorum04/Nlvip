@@ -240,7 +240,10 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-4">
-          <Crown className="w-16 h-16 text-[#C9A24D]" />
+          <div className="text-4xl font-black tracking-tight">
+            <span className="text-white">NL</span>
+            <span className="text-[#C9A24D]"> VIP</span>
+          </div>
           <p className="text-[#C9A24D] text-lg">Cargando...</p>
         </div>
       </div>
