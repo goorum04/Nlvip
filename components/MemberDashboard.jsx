@@ -452,6 +452,16 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             ))}
           </TabsContent>
 
+          {/* CHALLENGES TAB */}
+          <TabsContent value="challenges" className="space-y-4">
+            <ChallengesSection userId={user.id} />
+          </TabsContent>
+
+          {/* BADGES TAB */}
+          <TabsContent value="badges" className="space-y-4">
+            <BadgesGallery userId={user.id} />
+          </TabsContent>
+
           {/* WORKOUT TAB */}
           <TabsContent value="workout" className="space-y-4">
             {myWorkout ? (
