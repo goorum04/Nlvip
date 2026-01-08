@@ -425,7 +425,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#C9A24D] to-[#D4AF37] flex items-center justify-center shadow-lg">
-                <Crown className="w-6 h-6 text-black" />
+                <span className="text-black font-black text-sm">NL</span>
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-[#C9A24D]">NL VIP CLUB</h1>
