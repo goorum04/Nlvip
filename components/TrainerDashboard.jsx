@@ -449,6 +449,153 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             </Card>
           </TabsContent>
 
+          {/* CHALLENGES TAB */}
+          <TabsContent value="challenges" className="space-y-4">
+            {/* Crear nuevo reto */}
+            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-[#C9A24D]" />
+                  Crear Nuevo Reto
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={createChallenge} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Label className="text-gray-400 text-xs">Título del Reto</Label>
+                      <Input 
+                        placeholder="💪 Desafío de Fuerza" 
+                        value={challengeTitle}
+                        onChange={(e) => setChallengeTitle(e.target.value)}
+                        className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-gray-400 text-xs">Descripción</Label>
+                      <Textarea 
+                        placeholder="Describe el reto..." 
+                        value={challengeDesc}
+                        onChange={(e) => setChallengeDesc(e.target.value)}
+                        className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-gray-400 text-xs">Tipo de Reto</Label>
+                      <Select value={challengeType} onValueChange={setChallengeType}>
+                        <SelectTrigger className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="workouts">🏋️ Entrenamientos</SelectItem>
+                          <SelectItem value="consistency">🔥 Días consecutivos</SelectItem>
+                          <SelectItem value="weight">⚖️ Pérdida de peso (kg)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-400 text-xs">
+                        Objetivo ({challengeType === 'workouts' ? 'entrenos' : challengeType === 'consistency' ? 'días' : 'kg'})
+                      </Label>
+                      <Input 
+                        type="number" 
+                        placeholder="10" 
+                        value={challengeTarget}
+                        onChange={(e) => setChallengeTarget(e.target.value)}
+                        className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-gray-400 text-xs">Duración (días)</Label>
+                      <Select value={challengeDays} onValueChange={setChallengeDays}>
+                        <SelectTrigger className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="7">1 semana</SelectItem>
+                          <SelectItem value="14">2 semanas</SelectItem>
+                          <SelectItem value="30">1 mes</SelectItem>
+                          <SelectItem value="60">2 meses</SelectItem>
+                          <SelectItem value="90">3 meses</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black font-bold rounded-2xl py-6"
+                  >
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Target className="w-5 h-5 mr-2" />}
+                    Crear Reto
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Lista de retos */}
+            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-[#C9A24D]" />
+                  Mis Retos ({challenges.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {challenges.map(challenge => {
+                  const participants = challengeParticipants[challenge.id] || []
+                  const daysLeft = Math.max(0, Math.ceil((new Date(challenge.end_date) - new Date()) / 86400000))
+                  
+                  return (
+                    <div key={challenge.id} className="p-4 bg-black/30 rounded-2xl border border-[#2a2a2a]">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-bold text-white text-lg">{challenge.title}</h3>
+                          <p className="text-sm text-gray-400">{challenge.description}</p>
+                        </div>
+                        <div className={`px-3 py-1 rounded-lg text-xs font-bold ${challenge.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                          {challenge.is_active ? `${daysLeft}d restantes` : 'Finalizado'}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-sm text-gray-400 mb-3">
+                        <span>🎯 Meta: {challenge.target_value} {challenge.type === 'workouts' ? 'entrenos' : challenge.type === 'consistency' ? 'días' : 'kg'}</span>
+                        <span>👥 {participants.length} participantes</span>
+                      </div>
+
+                      {participants.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-gray-500 font-semibold">Progreso de participantes:</p>
+                          {participants.map(p => (
+                            <div key={p.id} className="flex items-center gap-3">
+                              <span className="text-white text-sm w-24 truncate">{p.member?.name}</span>
+                              <div className="flex-1 h-2 bg-black/50 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full rounded-full ${p.completed ? 'bg-green-500' : 'bg-gradient-to-r from-[#C9A24D] to-[#D4AF37]'}`}
+                                  style={{ width: `${Math.min((p.progress_value / challenge.target_value) * 100, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-400 w-16 text-right">
+                                {p.progress_value}/{challenge.target_value}
+                              </span>
+                              {p.completed && <span className="text-green-400">✓</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                {challenges.length === 0 && (
+                  <div className="text-center py-12">
+                    <Target className="w-16 h-16 mx-auto text-[#C9A24D]/20 mb-4" />
+                    <p className="text-gray-500">No has creado ningún reto todavía</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* WORKOUTS TAB */}
           <TabsContent value="workouts" className="space-y-4">
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
