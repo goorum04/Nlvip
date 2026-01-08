@@ -48,7 +48,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     adherence: { completed: 0, target: 12 },
     comparison: { current: {}, previous: {} }
   })
-  const { getSignedUrl } = useSignedUrl()
 
   // UI states
   const [selectedVideo, setSelectedVideo] = useState(null)
