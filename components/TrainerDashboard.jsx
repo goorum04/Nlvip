@@ -364,6 +364,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
                 { value: 'members', icon: Users, label: 'Mis Socios' },
+                { value: 'challenges', icon: Target, label: 'Retos' },
                 { value: 'workouts', icon: Dumbbell, label: 'Rutinas' },
                 { value: 'diets', icon: Apple, label: 'Dietas' },
                 { value: 'calculator', icon: Calculator, label: 'Macros' },
