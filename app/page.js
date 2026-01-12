@@ -336,7 +336,7 @@ export default function App() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-gray-200">Contraseña</Label>
+                    <Label htmlFor="password" className="text-gray-300 text-sm font-medium">Contraseña</Label>
                     <Input
                       id="password"
                       type="password"
@@ -344,55 +344,61 @@ export default function App() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="bg-[#1a1a1a] border-[#00D4FF]/20 text-white"
+                      className="bg-black/40 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20 transition-all"
                     />
                   </div>
 
                   <Button 
                     type="submit" 
-                    className="w-full bg-[#00D4FF] hover:bg-[#00B4E6] text-black font-semibold"
+                    className="w-full h-12 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white font-semibold rounded-xl shadow-lg shadow-violet-500/25 transition-all duration-300"
                     disabled={loading}
                   >
-                    Entrar
+                    {loading ? 'Entrando...' : 'Entrar'}
                   </Button>
                 </form>
 
-                <div className="space-y-2 pt-4 border-t border-[#00D4FF]/20">
-                  <p className="text-sm text-center text-gray-400 mb-3">Cuentas Demo</p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full border-[#00D4FF]/40 text-[#00D4FF] hover:bg-[#00D4FF]/10"
-                    onClick={() => handleDemoLogin('member')}
-                  >
-                    <Dumbbell className="w-4 h-4 mr-2" />
-                    Entrar como Socio Demo
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full border-[#00D4FF]/40 text-[#00D4FF] hover:bg-[#00D4FF]/10"
-                    onClick={() => handleDemoLogin('trainer')}
-                  >
-                    <Dumbbell className="w-4 h-4 mr-2" />
-                    Entrar como Entrenador Demo
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full border-[#00D4FF]/40 text-[#00D4FF] hover:bg-[#00D4FF]/10"
-                    onClick={() => handleDemoLogin('admin')}
-                  >
-                    <Shield className="w-4 h-4 mr-2" />
-                    Entrar como Admin Demo
-                  </Button>
+                <div className="space-y-3 pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                    <p className="text-xs text-gray-500">Cuentas Demo</p>
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="bg-black/30 border-white/10 text-gray-300 hover:bg-violet-600/20 hover:border-violet-500/30 hover:text-white rounded-xl h-11 transition-all"
+                      onClick={() => handleDemoLogin('member')}
+                    >
+                      <Dumbbell className="w-4 h-4 mr-1" />
+                      Socio
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="bg-black/30 border-white/10 text-gray-300 hover:bg-cyan-600/20 hover:border-cyan-500/30 hover:text-white rounded-xl h-11 transition-all"
+                      onClick={() => handleDemoLogin('trainer')}
+                    >
+                      <Sparkles className="w-4 h-4 mr-1" />
+                      Trainer
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="bg-black/30 border-white/10 text-gray-300 hover:bg-purple-600/20 hover:border-purple-500/30 hover:text-white rounded-xl h-11 transition-all"
+                      onClick={() => handleDemoLogin('admin')}
+                    >
+                      <Shield className="w-4 h-4 mr-1" />
+                      Admin
+                    </Button>
+                  </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="register" className="space-y-4">
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="reg-name" className="text-gray-200">Nombre Completo</Label>
+                    <Label htmlFor="reg-name" className="text-gray-300 text-sm font-medium">Nombre Completo</Label>
                     <Input
                       id="reg-name"
                       type="text"
@@ -400,12 +406,12 @@ export default function App() {
                       value={regName}
                       onChange={(e) => setRegName(e.target.value)}
                       required
-                      className="bg-[#1a1a1a] border-[#00D4FF]/20 text-white"
+                      className="bg-black/40 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 transition-all"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="reg-email" className="text-gray-200">Email</Label>
+                    <Label htmlFor="reg-email" className="text-gray-300 text-sm font-medium">Email</Label>
                     <Input
                       id="reg-email"
                       type="email"
@@ -413,7 +419,7 @@ export default function App() {
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
                       required
-                      className="bg-[#1a1a1a] border-[#00D4FF]/20 text-white"
+                      className="bg-black/40 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 transition-all"
                     />
                   </div>
 
