@@ -454,7 +454,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="trainers" className="space-y-6">
+        <Tabs defaultValue="assistant" className="space-y-6">
           <TabsList className="bg-[#1a1a1a] border border-violet-500/20">
             <TabsTrigger value="assistant" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black">
               <Bot className="w-4 h-4 mr-2" />
