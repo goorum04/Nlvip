@@ -24,6 +24,7 @@ import { useFileUpload, useSignedUrl, generateFileId, getFileExtension } from '@
 import { ChallengesSection, BadgesGallery } from './ChallengesBadges'
 import ProgressCharts from './ProgressCharts'
 import { MemberRecipePlan } from './RecipePlan'
+import { RecipesGallery } from './RecipesManager'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
