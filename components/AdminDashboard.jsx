@@ -702,6 +702,24 @@ export default function AdminDashboard({ user, profile, onLogout }) {
             </Card>
           </TabsContent>
 
+          {/* Recetas */}
+          <TabsContent value="recipes" className="space-y-4">
+            <Card className="bg-[#1a1a1a] border-violet-500/20">
+              <CardHeader>
+                <CardTitle className="text-violet-400 flex items-center gap-2">
+                  <UtensilsCrossed className="w-5 h-5" />
+                  Gestión de Recetas
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Crea y gestiona las recetas del sistema. Puedes subir fotos desde tu dispositivo.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RecipesManager userId={user.id} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Progreso Global */}
           <TabsContent value="progress" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-violet-500/20">
