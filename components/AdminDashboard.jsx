@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Users, Key, Shield, LogOut, UserPlus, Code, Plus, Calculator, Send, Loader2, UtensilsCrossed } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
+import { RecipesManager } from './RecipesManager'
 
 export default function AdminDashboard({ user, profile, onLogout }) {
   const [trainers, setTrainers] = useState([])
