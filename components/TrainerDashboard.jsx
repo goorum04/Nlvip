@@ -20,6 +20,7 @@ import FloatingChat from './FloatingChat'
 import VideoUploader from './VideoUploader'
 import { VideoCard } from './VideoPlayer'
 import { ProgressPhotoGallery } from './ProgressPhotos'
+import { RecipesManager } from './RecipesManager'
 
 export default function TrainerDashboard({ user, profile, onLogout }) {
   const [members, setMembers] = useState([])
