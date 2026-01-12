@@ -25,12 +25,12 @@ const iconMap = {
 
 // Colores de badges
 const colorMap = {
-  bronze: 'from-amber-700 to-amber-600',
-  silver: 'from-gray-400 to-gray-300',
+  bronze: 'from-amber-600 to-orange-500',
+  silver: 'from-slate-400 to-slate-300',
   gold: 'from-[#00D4FF] to-[#00B4E6]',
-  platinum: 'from-cyan-400 to-blue-400',
-  green: 'from-green-500 to-emerald-400',
-  orange: 'from-orange-500 to-amber-400',
+  platinum: 'from-violet-500 to-purple-400',
+  green: 'from-emerald-500 to-green-400',
+  orange: 'from-orange-500 to-red-400',
 }
 
 // Componente de Badge individual
