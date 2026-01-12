@@ -90,7 +90,7 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
     <div className="space-y-4 p-4 bg-black/30 rounded-2xl border border-[#2a2a2a]">
       <div className="flex items-center justify-between">
         <h3 className="text-white font-semibold flex items-center gap-2">
-          <Camera className="w-5 h-5 text-[#C9A24D]" />
+          <Camera className="w-5 h-5 text-[#00D4FF]" />
           Nueva Foto de Progreso
         </h3>
         <Button
@@ -119,7 +119,7 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
           variant="outline"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="w-full border-dashed border-[#2a2a2a] bg-black/30 hover:bg-black/50 text-gray-400 hover:text-[#C9A24D] rounded-xl py-12"
+          className="w-full border-dashed border-[#2a2a2a] bg-black/30 hover:bg-black/50 text-gray-400 hover:text-[#00D4FF] rounded-xl py-12"
         >
           <div className="text-center">
             <Camera className="w-10 h-10 mx-auto mb-2" />
@@ -179,11 +179,11 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-400">Subiendo...</span>
-                <span className="text-[#C9A24D]">{progress}%</span>
+                <span className="text-[#00D4FF]">{progress}%</span>
               </div>
               <div className="h-2 bg-[#2a2a2a] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -194,7 +194,7 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
           <Button
             onClick={handleUpload}
             disabled={uploading}
-            className="w-full bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black font-bold rounded-xl py-6"
+            className="w-full bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black font-bold rounded-xl py-6"
           >
             {uploading ? (
               <>
@@ -261,7 +261,7 @@ export function ProgressPhotoGallery({ photos, canDelete = false, onDelete }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 text-[#C9A24D] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#00D4FF] animate-spin" />
       </div>
     )
   }
@@ -269,7 +269,7 @@ export function ProgressPhotoGallery({ photos, canDelete = false, onDelete }) {
   if (photos.length === 0) {
     return (
       <div className="text-center py-12">
-        <ImageIcon className="w-16 h-16 mx-auto text-[#C9A24D]/20 mb-4" />
+        <ImageIcon className="w-16 h-16 mx-auto text-[#00D4FF]/20 mb-4" />
         <p className="text-gray-500">No hay fotos de progreso</p>
       </div>
     )
@@ -283,7 +283,7 @@ export function ProgressPhotoGallery({ photos, canDelete = false, onDelete }) {
           <button
             key={photo.id}
             onClick={() => setSelectedIndex(index)}
-            className="aspect-square rounded-xl overflow-hidden bg-[#2a2a2a] hover:ring-2 hover:ring-[#C9A24D] transition-all"
+            className="aspect-square rounded-xl overflow-hidden bg-[#2a2a2a] hover:ring-2 hover:ring-[#00D4FF] transition-all"
           >
             {imageUrls[photo.id] ? (
               <img

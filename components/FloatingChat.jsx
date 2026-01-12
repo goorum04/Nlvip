@@ -163,7 +163,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       {!isOpen && (
         <button
           onClick={handleOpen}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-[#C9A24D] to-[#D4AF37] rounded-full shadow-2xl shadow-[#C9A24D]/40 flex items-center justify-center hover:scale-110 transition-all duration-300 z-50 group"
+          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-[#00D4FF] to-[#00B4E6] rounded-full shadow-2xl shadow-[#00D4FF]/40 flex items-center justify-center hover:scale-110 transition-all duration-300 z-50 group"
         >
           <MessageCircle className="w-7 h-7 text-black" />
           {unreadCount > 0 && (
@@ -181,7 +181,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       {isOpen && (
         <div className="fixed bottom-6 right-6 w-[380px] h-[500px] bg-[#0f0f0f] rounded-3xl shadow-2xl shadow-black/50 border border-[#2a2a2a] flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-5 duration-300">
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] p-4 flex items-center justify-between">
+          <div className="bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-black/20 flex items-center justify-center">
                 <MessageCircle className="w-5 h-5 text-black" />
@@ -226,7 +226,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                     onClick={() => setSelectedMember(member)}
                     className="w-full flex items-center gap-3 p-3 bg-[#1a1a1a] rounded-2xl hover:bg-[#252525] transition-colors text-left"
                   >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#C9A24D]/30 to-[#C9A24D]/10 flex items-center justify-center text-[#C9A24D] font-bold">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00D4FF]/30 to-[#00D4FF]/10 flex items-center justify-center text-[#00D4FF] font-bold">
                       {member.name?.charAt(0)}
                     </div>
                     <div>
@@ -246,7 +246,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
               {userRole === 'trainer' && selectedMember && (
                 <button 
                   onClick={() => { setSelectedMember(null); setMessages([]) }}
-                  className="px-4 py-2 text-xs text-[#C9A24D] hover:text-[#D4AF37] text-left border-b border-[#2a2a2a]"
+                  className="px-4 py-2 text-xs text-[#00D4FF] hover:text-[#00B4E6] text-left border-b border-[#2a2a2a]"
                 >
                   ← Volver a la lista
                 </button>
@@ -257,7 +257,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center">
                       <div className="w-16 h-16 rounded-full bg-[#1a1a1a] flex items-center justify-center mx-auto mb-3">
-                        <MessageCircle className="w-8 h-8 text-[#C9A24D]/30" />
+                        <MessageCircle className="w-8 h-8 text-[#00D4FF]/30" />
                       </div>
                       <p className="text-gray-500 text-sm">
                         {userRole === 'member' && !trainerId 
@@ -272,7 +272,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                     return (
                       <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[80%] ${isMe 
-                          ? 'bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black rounded-2xl rounded-br-md' 
+                          ? 'bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black rounded-2xl rounded-br-md' 
                           : 'bg-[#1a1a1a] text-white rounded-2xl rounded-bl-md border border-[#2a2a2a]'
                         } px-4 py-2.5`}>
                           <p className="text-sm leading-relaxed">{msg.message}</p>
@@ -294,13 +294,13 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder={trainerId || selectedMember ? "Escribe un mensaje..." : "Sin entrenador asignado"}
                   disabled={loading || (!trainerId && userRole === 'member')}
-                  className="bg-[#1a1a1a] border-[#2a2a2a] rounded-2xl text-white text-sm placeholder:text-gray-600 focus:border-[#C9A24D]"
+                  className="bg-[#1a1a1a] border-[#2a2a2a] rounded-2xl text-white text-sm placeholder:text-gray-600 focus:border-[#00D4FF]"
                 />
                 <Button 
                   type="submit" 
                   size="icon"
                   disabled={loading || !newMessage.trim() || (!trainerId && userRole === 'member')}
-                  className="w-10 h-10 rounded-2xl bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] hover:opacity-90 text-black shrink-0"
+                  className="w-10 h-10 rounded-2xl bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] hover:opacity-90 text-black shrink-0"
                 >
                   <Send className="w-4 h-4" />
                 </Button>

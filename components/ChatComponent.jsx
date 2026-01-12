@@ -109,9 +109,9 @@ export default function ChatComponent({ userId, userRole, trainerId }) {
   }
 
   return (
-    <Card className="bg-[#1a1a1a] border-[#C9A24D]/20 flex flex-col h-[600px]">
+    <Card className="bg-[#1a1a1a] border-[#00D4FF]/20 flex flex-col h-[600px]">
       <CardHeader className="pb-3">
-        <CardTitle className="text-[#C9A24D] flex items-center gap-2">
+        <CardTitle className="text-[#00D4FF] flex items-center gap-2">
           <MessageCircle className="w-5 h-5" />
           Chat con tu Entrenador
         </CardTitle>
@@ -126,8 +126,8 @@ export default function ChatComponent({ userId, userRole, trainerId }) {
                 <div className={`max-w-[70%] ${isMe ? 'order-2' : 'order-1'}`}>
                   <div className={`rounded-2xl px-4 py-2 ${
                     isMe 
-                      ? 'bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black' 
-                      : 'bg-black/50 text-white border border-[#C9A24D]/10'
+                      ? 'bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black' 
+                      : 'bg-black/50 text-white border border-[#00D4FF]/10'
                   }`}>
                     <p className="text-sm break-words">{msg.message}</p>
                   </div>
@@ -150,13 +150,13 @@ export default function ChatComponent({ userId, userRole, trainerId }) {
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Escribe tu mensaje..."
-            className="bg-black border-[#C9A24D]/20 text-white rounded-xl"
+            className="bg-black border-[#00D4FF]/20 text-white rounded-xl"
             disabled={loading}
           />
           <Button
             type="submit"
             disabled={loading || !newMessage.trim()}
-            className="bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] hover:from-[#D4AF37] hover:to-[#C9A24D] text-black rounded-xl"
+            className="bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] hover:from-[#00B4E6] hover:to-[#00D4FF] text-black rounded-xl"
           >
             <Send className="w-4 h-4" />
           </Button>

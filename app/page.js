@@ -242,9 +242,9 @@ export default function App() {
         <div className="animate-pulse flex flex-col items-center gap-4">
           <div className="text-4xl font-black tracking-tight">
             <span className="text-white">NL</span>
-            <span className="text-[#C9A24D]"> VIP</span>
+            <span className="text-[#00D4FF]"> VIP</span>
           </div>
-          <p className="text-[#C9A24D] text-lg">Cargando...</p>
+          <p className="text-[#00D4FF] text-lg">Cargando...</p>
         </div>
       </div>
     )
@@ -280,15 +280,15 @@ export default function App() {
 
       {/* Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-black/90 border-[#C9A24D]/20">
+        <Card className="w-full max-w-md bg-black/90 border-[#00D4FF]/20">
           <CardHeader className="space-y-4 text-center">
             <div className="flex items-center justify-center">
               <div className="text-4xl font-black tracking-tight">
                 <span className="text-white">NL</span>
-                <span className="text-[#C9A24D]"> VIP</span>
+                <span className="text-[#00D4FF]"> VIP</span>
               </div>
             </div>
-            <CardTitle className="text-3xl font-bold text-[#C9A24D]">
+            <CardTitle className="text-3xl font-bold text-[#00D4FF]">
               CLUB
             </CardTitle>
             <CardDescription className="text-gray-300">
@@ -299,10 +299,10 @@ export default function App() {
           <CardContent>
             <Tabs value={authMode} onValueChange={setAuthMode} className="space-y-4">
               <TabsList className="grid w-full grid-cols-2 bg-[#1a1a1a]">
-                <TabsTrigger value="login" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+                <TabsTrigger value="login" className="data-[state=active]:bg-[#00D4FF] data-[state=active]:text-black">
                   Iniciar Sesión
                 </TabsTrigger>
-                <TabsTrigger value="register" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+                <TabsTrigger value="register" className="data-[state=active]:bg-[#00D4FF] data-[state=active]:text-black">
                   Registro
                 </TabsTrigger>
               </TabsList>
@@ -318,7 +318,7 @@ export default function App() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="bg-[#1a1a1a] border-[#C9A24D]/20 text-white"
+                      className="bg-[#1a1a1a] border-[#00D4FF]/20 text-white"
                     />
                   </div>
 
@@ -331,25 +331,25 @@ export default function App() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="bg-[#1a1a1a] border-[#C9A24D]/20 text-white"
+                      className="bg-[#1a1a1a] border-[#00D4FF]/20 text-white"
                     />
                   </div>
 
                   <Button 
                     type="submit" 
-                    className="w-full bg-[#C9A24D] hover:bg-[#D4AF37] text-black font-semibold"
+                    className="w-full bg-[#00D4FF] hover:bg-[#00B4E6] text-black font-semibold"
                     disabled={loading}
                   >
                     Entrar
                   </Button>
                 </form>
 
-                <div className="space-y-2 pt-4 border-t border-[#C9A24D]/20">
+                <div className="space-y-2 pt-4 border-t border-[#00D4FF]/20">
                   <p className="text-sm text-center text-gray-400 mb-3">Cuentas Demo</p>
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full border-[#C9A24D]/40 text-[#C9A24D] hover:bg-[#C9A24D]/10"
+                    className="w-full border-[#00D4FF]/40 text-[#00D4FF] hover:bg-[#00D4FF]/10"
                     onClick={() => handleDemoLogin('member')}
                   >
                     <Dumbbell className="w-4 h-4 mr-2" />
@@ -358,7 +358,7 @@ export default function App() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full border-[#C9A24D]/40 text-[#C9A24D] hover:bg-[#C9A24D]/10"
+                    className="w-full border-[#00D4FF]/40 text-[#00D4FF] hover:bg-[#00D4FF]/10"
                     onClick={() => handleDemoLogin('trainer')}
                   >
                     <Dumbbell className="w-4 h-4 mr-2" />
@@ -367,7 +367,7 @@ export default function App() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full border-[#C9A24D]/40 text-[#C9A24D] hover:bg-[#C9A24D]/10"
+                    className="w-full border-[#00D4FF]/40 text-[#00D4FF] hover:bg-[#00D4FF]/10"
                     onClick={() => handleDemoLogin('admin')}
                   >
                     <Shield className="w-4 h-4 mr-2" />
@@ -387,7 +387,7 @@ export default function App() {
                       value={regName}
                       onChange={(e) => setRegName(e.target.value)}
                       required
-                      className="bg-[#1a1a1a] border-[#C9A24D]/20 text-white"
+                      className="bg-[#1a1a1a] border-[#00D4FF]/20 text-white"
                     />
                   </div>
 
@@ -400,7 +400,7 @@ export default function App() {
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
                       required
-                      className="bg-[#1a1a1a] border-[#C9A24D]/20 text-white"
+                      className="bg-[#1a1a1a] border-[#00D4FF]/20 text-white"
                     />
                   </div>
 
@@ -414,7 +414,7 @@ export default function App() {
                       onChange={(e) => setRegPassword(e.target.value)}
                       required
                       minLength={8}
-                      className="bg-[#1a1a1a] border-[#C9A24D]/20 text-white"
+                      className="bg-[#1a1a1a] border-[#00D4FF]/20 text-white"
                     />
                   </div>
 
@@ -427,7 +427,7 @@ export default function App() {
                       value={invitationCode}
                       onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
                       required
-                      className="bg-[#1a1a1a] border-[#C9A24D]/20 text-white"
+                      className="bg-[#1a1a1a] border-[#00D4FF]/20 text-white"
                     />
                     <p className="text-xs text-gray-400">
                       Solicita tu código a tu entrenador o administrador
@@ -436,7 +436,7 @@ export default function App() {
 
                   <Button 
                     type="submit" 
-                    className="w-full bg-[#C9A24D] hover:bg-[#D4AF37] text-black font-semibold"
+                    className="w-full bg-[#00D4FF] hover:bg-[#00B4E6] text-black font-semibold"
                     disabled={loading}
                   >
                     Crear Cuenta

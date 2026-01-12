@@ -420,27 +420,27 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   return (
     <div className="min-h-screen bg-[#0B0B0B]">
       {/* Modern Admin Header */}
-      <header className="bg-gradient-to-br from-black via-[#1a1a1a] to-black border-b border-[#C9A24D]/20 sticky top-0 z-50 backdrop-blur-sm">
+      <header className="bg-gradient-to-br from-black via-[#1a1a1a] to-black border-b border-[#00D4FF]/20 sticky top-0 z-50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#C9A24D] to-[#D4AF37] flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00D4FF] to-[#00B4E6] flex items-center justify-center shadow-lg">
                 <span className="text-black font-black text-sm">NL</span>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-[#C9A24D]">NL VIP CLUB</h1>
+                <h1 className="text-2xl font-bold text-[#00D4FF]">NL VIP CLUB</h1>
                 <p className="text-xs text-gray-400">Panel de Administrador</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right hidden md:block">
                 <p className="text-sm text-gray-300 font-semibold">{profile.name}</p>
-                <p className="text-xs text-[#C9A24D]">Administrador</p>
+                <p className="text-xs text-[#00D4FF]">Administrador</p>
               </div>
               <Button 
                 variant="outline" 
                 size="sm"
-                className="border-[#C9A24D]/40 text-[#C9A24D] hover:bg-[#C9A24D]/10 rounded-full"
+                className="border-[#00D4FF]/40 text-[#00D4FF] hover:bg-[#00D4FF]/10 rounded-full"
                 onClick={onLogout}
               >
                 <LogOut className="w-4 h-4 md:mr-2" />
@@ -453,36 +453,36 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="trainers" className="space-y-6">
-          <TabsList className="bg-[#1a1a1a] border border-[#C9A24D]/20">
-            <TabsTrigger value="trainers" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+          <TabsList className="bg-[#1a1a1a] border border-[#00D4FF]/20">
+            <TabsTrigger value="trainers" className="data-[state=active]:bg-[#00D4FF] data-[state=active]:text-black">
               <Users className="w-4 h-4 mr-2" />
               Entrenadores
             </TabsTrigger>
-            <TabsTrigger value="codes" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+            <TabsTrigger value="codes" className="data-[state=active]:bg-[#00D4FF] data-[state=active]:text-black">
               <Key className="w-4 h-4 mr-2" />
               Códigos
             </TabsTrigger>
-            <TabsTrigger value="members" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+            <TabsTrigger value="members" className="data-[state=active]:bg-[#00D4FF] data-[state=active]:text-black">
               <Users className="w-4 h-4 mr-2" />
               Socios
             </TabsTrigger>
-            <TabsTrigger value="progress" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+            <TabsTrigger value="progress" className="data-[state=active]:bg-[#00D4FF] data-[state=active]:text-black">
               <Users className="w-4 h-4 mr-2" />
               Progreso Global
             </TabsTrigger>
-            <TabsTrigger value="assignments" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+            <TabsTrigger value="assignments" className="data-[state=active]:bg-[#00D4FF] data-[state=active]:text-black">
               <Users className="w-4 h-4 mr-2" />
               Rutinas/Dietas
             </TabsTrigger>
-            <TabsTrigger value="videos" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+            <TabsTrigger value="videos" className="data-[state=active]:bg-[#00D4FF] data-[state=active]:text-black">
               <Users className="w-4 h-4 mr-2" />
               Videos
             </TabsTrigger>
-            <TabsTrigger value="calculator" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+            <TabsTrigger value="calculator" className="data-[state=active]:bg-[#00D4FF] data-[state=active]:text-black">
               <Calculator className="w-4 h-4 mr-2" />
               Macros
             </TabsTrigger>
-            <TabsTrigger value="feed" className="data-[state=active]:bg-[#C9A24D] data-[state=active]:text-black">
+            <TabsTrigger value="feed" className="data-[state=active]:bg-[#00D4FF] data-[state=active]:text-black">
               <Shield className="w-4 h-4 mr-2" />
               Moderación
             </TabsTrigger>
@@ -490,9 +490,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
           {/* Entrenadores */}
           <TabsContent value="trainers" className="space-y-4">
-            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+            <Card className="bg-[#1a1a1a] border-[#00D4FF]/20">
               <CardHeader>
-                <CardTitle className="text-[#C9A24D]">Crear Entrenador</CardTitle>
+                <CardTitle className="text-[#00D4FF]">Crear Entrenador</CardTitle>
                 <CardDescription className="text-gray-400">
                   Agrega un nuevo entrenador al sistema
                 </CardDescription>
@@ -507,7 +507,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         onChange={(e) => setNewTrainerName(e.target.value)}
                         placeholder="Juan Pérez"
                         required
-                        className="bg-black border-[#C9A24D]/20 text-white"
+                        className="bg-black border-[#00D4FF]/20 text-white"
                       />
                     </div>
                     <div className="space-y-2">
@@ -518,7 +518,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         onChange={(e) => setNewTrainerEmail(e.target.value)}
                         placeholder="entrenador@nlvip.com"
                         required
-                        className="bg-black border-[#C9A24D]/20 text-white"
+                        className="bg-black border-[#00D4FF]/20 text-white"
                       />
                     </div>
                     <div className="space-y-2">
@@ -530,13 +530,13 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         placeholder="••••••••"
                         required
                         minLength={8}
-                        className="bg-black border-[#C9A24D]/20 text-white"
+                        className="bg-black border-[#00D4FF]/20 text-white"
                       />
                     </div>
                   </div>
                   <Button 
                     type="submit" 
-                    className="bg-[#C9A24D] hover:bg-[#D4AF37] text-black"
+                    className="bg-[#00D4FF] hover:bg-[#00B4E6] text-black"
                     disabled={loading}
                   >
                     <UserPlus className="w-4 h-4 mr-2" />
@@ -546,14 +546,14 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               </CardContent>
             </Card>
 
-            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+            <Card className="bg-[#1a1a1a] border-[#00D4FF]/20">
               <CardHeader>
-                <CardTitle className="text-[#C9A24D]">Entrenadores Registrados</CardTitle>
+                <CardTitle className="text-[#00D4FF]">Entrenadores Registrados</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {trainers.map((trainer) => (
-                    <div key={trainer.id} className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
+                    <div key={trainer.id} className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-[#00D4FF]/10">
                       <div>
                         <p className="font-semibold text-white">{trainer.name}</p>
                         <p className="text-sm text-gray-400">{trainer.email}</p>
@@ -573,9 +573,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
           {/* Códigos */}
           <TabsContent value="codes" className="space-y-4">
-            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+            <Card className="bg-[#1a1a1a] border-[#00D4FF]/20">
               <CardHeader>
-                <CardTitle className="text-[#C9A24D]">Generar Código de Invitación</CardTitle>
+                <CardTitle className="text-[#00D4FF]">Generar Código de Invitación</CardTitle>
                 <CardDescription className="text-gray-400">
                   Crea un código para que nuevos socios puedan registrarse
                 </CardDescription>
@@ -586,7 +586,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                     <div className="space-y-2">
                       <Label className="text-gray-200">Entrenador Asignado</Label>
                       <Select value={selectedTrainerId} onValueChange={setSelectedTrainerId} required>
-                        <SelectTrigger className="bg-black border-[#C9A24D]/20 text-white">
+                        <SelectTrigger className="bg-black border-[#00D4FF]/20 text-white">
                           <SelectValue placeholder="Seleccionar..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -606,7 +606,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         onChange={(e) => setCodeMaxUses(e.target.value)}
                         min="1"
                         required
-                        className="bg-black border-[#C9A24D]/20 text-white"
+                        className="bg-black border-[#00D4FF]/20 text-white"
                       />
                     </div>
                     <div className="space-y-2">
@@ -617,13 +617,13 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         onChange={(e) => setCodeExpireDays(e.target.value)}
                         min="1"
                         required
-                        className="bg-black border-[#C9A24D]/20 text-white"
+                        className="bg-black border-[#00D4FF]/20 text-white"
                       />
                     </div>
                   </div>
                   <Button 
                     type="submit" 
-                    className="bg-[#C9A24D] hover:bg-[#D4AF37] text-black"
+                    className="bg-[#00D4FF] hover:bg-[#00B4E6] text-black"
                     disabled={loading || !selectedTrainerId}
                   >
                     <Code className="w-4 h-4 mr-2" />
@@ -633,16 +633,16 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               </CardContent>
             </Card>
 
-            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+            <Card className="bg-[#1a1a1a] border-[#00D4FF]/20">
               <CardHeader>
-                <CardTitle className="text-[#C9A24D]">Códigos Generados</CardTitle>
+                <CardTitle className="text-[#00D4FF]">Códigos Generados</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {codes.map((code) => (
-                    <div key={code.id} className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
+                    <div key={code.id} className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-[#00D4FF]/10">
                       <div className="flex-1">
-                        <p className="font-mono font-bold text-[#C9A24D] text-lg">{code.code}</p>
+                        <p className="font-mono font-bold text-[#00D4FF] text-lg">{code.code}</p>
                         <p className="text-sm text-gray-400">Entrenador: {code.profiles?.name}</p>
                         <p className="text-xs text-gray-500">
                           Usos: {code.uses_count}/{code.max_uses} | 
@@ -652,7 +652,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       <Button
                         size="sm"
                         variant={code.is_active ? "destructive" : "default"}
-                        className={code.is_active ? "" : "bg-[#C9A24D] hover:bg-[#D4AF37] text-black"}
+                        className={code.is_active ? "" : "bg-[#00D4FF] hover:bg-[#00B4E6] text-black"}
                         onClick={() => toggleCodeStatus(code.id, code.is_active)}
                       >
                         {code.is_active ? 'Desactivar' : 'Activar'}
@@ -669,18 +669,18 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
           {/* Socios */}
           <TabsContent value="members" className="space-y-4">
-            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+            <Card className="bg-[#1a1a1a] border-[#00D4FF]/20">
               <CardHeader>
-                <CardTitle className="text-[#C9A24D]">Socios Registrados ({members.length})</CardTitle>
+                <CardTitle className="text-[#00D4FF]">Socios Registrados ({members.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {members.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
+                    <div key={member.id} className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-[#00D4FF]/10">
                       <div>
                         <p className="font-semibold text-white">{member.name}</p>
                         <p className="text-sm text-gray-400">{member.email}</p>
-                        <p className="text-xs text-[#C9A24D] mt-1">
+                        <p className="text-xs text-[#00D4FF] mt-1">
                           Entrenador: {member.trainer_members?.[0]?.trainer?.name || 'No asignado'}
                         </p>
                       </div>
@@ -699,9 +699,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
           {/* Progreso Global */}
           <TabsContent value="progress" className="space-y-4">
-            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+            <Card className="bg-[#1a1a1a] border-[#00D4FF]/20">
               <CardHeader>
-                <CardTitle className="text-[#C9A24D]">Progreso de Todos los Socios</CardTitle>
+                <CardTitle className="text-[#00D4FF]">Progreso de Todos los Socios</CardTitle>
                 <CardDescription className="text-gray-400">
                   Visualiza el progreso de todos los miembros del gimnasio
                 </CardDescription>
@@ -709,18 +709,18 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               <CardContent>
                 <div className="space-y-4">
                   {allProgress.map((record) => (
-                    <div key={record.id} className="p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
+                    <div key={record.id} className="p-4 bg-black/50 rounded-lg border border-[#00D4FF]/10">
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <p className="font-semibold text-white">{record.member?.name}</p>
                           <p className="text-xs text-gray-400">{record.member?.email}</p>
-                          <p className="text-sm text-[#C9A24D] mt-1">
+                          <p className="text-sm text-[#00D4FF] mt-1">
                             {new Date(record.date).toLocaleDateString()}
                           </p>
                         </div>
                         {record.weight_kg && (
                           <div className="text-right">
-                            <p className="text-2xl font-bold text-[#C9A24D]">{record.weight_kg} kg</p>
+                            <p className="text-2xl font-bold text-[#00D4FF]">{record.weight_kg} kg</p>
                           </div>
                         )}
                       </div>
@@ -744,18 +744,18 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
           {/* Rutinas y Dietas Asignadas */}
           <TabsContent value="assignments" className="space-y-4">
-            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+            <Card className="bg-[#1a1a1a] border-[#00D4FF]/20">
               <CardHeader>
-                <CardTitle className="text-[#C9A24D]">Rutinas Asignadas</CardTitle>
+                <CardTitle className="text-[#00D4FF]">Rutinas Asignadas</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {allAssignments.workouts?.map((assignment) => (
-                    <div key={assignment.id} className="p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
+                    <div key={assignment.id} className="p-4 bg-black/50 rounded-lg border border-[#00D4FF]/10">
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="font-semibold text-white">{assignment.member?.name}</p>
-                          <p className="text-sm text-[#C9A24D] mt-1">{assignment.workout?.name}</p>
+                          <p className="text-sm text-[#00D4FF] mt-1">{assignment.workout?.name}</p>
                           <p className="text-xs text-gray-400 mt-1">
                             Asignado por: {assignment.assigned?.name}
                           </p>
@@ -773,18 +773,18 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               </CardContent>
             </Card>
 
-            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+            <Card className="bg-[#1a1a1a] border-[#00D4FF]/20">
               <CardHeader>
-                <CardTitle className="text-[#C9A24D]">Dietas Asignadas</CardTitle>
+                <CardTitle className="text-[#00D4FF]">Dietas Asignadas</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {allAssignments.diets?.map((assignment) => (
-                    <div key={assignment.id} className="p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
+                    <div key={assignment.id} className="p-4 bg-black/50 rounded-lg border border-[#00D4FF]/10">
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="font-semibold text-white">{assignment.member?.name}</p>
-                          <p className="text-sm text-[#C9A24D] mt-1">
+                          <p className="text-sm text-[#00D4FF] mt-1">
                             {assignment.diet?.name} - {assignment.diet?.calories} kcal
                           </p>
                           <div className="flex gap-3 mt-1 text-xs text-gray-400">
@@ -812,9 +812,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
           {/* Videos de Entrenamiento */}
           <TabsContent value="videos" className="space-y-4">
-            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+            <Card className="bg-[#1a1a1a] border-[#00D4FF]/20">
               <CardHeader>
-                <CardTitle className="text-[#C9A24D]">Publicar Video de Entrenamiento</CardTitle>
+                <CardTitle className="text-[#00D4FF]">Publicar Video de Entrenamiento</CardTitle>
                 <CardDescription className="text-gray-400">
                   Como admin, tus videos se publican automáticamente
                 </CardDescription>
@@ -828,7 +828,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       onChange={(e) => setVideoTitle(e.target.value)}
                       placeholder="Ej: Técnica correcta de sentadilla"
                       required
-                      className="bg-black border-[#C9A24D]/20 text-white"
+                      className="bg-black border-[#00D4FF]/20 text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -837,7 +837,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       value={videoDescription}
                       onChange={(e) => setVideoDescription(e.target.value)}
                       placeholder="Describe el contenido del video..."
-                      className="bg-black border-[#C9A24D]/20 text-white"
+                      className="bg-black border-[#00D4FF]/20 text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -847,7 +847,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       onChange={(e) => setVideoUrl(e.target.value)}
                       placeholder="https://youtube.com/watch?v=..."
                       required
-                      className="bg-black border-[#C9A24D]/20 text-white"
+                      className="bg-black border-[#00D4FF]/20 text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -856,12 +856,12 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       value={videoThumbnail}
                       onChange={(e) => setVideoThumbnail(e.target.value)}
                       placeholder="https://..."
-                      className="bg-black border-[#C9A24D]/20 text-white"
+                      className="bg-black border-[#00D4FF]/20 text-white"
                     />
                   </div>
                   <Button 
                     type="submit" 
-                    className="bg-[#C9A24D] hover:bg-[#D4AF37] text-black"
+                    className="bg-[#00D4FF] hover:bg-[#00B4E6] text-black"
                     disabled={loading}
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -871,9 +871,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               </CardContent>
             </Card>
 
-            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+            <Card className="bg-[#1a1a1a] border-[#00D4FF]/20">
               <CardHeader>
-                <CardTitle className="text-[#C9A24D]">Todos los Videos</CardTitle>
+                <CardTitle className="text-[#00D4FF]">Todos los Videos</CardTitle>
                 <CardDescription className="text-gray-400">
                   Gestiona y aprueba videos de entrenadores
                 </CardDescription>
@@ -881,7 +881,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               <CardContent>
                 <div className="space-y-3">
                   {trainingVideos.map((video) => (
-                    <div key={video.id} className="p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
+                    <div key={video.id} className="p-4 bg-black/50 rounded-lg border border-[#00D4FF]/10">
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <p className="font-semibold text-white">{video.title}</p>
@@ -890,7 +890,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                             Subido por: {video.uploader?.name} ({video.uploader?.role === 'admin' ? 'Admin' : 'Trainer'})
                           </p>
                           {video.is_approved && (
-                            <p className="text-xs text-[#C9A24D] mt-1">
+                            <p className="text-xs text-[#00D4FF] mt-1">
                               ✓ Aprobado por {video.approver?.name}
                             </p>
                           )}
@@ -899,7 +899,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                           {!video.is_approved && (
                             <Button
                               size="sm"
-                              className="bg-[#C9A24D] hover:bg-[#D4AF37] text-black"
+                              className="bg-[#00D4FF] hover:bg-[#00B4E6] text-black"
                               onClick={() => handleApproveVideo(video.id)}
                             >
                               Aprobar
@@ -918,7 +918,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         href={video.video_url} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-sm text-[#C9A24D] hover:underline"
+                        className="text-sm text-[#00D4FF] hover:underline"
                       >
                         Ver video →
                       </a>
@@ -934,9 +934,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
           {/* Calculator / Macros */}
           <TabsContent value="calculator" className="space-y-4">
-            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+            <Card className="bg-[#1a1a1a] border-[#00D4FF]/20">
               <CardHeader>
-                <CardTitle className="text-[#C9A24D] flex items-center gap-2">
+                <CardTitle className="text-[#00D4FF] flex items-center gap-2">
                   <Calculator className="w-5 h-5" />
                   Calculadora de Macros
                 </CardTitle>
@@ -994,12 +994,12 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                   </div>
                 </div>
 
-                <Button onClick={calculateMacros} className="w-full bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black font-bold py-5">
+                <Button onClick={calculateMacros} className="w-full bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black font-bold py-5">
                   <Calculator className="w-5 h-5 mr-2" /> Calcular Macros
                 </Button>
 
                 {macroResults && (
-                  <div className="space-y-4 pt-4 border-t border-[#C9A24D]/20">
+                  <div className="space-y-4 pt-4 border-t border-[#00D4FF]/20">
                     <h3 className="text-white font-bold text-lg">Resultados del Cálculo</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {[
@@ -1015,9 +1015,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       ))}
                     </div>
 
-                    <div className="bg-black/30 rounded-xl p-5 border border-[#C9A24D]/20 space-y-4">
+                    <div className="bg-black/30 rounded-xl p-5 border border-[#00D4FF]/20 space-y-4">
                       <h4 className="text-white font-semibold flex items-center gap-2">
-                        <Send className="w-4 h-4 text-[#C9A24D]" />
+                        <Send className="w-4 h-4 text-[#00D4FF]" />
                         Asignar a un Socio
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1066,9 +1066,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
           {/* Feed / Moderación */}
           <TabsContent value="feed" className="space-y-4">
-            <Card className="bg-[#1a1a1a] border-[#C9A24D]/20">
+            <Card className="bg-[#1a1a1a] border-[#00D4FF]/20">
               <CardHeader>
-                <CardTitle className="text-[#C9A24D]">Moderación del Feed</CardTitle>
+                <CardTitle className="text-[#00D4FF]">Moderación del Feed</CardTitle>
                 <CardDescription className="text-gray-400">
                   Revisa y modera el contenido del feed social
                 </CardDescription>
@@ -1076,7 +1076,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               <CardContent>
                 <div className="space-y-4">
                   {feedPosts.map((post) => (
-                    <div key={post.id} className="p-4 bg-black/50 rounded-lg border border-[#C9A24D]/10">
+                    <div key={post.id} className="p-4 bg-black/50 rounded-lg border border-[#00D4FF]/10">
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <p className="font-semibold text-white">{post.author?.name}</p>

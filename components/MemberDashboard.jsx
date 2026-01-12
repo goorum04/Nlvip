@@ -380,17 +380,17 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a]">
       {/* HEADER */}
       <header className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#C9A24D]/20 via-transparent to-[#C9A24D]/10" />
-        <div className="absolute top-0 left-0 w-96 h-96 bg-[#C9A24D]/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00D4FF]/20 via-transparent to-[#00D4FF]/10" />
+        <div className="absolute top-0 left-0 w-96 h-96 bg-[#00D4FF]/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
         
         <div className="relative container mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C9A24D] to-[#D4AF37] flex items-center justify-center shadow-lg shadow-[#C9A24D]/20">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#00D4FF] to-[#00B4E6] flex items-center justify-center shadow-lg shadow-[#00D4FF]/20">
                 <span className="text-black font-black text-sm">NL</span>
               </div>
               <div>
-                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#C9A24D] to-[#D4AF37]">NL VIP CLUB</h1>
+                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00D4FF] to-[#00B4E6]">NL VIP CLUB</h1>
                 <p className="text-xs text-gray-500">Premium Fitness</p>
               </div>
             </div>
@@ -402,15 +402,15 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           </div>
 
           <div className="flex items-end gap-4">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#C9A24D] to-[#D4AF37] flex items-center justify-center text-3xl font-black text-black shadow-xl shadow-[#C9A24D]/30">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#00D4FF] to-[#00B4E6] flex items-center justify-center text-3xl font-black text-black shadow-xl shadow-[#00D4FF]/30">
               {profile.name?.charAt(0)}
             </div>
             <div className="pb-1">
               <p className="text-gray-400 text-sm">Bienvenido de vuelta,</p>
               <h2 className="text-3xl font-black text-white">{profile.name?.split(' ')[0]}</h2>
               <div className="flex items-center gap-2 mt-1">
-                <Sparkles className="w-4 h-4 text-[#C9A24D]" />
-                <span className="text-sm text-[#C9A24D] font-semibold">Socio VIP</span>
+                <Sparkles className="w-4 h-4 text-[#00D4FF]" />
+                <span className="text-sm text-[#00D4FF] font-semibold">Socio VIP</span>
               </div>
             </div>
           </div>
@@ -434,7 +434,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                 <TabsTrigger 
                   key={tab.value}
                   value={tab.value} 
-                  className="relative px-4 py-2.5 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#C9A24D] data-[state=active]:to-[#D4AF37] data-[state=active]:text-black data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:shadow-[#C9A24D]/20 transition-all duration-300"
+                  className="relative px-4 py-2.5 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#00D4FF] data-[state=active]:to-[#00B4E6] data-[state=active]:text-black data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:shadow-[#00D4FF]/20 transition-all duration-300"
                 >
                   <tab.icon className="w-4 h-4 mr-2" />
                   {tab.label}
@@ -455,7 +455,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                     value={newPostContent}
                     onChange={(e) => setNewPostContent(e.target.value)}
                     placeholder="¿Qué logro compartes hoy? 💪"
-                    className="bg-black/50 border-[#2a2a2a] text-white rounded-2xl min-h-[80px] resize-none focus:border-[#C9A24D] placeholder:text-gray-500"
+                    className="bg-black/50 border-[#2a2a2a] text-white rounded-2xl min-h-[80px] resize-none focus:border-[#00D4FF] placeholder:text-gray-500"
                   />
                   <ImageUploader
                     onImageSelect={setPostImage}
@@ -465,7 +465,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                   <Button 
                     type="submit" 
                     disabled={loading || uploading || (!newPostContent.trim() && !postImage)} 
-                    className="w-full bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] hover:opacity-90 text-black font-bold rounded-2xl py-6 shadow-lg shadow-[#C9A24D]/20"
+                    className="w-full bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] hover:opacity-90 text-black font-bold rounded-2xl py-6 shadow-lg shadow-[#00D4FF]/20"
                   >
                     {uploading ? (
                       <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Subiendo {progress}%</>
@@ -478,17 +478,17 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             </Card>
 
             {feedPosts.map((post) => (
-              <Card key={post.id} className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden hover:border-[#C9A24D]/30 transition-all duration-300">
+              <Card key={post.id} className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden hover:border-[#00D4FF]/30 transition-all duration-300">
                 <CardContent className="p-5">
                   <div className="flex items-start gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C9A24D]/20 to-[#D4AF37]/10 flex items-center justify-center text-[#C9A24D] font-bold border border-[#C9A24D]/20">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#00D4FF]/20 to-[#00B4E6]/10 flex items-center justify-center text-[#00D4FF] font-bold border border-[#00D4FF]/20">
                       {post.author?.name?.charAt(0)}
                     </div>
                     <div className="flex-1">
                       <p className="font-bold text-white">{post.author?.name}</p>
                       <p className="text-xs text-gray-500">{new Date(post.created_at).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
-                    <Button variant="ghost" size="icon" className="rounded-xl text-gray-500 hover:text-[#C9A24D]" onClick={() => handleReportPost(post.id)}>
+                    <Button variant="ghost" size="icon" className="rounded-xl text-gray-500 hover:text-[#00D4FF]" onClick={() => handleReportPost(post.id)}>
                       <Flag className="w-4 h-4" />
                     </Button>
                   </div>
@@ -507,26 +507,26 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                   )}
                   
                   <div className="flex items-center gap-4 pt-3 border-t border-[#2a2a2a]">
-                    <Button variant="ghost" size="sm" className={`rounded-xl ${isLikedByMe(post) ? 'text-[#C9A24D]' : 'text-gray-400'} hover:text-[#C9A24D]`} onClick={() => handleLikePost(post.id)}>
+                    <Button variant="ghost" size="sm" className={`rounded-xl ${isLikedByMe(post) ? 'text-[#00D4FF]' : 'text-gray-400'} hover:text-[#00D4FF]`} onClick={() => handleLikePost(post.id)}>
                       <Heart className="w-5 h-5 mr-2" fill={isLikedByMe(post) ? 'currentColor' : 'none'} />
                       {post.feed_likes?.length || 0}
                     </Button>
-                    <Button variant="ghost" size="sm" className="rounded-xl text-gray-400 hover:text-[#C9A24D]" onClick={() => setCommentingPost(commentingPost === post.id ? null : post.id)}>
+                    <Button variant="ghost" size="sm" className="rounded-xl text-gray-400 hover:text-[#00D4FF]" onClick={() => setCommentingPost(commentingPost === post.id ? null : post.id)}>
                       <MessageCircle className="w-5 h-5 mr-2" />
                       {post.feed_comments?.length || 0}
                     </Button>
                   </div>
                   {post.feed_comments?.length > 0 && (
-                    <div className="mt-4 space-y-2 pl-4 border-l-2 border-[#C9A24D]/20">
+                    <div className="mt-4 space-y-2 pl-4 border-l-2 border-[#00D4FF]/20">
                       {post.feed_comments.slice(0, 3).map((c) => (
-                        <p key={c.id} className="text-sm"><span className="text-[#C9A24D] font-semibold">{c.commenter?.name}</span> <span className="text-gray-300">{c.content}</span></p>
+                        <p key={c.id} className="text-sm"><span className="text-[#00D4FF] font-semibold">{c.commenter?.name}</span> <span className="text-gray-300">{c.content}</span></p>
                       ))}
                     </div>
                   )}
                   {commentingPost === post.id && (
                     <div className="mt-4 flex gap-2">
                       <Input value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Comenta..." className="bg-black/50 border-[#2a2a2a] rounded-xl text-white" />
-                      <Button onClick={() => handleComment(post.id)} className="bg-[#C9A24D] text-black rounded-xl px-4">Enviar</Button>
+                      <Button onClick={() => handleComment(post.id)} className="bg-[#00D4FF] text-black rounded-xl px-4">Enviar</Button>
                     </div>
                   )}
                 </CardContent>
@@ -549,12 +549,12 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             {myWorkout ? (
               <>
                 <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
-                  <div className="h-32 bg-gradient-to-br from-[#C9A24D]/30 to-[#C9A24D]/5 flex items-center justify-center">
-                    <Dumbbell className="w-20 h-20 text-[#C9A24D]/30" />
+                  <div className="h-32 bg-gradient-to-br from-[#00D4FF]/30 to-[#00D4FF]/5 flex items-center justify-center">
+                    <Dumbbell className="w-20 h-20 text-[#00D4FF]/30" />
                   </div>
                   <CardHeader>
                     <CardTitle className="text-2xl text-white flex items-center gap-3">
-                      <Flame className="w-6 h-6 text-[#C9A24D]" />
+                      <Flame className="w-6 h-6 text-[#00D4FF]" />
                       {myWorkout.workout?.name}
                     </CardTitle>
                     <CardDescription className="text-gray-500">Asignada el {new Date(myWorkout.assigned_at).toLocaleDateString()}</CardDescription>
@@ -571,7 +571,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                   <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
                     <CardHeader>
                       <CardTitle className="text-white flex items-center gap-2">
-                        <Video className="w-5 h-5 text-[#C9A24D]" />
+                        <Video className="w-5 h-5 text-[#00D4FF]" />
                         Vídeos de la Rutina ({workoutVideos.length})
                       </CardTitle>
                     </CardHeader>
@@ -592,7 +592,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             ) : (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
                 <CardContent className="py-20 text-center">
-                  <Dumbbell className="w-20 h-20 mx-auto text-[#C9A24D]/20 mb-4" />
+                  <Dumbbell className="w-20 h-20 mx-auto text-[#00D4FF]/20 mb-4" />
                   <p className="text-gray-500">Tu entrenador aún no te ha asignado una rutina</p>
                 </CardContent>
               </Card>
@@ -605,7 +605,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
                 <CardHeader>
                   <CardTitle className="text-2xl text-white flex items-center gap-3">
-                    <Apple className="w-6 h-6 text-[#C9A24D]" />
+                    <Apple className="w-6 h-6 text-[#00D4FF]" />
                     {myDiet.diet?.name}
                   </CardTitle>
                 </CardHeader>
@@ -618,7 +618,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                       { label: 'Grasas', value: `${myDiet.diet?.fat_g}g`, icon: Star, color: 'from-purple-500/20 to-purple-500/5' },
                     ].map(m => (
                       <div key={m.label} className={`bg-gradient-to-br ${m.color} rounded-2xl p-4 border border-white/5`}>
-                        <m.icon className="w-5 h-5 text-[#C9A24D] mb-2" />
+                        <m.icon className="w-5 h-5 text-[#00D4FF] mb-2" />
                         <p className="text-2xl font-black text-white">{m.value}</p>
                         <p className="text-xs text-gray-500">{m.label}</p>
                       </div>
@@ -632,7 +632,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             ) : (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
                 <CardContent className="py-20 text-center">
-                  <Apple className="w-20 h-20 mx-auto text-[#C9A24D]/20 mb-4" />
+                  <Apple className="w-20 h-20 mx-auto text-[#00D4FF]/20 mb-4" />
                   <p className="text-gray-500">Tu entrenador aún no te ha asignado una dieta</p>
                 </CardContent>
               </Card>
@@ -656,13 +656,13 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Camera className="w-5 h-5 text-[#C9A24D]" />
+                    <Camera className="w-5 h-5 text-[#00D4FF]" />
                     Fotos de Progreso
                   </CardTitle>
                   {!showPhotoUploader && (
                     <Button
                       onClick={() => setShowPhotoUploader(true)}
-                      className="bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black rounded-xl"
+                      className="bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black rounded-xl"
                     >
                       <Plus className="w-4 h-4 mr-1" /> Subir
                     </Button>
@@ -694,7 +694,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-[#C9A24D]" />
+                  <TrendingUp className="w-5 h-5 text-[#00D4FF]" />
                   Registrar Medidas
                 </CardTitle>
               </CardHeader>
@@ -719,7 +719,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                     <Label className="text-gray-400 text-xs">Notas</Label>
                     <Textarea value={progressNotes} onChange={(e) => setProgressNotes(e.target.value)} placeholder="¿Cómo te sientes?" className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1" />
                   </div>
-                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-[#C9A24D] to-[#D4AF37] text-black font-bold rounded-2xl py-6">
+                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black font-bold rounded-2xl py-6">
                     Guardar Medidas
                   </Button>
                 </form>
@@ -735,7 +735,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                   {progressRecords.map(r => (
                     <div key={r.id} className="bg-black/30 rounded-2xl p-4 border border-[#2a2a2a]">
                       <div className="flex justify-between items-start mb-2">
-                        <p className="text-[#C9A24D] font-semibold">{new Date(r.date).toLocaleDateString()}</p>
+                        <p className="text-[#00D4FF] font-semibold">{new Date(r.date).toLocaleDateString()}</p>
                         {r.weight_kg && <p className="text-2xl font-black text-white">{r.weight_kg} kg</p>}
                       </div>
                       <div className="flex flex-wrap gap-3 text-xs text-gray-400">
@@ -754,11 +754,11 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           <TabsContent value="notices" className="space-y-4">
             {notices.length > 0 ? (
               notices.map(notice => (
-                <Card key={notice.id} className={`bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl ${notice.priority === 'high' ? 'border-l-4 border-l-red-500' : notice.priority === 'normal' ? 'border-l-4 border-l-[#C9A24D]' : ''}`} onClick={() => markNoticeAsRead(notice.id)}>
+                <Card key={notice.id} className={`bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl ${notice.priority === 'high' ? 'border-l-4 border-l-red-500' : notice.priority === 'normal' ? 'border-l-4 border-l-[#00D4FF]' : ''}`} onClick={() => markNoticeAsRead(notice.id)}>
                   <CardContent className="p-5">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-bold text-white">{notice.title}</h3>
-                      <span className={`text-xs px-2 py-1 rounded-full ${notice.priority === 'high' ? 'bg-red-500/20 text-red-400' : notice.priority === 'normal' ? 'bg-[#C9A24D]/20 text-[#C9A24D]' : 'bg-blue-500/20 text-blue-400'}`}>
+                      <span className={`text-xs px-2 py-1 rounded-full ${notice.priority === 'high' ? 'bg-red-500/20 text-red-400' : notice.priority === 'normal' ? 'bg-[#00D4FF]/20 text-[#00D4FF]' : 'bg-blue-500/20 text-blue-400'}`}>
                         {notice.priority === 'high' ? 'Urgente' : notice.priority === 'normal' ? 'Normal' : 'Info'}
                       </span>
                     </div>
@@ -770,7 +770,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             ) : (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
                 <CardContent className="py-20 text-center">
-                  <Bell className="w-20 h-20 mx-auto text-[#C9A24D]/20 mb-4" />
+                  <Bell className="w-20 h-20 mx-auto text-[#00D4FF]/20 mb-4" />
                   <p className="text-gray-500">No tienes avisos</p>
                 </CardContent>
               </Card>
