@@ -467,6 +467,10 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               <Users className="w-4 h-4 mr-2" />
               Socios
             </TabsTrigger>
+            <TabsTrigger value="recipes" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black">
+              <UtensilsCrossed className="w-4 h-4 mr-2" />
+              Recetas
+            </TabsTrigger>
             <TabsTrigger value="progress" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black">
               <Users className="w-4 h-4 mr-2" />
               Progreso Global
