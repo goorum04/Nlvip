@@ -527,13 +527,24 @@ export function RecipesGallery() {
   }, [])
 
   const loadRecipes = async () => {
-    const { data } = await supabase
-      .from('recipes')
-      .select('*')
-      .order('category')
-      .order('name')
-    setRecipes(data || [])
-    setLoading(false)
+    try {
+      const { data, error } = await supabase
+        .from('recipes')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('Error loading recipes:', error)
+        setRecipes([])
+      } else {
+        setRecipes(data || [])
+      }
+    } catch (err) {
+      console.error('Failed to load recipes:', err)
+      setRecipes([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   const filteredRecipes = (recipes || []).filter(r => {
