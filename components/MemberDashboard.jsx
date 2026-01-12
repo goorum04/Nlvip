@@ -429,6 +429,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                 { value: 'badges', icon: Trophy, label: 'Logros' },
                 { value: 'workout', icon: Dumbbell, label: 'Rutina' },
                 { value: 'diet', icon: Apple, label: 'Dieta' },
+                { value: 'recipes', icon: UtensilsCrossed, label: 'Recetas' },
                 { value: 'stats', icon: BarChart3, label: 'Estadísticas' },
                 { value: 'progress', icon: TrendingUp, label: 'Progreso' },
                 { value: 'notices', icon: Bell, label: 'Avisos', badge: unreadNotices }
