@@ -656,9 +656,9 @@ export function RecipesManager({ userId }) {
     }
   }
 
-  const filteredRecipes = recipes.filter(r => {
-    const matchesSearch = r.name.toLowerCase().includes(search.toLowerCase())
-    const matchesCategory = categoryFilter === 'all' || r.category === categoryFilter
+  const filteredRecipes = (recipes || []).filter(r => {
+    const matchesSearch = (r?.name || '').toLowerCase().includes(search.toLowerCase())
+    const matchesCategory = categoryFilter === 'all' || r?.category === categoryFilter
     return matchesSearch && matchesCategory
   })
 
