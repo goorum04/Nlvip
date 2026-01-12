@@ -27,7 +27,7 @@ const iconMap = {
 const colorMap = {
   bronze: 'from-amber-600 to-orange-500',
   silver: 'from-slate-400 to-slate-300',
-  gold: 'from-[#00D4FF] to-[#00B4E6]',
+  gold: 'from-violet-500 to-cyan-500',
   platinum: 'from-violet-500 to-purple-400',
   green: 'from-emerald-500 to-green-400',
   orange: 'from-orange-500 to-red-400',
@@ -44,7 +44,7 @@ export function BadgeCard({ badge, unlocked = false, awardedAt = null }) {
         w-20 h-20 rounded-2xl 
         bg-gradient-to-br ${unlocked ? gradientClass : 'from-gray-600 to-gray-700'}
         flex items-center justify-center
-        shadow-lg ${unlocked ? `shadow-${badge.color === 'gold' ? '[#00D4FF]' : badge.color}-500/30` : ''}
+        shadow-lg ${unlocked ? `shadow-${badge.color === 'gold' ? '[rgb(139, 92, 246)]' : badge.color}-500/30` : ''}
         transition-all duration-300
         ${unlocked ? 'hover:scale-110 hover:shadow-xl' : ''}
       `}>
@@ -60,7 +60,7 @@ export function BadgeCard({ badge, unlocked = false, awardedAt = null }) {
         <p className="text-white font-bold text-sm">{badge.title}</p>
         <p className="text-gray-400 text-xs">{badge.description}</p>
         {unlocked && awardedAt && (
-          <p className="text-[#00D4FF] text-xs mt-1">
+          <p className="text-violet-400 text-xs mt-1">
             Desbloqueado: {new Date(awardedAt).toLocaleDateString('es-ES')}
           </p>
         )}
@@ -127,10 +127,10 @@ export function BadgesGallery({ userId }) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-white flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-[#00D4FF]" />
+            <Trophy className="w-5 h-5 text-violet-400" />
             Mis Logros
           </CardTitle>
-          <span className="text-[#00D4FF] font-bold">{unlockedCount}/{totalCount}</span>
+          <span className="text-violet-400 font-bold">{unlockedCount}/{totalCount}</span>
         </div>
         <CardDescription className="text-gray-500">
           Desbloquea badges completando entrenamientos y retos
@@ -172,7 +172,7 @@ export function ChallengeCard({ challenge, participation, onJoin, onUpdateProgre
     <Card className={`
       bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl
       ${isCompleted ? 'border-green-500/50 shadow-lg shadow-green-500/10' : ''}
-      transition-all hover:border-[#00D4FF]/30
+      transition-all hover:border-violet-500/30
     `}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between mb-3">
@@ -181,13 +181,13 @@ export function ChallengeCard({ challenge, participation, onJoin, onUpdateProgre
               w-12 h-12 rounded-2xl flex items-center justify-center
               ${isCompleted 
                 ? 'bg-gradient-to-br from-green-500 to-emerald-400' 
-                : 'bg-gradient-to-br from-[#00D4FF]/20 to-[#00B4E6]/10 border border-[#00D4FF]/20'
+                : 'bg-gradient-to-br from-violet-500/20 to-cyan-500/10 border border-violet-500/20'
               }
             `}>
               {isCompleted ? (
                 <CheckCircle2 className="w-6 h-6 text-white" />
               ) : (
-                <TypeIcon className={`w-6 h-6 ${isJoined ? 'text-[#00D4FF]' : 'text-gray-500'}`} />
+                <TypeIcon className={`w-6 h-6 ${isJoined ? 'text-violet-400' : 'text-gray-500'}`} />
               )}
             </div>
             <div>
@@ -212,7 +212,7 @@ export function ChallengeCard({ challenge, participation, onJoin, onUpdateProgre
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Progreso</span>
-              <span className="text-[#00D4FF] font-bold">
+              <span className="text-violet-400 font-bold">
                 {progress} / {challenge.target_value}
                 {challenge.type === 'weight' ? ' kg' : challenge.type === 'consistency' ? ' días' : ' entrenos'}
               </span>
@@ -222,7 +222,7 @@ export function ChallengeCard({ challenge, participation, onJoin, onUpdateProgre
                 className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${
                   isCompleted 
                     ? 'bg-gradient-to-r from-green-500 to-emerald-400' 
-                    : 'bg-gradient-to-r from-[#00D4FF] to-[#00B4E6]'
+                    : 'bg-gradient-to-r from-violet-500 to-cyan-500'
                 }`}
                 style={{ width: `${percentage}%` }}
               />
@@ -232,7 +232,7 @@ export function ChallengeCard({ challenge, participation, onJoin, onUpdateProgre
         ) : (
           <Button 
             onClick={() => onJoin(challenge.id)}
-            className="w-full bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black font-bold rounded-xl hover:opacity-90"
+            className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-xl hover:opacity-90"
           >
             <Zap className="w-4 h-4 mr-2" />
             Unirme al Reto
@@ -319,7 +319,7 @@ export function ChallengesSection({ userId }) {
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] rounded-2xl p-4 border border-[#2a2a2a] text-center">
-          <Target className="w-6 h-6 text-[#00D4FF] mx-auto mb-1" />
+          <Target className="w-6 h-6 text-violet-400 mx-auto mb-1" />
           <p className="text-2xl font-black text-white">{challenges.length}</p>
           <p className="text-xs text-gray-500">Disponibles</p>
         </div>

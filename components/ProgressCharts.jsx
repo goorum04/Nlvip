@@ -13,8 +13,8 @@ import { TrendingUp, TrendingDown, Dumbbell, Scale, Target, Calendar } from 'luc
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-black/90 border border-[#00D4FF]/30 rounded-xl p-3 shadow-lg">
-        <p className="text-[#00D4FF] font-semibold text-sm">{label}</p>
+      <div className="bg-black/90 border border-violet-500/30 rounded-xl p-3 shadow-lg">
+        <p className="text-violet-400 font-semibold text-sm">{label}</p>
         {payload.map((entry, index) => (
           <p key={index} className="text-white text-sm">
             {entry.name}: <span className="font-bold">{entry.value}{entry.unit || ''}</span>
@@ -51,7 +51,7 @@ export function WeightChart({ data, timeRange = '30d' }) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-white flex items-center gap-2">
-            <Scale className="w-5 h-5 text-[#00D4FF]" />
+            <Scale className="w-5 h-5 text-violet-400" />
             Evolución de Peso
           </CardTitle>
           <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold ${isPositive ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
@@ -66,8 +66,8 @@ export function WeightChart({ data, timeRange = '30d' }) {
             <AreaChart data={filteredData}>
               <defs>
                 <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#00D4FF" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#00D4FF" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="rgb(139, 92, 246)" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="rgb(139, 92, 246)" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
@@ -77,7 +77,7 @@ export function WeightChart({ data, timeRange = '30d' }) {
               <Area 
                 type="monotone" 
                 dataKey="weight" 
-                stroke="#00D4FF" 
+                stroke="rgb(139, 92, 246)" 
                 strokeWidth={3}
                 fill="url(#weightGradient)"
                 name="Peso"
@@ -113,10 +113,10 @@ export function WorkoutsChart({ data, timeRange = '30d' }) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-white flex items-center gap-2">
-            <Dumbbell className="w-5 h-5 text-[#00D4FF]" />
+            <Dumbbell className="w-5 h-5 text-violet-400" />
             Entrenamientos por Semana
           </CardTitle>
-          <div className="bg-[#00D4FF]/20 text-[#00D4FF] px-3 py-1 rounded-full text-sm font-bold">
+          <div className="bg-gradient-to-r from-violet-600 to-cyan-600/20 text-violet-400 px-3 py-1 rounded-full text-sm font-bold">
             {totalWorkouts} total
           </div>
         </div>
@@ -131,7 +131,7 @@ export function WorkoutsChart({ data, timeRange = '30d' }) {
               <Tooltip content={<CustomTooltip />} />
               <Bar 
                 dataKey="workouts" 
-                fill="#00D4FF" 
+                fill="rgb(139, 92, 246)" 
                 radius={[8, 8, 0, 0]}
                 name="Entrenos"
               />
@@ -153,7 +153,7 @@ export function AdherenceChart({ completedWorkouts, targetWorkouts }) {
     <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
       <CardHeader className="pb-2">
         <CardTitle className="text-white flex items-center gap-2">
-          <Target className="w-5 h-5 text-[#00D4FF]" />
+          <Target className="w-5 h-5 text-violet-400" />
           Adherencia al Plan
         </CardTitle>
       </CardHeader>
@@ -182,8 +182,8 @@ export function AdherenceChart({ completedWorkouts, targetWorkouts }) {
             />
             <defs>
               <linearGradient id="adherenceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#00D4FF" />
-                <stop offset="100%" stopColor="#00B4E6" />
+                <stop offset="0%" stopColor="rgb(139, 92, 246)" />
+                <stop offset="100%" stopColor="rgb(6, 182, 212)" />
               </linearGradient>
             </defs>
           </svg>
@@ -193,7 +193,7 @@ export function AdherenceChart({ completedWorkouts, targetWorkouts }) {
         </div>
         <div className="mt-4 text-center">
           <p className="text-gray-400 text-sm">
-            <span className="text-[#00D4FF] font-bold">{completedWorkouts}</span> de <span className="font-bold">{targetWorkouts}</span> entrenos
+            <span className="text-violet-400 font-bold">{completedWorkouts}</span> de <span className="font-bold">{targetWorkouts}</span> entrenos
           </p>
           <p className="text-gray-500 text-xs mt-1">este mes</p>
         </div>
@@ -214,7 +214,7 @@ export function MonthlyComparisonChart({ currentMonth, previousMonth }) {
     <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
       <CardHeader className="pb-2">
         <CardTitle className="text-white flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-[#00D4FF]" />
+          <Calendar className="w-5 h-5 text-violet-400" />
           Comparativa Mensual
         </CardTitle>
       </CardHeader>
@@ -228,7 +228,7 @@ export function MonthlyComparisonChart({ currentMonth, previousMonth }) {
               <Tooltip content={<CustomTooltip />} />
               <Legend />
               <Bar dataKey="previous" fill="#666" name="Mes anterior" radius={[0, 4, 4, 0]} />
-              <Bar dataKey="current" fill="#00D4FF" name="Este mes" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="current" fill="rgb(139, 92, 246)" name="Este mes" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -256,8 +256,8 @@ export default function ProgressCharts({ weightData, workoutsData, adherenceData
             size="sm"
             onClick={() => setTimeRange(range.value)}
             className={timeRange === range.value 
-              ? 'bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black border-0' 
-              : 'border-[#2a2a2a] text-gray-400 hover:border-[#00D4FF] hover:text-[#00D4FF]'
+              ? 'bg-gradient-to-r from-violet-500 to-cyan-500 text-black border-0' 
+              : 'border-[#2a2a2a] text-gray-400 hover:border-violet-500 hover:text-violet-400'
             }
           >
             {range.label}

@@ -63,7 +63,7 @@ export default function ImageUploader({ onImageSelect, onImageRemove, disabled }
           variant="outline"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled}
-          className="w-full border-dashed border-[#2a2a2a] bg-black/30 hover:bg-black/50 text-gray-400 hover:text-[#00D4FF] rounded-xl py-8"
+          className="w-full border-dashed border-[#2a2a2a] bg-black/30 hover:bg-black/50 text-gray-400 hover:text-violet-400 rounded-xl py-8"
         >
           <Camera className="w-5 h-5 mr-2" />
           Añadir foto

@@ -64,7 +64,7 @@ export default function VideoPlayer({ video, onClose }) {
         <div className="relative aspect-video bg-black">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-10 h-10 text-[#00D4FF] animate-spin" />
+              <Loader2 className="w-10 h-10 text-violet-400 animate-spin" />
             </div>
           ) : error ? (
             <div className="absolute inset-0 flex items-center justify-center text-center p-4">
@@ -74,7 +74,7 @@ export default function VideoPlayer({ video, onClose }) {
                 <Button
                   variant="outline"
                   onClick={loadVideo}
-                  className="mt-4 border-[#00D4FF] text-[#00D4FF]"
+                  className="mt-4 border-violet-500 text-violet-400"
                 >
                   Reintentar
                 </Button>
@@ -112,10 +112,10 @@ export function VideoCard({ video, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left bg-black/30 rounded-2xl border border-[#2a2a2a] hover:border-[#00D4FF]/30 transition-all overflow-hidden group"
+      className="w-full text-left bg-black/30 rounded-2xl border border-[#2a2a2a] hover:border-violet-500/30 transition-all overflow-hidden group"
     >
-      <div className="aspect-video bg-gradient-to-br from-[#00D4FF]/20 to-black flex items-center justify-center relative">
-        <div className="w-16 h-16 rounded-full bg-black/50 flex items-center justify-center group-hover:bg-[#00D4FF] transition-colors">
+      <div className="aspect-video bg-gradient-to-br from-violet-500/20 to-black flex items-center justify-center relative">
+        <div className="w-16 h-16 rounded-full bg-black/50 flex items-center justify-center group-hover:bg-gradient-to-r from-violet-600 to-cyan-600 transition-colors">
           <Play className="w-8 h-8 text-white ml-1" />
         </div>
         <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-lg flex items-center gap-1">

@@ -97,7 +97,7 @@ export default function VideoUploader({ workoutTemplateId, uploaderId, onSuccess
     <div className="space-y-4 p-4 bg-black/30 rounded-2xl border border-[#2a2a2a]">
       <div className="flex items-center justify-between">
         <h3 className="text-white font-semibold flex items-center gap-2">
-          <Video className="w-5 h-5 text-[#00D4FF]" />
+          <Video className="w-5 h-5 text-violet-400" />
           Subir Vídeo
         </h3>
         <Button
@@ -125,7 +125,7 @@ export default function VideoUploader({ workoutTemplateId, uploaderId, onSuccess
           variant="outline"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading || validating}
-          className="w-full border-dashed border-[#2a2a2a] bg-black/30 hover:bg-black/50 text-gray-400 hover:text-[#00D4FF] rounded-xl py-12"
+          className="w-full border-dashed border-[#2a2a2a] bg-black/30 hover:bg-black/50 text-gray-400 hover:text-violet-400 rounded-xl py-12"
         >
           {validating ? (
             <>
@@ -197,11 +197,11 @@ export default function VideoUploader({ workoutTemplateId, uploaderId, onSuccess
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-400">Subiendo...</span>
-                <span className="text-[#00D4FF]">{progress}%</span>
+                <span className="text-violet-400">{progress}%</span>
               </div>
               <div className="h-2 bg-[#2a2a2a] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-violet-500 to-cyan-500 transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -212,7 +212,7 @@ export default function VideoUploader({ workoutTemplateId, uploaderId, onSuccess
           <Button
             onClick={handleUpload}
             disabled={uploading || !title.trim()}
-            className="w-full bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black font-bold rounded-xl py-6"
+            className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-xl py-6"
           >
             {uploading ? (
               <>

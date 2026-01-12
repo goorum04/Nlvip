@@ -328,17 +328,17 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a]">
       {/* HEADER */}
       <header className="relative overflow-hidden border-b border-[#2a2a2a]">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#00D4FF]/10 via-transparent to-[#00D4FF]/5" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#00D4FF]/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-[rgb(139, 92, 246)]/5" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-r from-violet-600 to-cyan-600/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
         
         <div className="relative container mx-auto px-4 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#00D4FF] to-[#00B4E6] flex items-center justify-center shadow-lg shadow-[#00D4FF]/30">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-[rgb(139, 92, 246)]/30">
                 <Dumbbell className="w-7 h-7 text-black" />
               </div>
               <div>
-                <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00D4FF] to-[#00B4E6]">NL VIP CLUB</h1>
+                <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500">NL VIP CLUB</h1>
                 <p className="text-sm text-gray-500">Panel de Entrenador</p>
               </div>
             </div>
@@ -346,8 +346,8 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
               <div className="text-right hidden md:block">
                 <p className="text-white font-semibold">{profile.name}</p>
                 <div className="flex items-center gap-1 justify-end">
-                  <Sparkles className="w-3 h-3 text-[#00D4FF]" />
-                  <p className="text-xs text-[#00D4FF]">Entrenador</p>
+                  <Sparkles className="w-3 h-3 text-violet-400" />
+                  <p className="text-xs text-violet-400">Entrenador</p>
                 </div>
               </div>
               <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
@@ -374,7 +374,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                 <TabsTrigger 
                   key={tab.value}
                   value={tab.value} 
-                  className="px-5 py-3 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#00D4FF] data-[state=active]:to-[#00B4E6] data-[state=active]:text-black data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:shadow-[#00D4FF]/20 transition-all"
+                  className="px-5 py-3 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-cyan-500 data-[state=active]:text-black data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:shadow-[rgb(139, 92, 246)]/20 transition-all"
                 >
                   <tab.icon className="w-4 h-4 mr-2" />
                   {tab.label}
@@ -388,7 +388,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Users className="w-5 h-5 text-[#00D4FF]" />
+                  <Users className="w-5 h-5 text-violet-400" />
                   Mis Socios ({members.length})
                 </CardTitle>
               </CardHeader>
@@ -396,9 +396,9 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                 {members.map((member) => (
                   <Dialog key={member.id}>
                     <DialogTrigger asChild>
-                      <div className="flex items-center justify-between p-4 bg-black/30 rounded-2xl border border-[#2a2a2a] cursor-pointer hover:border-[#00D4FF]/30 transition-all group">
+                      <div className="flex items-center justify-between p-4 bg-black/30 rounded-2xl border border-[#2a2a2a] cursor-pointer hover:border-violet-500/30 transition-all group">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#00D4FF]/20 to-[#00B4E6]/10 flex items-center justify-center text-[#00D4FF] font-bold border border-[#00D4FF]/20">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500/20 to-cyan-500/10 flex items-center justify-center text-violet-400 font-bold border border-violet-500/20">
                             {member.name?.charAt(0)}
                           </div>
                           <div>
@@ -406,7 +406,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                             <p className="text-sm text-gray-500">{member.email}</p>
                           </div>
                         </div>
-                        <Button size="sm" className="bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button size="sm" className="bg-gradient-to-r from-violet-500 to-cyan-500 text-black rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
                           <Eye className="w-4 h-4 mr-1" /> Ver
                         </Button>
                       </div>
@@ -441,7 +441,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                 ))}
                 {members.length === 0 && (
                   <div className="text-center py-12">
-                    <Users className="w-16 h-16 mx-auto text-[#00D4FF]/20 mb-4" />
+                    <Users className="w-16 h-16 mx-auto text-violet-400/20 mb-4" />
                     <p className="text-gray-500">No tienes socios asignados</p>
                   </div>
                 )}
@@ -455,7 +455,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-[#00D4FF]" />
+                  <Plus className="w-5 h-5 text-violet-400" />
                   Crear Nuevo Reto
                 </CardTitle>
               </CardHeader>
@@ -524,7 +524,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                   <Button 
                     type="submit" 
                     disabled={loading}
-                    className="w-full bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black font-bold rounded-2xl py-6"
+                    className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-2xl py-6"
                   >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Target className="w-5 h-5 mr-2" />}
                     Crear Reto
@@ -537,7 +537,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-[#00D4FF]" />
+                  <Trophy className="w-5 h-5 text-violet-400" />
                   Mis Retos ({challenges.length})
                 </CardTitle>
               </CardHeader>
@@ -571,7 +571,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                               <span className="text-white text-sm w-24 truncate">{p.member?.name}</span>
                               <div className="flex-1 h-2 bg-black/50 rounded-full overflow-hidden">
                                 <div 
-                                  className={`h-full rounded-full ${p.completed ? 'bg-green-500' : 'bg-gradient-to-r from-[#00D4FF] to-[#00B4E6]'}`}
+                                  className={`h-full rounded-full ${p.completed ? 'bg-green-500' : 'bg-gradient-to-r from-violet-500 to-cyan-500'}`}
                                   style={{ width: `${Math.min((p.progress_value / challenge.target_value) * 100, 100)}%` }}
                                 />
                               </div>
@@ -588,7 +588,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                 })}
                 {challenges.length === 0 && (
                   <div className="text-center py-12">
-                    <Target className="w-16 h-16 mx-auto text-[#00D4FF]/20 mb-4" />
+                    <Target className="w-16 h-16 mx-auto text-violet-400/20 mb-4" />
                     <p className="text-gray-500">No has creado ningún reto todavía</p>
                   </div>
                 )}
@@ -601,7 +601,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-[#00D4FF]" />
+                  <Plus className="w-5 h-5 text-violet-400" />
                   Crear Rutina
                 </CardTitle>
               </CardHeader>
@@ -615,7 +615,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                     <Label className="text-gray-400 text-sm">Descripción / Ejercicios</Label>
                     <Textarea value={newWorkoutDesc} onChange={(e) => setNewWorkoutDesc(e.target.value)} placeholder="Detalla los ejercicios, series, repeticiones..." required className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1 min-h-[150px]" />
                   </div>
-                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black font-bold rounded-2xl py-6">
+                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-2xl py-6">
                     <Dumbbell className="w-5 h-5 mr-2" /> Crear Rutina
                   </Button>
                 </form>
@@ -641,13 +641,13 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                     <div className="mt-4 pt-4 border-t border-[#2a2a2a]">
                       <div className="flex items-center justify-between mb-3">
                         <h5 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-                          <Video className="w-4 h-4 text-[#00D4FF]" />
+                          <Video className="w-4 h-4 text-violet-400" />
                           Vídeos ({workoutVideos[workout.id]?.length || 0})
                         </h5>
                         <Button
                           size="sm"
                           onClick={() => setShowVideoUploader(workout.id)}
-                          className="bg-[#00D4FF]/20 text-[#00D4FF] hover:bg-[#00D4FF]/30 rounded-lg text-xs"
+                          className="bg-gradient-to-r from-violet-600 to-cyan-600/20 text-violet-400 hover:bg-gradient-to-r from-violet-600 to-cyan-600/30 rounded-lg text-xs"
                         >
                           <Plus className="w-3 h-3 mr-1" /> Añadir
                         </Button>
@@ -696,7 +696,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-[#00D4FF]" />
+                  <Plus className="w-5 h-5 text-violet-400" />
                   Crear Dieta
                 </CardTitle>
               </CardHeader>
@@ -723,7 +723,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                     <Label className="text-gray-400 text-sm">Plan de Comidas</Label>
                     <Textarea value={newDietContent} onChange={(e) => setNewDietContent(e.target.value)} placeholder="Desayuno:&#10;Almuerzo:&#10;Cena:..." required className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1 min-h-[150px]" />
                   </div>
-                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black font-bold rounded-2xl py-6">
+                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-2xl py-6">
                     <Apple className="w-5 h-5 mr-2" /> Crear Dieta
                   </Button>
                 </form>
@@ -739,7 +739,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                   <div key={t.id} className="p-4 bg-black/30 rounded-2xl border border-[#2a2a2a]">
                     <h4 className="font-bold text-white mb-2">{t.name}</h4>
                     <div className="flex gap-4 text-sm">
-                      <span className="text-[#00D4FF] font-semibold">{t.calories} kcal</span>
+                      <span className="text-violet-400 font-semibold">{t.calories} kcal</span>
                       <span className="text-gray-400">P: {t.protein_g}g</span>
                       <span className="text-gray-400">C: {t.carbs_g}g</span>
                       <span className="text-gray-400">G: {t.fat_g}g</span>
@@ -756,7 +756,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Calculator className="w-5 h-5 text-[#00D4FF]" />
+                  <Calculator className="w-5 h-5 text-violet-400" />
                   Calculadora de Macros
                 </CardTitle>
                 <p className="text-sm text-gray-500">Fórmula Mifflin-St Jeor • Calcula y asigna macros a tus socios</p>
@@ -811,7 +811,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                   </div>
                 </div>
 
-                <Button onClick={calculateMacros} className="w-full bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black font-bold rounded-2xl py-6">
+                <Button onClick={calculateMacros} className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-2xl py-6">
                   <Calculator className="w-5 h-5 mr-2" /> Calcular Macros
                 </Button>
 
@@ -834,7 +834,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
 
                     <div className="bg-black/30 rounded-2xl p-5 border border-[#2a2a2a] space-y-4">
                       <h4 className="text-white font-semibold flex items-center gap-2">
-                        <Send className="w-4 h-4 text-[#00D4FF]" />
+                        <Send className="w-4 h-4 text-violet-400" />
                         Asignar a un Socio
                       </h4>
                       <Select value={selectedMemberForMacros} onValueChange={setSelectedMemberForMacros}>
@@ -868,7 +868,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Camera className="w-5 h-5 text-[#00D4FF]" />
+                  <Camera className="w-5 h-5 text-violet-400" />
                   Fotos de Progreso de Socios
                 </CardTitle>
               </CardHeader>
@@ -880,10 +880,10 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                       <button
                         key={member.id}
                         onClick={() => handleViewMemberProgress(member)}
-                        className="w-full flex items-center justify-between p-4 bg-black/30 rounded-2xl border border-[#2a2a2a] hover:border-[#00D4FF]/30 transition-all"
+                        className="w-full flex items-center justify-between p-4 bg-black/30 rounded-2xl border border-[#2a2a2a] hover:border-violet-500/30 transition-all"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00D4FF]/20 to-[#00B4E6]/10 flex items-center justify-center text-[#00D4FF] font-bold">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-cyan-500/10 flex items-center justify-center text-violet-400 font-bold">
                             {member.name?.charAt(0)}
                           </div>
                           <div className="text-left">
@@ -891,12 +891,12 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                             <p className="text-xs text-gray-500">{member.email}</p>
                           </div>
                         </div>
-                        <Eye className="w-5 h-5 text-[#00D4FF]" />
+                        <Eye className="w-5 h-5 text-violet-400" />
                       </button>
                     ))}
                     {members.length === 0 && (
                       <div className="text-center py-8">
-                        <Users className="w-12 h-12 mx-auto text-[#00D4FF]/20 mb-2" />
+                        <Users className="w-12 h-12 mx-auto text-violet-400/20 mb-2" />
                         <p className="text-gray-500">No tienes socios asignados</p>
                       </div>
                     )}
@@ -909,13 +909,13 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                         setSelectedMemberForProgress(null)
                         setMemberProgressPhotos([])
                       }}
-                      className="mb-4 text-[#00D4FF] hover:text-[#00B4E6]"
+                      className="mb-4 text-violet-400 hover:text-[rgb(6, 182, 212)]"
                     >
                       ← Volver a la lista
                     </Button>
                     
                     <div className="flex items-center gap-3 mb-4 p-3 bg-black/30 rounded-xl">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00D4FF] to-[#00B4E6] flex items-center justify-center text-black font-bold">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold">
                         {selectedMemberForProgress.name?.charAt(0)}
                       </div>
                       <div>
@@ -939,7 +939,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-[#00D4FF]" />
+                  <Bell className="w-5 h-5 text-violet-400" />
                   Enviar Aviso
                 </CardTitle>
               </CardHeader>
@@ -976,7 +976,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                     <Label className="text-gray-400 text-sm">Mensaje</Label>
                     <Textarea value={noticeMessage} onChange={(e) => setNoticeMessage(e.target.value)} placeholder="Escribe tu mensaje..." required className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1 min-h-[100px]" />
                   </div>
-                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-[#00D4FF] to-[#00B4E6] text-black font-bold rounded-2xl py-6">
+                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-2xl py-6">
                     <Send className="w-5 h-5 mr-2" /> Enviar Aviso
                   </Button>
                 </form>
@@ -989,10 +989,10 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
               </CardHeader>
               <CardContent className="space-y-3">
                 {notices.map(n => (
-                  <div key={n.id} className={`p-4 bg-black/30 rounded-2xl border border-[#2a2a2a] ${n.priority === 'high' ? 'border-l-4 border-l-red-500' : n.priority === 'normal' ? 'border-l-4 border-l-[#00D4FF]' : ''}`}>
+                  <div key={n.id} className={`p-4 bg-black/30 rounded-2xl border border-[#2a2a2a] ${n.priority === 'high' ? 'border-l-4 border-l-red-500' : n.priority === 'normal' ? 'border-l-4 border-l-[rgb(139, 92, 246)]' : ''}`}>
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-bold text-white">{n.title}</h4>
-                      <span className={`text-xs px-2 py-1 rounded-full ${n.priority === 'high' ? 'bg-red-500/20 text-red-400' : n.priority === 'normal' ? 'bg-[#00D4FF]/20 text-[#00D4FF]' : 'bg-blue-500/20 text-blue-400'}`}>
+                      <span className={`text-xs px-2 py-1 rounded-full ${n.priority === 'high' ? 'bg-red-500/20 text-red-400' : n.priority === 'normal' ? 'bg-gradient-to-r from-violet-600 to-cyan-600/20 text-violet-400' : 'bg-blue-500/20 text-blue-400'}`}>
                         {n.priority === 'high' ? 'Alta' : n.priority === 'normal' ? 'Normal' : 'Baja'}
                       </span>
                     </div>
