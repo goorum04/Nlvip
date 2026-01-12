@@ -424,7 +424,7 @@ export default function App() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="reg-password" className="text-gray-200">Contraseña</Label>
+                    <Label htmlFor="reg-password" className="text-gray-300 text-sm font-medium">Contraseña</Label>
                     <Input
                       id="reg-password"
                       type="password"
@@ -433,12 +433,12 @@ export default function App() {
                       onChange={(e) => setRegPassword(e.target.value)}
                       required
                       minLength={8}
-                      className="bg-[#1a1a1a] border-[#00D4FF]/20 text-white"
+                      className="bg-black/40 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 transition-all"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="invitation-code" className="text-gray-200">Código de Invitación</Label>
+                    <Label htmlFor="invitation-code" className="text-gray-300 text-sm font-medium">Código de Invitación</Label>
                     <Input
                       id="invitation-code"
                       type="text"
@@ -446,25 +446,26 @@ export default function App() {
                       value={invitationCode}
                       onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
                       required
-                      className="bg-[#1a1a1a] border-[#00D4FF]/20 text-white"
+                      className="bg-black/40 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 transition-all"
                     />
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-500">
                       Solicita tu código a tu entrenador o administrador
                     </p>
                   </div>
 
                   <Button 
                     type="submit" 
-                    className="w-full bg-[#00D4FF] hover:bg-[#00B4E6] text-black font-semibold"
+                    className="w-full h-12 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white font-semibold rounded-xl shadow-lg shadow-violet-500/25 transition-all duration-300"
                     disabled={loading}
                   >
-                    Crear Cuenta
+                    {loading ? 'Creando...' : 'Crear Cuenta'}
                   </Button>
                 </form>
               </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
+        </div>
       </div>
 
       <Toaster />
