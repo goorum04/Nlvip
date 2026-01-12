@@ -638,6 +638,9 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                 </CardContent>
               </Card>
             )}
+
+            {/* Plan de Recetas Semanal */}
+            <MemberRecipePlan userId={user.id} />
           </TabsContent>
 
           {/* STATS TAB - Advanced Charts */}
