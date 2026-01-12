@@ -368,6 +368,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                 { value: 'challenges', icon: Target, label: 'Retos' },
                 { value: 'workouts', icon: Dumbbell, label: 'Rutinas' },
                 { value: 'diets', icon: Apple, label: 'Dietas' },
+                { value: 'recipes', icon: UtensilsCrossed, label: 'Recetas' },
                 { value: 'calculator', icon: Calculator, label: 'Macros' },
                 { value: 'progress', icon: TrendingUp, label: 'Progreso' },
                 { value: 'notices', icon: Bell, label: 'Avisos' }
