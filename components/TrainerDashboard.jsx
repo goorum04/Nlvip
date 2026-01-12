@@ -753,6 +753,22 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
             </Card>
           </TabsContent>
 
+          {/* RECIPES TAB - Recipe management for trainers */}
+          <TabsContent value="recipes" className="space-y-4">
+            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <UtensilsCrossed className="w-5 h-5 text-violet-400" />
+                  Gestión de Recetas
+                </CardTitle>
+                <p className="text-sm text-gray-500">Crea y gestiona recetas para tus socios. Puedes subir fotos desde tu dispositivo.</p>
+              </CardHeader>
+              <CardContent>
+                <RecipesManager userId={user.id} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* CALCULATOR TAB - Macro calculator for trainers */}
           <TabsContent value="calculator" className="space-y-4">
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
