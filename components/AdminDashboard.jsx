@@ -498,6 +498,11 @@ export default function AdminDashboard({ user, profile, onLogout }) {
             </TabsTrigger>
           </TabsList>
 
+          {/* Asistente IA */}
+          <TabsContent value="assistant" className="space-y-4">
+            <AdminAssistant userId={user.id} />
+          </TabsContent>
+
           {/* Entrenadores */}
           <TabsContent value="trainers" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-violet-500/20">
