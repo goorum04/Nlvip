@@ -331,8 +331,6 @@ export default function App() {
                         required
                         className="bg-black/40 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20 transition-all"
                       />
-                      className="bg-[#1a1a1a] border-[#00D4FF]/20 text-white"
-                    />
                   </div>
 
                   <div className="space-y-2">
