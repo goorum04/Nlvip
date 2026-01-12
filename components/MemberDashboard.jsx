@@ -645,6 +645,24 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             <MemberRecipePlan userId={user.id} />
           </TabsContent>
 
+          {/* RECIPES TAB - Browse all recipes */}
+          <TabsContent value="recipes" className="space-y-4">
+            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <UtensilsCrossed className="w-5 h-5 text-violet-500" />
+                  Catálogo de Recetas
+                </CardTitle>
+                <CardDescription className="text-gray-500">
+                  Explora todas las recetas saludables disponibles
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RecipesGallery />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* STATS TAB - Advanced Charts */}
           <TabsContent value="stats" className="space-y-4">
             <ProgressCharts 
