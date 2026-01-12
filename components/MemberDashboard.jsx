@@ -23,6 +23,7 @@ import { ProgressPhotoUploader, ProgressPhotoGallery } from './ProgressPhotos'
 import { useFileUpload, useSignedUrl, generateFileId, getFileExtension } from '@/hooks/useStorage'
 import { ChallengesSection, BadgesGallery } from './ChallengesBadges'
 import ProgressCharts from './ProgressCharts'
+import { MemberRecipePlan } from './RecipePlan'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
