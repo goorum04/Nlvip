@@ -10,10 +10,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Users, Key, Shield, LogOut, UserPlus, Code, Plus, Calculator, Send, Loader2, UtensilsCrossed } from 'lucide-react'
+import { Users, Key, Shield, LogOut, UserPlus, Code, Plus, Calculator, Send, Loader2, UtensilsCrossed, Bot } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { RecipesManager } from './RecipesManager'
+import AdminAssistant from './AdminAssistant'
 
 export default function AdminDashboard({ user, profile, onLogout }) {
   const [trainers, setTrainers] = useState([])
