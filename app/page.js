@@ -265,59 +265,72 @@ export default function App() {
 
   // Pantalla de login/registro
   return (
-    <div className="min-h-screen bg-[#0B0B0B] relative overflow-hidden">
+    <div className="min-h-screen bg-[#030303] relative overflow-hidden">
+      {/* Animated gradient background */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-950/30 via-transparent to-cyan-950/30" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-600/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}} />
+      </div>
+      
       {/* Background Image with Overlay */}
       <div 
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-cover bg-center opacity-40"
         style={{
           backgroundImage: 'url(https://customer-assets.emergentagent.com/job_39287fc6-01ac-45b2-aba3-268b6afd68e6/artifacts/6b3h6oyj_unnamed.webp)',
           backgroundPosition: 'center',
           backgroundSize: 'cover'
         }}
-      >
-        <div className="absolute inset-0 bg-black/60" />
-      </div>
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#030303] via-[#030303]/80 to-transparent" />
 
       {/* Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-black/90 border-[#00D4FF]/20">
-          <CardHeader className="space-y-4 text-center">
-            <div className="flex items-center justify-center">
-              <div className="text-4xl font-black tracking-tight">
-                <span className="text-white">NL</span>
-                <span className="text-[#00D4FF]"> VIP</span>
+        {/* Glassmorphism Card */}
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
+                <span className="text-white font-black text-sm">NL</span>
               </div>
+              <span className="text-2xl font-black text-white tracking-tight">VIP CLUB</span>
             </div>
-            <CardTitle className="text-3xl font-bold text-[#00D4FF]">
-              CLUB
-            </CardTitle>
-            <CardDescription className="text-gray-300">
-              Tu gimnasio premium de alto nivel
-            </CardDescription>
-          </CardHeader>
+            <p className="text-gray-400 text-sm">Tu gimnasio premium de alto nivel</p>
+          </div>
 
-          <CardContent>
-            <Tabs value={authMode} onValueChange={setAuthMode} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2 bg-[#1a1a1a]">
-                <TabsTrigger value="login" className="data-[state=active]:bg-[#00D4FF] data-[state=active]:text-black">
-                  Iniciar Sesión
-                </TabsTrigger>
-                <TabsTrigger value="register" className="data-[state=active]:bg-[#00D4FF] data-[state=active]:text-black">
-                  Registro
-                </TabsTrigger>
-              </TabsList>
+          {/* Glass Card */}
+          <Card className="bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/50 rounded-3xl overflow-hidden">
+            <CardContent className="p-6">
+              <Tabs value={authMode} onValueChange={setAuthMode} className="space-y-6">
+                <TabsList className="grid w-full grid-cols-2 bg-black/40 rounded-2xl p-1">
+                  <TabsTrigger 
+                    value="login" 
+                    className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                  >
+                    Iniciar Sesión
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="register" 
+                    className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
+                  >
+                    Registro
+                  </TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="login" className="space-y-4">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-gray-200">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="tu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
+                <TabsContent value="login" className="space-y-4">
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-gray-300 text-sm font-medium">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="tu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="bg-black/40 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20 transition-all"
+                      />
                       className="bg-[#1a1a1a] border-[#00D4FF]/20 text-white"
                     />
                   </div>
