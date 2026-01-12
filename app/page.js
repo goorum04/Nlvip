@@ -465,8 +465,8 @@ export default function App() {
             </Tabs>
           </CardContent>
         </Card>
-        </div>
       </div>
+    </div>
 
       <Toaster />
     </div>
