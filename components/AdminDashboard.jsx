@@ -453,50 +453,52 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 overflow-x-hidden">
         <Tabs defaultValue="assistant" className="space-y-6">
-          <TabsList className="bg-[#1a1a1a] border border-violet-500/20">
-            <TabsTrigger value="assistant" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black">
-              <Bot className="w-4 h-4 mr-2" />
-              Asistente IA
-            </TabsTrigger>
-            <TabsTrigger value="trainers" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black">
-              <Users className="w-4 h-4 mr-2" />
-              Entrenadores
-            </TabsTrigger>
-            <TabsTrigger value="codes" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black">
-              <Key className="w-4 h-4 mr-2" />
-              Códigos
-            </TabsTrigger>
-            <TabsTrigger value="members" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black">
-              <Users className="w-4 h-4 mr-2" />
-              Socios
-            </TabsTrigger>
-            <TabsTrigger value="recipes" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black">
-              <UtensilsCrossed className="w-4 h-4 mr-2" />
-              Recetas
-            </TabsTrigger>
-            <TabsTrigger value="progress" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black">
-              <Users className="w-4 h-4 mr-2" />
-              Progreso Global
-            </TabsTrigger>
-            <TabsTrigger value="assignments" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black">
-              <Users className="w-4 h-4 mr-2" />
-              Rutinas/Dietas
-            </TabsTrigger>
-            <TabsTrigger value="videos" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black">
-              <Users className="w-4 h-4 mr-2" />
-              Videos
-            </TabsTrigger>
-            <TabsTrigger value="calculator" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black">
-              <Calculator className="w-4 h-4 mr-2" />
-              Macros
-            </TabsTrigger>
-            <TabsTrigger value="feed" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black">
-              <Shield className="w-4 h-4 mr-2" />
-              Moderación
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+            <TabsList className="bg-[#1a1a1a] border border-violet-500/20 inline-flex min-w-max">
+              <TabsTrigger value="assistant" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <Bot className="w-4 h-4 mr-2" />
+                Asistente IA
+              </TabsTrigger>
+              <TabsTrigger value="trainers" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <Users className="w-4 h-4 mr-2" />
+                Entrenadores
+              </TabsTrigger>
+              <TabsTrigger value="codes" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <Key className="w-4 h-4 mr-2" />
+                Códigos
+              </TabsTrigger>
+              <TabsTrigger value="members" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <Users className="w-4 h-4 mr-2" />
+                Socios
+              </TabsTrigger>
+              <TabsTrigger value="recipes" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <UtensilsCrossed className="w-4 h-4 mr-2" />
+                Recetas
+              </TabsTrigger>
+              <TabsTrigger value="progress" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <Users className="w-4 h-4 mr-2" />
+                Progreso
+              </TabsTrigger>
+              <TabsTrigger value="assignments" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <Users className="w-4 h-4 mr-2" />
+                Asignaciones
+              </TabsTrigger>
+              <TabsTrigger value="videos" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <Users className="w-4 h-4 mr-2" />
+                Videos
+              </TabsTrigger>
+              <TabsTrigger value="calculator" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <Calculator className="w-4 h-4 mr-2" />
+                Macros
+              </TabsTrigger>
+              <TabsTrigger value="feed" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <Shield className="w-4 h-4 mr-2" />
+                Moderación
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Asistente IA */}
           <TabsContent value="assistant" className="space-y-4">
