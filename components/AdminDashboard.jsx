@@ -90,8 +90,142 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       loadFeedPosts(),
       loadAllProgress(),
       loadAllAssignments(),
-      loadTrainingVideos()
+      loadTrainingVideos(),
+      loadWorkoutTemplates(),
+      loadDietTemplates(),
+      loadChallenges()
     ])
+  }
+
+  // Load workout templates (all trainers)
+  const loadWorkoutTemplates = async () => {
+    const { data } = await supabase
+      .from('workout_templates')
+      .select('*, trainer:profiles!workout_templates_trainer_id_fkey(name)')
+      .order('created_at', { ascending: false })
+    if (data) setWorkoutTemplates(data)
+  }
+
+  // Load diet templates (all trainers)
+  const loadDietTemplates = async () => {
+    const { data } = await supabase
+      .from('diet_templates')
+      .select('*, trainer:profiles!diet_templates_trainer_id_fkey(name)')
+      .order('created_at', { ascending: false })
+    if (data) setDietTemplates(data)
+  }
+
+  // Load challenges (all)
+  const loadChallenges = async () => {
+    const { data } = await supabase
+      .from('challenges')
+      .select('*, creator:profiles!challenges_created_by_fkey(name)')
+      .order('created_at', { ascending: false })
+    
+    if (data) {
+      setChallenges(data)
+      for (const challenge of data) {
+        const { data: parts } = await supabase
+          .from('challenge_participants')
+          .select('*, member:profiles!challenge_participants_member_id_fkey(name)')
+          .eq('challenge_id', challenge.id)
+        if (parts) {
+          setChallengeParticipants(prev => ({ ...prev, [challenge.id]: parts }))
+        }
+      }
+    }
+  }
+
+  // Load progress photos for a member (ADMIN ONLY)
+  const loadMemberProgressPhotos = async (memberId) => {
+    const { data } = await supabase
+      .from('progress_photos')
+      .select('*')
+      .eq('member_id', memberId)
+      .order('date', { ascending: false })
+    if (data) setMemberProgressPhotos(data)
+  }
+
+  // Create workout template
+  const handleCreateWorkout = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      const { error } = await supabase.from('workout_templates').insert([{ 
+        trainer_id: user.id, 
+        name: newWorkoutName, 
+        description: newWorkoutDesc 
+      }])
+      if (error) throw error
+      toast({ title: '¡Rutina creada!' })
+      setNewWorkoutName(''); setNewWorkoutDesc('')
+      loadWorkoutTemplates()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Create diet template
+  const handleCreateDiet = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      const { error } = await supabase.from('diet_templates').insert([{
+        trainer_id: user.id, 
+        name: newDietName, 
+        calories: parseInt(newDietCalories),
+        protein_g: parseInt(newDietProtein), 
+        carbs_g: parseInt(newDietCarbs), 
+        fat_g: parseInt(newDietFat), 
+        content: newDietContent
+      }])
+      if (error) throw error
+      toast({ title: '¡Dieta creada!' })
+      setNewDietName(''); setNewDietCalories(''); setNewDietProtein(''); setNewDietCarbs(''); setNewDietFat(''); setNewDietContent('')
+      loadDietTemplates()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Create challenge
+  const handleCreateChallenge = async (e) => {
+    e.preventDefault()
+    if (!challengeTitle || !challengeTarget) {
+      toast({ title: 'Error', description: 'Completa todos los campos', variant: 'destructive' })
+      return
+    }
+    setLoading(true)
+    try {
+      const startDate = new Date()
+      const endDate = new Date(startDate.getTime() + parseInt(challengeDays) * 86400000)
+      
+      const { error } = await supabase.from('challenges').insert([{
+        title: challengeTitle,
+        description: challengeDesc,
+        type: challengeType,
+        target_value: parseFloat(challengeTarget),
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0],
+        created_by: user.id,
+        is_active: true
+      }])
+      
+      if (error) throw error
+      toast({ title: '¡Reto creado!', description: 'Los socios ya pueden unirse' })
+      setChallengeTitle('')
+      setChallengeDesc('')
+      setChallengeTarget('')
+      loadChallenges()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const loadTrainers = async () => {
