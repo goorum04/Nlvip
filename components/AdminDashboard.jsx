@@ -696,6 +696,10 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 <UtensilsCrossed className="w-4 h-4 mr-2" />
                 Recetas
               </TabsTrigger>
+              <TabsTrigger value="feed" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Feed
+              </TabsTrigger>
               <TabsTrigger value="progress" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
                 <Camera className="w-4 h-4 mr-2" />
                 Fotos
