@@ -252,10 +252,12 @@ export default function AdminAssistant({ userId }) {
   }
 
   const quickCommands = [
-    { icon: '📊', text: 'Resumen del gimnasio', command: 'Dime el resumen del gimnasio' },
+    { icon: '📊', text: 'Resumen del gym', command: 'Dime el resumen del gimnasio' },
     { icon: '🔍', text: 'Buscar socio', command: 'Busca al socio Said' },
     { icon: '📢', text: 'Crear aviso', command: 'Crea un aviso para todos' },
-    { icon: '👥', text: 'Ver entrenadores', command: 'Lista los entrenadores' }
+    { icon: '👥', text: 'Ver socios', command: 'Lista todos los socios' },
+    { icon: '🥗', text: 'Generar dieta', command: 'Genera una dieta para Said con objetivo pérdida de grasa' },
+    { icon: '👟', text: 'Ver actividad', command: 'Ver actividad física del socio Said' }
   ]
 
   return (
