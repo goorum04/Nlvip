@@ -1709,19 +1709,25 @@ export default function AdminDashboard({ user, profile, onLogout }) {
             </Card>
           </TabsContent>
 
-          {/* Feed / Moderación */}
-          <TabsContent value="feed" className="space-y-4">
+          {/* Moderación - Solo para revisar reportes */}
+          <TabsContent value="moderation" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-violet-500/20">
               <CardHeader>
-                <CardTitle className="text-violet-400">Moderación del Feed</CardTitle>
+                <CardTitle className="text-violet-400 flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  Moderación del Feed
+                  <span className="text-xs bg-red-500/20 px-2 py-1 rounded-full text-red-300">
+                    {feedPosts.filter(p => p.feed_reports?.length > 0).length} reportados
+                  </span>
+                </CardTitle>
                 <CardDescription className="text-gray-400">
-                  Revisa y modera el contenido del feed social
+                  Revisa posts reportados y modera el contenido del feed
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {feedPosts.map((post) => (
-                    <div key={post.id} className="p-4 bg-black/50 rounded-lg border border-violet-500/10">
+                  {feedPosts.filter(p => p.feed_reports?.length > 0 || !p.is_hidden).map((post) => (
+                    <div key={post.id} className={`p-4 bg-black/50 rounded-lg border ${post.feed_reports?.length > 0 ? 'border-red-500/30' : 'border-violet-500/10'}`}>
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <p className="font-semibold text-white">{post.author?.name}</p>
@@ -1731,7 +1737,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         </div>
                         {post.feed_reports && post.feed_reports.length > 0 && (
                           <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">
-                            {post.feed_reports.length} reportes
+                            ⚠️ {post.feed_reports.length} reportes
                           </span>
                         )}
                       </div>
@@ -1743,13 +1749,26 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                           className="rounded-lg max-h-64 object-cover mb-3"
                         />
                       )}
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => hidePost(post.id)}
-                      >
-                        Ocultar Post
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
+                          onClick={() => hidePost(post.id)}
+                        >
+                          Ocultar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={async () => {
+                            await supabase.from('feed_posts').delete().eq('id', post.id)
+                            loadFeedPosts()
+                          }}
+                        >
+                          Eliminar
+                        </Button>
+                      </div>
                     </div>
                   ))}
                   {feedPosts.length === 0 && (
