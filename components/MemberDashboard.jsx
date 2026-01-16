@@ -25,6 +25,7 @@ import { ChallengesSection, BadgesGallery } from './ChallengesBadges'
 import ProgressCharts from './ProgressCharts'
 import { MemberRecipePlan } from './RecipePlan'
 import { RecipesGallery } from './RecipesManager'
+import ActivityTracker from './ActivityTracker'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
