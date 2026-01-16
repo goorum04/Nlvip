@@ -28,6 +28,14 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
+  // New states for trainer-like features
+  const [workoutTemplates, setWorkoutTemplates] = useState([])
+  const [dietTemplates, setDietTemplates] = useState([])
+  const [challenges, setChallenges] = useState([])
+  const [challengeParticipants, setChallengeParticipants] = useState({})
+  const [memberProgressPhotos, setMemberProgressPhotos] = useState([])
+  const [selectedMemberForPhotos, setSelectedMemberForPhotos] = useState(null)
+
   // Form states
   const [newTrainerEmail, setNewTrainerEmail] = useState('')
   const [newTrainerPassword, setNewTrainerPassword] = useState('')
@@ -41,6 +49,23 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [videoDescription, setVideoDescription] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
   const [videoThumbnail, setVideoThumbnail] = useState('')
+
+  // Workout/Diet form states
+  const [newWorkoutName, setNewWorkoutName] = useState('')
+  const [newWorkoutDesc, setNewWorkoutDesc] = useState('')
+  const [newDietName, setNewDietName] = useState('')
+  const [newDietCalories, setNewDietCalories] = useState('')
+  const [newDietProtein, setNewDietProtein] = useState('')
+  const [newDietCarbs, setNewDietCarbs] = useState('')
+  const [newDietFat, setNewDietFat] = useState('')
+  const [newDietContent, setNewDietContent] = useState('')
+
+  // Challenge form states
+  const [challengeTitle, setChallengeTitle] = useState('')
+  const [challengeDesc, setChallengeDesc] = useState('')
+  const [challengeType, setChallengeType] = useState('workouts')
+  const [challengeTarget, setChallengeTarget] = useState('')
+  const [challengeDays, setChallengeDays] = useState('14')
 
   // Macro calculator states
   const [macroGender, setMacroGender] = useState('male')
