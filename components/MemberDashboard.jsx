@@ -426,6 +426,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
                 { value: 'feed', icon: Home, label: 'Feed' },
+                { value: 'activity', icon: Footprints, label: 'Actividad' },
                 { value: 'challenges', icon: Target, label: 'Retos' },
                 { value: 'badges', icon: Trophy, label: 'Logros' },
                 { value: 'workout', icon: Dumbbell, label: 'Rutina' },
