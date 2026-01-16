@@ -138,11 +138,14 @@ backend:
     file: "/app/lib/adminAssistantTools.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Genera dietas usando template NL VIP con macros calculados"
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Diet plan generation working correctly. Generates complete diet with calculated macros (2202 cal, 140g protein for Said), includes NL VIP template rules, supplementation guidelines, and meal distribution table. Takes 60+ seconds due to multiple OpenAI API calls but returns comprehensive diet plan."
 
   - task: "API Admin Assistant - get_gym_dashboard Tool"
     implemented: true
@@ -150,11 +153,14 @@ backend:
     file: "/app/lib/adminAssistantTools.js"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Retorna resumen del gimnasio correctamente"
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Dashboard tool working correctly. Returns gym stats: 2 members, 2 trainers, 3 active challenges, 2 new members this month. All expected dashboard fields present."
 
 frontend:
   - task: "Admin Assistant UI - Chat Display"
