@@ -651,10 +651,10 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-4 gap-3">
                     {[
-                      { label: 'Calorías', value: myDiet.diet?.calories, icon: Flame, color: 'from-orange-500/20 to-orange-500/5' },
-                      { label: 'Proteína', value: `${myDiet.diet?.protein_g}g`, icon: Target, color: 'from-blue-500/20 to-blue-500/5' },
-                      { label: 'Carbos', value: `${myDiet.diet?.carbs_g}g`, icon: Zap, color: 'from-yellow-500/20 to-yellow-500/5' },
-                      { label: 'Grasas', value: `${myDiet.diet?.fat_g}g`, icon: Star, color: 'from-purple-500/20 to-purple-500/5' },
+                      { label: 'Calorías', value: myDiet.diet?.calories || '-', icon: Flame, color: 'from-orange-500/20 to-orange-500/5' },
+                      { label: 'Proteína', value: myDiet.diet?.protein_g ? `${myDiet.diet.protein_g}g` : '-', icon: Target, color: 'from-blue-500/20 to-blue-500/5' },
+                      { label: 'Carbos', value: myDiet.diet?.carbs_g ? `${myDiet.diet.carbs_g}g` : '-', icon: Zap, color: 'from-yellow-500/20 to-yellow-500/5' },
+                      { label: 'Grasas', value: myDiet.diet?.fat_g ? `${myDiet.diet.fat_g}g` : '-', icon: Star, color: 'from-purple-500/20 to-purple-500/5' },
                     ].map(m => (
                       <div key={m.label} className={`bg-gradient-to-br ${m.color} rounded-2xl p-4 border border-white/5`}>
                         <m.icon className="w-5 h-5 text-violet-500 mb-2" />
@@ -664,7 +664,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                     ))}
                   </div>
                   <div className="bg-black/30 rounded-2xl p-5 border border-[#2a2a2a]">
-                    <p className="text-gray-300 whitespace-pre-wrap">{myDiet.diet?.content}</p>
+                    <p className="text-gray-300 whitespace-pre-wrap">{myDiet.diet?.content || 'Sin detalles de dieta'}</p>
                   </div>
                 </CardContent>
               </Card>
