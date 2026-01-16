@@ -261,6 +261,174 @@ def test_gym_dashboard():
     print(f"❌ FAILED: No dashboard data found in response: {response}")
     return False
 
+def test_list_members():
+    """Test 5: List Members Tool Test (NEW)"""
+    print("\n" + "="*60)
+    print("🧪 TEST 5: LIST MEMBERS TOOL TEST (NEW)")
+    print("="*60)
+    
+    response = make_api_request("Lista todos los socios")
+    
+    if "error" in response:
+        print(f"❌ FAILED: {response['error']}")
+        return False
+    
+    # Check tool results for members list
+    if "toolResults" in response:
+        print("🔧 Tool results found:")
+        for tool_id, result in response["toolResults"].items():
+            print(f"  Tool {tool_id}: {result.get('success', False)}")
+            
+            # Check for members data
+            if "members" in result:
+                members = result["members"]
+                count = result.get("count", len(members))
+                print(f"👥 Found {count} members:")
+                
+                # Check for expected members (Said and María)
+                expected_members = ["Said", "María"]
+                found_members = []
+                
+                for member in members[:5]:  # Show first 5 members
+                    name = member.get('name', 'Unknown')
+                    email = member.get('email', 'Unknown')
+                    print(f"  👤 {name} ({email})")
+                    
+                    if name in expected_members:
+                        found_members.append(name)
+                
+                if len(found_members) >= 1:  # At least one expected member
+                    print(f"✅ SUCCESS: Found expected members: {found_members}")
+                    return True
+                elif count > 0:
+                    print(f"✅ SUCCESS: List members working (found {count} members)")
+                    return True
+                else:
+                    print("⚠️ WARNING: No members found but tool is working")
+                    return True
+    
+    # Check message content
+    if "message" in response:
+        message = response["message"]
+        print(f"💬 Assistant message: {message[:200]}...")
+        
+        # Look for members-related keywords
+        members_keywords = ["socios", "miembros", "lista", "Said", "María"]
+        if any(keyword in message.lower() for keyword in members_keywords):
+            print("✅ SUCCESS: Response contains members-related content")
+            return True
+    
+    print(f"❌ FAILED: No members data found in response: {response}")
+    return False
+
+def test_list_workouts():
+    """Test 6: List Workouts Tool Test (NEW)"""
+    print("\n" + "="*60)
+    print("🧪 TEST 6: LIST WORKOUTS TOOL TEST (NEW)")
+    print("="*60)
+    
+    response = make_api_request("Lista las rutinas disponibles")
+    
+    if "error" in response:
+        print(f"❌ FAILED: {response['error']}")
+        return False
+    
+    # Check tool results for workouts list
+    if "toolResults" in response:
+        print("🔧 Tool results found:")
+        for tool_id, result in response["toolResults"].items():
+            print(f"  Tool {tool_id}: {result.get('success', False)}")
+            
+            # Check for workouts data
+            if "workouts" in result:
+                workouts = result["workouts"]
+                print(f"🏋️ Found {len(workouts)} workouts:")
+                
+                for workout in workouts[:5]:  # Show first 5 workouts
+                    name = workout.get('name', 'Unknown')
+                    description = workout.get('description', 'No description')
+                    difficulty = workout.get('difficulty', 'Unknown')
+                    print(f"  💪 {name} - {difficulty} - {description[:50]}...")
+                
+                if len(workouts) > 0:
+                    print("✅ SUCCESS: List workouts working with data")
+                    return True
+                else:
+                    print("✅ SUCCESS: List workouts working (empty list)")
+                    return True
+    
+    # Check message content
+    if "message" in response:
+        message = response["message"]
+        print(f"💬 Assistant message: {message[:200]}...")
+        
+        # Look for workouts-related keywords
+        workouts_keywords = ["rutinas", "workouts", "entrenamiento", "ejercicios", "disponibles"]
+        if any(keyword in message.lower() for keyword in workouts_keywords):
+            print("✅ SUCCESS: Response contains workouts-related content")
+            return True
+    
+    print(f"❌ FAILED: No workouts data found in response: {response}")
+    return False
+
+def test_get_member_activity():
+    """Test 7: Get Member Activity Tool Test (NEW)"""
+    print("\n" + "="*60)
+    print("🧪 TEST 7: GET MEMBER ACTIVITY TOOL TEST (NEW)")
+    print("="*60)
+    
+    response = make_api_request("Ver actividad física del socio Said de los últimos 7 días")
+    
+    if "error" in response:
+        print(f"❌ FAILED: {response['error']}")
+        return False
+    
+    # Check tool results for activity data
+    if "toolResults" in response:
+        print("🔧 Tool results found:")
+        for tool_id, result in response["toolResults"].items():
+            print(f"  Tool {tool_id}: {result.get('success', False)}")
+            
+            # Check for activity data
+            if "activity" in result or "summary" in result:
+                activity = result.get("activity", [])
+                summary = result.get("summary", {})
+                
+                print(f"👟 Activity data found:")
+                print(f"  📊 Days tracked: {len(activity)}")
+                
+                if summary:
+                    print(f"  📈 Summary:")
+                    print(f"    🚶 Total steps: {summary.get('total_steps', 0)}")
+                    print(f"    📏 Total distance: {summary.get('total_distance_km', 0)} km")
+                    print(f"    🔥 Total calories: {summary.get('total_calories', 0)}")
+                    print(f"    📊 Avg steps/day: {summary.get('avg_steps_per_day', 0)}")
+                
+                # Show some activity entries
+                for i, day in enumerate(activity[:3]):  # Show first 3 days
+                    date = day.get('activity_date', 'Unknown')
+                    steps = day.get('steps', 0)
+                    distance = day.get('distance_km', 0)
+                    calories = day.get('calories_kcal', 0)
+                    print(f"    📅 {date}: {steps} steps, {distance}km, {calories}kcal")
+                
+                print("✅ SUCCESS: Get member activity working")
+                return True
+    
+    # Check message content
+    if "message" in response:
+        message = response["message"]
+        print(f"💬 Assistant message: {message[:200]}...")
+        
+        # Look for activity-related keywords
+        activity_keywords = ["actividad", "pasos", "steps", "distancia", "calorías", "Said", "días"]
+        if any(keyword in message.lower() for keyword in activity_keywords):
+            print("✅ SUCCESS: Response contains activity-related content")
+            return True
+    
+    print(f"❌ FAILED: No activity data found in response: {response}")
+    return False
+
 def run_all_tests():
     """Run all tests and provide summary"""
     print("🚀 STARTING ADMIN ASSISTANT API TESTS")
