@@ -8,12 +8,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Dumbbell, Sparkles, Shield } from 'lucide-react'
+import { Dumbbell, Sparkles, Shield, Gift, Lock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import AdminDashboard from '@/components/AdminDashboard'
 import TrainerDashboard from '@/components/TrainerDashboard'
 import MemberDashboard from '@/components/MemberDashboard'
+
+// Check if we're in development mode
+const isDevelopment = process.env.NODE_ENV === 'development'
 
 export default function App() {
   const [user, setUser] = useState(null)
@@ -68,7 +71,9 @@ export default function App() {
     }
   }
 
+  // Demo login - only available in development
   const handleDemoLogin = async (role) => {
+    if (!isDevelopment) return
     const account = DEMO_ACCOUNTS[role]
     if (!account) return
     setLoading(true)
@@ -91,37 +96,80 @@ export default function App() {
   const handleRegister = async (e) => {
     e.preventDefault()
     setLoading(true)
+    
     try {
-      const { data: codeData } = await supabase
-        .from('invitation_codes')
-        .select('*')
-        .eq('code', invitationCode)
-        .eq('is_used', false)
-        .single()
+      let trainerId = null
+      let hasPremium = false
+      
+      // If invitation code provided, validate it
+      if (invitationCode.trim()) {
+        const { data: codeData, error: codeError } = await supabase
+          .from('invitation_codes')
+          .select('*')
+          .eq('code', invitationCode.toUpperCase())
+          .eq('is_active', true)
+          .single()
 
-      if (!codeData) throw new Error('Código de invitación inválido o ya usado')
+        if (codeError || !codeData) {
+          throw new Error('Código de invitación inválido o expirado')
+        }
 
-      const { data, error } = await supabase.auth.signUp({ email: regEmail, password: regPassword })
+        // Check if code has uses left
+        if (codeData.uses_count >= codeData.max_uses) {
+          throw new Error('Este código ya ha alcanzado el límite de usos')
+        }
+
+        // Check expiration
+        if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
+          throw new Error('Este código ha expirado')
+        }
+
+        trainerId = codeData.trainer_id
+        hasPremium = true
+      }
+
+      // Create auth user
+      const { data, error } = await supabase.auth.signUp({ 
+        email: regEmail, 
+        password: regPassword 
+      })
       if (error) throw error
 
+      // Create profile
       await supabase.from('profiles').insert([{
         id: data.user.id,
         email: regEmail,
         name: regName,
-        role: 'member'
+        role: 'member',
+        has_premium: hasPremium
       }])
 
-      await supabase.from('invitation_codes').update({ is_used: true, used_by: data.user.id }).eq('id', codeData.id)
+      // If premium (had valid code), update code usage and assign trainer
+      if (hasPremium && invitationCode.trim()) {
+        await supabase
+          .from('invitation_codes')
+          .update({ uses_count: supabase.raw('uses_count + 1') })
+          .eq('code', invitationCode.toUpperCase())
 
-      if (codeData.created_by) {
-        await supabase.from('trainer_members').insert([{
-          trainer_id: codeData.created_by,
-          member_id: data.user.id
-        }])
+        if (trainerId) {
+          await supabase.from('trainer_members').insert([{
+            trainer_id: trainerId,
+            member_id: data.user.id
+          }])
+        }
       }
 
-      toast({ title: '¡Cuenta creada!', description: 'Ya puedes iniciar sesión' })
+      toast({ 
+        title: '¡Cuenta creada!', 
+        description: hasPremium 
+          ? 'Tienes acceso completo. Ya puedes iniciar sesión.' 
+          : 'Cuenta básica creada. Usa un código para acceso premium.'
+      })
       setAuthMode('login')
+      setRegEmail('')
+      setRegPassword('')
+      setRegName('')
+      setInvitationCode('')
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
@@ -174,7 +222,7 @@ export default function App() {
       <div 
         className="absolute inset-0 bg-cover bg-center opacity-30"
         style={{
-          backgroundImage: 'url(https://customer-assets.emergentagent.com/job_39287fc6-01ac-45b2-aba3-268b6afd68e6/artifacts/6b3h6oyj_unnamed.webp)',
+          backgroundImage: 'url(https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200)',
         }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-[#030303] via-[#030303]/80 to-[#030303]/60" />
@@ -248,40 +296,42 @@ export default function App() {
                     </Button>
                   </form>
 
-                  {/* Demo buttons */}
-                  <div className="pt-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                      <span className="text-xs text-gray-500 font-medium">Acceso Demo</span>
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                  {/* Demo buttons - ONLY IN DEVELOPMENT */}
+                  {isDevelopment && (
+                    <div className="pt-6">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                        <span className="text-xs text-gray-500 font-medium">🔧 Acceso Demo (Dev)</span>
+                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <Button
+                          type="button"
+                          onClick={() => handleDemoLogin('member')}
+                          className="bg-white/5 hover:bg-violet-600/30 border border-white/10 hover:border-violet-500/50 text-gray-300 hover:text-white rounded-xl h-12 transition-all duration-300 group"
+                        >
+                          <Dumbbell className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
+                          Socio
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => handleDemoLogin('trainer')}
+                          className="bg-white/5 hover:bg-cyan-600/30 border border-white/10 hover:border-cyan-500/50 text-gray-300 hover:text-white rounded-xl h-12 transition-all duration-300 group"
+                        >
+                          <Sparkles className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
+                          Trainer
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => handleDemoLogin('admin')}
+                          className="bg-white/5 hover:bg-purple-600/30 border border-white/10 hover:border-purple-500/50 text-gray-300 hover:text-white rounded-xl h-12 transition-all duration-300 group"
+                        >
+                          <Shield className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
+                          Admin
+                        </Button>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <Button
-                        type="button"
-                        onClick={() => handleDemoLogin('member')}
-                        className="bg-white/5 hover:bg-violet-600/30 border border-white/10 hover:border-violet-500/50 text-gray-300 hover:text-white rounded-xl h-12 transition-all duration-300 group"
-                      >
-                        <Dumbbell className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
-                        Socio
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={() => handleDemoLogin('trainer')}
-                        className="bg-white/5 hover:bg-cyan-600/30 border border-white/10 hover:border-cyan-500/50 text-gray-300 hover:text-white rounded-xl h-12 transition-all duration-300 group"
-                      >
-                        <Sparkles className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
-                        Trainer
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={() => handleDemoLogin('admin')}
-                        className="bg-white/5 hover:bg-purple-600/30 border border-white/10 hover:border-purple-500/50 text-gray-300 hover:text-white rounded-xl h-12 transition-all duration-300 group"
-                      >
-                        <Shield className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
-                        Admin
-                      </Button>
-                    </div>
-                  </div>
+                  )}
                 </TabsContent>
 
                 {/* Register Form */}
@@ -313,7 +363,7 @@ export default function App() {
                       <Label className="text-gray-300 text-sm font-medium">Contraseña</Label>
                       <Input
                         type="password"
-                        placeholder="••••••••"
+                        placeholder="Mínimo 8 caracteres"
                         value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}
                         required
@@ -321,18 +371,31 @@ export default function App() {
                         className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 transition-all"
                       />
                     </div>
+                    
+                    {/* Invitation Code - OPTIONAL */}
                     <div className="space-y-2">
-                      <Label className="text-gray-300 text-sm font-medium">Código de Invitación</Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-gray-300 text-sm font-medium flex items-center gap-2">
+                          <Gift className="w-4 h-4 text-violet-400" />
+                          Código de Invitación
+                        </Label>
+                        <span className="text-xs text-gray-500">(Opcional)</span>
+                      </div>
                       <Input
                         type="text"
                         placeholder="NLVIP-XXXX"
                         value={invitationCode}
                         onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
-                        required
                         className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 transition-all font-mono"
                       />
-                      <p className="text-xs text-gray-500">Solicita tu código a tu entrenador</p>
+                      <div className="flex items-start gap-2 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                        <Lock className="w-4 h-4 text-violet-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-gray-400">
+                          <span className="text-violet-300 font-medium">¿Tienes código?</span> Obtén acceso a rutinas, dietas personalizadas, seguimiento de progreso y más.
+                        </p>
+                      </div>
                     </div>
+                    
                     <Button 
                       type="submit" 
                       disabled={loading}
