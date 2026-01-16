@@ -418,8 +418,17 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               <p className="text-gray-400 text-sm">Bienvenido de vuelta,</p>
               <h2 className="text-3xl font-black text-white">{profile.name?.split(' ')[0]}</h2>
               <div className="flex items-center gap-2 mt-1">
-                <Sparkles className="w-4 h-4 text-violet-500" />
-                <span className="text-sm text-violet-500 font-semibold">Socio VIP</span>
+                {hasPremium ? (
+                  <>
+                    <Sparkles className="w-4 h-4 text-violet-500" />
+                    <span className="text-sm text-violet-500 font-semibold">Socio VIP</span>
+                  </>
+                ) : (
+                  <>
+                    <Gift className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-400 font-semibold">Cuenta Básica</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -427,7 +436,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="feed" className="space-y-6">
+        <Tabs defaultValue="activity" className="space-y-6">
           <div className="overflow-x-auto pb-2 -mx-4 px-4">
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
