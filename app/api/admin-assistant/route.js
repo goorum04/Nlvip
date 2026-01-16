@@ -158,24 +158,68 @@ export async function POST(request) {
           tools: TOOLS_DEFINITIONS,
           tool_choice: 'auto',
           temperature: 0.7,
-          max_tokens: 1000
+          max_tokens: 2000
         })
 
         const followUpMessage = followUpResponse.choices[0].message
         const newToolCalls = followUpMessage.tool_calls || []
 
-        // Verificar si hay nuevas tool calls que necesitan confirmación
-        const newNeedsConfirmation = newToolCalls.filter(c => !readOnlyTools.includes(c.function.name))
+        // Si hay nuevas tool calls, procesarlas
+        if (newToolCalls.length > 0) {
+          const newAutoExecute = newToolCalls.filter(c => readOnlyTools.includes(c.function.name))
+          const newNeedsConfirmation = newToolCalls.filter(c => !readOnlyTools.includes(c.function.name))
+          
+          // Ejecutar automáticamente las nuevas herramientas de solo lectura
+          for (const call of newAutoExecute) {
+            try {
+              const args = JSON.parse(call.function.arguments || '{}')
+              toolResults[call.id] = await executeTool(call.function.name, args)
+            } catch (err) {
+              toolResults[call.id] = { success: false, error: err.message }
+            }
+          }
 
-        if (newNeedsConfirmation.length > 0) {
-          const executionPlan = generateExecutionPlan(newNeedsConfirmation)
-          return NextResponse.json({
-            message: followUpMessage.content || 'Voy a realizar las siguientes acciones:',
-            toolCalls: newToolCalls,
-            executionPlan,
-            needsConfirmation: true,
-            toolResults
-          })
+          // Si ejecutamos más herramientas de solo lectura, hacer otra llamada al modelo
+          if (newAutoExecute.length > 0 && newNeedsConfirmation.length === 0) {
+            const newToolMessages = newAutoExecute.map(call => ({
+              role: 'tool',
+              tool_call_id: call.id,
+              content: JSON.stringify(toolResults[call.id])
+            }))
+
+            const finalResponse = await openai.chat.completions.create({
+              model: 'gpt-4o-mini',
+              messages: [
+                { role: 'system', content: SYSTEM_PROMPT },
+                ...messages,
+                assistantMessage,
+                ...toolMessages,
+                followUpMessage,
+                ...newToolMessages
+              ],
+              temperature: 0.7,
+              max_tokens: 3000
+            })
+
+            return NextResponse.json({
+              message: finalResponse.choices[0].message.content || 'Aquí está la información solicitada.',
+              toolCalls: [],
+              needsConfirmation: false,
+              toolResults
+            })
+          }
+
+          // Si hay acciones que necesitan confirmación
+          if (newNeedsConfirmation.length > 0) {
+            const executionPlan = generateExecutionPlan(newNeedsConfirmation)
+            return NextResponse.json({
+              message: followUpMessage.content || 'Voy a realizar las siguientes acciones:',
+              toolCalls: newToolCalls,
+              executionPlan,
+              needsConfirmation: true,
+              toolResults
+            })
+          }
         }
 
         return NextResponse.json({
