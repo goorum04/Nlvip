@@ -1260,45 +1260,6 @@ export default function AdminDashboard({ user, profile, onLogout }) {
             </Card>
           </TabsContent>
 
-          {/* Asignaciones */}
-          <TabsContent value="assignments" className="space-y-4">
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {allProgress.map((record) => (
-                    <div key={record.id} className="p-4 bg-black/50 rounded-lg border border-violet-500/10">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <p className="font-semibold text-white">{record.member?.name}</p>
-                          <p className="text-xs text-gray-400">{record.member?.email}</p>
-                          <p className="text-sm text-violet-400 mt-1">
-                            {new Date(record.date).toLocaleDateString()}
-                          </p>
-                        </div>
-                        {record.weight_kg && (
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-violet-400">{record.weight_kg} kg</p>
-                          </div>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-sm">
-                        {record.chest_cm && <p className="text-gray-400">Pecho: {record.chest_cm}cm</p>}
-                        {record.waist_cm && <p className="text-gray-400">Cintura: {record.waist_cm}cm</p>}
-                        {record.hips_cm && <p className="text-gray-400">Cadera: {record.hips_cm}cm</p>}
-                      </div>
-                      {record.notes && (
-                        <p className="text-sm text-gray-300 mt-2 italic">{record.notes}</p>
-                      )}
-                    </div>
-                  ))}
-                  {allProgress.length === 0 && (
-                    <p className="text-center text-gray-400 py-8">No hay registros de progreso</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Rutinas y Dietas Asignadas */}
           <TabsContent value="assignments" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-violet-500/20">
