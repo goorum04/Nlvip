@@ -431,29 +431,42 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           <div className="overflow-x-auto pb-2 -mx-4 px-4">
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
-                { value: 'feed', icon: Home, label: 'Feed' },
-                { value: 'activity', icon: Footprints, label: 'Actividad' },
-                { value: 'challenges', icon: Target, label: 'Retos' },
-                { value: 'badges', icon: Trophy, label: 'Logros' },
-                { value: 'workout', icon: Dumbbell, label: 'Rutina' },
-                { value: 'diet', icon: Apple, label: 'Dieta' },
-                { value: 'recipes', icon: UtensilsCrossed, label: 'Recetas' },
-                { value: 'stats', icon: BarChart3, label: 'Estadísticas' },
-                { value: 'progress', icon: TrendingUp, label: 'Progreso' },
-                { value: 'notices', icon: Bell, label: 'Avisos', badge: unreadNotices }
-              ].map(tab => (
-                <TabsTrigger 
-                  key={tab.value}
-                  value={tab.value} 
-                  className="relative px-4 py-2.5 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-cyan-500 data-[state=active]:text-black data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:shadow-violet-500/20 transition-all duration-300"
-                >
-                  <tab.icon className="w-4 h-4 mr-2" />
-                  {tab.label}
-                  {tab.badge > 0 && (
-                    <span className="ml-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{tab.badge}</span>
-                  )}
-                </TabsTrigger>
-              ))}
+                { value: 'activity', icon: Footprints, label: 'Actividad', premium: false },
+                { value: 'feed', icon: Home, label: 'Feed', premium: true },
+                { value: 'challenges', icon: Target, label: 'Retos', premium: false },
+                { value: 'badges', icon: Trophy, label: 'Logros', premium: true },
+                { value: 'workout', icon: Dumbbell, label: 'Rutina', premium: true },
+                { value: 'diet', icon: Apple, label: 'Dieta', premium: true },
+                { value: 'recipes', icon: UtensilsCrossed, label: 'Recetas', premium: false },
+                { value: 'stats', icon: BarChart3, label: 'Estadísticas', premium: false },
+                { value: 'progress', icon: TrendingUp, label: 'Progreso', premium: true },
+                { value: 'notices', icon: Bell, label: 'Avisos', badge: unreadNotices, premium: false }
+              ].map(tab => {
+                const isLocked = tab.premium && !hasPremium
+                return (
+                  <TabsTrigger 
+                    key={tab.value}
+                    value={isLocked ? 'locked' : tab.value}
+                    disabled={isLocked}
+                    onClick={(e) => {
+                      if (isLocked) {
+                        e.preventDefault()
+                        toast({
+                          title: '🔒 Función Premium',
+                          description: 'Necesitas un código de invitación para acceder a esta función.',
+                        })
+                      }
+                    }}
+                    className={`relative px-4 py-2.5 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-cyan-500 data-[state=active]:text-black data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:shadow-violet-500/20 transition-all duration-300 ${isLocked ? 'opacity-50' : ''}`}
+                  >
+                    {isLocked ? <Lock className="w-4 h-4 mr-2" /> : <tab.icon className="w-4 h-4 mr-2" />}
+                    {tab.label}
+                    {tab.badge > 0 && (
+                      <span className="ml-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{tab.badge}</span>
+                    )}
+                  </TabsTrigger>
+                )
+              })}
             </TabsList>
           </div>
 
