@@ -633,21 +633,29 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 <Users className="w-4 h-4 mr-2" />
                 Socios
               </TabsTrigger>
+              <TabsTrigger value="challenges" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <Target className="w-4 h-4 mr-2" />
+                Retos
+              </TabsTrigger>
+              <TabsTrigger value="workouts" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <Dumbbell className="w-4 h-4 mr-2" />
+                Rutinas
+              </TabsTrigger>
+              <TabsTrigger value="diets" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
+                <Apple className="w-4 h-4 mr-2" />
+                Dietas
+              </TabsTrigger>
               <TabsTrigger value="recipes" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
                 <UtensilsCrossed className="w-4 h-4 mr-2" />
                 Recetas
               </TabsTrigger>
               <TabsTrigger value="progress" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <Users className="w-4 h-4 mr-2" />
-                Progreso
+                <Camera className="w-4 h-4 mr-2" />
+                Fotos Progreso
               </TabsTrigger>
               <TabsTrigger value="assignments" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <Users className="w-4 h-4 mr-2" />
+                <TrendingUp className="w-4 h-4 mr-2" />
                 Asignaciones
-              </TabsTrigger>
-              <TabsTrigger value="videos" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <Users className="w-4 h-4 mr-2" />
-                Videos
               </TabsTrigger>
               <TabsTrigger value="calculator" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
                 <Calculator className="w-4 h-4 mr-2" />
