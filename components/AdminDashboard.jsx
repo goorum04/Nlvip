@@ -616,20 +616,64 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       </header>
 
       <main className="container mx-auto px-4 py-8 overflow-x-hidden">
-        <Tabs defaultValue="assistant" className="space-y-6">
-          <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-            <TabsList className="bg-[#1a1a1a] border border-violet-500/20 inline-flex min-w-max">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <div className="flex items-center gap-3 pb-2 overflow-x-auto scrollbar-hide">
+            {/* Menú desplegable de Gestión */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 shrink-0 ${
+                    ['trainers', 'codes', 'assignments', 'feed'].includes(activeTab) 
+                      ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent' 
+                      : 'text-gray-300'
+                  }`}
+                >
+                  <Settings className="w-4 h-4" />
+                  Gestión
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-[#1a1a1a] border-violet-500/30 text-white min-w-[200px]">
+                <DropdownMenuLabel className="text-violet-400 text-xs">Administración</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-violet-500/20" />
+                <DropdownMenuItem 
+                  onClick={() => setActiveTab('trainers')}
+                  className={`cursor-pointer gap-3 ${activeTab === 'trainers' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
+                >
+                  <Users className="w-4 h-4" />
+                  Entrenadores
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setActiveTab('codes')}
+                  className={`cursor-pointer gap-3 ${activeTab === 'codes' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
+                >
+                  <Key className="w-4 h-4" />
+                  Códigos de Invitación
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setActiveTab('assignments')}
+                  className={`cursor-pointer gap-3 ${activeTab === 'assignments' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
+                >
+                  <Link className="w-4 h-4" />
+                  Asignaciones
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-violet-500/20" />
+                <DropdownMenuItem 
+                  onClick={() => setActiveTab('feed')}
+                  className={`cursor-pointer gap-3 ${activeTab === 'feed' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
+                >
+                  <Shield className="w-4 h-4" />
+                  Moderación Feed
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Tabs principales */}
+            <TabsList className="bg-[#1a1a1a] border border-violet-500/20 inline-flex">
               <TabsTrigger value="assistant" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
                 <Bot className="w-4 h-4 mr-2" />
                 Asistente IA
-              </TabsTrigger>
-              <TabsTrigger value="trainers" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <Users className="w-4 h-4 mr-2" />
-                Entrenadores
-              </TabsTrigger>
-              <TabsTrigger value="codes" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <Key className="w-4 h-4 mr-2" />
-                Códigos
               </TabsTrigger>
               <TabsTrigger value="members" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
                 <Users className="w-4 h-4 mr-2" />
@@ -653,19 +697,11 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               </TabsTrigger>
               <TabsTrigger value="progress" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
                 <Camera className="w-4 h-4 mr-2" />
-                Fotos Progreso
-              </TabsTrigger>
-              <TabsTrigger value="assignments" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <TrendingUp className="w-4 h-4 mr-2" />
-                Asignaciones
+                Fotos
               </TabsTrigger>
               <TabsTrigger value="calculator" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
                 <Calculator className="w-4 h-4 mr-2" />
                 Macros
-              </TabsTrigger>
-              <TabsTrigger value="feed" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <Shield className="w-4 h-4 mr-2" />
-                Moderación
               </TabsTrigger>
             </TabsList>
           </div>
