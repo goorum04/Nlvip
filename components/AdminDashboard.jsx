@@ -882,6 +882,288 @@ export default function AdminDashboard({ user, profile, onLogout }) {
             </Card>
           </TabsContent>
 
+          {/* RETOS / CHALLENGES */}
+          <TabsContent value="challenges" className="space-y-4">
+            <Card className="bg-[#1a1a1a] border-violet-500/20">
+              <CardHeader>
+                <CardTitle className="text-violet-400 flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Crear Nuevo Reto
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCreateChallenge} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Label className="text-gray-400 text-xs">Título del Reto</Label>
+                      <Input 
+                        placeholder="💪 Desafío de Fuerza" 
+                        value={challengeTitle}
+                        onChange={(e) => setChallengeTitle(e.target.value)}
+                        className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-gray-400 text-xs">Descripción</Label>
+                      <Textarea 
+                        placeholder="Describe el reto..." 
+                        value={challengeDesc}
+                        onChange={(e) => setChallengeDesc(e.target.value)}
+                        className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-gray-400 text-xs">Tipo de Reto</Label>
+                      <Select value={challengeType} onValueChange={setChallengeType}>
+                        <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="workouts">🏋️ Entrenamientos</SelectItem>
+                          <SelectItem value="consistency">🔥 Días consecutivos</SelectItem>
+                          <SelectItem value="weight">⚖️ Pérdida de peso (kg)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-400 text-xs">
+                        Objetivo ({challengeType === 'workouts' ? 'entrenos' : challengeType === 'consistency' ? 'días' : 'kg'})
+                      </Label>
+                      <Input 
+                        type="number" 
+                        placeholder="10" 
+                        value={challengeTarget}
+                        onChange={(e) => setChallengeTarget(e.target.value)}
+                        className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-gray-400 text-xs">Duración (días)</Label>
+                      <Select value={challengeDays} onValueChange={setChallengeDays}>
+                        <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="7">1 semana</SelectItem>
+                          <SelectItem value="14">2 semanas</SelectItem>
+                          <SelectItem value="30">1 mes</SelectItem>
+                          <SelectItem value="60">2 meses</SelectItem>
+                          <SelectItem value="90">3 meses</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-2xl py-6"
+                  >
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Target className="w-5 h-5 mr-2" />}
+                    Crear Reto
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[#1a1a1a] border-violet-500/20">
+              <CardHeader>
+                <CardTitle className="text-violet-400 flex items-center gap-2">
+                  <Trophy className="w-5 h-5" />
+                  Todos los Retos ({challenges.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {challenges.map(challenge => {
+                  const participants = challengeParticipants[challenge.id] || []
+                  const daysLeft = Math.max(0, Math.ceil((new Date(challenge.end_date) - new Date()) / 86400000))
+                  
+                  return (
+                    <div key={challenge.id} className="p-4 bg-black/50 rounded-2xl border border-violet-500/10">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-bold text-white text-lg">{challenge.title}</h3>
+                          <p className="text-sm text-gray-400">{challenge.description}</p>
+                          <p className="text-xs text-violet-400 mt-1">Creado por: {challenge.creator?.name}</p>
+                        </div>
+                        <div className={`px-3 py-1 rounded-lg text-xs font-bold ${challenge.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                          {challenge.is_active ? `${daysLeft}d restantes` : 'Finalizado'}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-sm text-gray-400 mb-3">
+                        <span>🎯 Meta: {challenge.target_value} {challenge.type === 'workouts' ? 'entrenos' : challenge.type === 'consistency' ? 'días' : 'kg'}</span>
+                        <span>👥 {participants.length} participantes</span>
+                      </div>
+
+                      {participants.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-gray-500 font-semibold">Progreso:</p>
+                          {participants.map(p => (
+                            <div key={p.id} className="flex items-center gap-3">
+                              <span className="text-white text-sm w-24 truncate">{p.member?.name}</span>
+                              <div className="flex-1 h-2 bg-black/50 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full rounded-full ${p.completed ? 'bg-green-500' : 'bg-gradient-to-r from-violet-500 to-cyan-500'}`}
+                                  style={{ width: `${Math.min((p.progress_value / challenge.target_value) * 100, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-400 w-16 text-right">
+                                {p.progress_value}/{challenge.target_value}
+                              </span>
+                              {p.completed && <span className="text-green-400">✓</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                {challenges.length === 0 && (
+                  <p className="text-center text-gray-400 py-8">No hay retos creados</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* RUTINAS / WORKOUTS */}
+          <TabsContent value="workouts" className="space-y-4">
+            <Card className="bg-[#1a1a1a] border-violet-500/20">
+              <CardHeader>
+                <CardTitle className="text-violet-400 flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Crear Rutina
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCreateWorkout} className="space-y-4">
+                  <div>
+                    <Label className="text-gray-400 text-sm">Nombre</Label>
+                    <Input 
+                      value={newWorkoutName} 
+                      onChange={(e) => setNewWorkoutName(e.target.value)} 
+                      placeholder="Ej: Full Body Explosivo" 
+                      required 
+                      className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1" 
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-400 text-sm">Descripción / Ejercicios</Label>
+                    <Textarea 
+                      value={newWorkoutDesc} 
+                      onChange={(e) => setNewWorkoutDesc(e.target.value)} 
+                      placeholder="Detalla los ejercicios, series, repeticiones..." 
+                      required 
+                      className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1 min-h-[150px]" 
+                    />
+                  </div>
+                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-2xl py-6">
+                    <Dumbbell className="w-5 h-5 mr-2" /> Crear Rutina
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[#1a1a1a] border-violet-500/20">
+              <CardHeader>
+                <CardTitle className="text-violet-400">Todas las Rutinas ({workoutTemplates.length})</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {workoutTemplates.map(workout => (
+                  <div key={workout.id} className="p-4 bg-black/50 rounded-2xl border border-violet-500/10">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-bold text-white">{workout.name}</h4>
+                        <p className="text-sm text-gray-400 line-clamp-2 mt-1">{workout.description}</p>
+                        <p className="text-xs text-violet-400 mt-2">Creado por: {workout.trainer?.name || 'Admin'}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {workoutTemplates.length === 0 && <p className="text-center text-gray-400 py-8">No hay rutinas creadas</p>}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* DIETAS */}
+          <TabsContent value="diets" className="space-y-4">
+            <Card className="bg-[#1a1a1a] border-violet-500/20">
+              <CardHeader>
+                <CardTitle className="text-violet-400 flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Crear Dieta
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCreateDiet} className="space-y-4">
+                  <div>
+                    <Label className="text-gray-400 text-sm">Nombre</Label>
+                    <Input 
+                      value={newDietName} 
+                      onChange={(e) => setNewDietName(e.target.value)} 
+                      placeholder="Ej: Definición 2000kcal" 
+                      required 
+                      className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1" 
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      { label: 'Calorías', value: newDietCalories, setter: setNewDietCalories, placeholder: '2000' },
+                      { label: 'Proteína (g)', value: newDietProtein, setter: setNewDietProtein, placeholder: '150' },
+                      { label: 'Carbos (g)', value: newDietCarbs, setter: setNewDietCarbs, placeholder: '200' },
+                      { label: 'Grasas (g)', value: newDietFat, setter: setNewDietFat, placeholder: '60' },
+                    ].map(f => (
+                      <div key={f.label}>
+                        <Label className="text-gray-400 text-xs">{f.label}</Label>
+                        <Input 
+                          type="number" 
+                          value={f.value} 
+                          onChange={(e) => f.setter(e.target.value)} 
+                          placeholder={f.placeholder} 
+                          required 
+                          className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1" 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <Label className="text-gray-400 text-sm">Plan de Comidas</Label>
+                    <Textarea 
+                      value={newDietContent} 
+                      onChange={(e) => setNewDietContent(e.target.value)} 
+                      placeholder="Desayuno:&#10;Almuerzo:&#10;Cena:..." 
+                      required 
+                      className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1 min-h-[150px]" 
+                    />
+                  </div>
+                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-2xl py-6">
+                    <Apple className="w-5 h-5 mr-2" /> Crear Dieta
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[#1a1a1a] border-violet-500/20">
+              <CardHeader>
+                <CardTitle className="text-violet-400">Todas las Dietas ({dietTemplates.length})</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {dietTemplates.map(diet => (
+                  <div key={diet.id} className="p-4 bg-black/50 rounded-2xl border border-violet-500/10">
+                    <h4 className="font-bold text-white mb-2">{diet.name}</h4>
+                    <div className="flex gap-4 text-sm">
+                      <span className="text-violet-400 font-semibold">{diet.calories} kcal</span>
+                      <span className="text-gray-400">P: {diet.protein_g}g</span>
+                      <span className="text-gray-400">C: {diet.carbs_g}g</span>
+                      <span className="text-gray-400">G: {diet.fat_g}g</span>
+                    </div>
+                    <p className="text-xs text-violet-400 mt-2">Creado por: {diet.trainer?.name || 'Admin'}</p>
+                  </div>
+                ))}
+                {dietTemplates.length === 0 && <p className="text-center text-gray-400 py-8">No hay dietas creadas</p>}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Recetas */}
           <TabsContent value="recipes" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-violet-500/20">
@@ -900,14 +1182,86 @@ export default function AdminDashboard({ user, profile, onLogout }) {
             </Card>
           </TabsContent>
 
-          {/* Progreso Global */}
+          {/* FOTOS DE PROGRESO - SOLO ADMIN */}
           <TabsContent value="progress" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-violet-500/20">
               <CardHeader>
-                <CardTitle className="text-violet-400">Progreso de Todos los Socios</CardTitle>
+                <CardTitle className="text-violet-400 flex items-center gap-2">
+                  <Camera className="w-5 h-5" />
+                  Fotos de Progreso de Socios
+                  <span className="text-xs bg-violet-500/20 px-2 py-1 rounded-full text-violet-300">Solo Admin</span>
+                </CardTitle>
                 <CardDescription className="text-gray-400">
-                  Visualiza el progreso de todos los miembros del gimnasio
+                  Solo tú como administrador puedes ver las fotos de progreso de todos los socios
                 </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!selectedMemberForPhotos ? (
+                  <div className="space-y-3">
+                    <p className="text-gray-400 text-sm mb-4">Selecciona un socio para ver sus fotos de progreso:</p>
+                    {members.map(member => (
+                      <button
+                        key={member.id}
+                        onClick={() => {
+                          setSelectedMemberForPhotos(member)
+                          loadMemberProgressPhotos(member.id)
+                        }}
+                        className="w-full flex items-center justify-between p-4 bg-black/50 rounded-2xl border border-violet-500/10 hover:border-violet-500/30 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-cyan-500/10 flex items-center justify-center text-violet-400 font-bold">
+                            {member.name?.charAt(0)}
+                          </div>
+                          <div className="text-left">
+                            <p className="font-semibold text-white">{member.name}</p>
+                            <p className="text-xs text-gray-500">{member.email}</p>
+                          </div>
+                        </div>
+                        <Eye className="w-5 h-5 text-violet-400" />
+                      </button>
+                    ))}
+                    {members.length === 0 && (
+                      <div className="text-center py-8">
+                        <Users className="w-12 h-12 mx-auto text-violet-400/20 mb-2" />
+                        <p className="text-gray-400">No hay socios registrados</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setSelectedMemberForPhotos(null)
+                        setMemberProgressPhotos([])
+                      }}
+                      className="mb-4 text-violet-400 hover:text-cyan-400"
+                    >
+                      ← Volver a la lista
+                    </Button>
+                    
+                    <div className="flex items-center gap-3 mb-4 p-3 bg-black/50 rounded-xl border border-violet-500/20">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold">
+                        {selectedMemberForPhotos.name?.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-white">{selectedMemberForPhotos.name}</p>
+                        <p className="text-xs text-gray-400">{memberProgressPhotos.length} fotos de progreso</p>
+                      </div>
+                    </div>
+                    
+                    <ProgressPhotoGallery
+                      photos={memberProgressPhotos}
+                      canDelete={true}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Asignaciones */}
+          <TabsContent value="assignments" className="space-y-4">
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
