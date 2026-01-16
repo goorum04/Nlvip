@@ -438,7 +438,10 @@ def run_all_tests():
         ("Basic Chat", test_basic_chat),
         ("Find Member Tool", test_find_member),
         ("Generate Diet Plan Tool", test_generate_diet_plan),
-        ("Gym Dashboard Tool", test_gym_dashboard)
+        ("Gym Dashboard Tool", test_gym_dashboard),
+        ("List Members Tool (NEW)", test_list_members),
+        ("List Workouts Tool (NEW)", test_list_workouts),
+        ("Get Member Activity Tool (NEW)", test_get_member_activity)
     ]
     
     results = []
