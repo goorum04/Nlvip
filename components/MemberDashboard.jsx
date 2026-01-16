@@ -539,6 +539,11 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             ))}
           </TabsContent>
 
+          {/* ACTIVITY TAB - Step Counter */}
+          <TabsContent value="activity" className="space-y-4">
+            <ActivityTracker userId={user.id} />
+          </TabsContent>
+
           {/* CHALLENGES TAB */}
           <TabsContent value="challenges" className="space-y-4">
             <ChallengesSection userId={user.id} />
