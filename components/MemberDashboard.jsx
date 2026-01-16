@@ -43,6 +43,12 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const { toast } = useToast()
   const { getSignedUrl } = useSignedUrl()
 
+  // Check if user has premium access (registered with invitation code)
+  const hasPremium = profile?.has_premium === true
+
+  // Premium-only features
+  const premiumFeatures = ['feed', 'badges', 'workout', 'diet', 'progress']
+
   // Chart data states
   const [workoutCheckins, setWorkoutCheckins] = useState([])
   const [chartData, setChartData] = useState({
