@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Heart, MessageCircle, Flag, Loader2, Zap, Trash2, EyeOff, Eye } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { ImageUploader } from './ImageUploader'
+import ImageUploader from './ImageUploader'
 
 // Helper to get signed URL
 const getSignedUrl = async (bucket, path, expiresIn = 3600) => {
