@@ -1225,6 +1225,25 @@ export default function AdminDashboard({ user, profile, onLogout }) {
             </Card>
           </TabsContent>
 
+          {/* FEED - Admin puede publicar y moderar */}
+          <TabsContent value="feed" className="space-y-4">
+            <Card className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl">
+              <CardHeader>
+                <CardTitle className="text-violet-400 flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  Feed del Gimnasio
+                  <span className="text-xs bg-cyan-500/20 px-2 py-1 rounded-full text-cyan-300">Moderador</span>
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Publica anuncios y modera el contenido del feed. Como admin puedes ocultar o eliminar posts.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FeedSection userId={user.id} userRole="admin" canModerate={true} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* FOTOS DE PROGRESO - SOLO ADMIN */}
           <TabsContent value="progress" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-violet-500/20">
