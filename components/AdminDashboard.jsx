@@ -618,21 +618,125 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
       <main className="container mx-auto px-4 py-8 overflow-x-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="flex items-center gap-3 pb-2 overflow-x-auto scrollbar-hide">
-            {/* Menú desplegable de Gestión */}
+          <div className="flex items-center gap-2 pb-2 flex-wrap">
+            
+            {/* Tabs principales - Solo 2 */}
+            <TabsList className="bg-[#1a1a1a] border border-violet-500/20 inline-flex">
+              <TabsTrigger value="assistant" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap px-4">
+                <Bot className="w-4 h-4 mr-2" />
+                Asistente IA
+              </TabsTrigger>
+              <TabsTrigger value="feed" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap px-4">
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Feed
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Menú SOCIOS */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="outline" 
-                  className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 shrink-0 ${
-                    ['trainers', 'codes', 'assignments', 'feed'].includes(activeTab) 
+                  className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${
+                    ['members', 'progress'].includes(activeTab) 
+                      ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent' 
+                      : 'text-gray-300'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  Socios
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-[#1a1a1a] border-violet-500/30 text-white min-w-[180px]">
+                <DropdownMenuItem 
+                  onClick={() => setActiveTab('members')}
+                  className={`cursor-pointer gap-3 ${activeTab === 'members' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
+                >
+                  <Users className="w-4 h-4" />
+                  Lista de Socios
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setActiveTab('progress')}
+                  className={`cursor-pointer gap-3 ${activeTab === 'progress' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
+                >
+                  <Camera className="w-4 h-4" />
+                  Fotos de Progreso
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Menú ENTRENAMIENTOS */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${
+                    ['challenges', 'workouts', 'diets', 'recipes', 'calculator'].includes(activeTab) 
+                      ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent' 
+                      : 'text-gray-300'
+                  }`}
+                >
+                  <Dumbbell className="w-4 h-4" />
+                  Entrenamientos
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-[#1a1a1a] border-violet-500/30 text-white min-w-[180px]">
+                <DropdownMenuItem 
+                  onClick={() => setActiveTab('challenges')}
+                  className={`cursor-pointer gap-3 ${activeTab === 'challenges' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
+                >
+                  <Target className="w-4 h-4" />
+                  Retos
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setActiveTab('workouts')}
+                  className={`cursor-pointer gap-3 ${activeTab === 'workouts' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
+                >
+                  <Dumbbell className="w-4 h-4" />
+                  Rutinas
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-violet-500/20" />
+                <DropdownMenuItem 
+                  onClick={() => setActiveTab('diets')}
+                  className={`cursor-pointer gap-3 ${activeTab === 'diets' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
+                >
+                  <Apple className="w-4 h-4" />
+                  Dietas
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setActiveTab('recipes')}
+                  className={`cursor-pointer gap-3 ${activeTab === 'recipes' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
+                >
+                  <UtensilsCrossed className="w-4 h-4" />
+                  Recetas
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-violet-500/20" />
+                <DropdownMenuItem 
+                  onClick={() => setActiveTab('calculator')}
+                  className={`cursor-pointer gap-3 ${activeTab === 'calculator' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
+                >
+                  <Calculator className="w-4 h-4" />
+                  Calculadora Macros
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Menú GESTIÓN */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${
+                    ['trainers', 'codes', 'assignments', 'moderation'].includes(activeTab) 
                       ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent' 
                       : 'text-gray-300'
                   }`}
                 >
                   <Settings className="w-4 h-4" />
                   Gestión
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-[#1a1a1a] border-violet-500/30 text-white min-w-[200px]">
@@ -661,54 +765,15 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-violet-500/20" />
                 <DropdownMenuItem 
-                  onClick={() => setActiveTab('feed')}
-                  className={`cursor-pointer gap-3 ${activeTab === 'feed' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
+                  onClick={() => setActiveTab('moderation')}
+                  className={`cursor-pointer gap-3 ${activeTab === 'moderation' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
                   <Shield className="w-4 h-4" />
-                  Moderación Feed
+                  Moderación
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Tabs principales */}
-            <TabsList className="bg-[#1a1a1a] border border-violet-500/20 inline-flex">
-              <TabsTrigger value="assistant" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <Bot className="w-4 h-4 mr-2" />
-                Asistente IA
-              </TabsTrigger>
-              <TabsTrigger value="members" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <Users className="w-4 h-4 mr-2" />
-                Socios
-              </TabsTrigger>
-              <TabsTrigger value="challenges" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <Target className="w-4 h-4 mr-2" />
-                Retos
-              </TabsTrigger>
-              <TabsTrigger value="workouts" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <Dumbbell className="w-4 h-4 mr-2" />
-                Rutinas
-              </TabsTrigger>
-              <TabsTrigger value="diets" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <Apple className="w-4 h-4 mr-2" />
-                Dietas
-              </TabsTrigger>
-              <TabsTrigger value="recipes" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <UtensilsCrossed className="w-4 h-4 mr-2" />
-                Recetas
-              </TabsTrigger>
-              <TabsTrigger value="feed" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Feed
-              </TabsTrigger>
-              <TabsTrigger value="progress" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <Camera className="w-4 h-4 mr-2" />
-                Fotos
-              </TabsTrigger>
-              <TabsTrigger value="calculator" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap">
-                <Calculator className="w-4 h-4 mr-2" />
-                Macros
-              </TabsTrigger>
-            </TabsList>
           </div>
 
           {/* Asistente IA */}
