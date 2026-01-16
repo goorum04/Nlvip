@@ -12,14 +12,6 @@ export const metadata = {
   formatDetection: {
     telephone: false,
   },
-  themeColor: '#7c3aed',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    viewportFit: 'cover',
-  },
   icons: {
     icon: [
       { url: '/icons/icon.svg', type: 'image/svg+xml' },
@@ -29,6 +21,15 @@ export const metadata = {
       { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
     ],
   },
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#7c3aed',
 }
 
 export default function RootLayout({ children }) {
