@@ -677,6 +677,9 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               </Card>
             )}
 
+            {/* FOOD TRACKER - Contador de macros con fotos */}
+            <FoodTracker userId={user.id} />
+
             {/* Plan de Recetas Semanal */}
             <MemberRecipePlan userId={user.id} />
           </TabsContent>
