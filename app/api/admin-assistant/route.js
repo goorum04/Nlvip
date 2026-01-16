@@ -116,7 +116,7 @@ export async function POST(request) {
 
     // Si hay tool calls, ejecutar las de solo lectura automáticamente
     if (toolCalls.length > 0) {
-      const readOnlyTools = ['find_member', 'get_member_summary', 'get_gym_dashboard', 'list_trainers', 'list_recent_posts', 'generate_diet_plan']
+      const readOnlyTools = ['find_member', 'get_member_summary', 'get_gym_dashboard', 'list_trainers', 'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity', 'list_members']
       const autoExecute = []
       const needsConfirmation = []
 
