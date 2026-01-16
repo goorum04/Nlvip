@@ -6,6 +6,42 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 })
 
+const DIET_RULES = `
+REGLAS DEL PROGRAMA NUTRICIONAL NL VIP:
+
+REGLAS GENERALES:
+• Verdura o Ensalada: al gusto con moderación
+• Aliño: AOVE solo si se especifica. Si no: limón, lima, especias, sal, vinagre
+• Arroces y Pastas: tomate tamizado o rallado (no frito)
+• Post-Entrenamiento: 40gr de proteína inmediatamente al terminar
+
+SUPLEMENTACIÓN BÁSICA:
+• Omega 3: 1 en desayuno
+• Multivitamínico: 1 en desayuno, 1 en cena
+• Pre-entreno: 15 min antes de entrenar
+• Creatina: 1gr por cada 10kg de peso (diario)
+• Post-entreno: 40gr proteína
+
+OBSERVACIONES:
+• Sal: OBLIGATORIA en todas las comidas
+• Bebidas zero: máximo 1-2 al día
+• Cafés/infusiones: máximo 2 al día, sin leche
+• Edulcorante: preferir Stevia
+• Comida libre: UNA por semana
+
+FLUIDOS:
+• Agua: 4-6 litros al día
+• NO beber durante las comidas (30 min antes o después)
+
+CÁLCULO DE MACROS:
+• Pérdida grasa: TDEE - 15%
+• Mantenimiento: TDEE
+• Volumen: TDEE + 15%
+• Proteína: 2g por kg de peso
+• Grasa: 0.8-1g por kg
+• Carbos: el resto de calorías
+`;
+
 const SYSTEM_PROMPT = `Eres el Asistente IA del gimnasio NL VIP CLUB. Tu trabajo es ayudar al administrador a gestionar el gimnasio mediante comandos de voz o texto.
 
 IMPORTANTE:
@@ -23,6 +59,9 @@ Objetivos que el admin puede pedir:
 Cuando el admin pida aplicar un plan a un socio:
 1. Primero busca al socio con find_member
 2. Luego usa apply_full_member_plan con el goal correcto
+
+CUANDO GENERES O HABLES DE DIETAS, USA ESTAS REGLAS DEL GIMNASIO:
+${DIET_RULES}
 
 Responde siempre de forma amigable y profesional. Si algo falla, explica el problema de forma sencilla.`
 
