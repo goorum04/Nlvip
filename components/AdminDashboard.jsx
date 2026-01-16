@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Users, Key, Shield, LogOut, UserPlus, Code, Plus, Calculator, Send, Loader2, UtensilsCrossed, Bot, Dumbbell, Apple, Target, Trophy, Camera, Eye, TrendingUp } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
+import { Users, Key, Shield, LogOut, UserPlus, Code, Plus, Calculator, Send, Loader2, UtensilsCrossed, Bot, Dumbbell, Apple, Target, Trophy, Camera, Eye, TrendingUp, Settings, ChevronDown, Link, FileCheck } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { RecipesManager } from './RecipesManager'
@@ -23,6 +24,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [members, setMembers] = useState([])
   const [feedPosts, setFeedPosts] = useState([])
   const [allProgress, setAllProgress] = useState([])
+  const [activeTab, setActiveTab] = useState('assistant')
   const [allAssignments, setAllAssignments] = useState([])
   const [trainingVideos, setTrainingVideos] = useState([])
   const [loading, setLoading] = useState(false)
