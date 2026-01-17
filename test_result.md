@@ -103,282 +103,100 @@
 #====================================================================================================
 
 user_problem_statement: |
-  Aplicación PWA "NL VIP CLUB" para gimnasio con roles Admin, Trainer y Member.
-  Tarea actual: Completar la integración del template de dietas en el Asistente IA.
-  El asistente debe poder generar dietas personalizadas usando las reglas nutricionales del gimnasio.
+  App NL VIP CLUB lista para producción. Testing completo antes de publicar en App Store.
+  
+  Funcionalidades a testear:
+  - Login/Registro de usuarios
+  - Dashboard de Socio (Feed, Retos, Rutinas, Dietas, Actividad, Progreso)
+  - Dashboard de Trainer (Socios, Feed, Retos, Rutinas, Dietas, Recetas)
+  - Dashboard de Admin (Asistente IA, Feed, Gestión)
+  - Sistema de códigos de invitación
+  - API del Asistente IA
 
 backend:
-  - task: "API Admin Assistant - Basic Chat"
+  - task: "API Admin Assistant"
     implemented: true
     working: true
     file: "/app/app/api/admin-assistant/route.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "Chat básico funciona - responde 'Hola' correctamente"
-
-  - task: "API Admin Assistant - find_member Tool"
+    needs_retesting: true
+    
+  - task: "API Analyze Food (IA)"
     implemented: true
-    working: true
-    file: "/app/lib/adminAssistantTools.js"
+    working: unknown
+    file: "/app/app/api/analyze-food/route.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "Buscar socio funciona - curl retorna datos correctos de Said"
-
-  - task: "API Admin Assistant - generate_diet_plan Tool"
+    needs_retesting: true
+    
+  - task: "Supabase Auth"
     implemented: true
     working: true
-    file: "/app/lib/adminAssistantTools.js"
+    file: "/app/lib/supabase.js"
     stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "Genera dietas usando template NL VIP con macros calculados"
-      - working: true
-        agent: "testing"
-        comment: "✅ VERIFIED: Diet plan generation working correctly. Generates complete diet with calculated macros (2202 cal, 140g protein for Said), includes NL VIP template rules, supplementation guidelines, and meal distribution table. Takes 60+ seconds due to multiple OpenAI API calls but returns comprehensive diet plan."
-
-  - task: "API Admin Assistant - get_gym_dashboard Tool"
-    implemented: true
-    working: true
-    file: "/app/lib/adminAssistantTools.js"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "Retorna resumen del gimnasio correctamente"
-      - working: true
-        agent: "testing"
-        comment: "✅ VERIFIED: Dashboard tool working correctly. Returns gym stats: 2 members, 2 trainers, 3 active challenges, 2 new members this month. All expected dashboard fields present."
-
-  - task: "API Admin Assistant - list_members Tool"
-    implemented: true
-    working: true
-    file: "/app/lib/adminAssistantTools.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ VERIFIED: List members tool properly implemented and working. Tool definition exists in TOOLS_DEFINITIONS, executor function implemented with Supabase RPC call, returns members array with count. Rate limited during testing but tool structure is correct."
-
-  - task: "API Admin Assistant - list_workouts Tool"
-    implemented: true
-    working: true
-    file: "/app/lib/adminAssistantTools.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ VERIFIED: List workouts tool properly implemented and working. Tool definition exists in TOOLS_DEFINITIONS, executor function queries 'workouts' table with proper fields (id, name, description, difficulty), returns workouts array. Rate limited during testing but tool structure is correct."
-
-  - task: "API Admin Assistant - get_member_activity Tool"
-    implemented: true
-    working: true
-    file: "/app/lib/adminAssistantTools.js"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ VERIFIED: Get member activity tool properly implemented and working. Tool definition exists in TOOLS_DEFINITIONS with member_id and days parameters, executor function queries 'daily_activity' table, calculates summary stats (total steps, distance, calories, avg steps per day). Rate limited during testing but tool structure is correct."
+    priority: "critical"
+    needs_retesting: true
 
 frontend:
-  - task: "Admin Assistant UI - Chat Display"
+  - task: "Login Page"
     implemented: true
     working: true
-    file: "/app/components/AdminAssistant.jsx"
+    file: "/app/app/page.js"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    
+  - task: "Member Dashboard"
+    implemented: true
+    working: true
+    file: "/app/components/MemberDashboard.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "UI muestra mensajes de usuario y asistente correctamente"
-      - working: true
-        agent: "testing"
-        comment: "✅ VERIFIED: Chat display working perfectly. User messages appear right-aligned with purple gradient, assistant messages left-aligned with dark styling. Messages scroll correctly and input clears after sending."
-
-  - task: "Admin Assistant UI - Loading State"
+    needs_retesting: true
+    
+  - task: "Trainer Dashboard"
     implemented: true
     working: true
-    file: "/app/components/AdminAssistant.jsx"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "Muestra 'Procesando...' mientras espera respuesta"
-      - working: true
-        agent: "testing"
-        comment: "✅ VERIFIED: Loading state working correctly. Shows animated bouncing dots with 'Procesando...' text during API calls. Loading disappears when response is received."
-
-  - task: "Admin Assistant UI - Header Elements"
-    implemented: true
-    working: true
-    file: "/app/components/AdminAssistant.jsx"
+    file: "/app/components/TrainerDashboard.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ VERIFIED: Header elements working perfectly. Shows 'NL VIP Assistant' title with 'Pro' badge, voice button (microphone icon), and TTS toggle button all visible and correctly styled."
-
-  - task: "Admin Assistant UI - Input and Send Button"
+    needs_retesting: true
+    
+  - task: "Admin Dashboard"
     implemented: true
     working: true
-    file: "/app/components/AdminAssistant.jsx"
+    file: "/app/components/AdminDashboard.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ VERIFIED: Input and send functionality working perfectly. Text input has correct placeholder 'Escribe o habla un comando...', send button is functional with purple gradient styling, input clears after sending."
-
-  - task: "Admin Assistant UI - Quick Commands"
-    implemented: true
-    working: true
-    file: "/app/components/AdminAssistant.jsx"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ VERIFIED: Quick commands working perfectly. All 4 buttons visible in empty state (📊 Resumen del gimnasio, 🔍 Buscar socio, 📢 Crear aviso, 👥 Ver entrenadores). 'Resumen del gimnasio' tested successfully - sends command and receives comprehensive gym stats response."
-
-  - task: "Admin Assistant UI - Basic Chat Functionality"
-    implemented: true
-    working: true
-    file: "/app/components/AdminAssistant.jsx"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ VERIFIED: Basic chat functionality working perfectly. Typing 'Hola' and sending works correctly. User message appears right-aligned, assistant responds with '¡Hola! ¿Cómo puedo ayudarte hoy?' left-aligned. API responses take 10-30 seconds as expected."
+    needs_retesting: true
 
 metadata:
   created_by: "main_agent"
   version: "1.0"
   test_sequence: 1
-  run_ui: false
+  run_ui: true
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Full app testing before App Store submission"
   stuck_tasks: []
-  test_all: false
-  test_priority: "high_first"
+  test_all: true
+  test_priority: "all"
 
 agent_communication:
   - agent: "main"
     message: |
-      Completé la integración del template de dietas en el Asistente IA:
-      1. Actualicé generate_diet_plan para usar DIET_TEMPLATE con cálculos Harris-Benedict
-      2. Mejoré el flujo para ejecutar múltiples tool calls de solo lectura
-      3. Actualicé el SYSTEM_PROMPT para guiar mejor al modelo
-      
-      Para probar el backend:
-      - POST /api/admin-assistant con mensaje "Genera una dieta para Said con objetivo pérdida de grasa"
-      - Debe retornar plan de dieta completo con macros, distribución de comidas y reglas del gimnasio
+      Testing completo de la app NL VIP CLUB antes de publicar en App Store.
       
       Credenciales de prueba:
-      - No se necesitan credenciales para el API - es público
-      - La base de datos Supabase está preconfigurada
-  - agent: "testing"
-    message: |
-      ✅ BACKEND TESTING COMPLETED - ALL ADMIN ASSISTANT TOOLS WORKING
+      - Socio: socio@demo.com / Demo1234!
+      - Trainer: entrenador@demo.com / Demo1234!
+      - Admin: admin@demo.com / Demo1234!
       
-      Tested all 4 core functionalities:
-      1. ✅ Basic Chat: Responds correctly to "Hola" 
-      2. ✅ Find Member Tool: Successfully finds Said (socio@demo.com, trainer: Didac)
-      3. ✅ Generate Diet Plan Tool: Creates complete diet with calculated macros (2202 cal, 140g protein), includes NL VIP template rules, supplementation, and meal distribution
-      4. ✅ Dashboard Tool: Returns gym stats (2 members, 2 trainers, 3 challenges)
-      
-      PERFORMANCE NOTES:
-      - Diet generation takes 60-90 seconds due to multiple OpenAI API calls (expected)
-      - All other tools respond within 2-15 seconds
-      - API handles complex multi-tool workflows correctly
-      
-      The Admin Assistant API is fully functional and ready for production use.
-  - agent: "testing"
-    message: |
-      🎉 FRONTEND UI TESTING COMPLETED - ALL ADMIN ASSISTANT UI FEATURES WORKING PERFECTLY
-      
-      ✅ COMPREHENSIVE UI TEST RESULTS:
-      
-      1. **UI Elements Check - ALL PASSED**:
-         - Header: "NL VIP Assistant" with "Pro" badge ✅
-         - Voice button (microphone icon) visible ✅
-         - Text input with correct placeholder ✅
-         - Send button functional ✅
-         - All 4 quick command buttons visible ✅
-      
-      2. **Basic Chat Test - PASSED**:
-         - "Hola" message sent successfully ✅
-         - User messages: purple gradient, right-aligned ✅
-         - Assistant response: "¡Hola! ¿Cómo puedo ayudarte hoy?" ✅
-         - Loading animation with bouncing dots ✅
-         - Input cleared after sending ✅
-      
-      3. **Quick Command Test - PASSED**:
-         - "📊 Resumen del gimnasio" works perfectly ✅
-         - Returns comprehensive gym stats (2 socios, 2 entrenadores, 3 desafíos activos) ✅
-         - Loading states work correctly ✅
-      
-      4. **UI Responsiveness - PASSED**:
-         - Messages scroll into view ✅
-         - Correct styling for user/assistant messages ✅
-         - No error messages detected ✅
-         - API responses in 10-30 seconds (expected) ✅
-      
-      🚀 THE ADMIN ASSISTANT IS FULLY FUNCTIONAL AND READY FOR PRODUCTION USE!
-  - agent: "testing"
-    message: |
-      ✅ NEW ADMIN ASSISTANT TOOLS TESTING COMPLETED - ALL 3 NEW TOOLS VERIFIED
-      
-      **TESTED NEW TOOLS:**
-      1. ✅ **list_members** - Properly implemented and working
-         - Tool definition exists in TOOLS_DEFINITIONS array
-         - Executor function uses Supabase RPC call (rpc_find_member)
-         - Returns members array with count field
-         - Fallback to direct profiles table query if RPC fails
-      
-      2. ✅ **list_workouts** - Properly implemented and working  
-         - Tool definition exists in TOOLS_DEFINITIONS array
-         - Executor function queries 'workouts' table
-         - Returns workouts array with id, name, description, difficulty fields
-         - Ordered by name for consistent results
-      
-      3. ✅ **get_member_activity** - Properly implemented and working
-         - Tool definition exists in TOOLS_DEFINITIONS array with member_id and days parameters
-         - Executor function queries 'daily_activity' table with date filtering
-         - Returns activity array and calculated summary (total steps, distance, calories, avg steps per day)
-         - Proper date range filtering for last N days
-      
-      **TESTING NOTES:**
-      - All tools hit OpenAI API rate limits during testing (429 errors)
-      - Rate limiting confirms tools are being called by the AI system
-      - Tool definitions, implementations, and data structures are all correct
-      - These are READ-ONLY tools that execute automatically without confirmation
-      
-      **CONCLUSION:** All 3 NEW Admin Assistant tools are properly implemented and ready for use. Rate limiting is a temporary API quota issue, not a code problem.
+      Flujos críticos a testear:
+      1. Login con credenciales demo
+      2. Navegación entre tabs
+      3. Feed: crear post, dar like
+      4. Retos: ver retos activos
+      5. Admin Assistant: enviar mensaje "Hola"
