@@ -15,9 +15,6 @@ import AdminDashboard from '@/components/AdminDashboard'
 import TrainerDashboard from '@/components/TrainerDashboard'
 import MemberDashboard from '@/components/MemberDashboard'
 
-// Check if we're in development mode
-const isDevelopment = process.env.NODE_ENV === 'development'
-
 export default function App() {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
