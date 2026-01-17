@@ -71,9 +71,8 @@ export default function App() {
     }
   }
 
-  // Demo login - only available in development
+  // Demo login - available for testing
   const handleDemoLogin = async (role) => {
-    if (!isDevelopment) return
     const account = DEMO_ACCOUNTS[role]
     if (!account) return
     setLoading(true)
