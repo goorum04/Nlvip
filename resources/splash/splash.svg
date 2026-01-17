@@ -1,0 +1,43 @@
+<svg width="2732" height="2732" viewBox="0 0 2732 2732" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#030303"/>
+      <stop offset="50%" style="stop-color:#0a0a0a"/>
+      <stop offset="100%" style="stop-color:#030303"/>
+    </linearGradient>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed"/>
+      <stop offset="100%" style="stop-color:#06b6d4"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="30%" cy="30%" r="50%">
+      <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="70%" cy="70%" r="50%">
+      <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="2732" height="2732" fill="url(#bgGrad)"/>
+  
+  <!-- Glow effects -->
+  <circle cx="800" cy="800" r="600" fill="url(#glow1)"/>
+  <circle cx="1932" cy="1932" r="600" fill="url(#glow2)"/>
+  
+  <!-- Center logo container -->
+  <g transform="translate(1016, 1016)">
+    <!-- Logo background -->
+    <rect width="700" height="700" rx="160" fill="url(#iconGrad)"/>
+    
+    <!-- NL Text -->
+    <text x="350" y="400" font-family="Arial Black, sans-serif" font-size="280" font-weight="900" fill="white" text-anchor="middle" dominant-baseline="middle">NL</text>
+  </g>
+  
+  <!-- VIP CLUB text below -->
+  <text x="1366" y="1900" font-family="Arial, sans-serif" font-size="100" font-weight="700" fill="white" fill-opacity="0.9" text-anchor="middle">VIP CLUB</text>
+  
+  <!-- Tagline -->
+  <text x="1366" y="2000" font-family="Arial, sans-serif" font-size="50" fill="#9ca3af" text-anchor="middle">Premium Fitness</text>
+</svg>
