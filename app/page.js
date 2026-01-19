@@ -185,11 +185,12 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6">
         <div className="text-center max-w-sm">
-          <div className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 animate-pulse mb-6">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
-              <span className="text-white font-black text-sm">NL</span>
-            </div>
-            <span className="text-2xl font-black text-white">VIP CLUB</span>
+          <div className="flex justify-center mb-6">
+            <img 
+              src="/logo-nl-vip.jpg" 
+              alt="NL VIP TEAM" 
+              className="w-32 h-32 object-contain rounded-2xl shadow-2xl shadow-violet-500/30 animate-pulse"
+            />
           </div>
           <p className="text-gray-300 text-lg font-medium leading-relaxed">
             No más empezar de cero.<br/>
