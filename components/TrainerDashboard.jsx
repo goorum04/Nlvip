@@ -336,11 +336,13 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
         <div className="relative container mx-auto px-4 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-[rgb(139, 92, 246)]/30">
-                <Dumbbell className="w-7 h-7 text-black" />
-              </div>
+              <img 
+                src="/logo-nl-vip.jpg" 
+                alt="NL VIP TEAM" 
+                className="w-14 h-14 rounded-2xl object-cover shadow-lg shadow-violet-500/30"
+              />
               <div>
-                <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500">NL VIP CLUB</h1>
+                <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500">NL VIP TEAM</h1>
                 <p className="text-sm text-gray-500">Panel de Entrenador</p>
               </div>
             </div>
