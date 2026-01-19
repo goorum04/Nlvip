@@ -589,11 +589,13 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-lg">
-                <span className="text-black font-black text-sm">NL</span>
-              </div>
+              <img 
+                src="/logo-nl-vip.jpg" 
+                alt="NL VIP TEAM" 
+                className="w-12 h-12 rounded-xl object-cover shadow-lg shadow-violet-500/30"
+              />
               <div>
-                <h1 className="text-2xl font-bold text-violet-400">NL VIP CLUB</h1>
+                <h1 className="text-2xl font-bold text-violet-400">NL VIP TEAM</h1>
                 <p className="text-xs text-gray-400">Panel de Administrador</p>
               </div>
             </div>
