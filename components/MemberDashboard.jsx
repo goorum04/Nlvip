@@ -396,11 +396,13 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         <div className="relative container mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
-                <span className="text-black font-black text-sm">NL</span>
-              </div>
+              <img 
+                src="/logo-nl-vip.jpg" 
+                alt="NL VIP TEAM" 
+                className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-violet-500/20"
+              />
               <div>
-                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500">NL VIP CLUB</h1>
+                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500">NL VIP TEAM</h1>
                 <p className="text-xs text-gray-500">Premium Fitness</p>
               </div>
             </div>
