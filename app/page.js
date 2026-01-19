@@ -232,13 +232,15 @@ export default function App() {
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
-                <span className="text-white font-black">NL</span>
-              </div>
-              <div>
-                <span className="text-3xl font-black text-white tracking-tight">VIP CLUB</span>
-                <p className="text-xs text-gray-400 -mt-1">Premium Fitness</p>
+            <div className="inline-flex flex-col items-center gap-3 px-8 py-6 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl">
+              <img 
+                src="/logo-nl-vip.jpg" 
+                alt="NL VIP TEAM" 
+                className="w-24 h-24 object-contain rounded-xl shadow-lg shadow-violet-500/30"
+              />
+              <div className="text-center">
+                <span className="text-2xl font-black text-white tracking-tight">NL VIP TEAM</span>
+                <p className="text-xs text-gray-400 mt-1">Premium Fitness</p>
               </div>
             </div>
           </div>
