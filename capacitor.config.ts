@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.nlvipclub.app',
-  appName: 'NL VIP CLUB',
+  appId: 'com.nlvipteam.app',
+  appName: 'NL VIP TEAM',
   webDir: 'out',
   server: {
     androidScheme: 'https'
@@ -10,7 +10,7 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'automatic',
     preferredContentMode: 'mobile',
-    scheme: 'NL VIP CLUB'
+    scheme: 'NL VIP TEAM'
   },
   android: {
     backgroundColor: '#030303'
