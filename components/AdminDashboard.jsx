@@ -608,6 +608,11 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 <p className="text-sm text-gray-300 font-semibold">{profile.name}</p>
                 <p className="text-xs text-violet-400">Administrador</p>
               </div>
+              <AvatarBubble 
+                profile={profile} 
+                size="md" 
+                onClick={() => setShowProfileModal(true)} 
+              />
               <Button 
                 variant="outline" 
                 size="sm"
@@ -621,6 +626,19 @@ export default function AdminDashboard({ user, profile, onLogout }) {
           </div>
         </div>
       </header>
+
+      {/* Profile Modal */}
+      <ProfileModal
+        user={user}
+        profile={profile}
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        onProfileUpdate={(updatedProfile) => {
+          // Forzar recarga de la página para reflejar cambios
+          window.location.reload()
+        }}
+        onLogout={onLogout}
+      />
 
       <main className="container mx-auto px-4 py-8 overflow-x-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
