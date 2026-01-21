@@ -69,6 +69,9 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const [challengeDays, setChallengeDays] = useState('14')
   const [challengeParticipants, setChallengeParticipants] = useState({})
 
+  // Profile modal state
+  const [showProfileModal, setShowProfileModal] = useState(false)
+
   useEffect(() => {
     loadData()
   }, [])
