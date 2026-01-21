@@ -124,34 +124,58 @@ export default function App() {
         hasPremium = true
       }
 
-      // Create auth user
+      // Create auth user with redirect URL
+      const redirectUrl = typeof window !== 'undefined' 
+        ? `${window.location.origin}/auth/callback`
+        : `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`
+      
       const { data, error } = await supabase.auth.signUp({ 
         email: regEmail, 
-        password: regPassword 
+        password: regPassword,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
       })
       if (error) throw error
 
-      // Create profile
-      await supabase.from('profiles').insert([{
-        id: data.user.id,
-        email: regEmail,
-        name: regName,
-        role: 'member',
-        has_premium: hasPremium
-      }])
+      // Check if user was created (not just confirmation email sent)
+      if (data.user) {
+        // Create profile using upsert to avoid duplicates (in case trigger exists)
+        const { error: profileError } = await supabase.from('profiles').upsert([{
+          id: data.user.id,
+          email: regEmail,
+          name: regName,
+          role: 'member',
+          has_premium: hasPremium
+        }], { onConflict: 'id' })
 
-      // If premium (had valid code), update code usage and assign trainer
-      if (hasPremium && invitationCode.trim()) {
-        await supabase
-          .from('invitation_codes')
-          .update({ uses_count: supabase.raw('uses_count + 1') })
-          .eq('code', invitationCode.toUpperCase())
+        if (profileError) {
+          console.error('Profile error:', profileError)
+          // Don't throw - the auth user is created, profile might be handled by trigger
+        }
 
-        if (trainerId) {
-          await supabase.from('trainer_members').insert([{
-            trainer_id: trainerId,
-            member_id: data.user.id
-          }])
+        // If premium (had valid code), update code usage and assign trainer
+        if (hasPremium && invitationCode.trim()) {
+          // Update code usage count
+          const { data: currentCode } = await supabase
+            .from('invitation_codes')
+            .select('uses_count')
+            .eq('code', invitationCode.toUpperCase())
+            .single()
+          
+          if (currentCode) {
+            await supabase
+              .from('invitation_codes')
+              .update({ uses_count: (currentCode.uses_count || 0) + 1 })
+              .eq('code', invitationCode.toUpperCase())
+          }
+
+          if (trainerId) {
+            await supabase.from('trainer_members').insert([{
+              trainer_id: trainerId,
+              member_id: data.user.id
+            }])
+          }
         }
       }
 
@@ -298,40 +322,7 @@ export default function App() {
                     </Button>
                   </form>
 
-                  {/* Demo buttons - Quick access for testing */}
-                  <div className="pt-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                      <span className="text-xs text-gray-500 font-medium">Acceso Rápido</span>
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <Button
-                        type="button"
-                        onClick={() => handleDemoLogin('member')}
-                        className="bg-white/5 hover:bg-violet-600/30 border border-white/10 hover:border-violet-500/50 text-gray-300 hover:text-white rounded-xl h-12 transition-all duration-300 group"
-                      >
-                        <Dumbbell className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
-                        Socio
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={() => handleDemoLogin('trainer')}
-                        className="bg-white/5 hover:bg-cyan-600/30 border border-white/10 hover:border-cyan-500/50 text-gray-300 hover:text-white rounded-xl h-12 transition-all duration-300 group"
-                      >
-                        <Sparkles className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
-                        Trainer
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={() => handleDemoLogin('admin')}
-                        className="bg-white/5 hover:bg-purple-600/30 border border-white/10 hover:border-purple-500/50 text-gray-300 hover:text-white rounded-xl h-12 transition-all duration-300 group"
-                      >
-                        <Shield className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
-                        Admin
-                      </Button>
-                    </div>
-                  </div>
+{/* Botones de demo eliminados - Credenciales disponibles para el administrador */}
                 </TabsContent>
 
                 {/* Register Form */}

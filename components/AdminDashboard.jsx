@@ -18,6 +18,7 @@ import { RecipesManager } from './RecipesManager'
 import AdminAssistant from './AdminAssistant'
 import { ProgressPhotoGallery } from './ProgressPhotos'
 import { FeedSection } from './FeedSection'
+import { AvatarBubble, ProfileModal } from './UserProfile'
 
 export default function AdminDashboard({ user, profile, onLogout }) {
   const [trainers, setTrainers] = useState([])
@@ -38,6 +39,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [challengeParticipants, setChallengeParticipants] = useState({})
   const [memberProgressPhotos, setMemberProgressPhotos] = useState([])
   const [selectedMemberForPhotos, setSelectedMemberForPhotos] = useState(null)
+
+  // Profile modal state
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
   // Form states
   const [newTrainerEmail, setNewTrainerEmail] = useState('')
@@ -604,6 +608,11 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 <p className="text-sm text-gray-300 font-semibold">{profile.name}</p>
                 <p className="text-xs text-violet-400">Administrador</p>
               </div>
+              <AvatarBubble 
+                profile={profile} 
+                size="md" 
+                onClick={() => setShowProfileModal(true)} 
+              />
               <Button 
                 variant="outline" 
                 size="sm"
@@ -617,6 +626,19 @@ export default function AdminDashboard({ user, profile, onLogout }) {
           </div>
         </div>
       </header>
+
+      {/* Profile Modal */}
+      <ProfileModal
+        user={user}
+        profile={profile}
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        onProfileUpdate={(updatedProfile) => {
+          // Forzar recarga de la página para reflejar cambios
+          window.location.reload()
+        }}
+        onLogout={onLogout}
+      />
 
       <main className="container mx-auto px-4 py-8 overflow-x-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

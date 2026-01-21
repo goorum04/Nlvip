@@ -22,6 +22,7 @@ import { VideoCard } from './VideoPlayer'
 import { ProgressPhotoGallery } from './ProgressPhotos'
 import { RecipesManager } from './RecipesManager'
 import { FeedSection } from './FeedSection'
+import { AvatarBubble, ProfileModal } from './UserProfile'
 
 export default function TrainerDashboard({ user, profile, onLogout }) {
   const [members, setMembers] = useState([])
@@ -67,6 +68,9 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const [challengeTarget, setChallengeTarget] = useState('')
   const [challengeDays, setChallengeDays] = useState('14')
   const [challengeParticipants, setChallengeParticipants] = useState({})
+
+  // Profile modal state
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -354,6 +358,11 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                   <p className="text-xs text-violet-400">Entrenador</p>
                 </div>
               </div>
+              <AvatarBubble 
+                profile={profile} 
+                size="md" 
+                onClick={() => setShowProfileModal(true)} 
+              />
               <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
                 <LogOut className="w-5 h-5" />
               </Button>
@@ -361,6 +370,18 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
           </div>
         </div>
       </header>
+
+      {/* Profile Modal */}
+      <ProfileModal
+        user={user}
+        profile={profile}
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        onProfileUpdate={(updatedProfile) => {
+          window.location.reload()
+        }}
+        onLogout={onLogout}
+      />
 
       <main className="container mx-auto px-4 py-6">
         <Tabs defaultValue="members" className="space-y-6">
