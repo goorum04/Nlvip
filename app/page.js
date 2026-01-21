@@ -138,27 +138,44 @@ export default function App() {
       })
       if (error) throw error
 
-      // Create profile
-      await supabase.from('profiles').insert([{
-        id: data.user.id,
-        email: regEmail,
-        name: regName,
-        role: 'member',
-        has_premium: hasPremium
-      }])
+      // Check if user was created (not just confirmation email sent)
+      if (data.user) {
+        // Create profile using upsert to avoid duplicates (in case trigger exists)
+        const { error: profileError } = await supabase.from('profiles').upsert([{
+          id: data.user.id,
+          email: regEmail,
+          name: regName,
+          role: 'member',
+          has_premium: hasPremium
+        }], { onConflict: 'id' })
 
-      // If premium (had valid code), update code usage and assign trainer
-      if (hasPremium && invitationCode.trim()) {
-        await supabase
-          .from('invitation_codes')
-          .update({ uses_count: supabase.raw('uses_count + 1') })
-          .eq('code', invitationCode.toUpperCase())
+        if (profileError) {
+          console.error('Profile error:', profileError)
+          // Don't throw - the auth user is created, profile might be handled by trigger
+        }
 
-        if (trainerId) {
-          await supabase.from('trainer_members').insert([{
-            trainer_id: trainerId,
-            member_id: data.user.id
-          }])
+        // If premium (had valid code), update code usage and assign trainer
+        if (hasPremium && invitationCode.trim()) {
+          // Update code usage count
+          const { data: currentCode } = await supabase
+            .from('invitation_codes')
+            .select('uses_count')
+            .eq('code', invitationCode.toUpperCase())
+            .single()
+          
+          if (currentCode) {
+            await supabase
+              .from('invitation_codes')
+              .update({ uses_count: (currentCode.uses_count || 0) + 1 })
+              .eq('code', invitationCode.toUpperCase())
+          }
+
+          if (trainerId) {
+            await supabase.from('trainer_members').insert([{
+              trainer_id: trainerId,
+              member_id: data.user.id
+            }])
+          }
         }
       }
 
