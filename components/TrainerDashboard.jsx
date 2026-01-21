@@ -22,6 +22,7 @@ import { VideoCard } from './VideoPlayer'
 import { ProgressPhotoGallery } from './ProgressPhotos'
 import { RecipesManager } from './RecipesManager'
 import { FeedSection } from './FeedSection'
+import { AvatarBubble, ProfileModal } from './UserProfile'
 
 export default function TrainerDashboard({ user, profile, onLogout }) {
   const [members, setMembers] = useState([])
