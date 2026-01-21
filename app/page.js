@@ -298,40 +298,7 @@ export default function App() {
                     </Button>
                   </form>
 
-                  {/* Demo buttons - Quick access for testing */}
-                  <div className="pt-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                      <span className="text-xs text-gray-500 font-medium">Acceso Rápido</span>
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <Button
-                        type="button"
-                        onClick={() => handleDemoLogin('member')}
-                        className="bg-white/5 hover:bg-violet-600/30 border border-white/10 hover:border-violet-500/50 text-gray-300 hover:text-white rounded-xl h-12 transition-all duration-300 group"
-                      >
-                        <Dumbbell className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
-                        Socio
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={() => handleDemoLogin('trainer')}
-                        className="bg-white/5 hover:bg-cyan-600/30 border border-white/10 hover:border-cyan-500/50 text-gray-300 hover:text-white rounded-xl h-12 transition-all duration-300 group"
-                      >
-                        <Sparkles className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
-                        Trainer
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={() => handleDemoLogin('admin')}
-                        className="bg-white/5 hover:bg-purple-600/30 border border-white/10 hover:border-purple-500/50 text-gray-300 hover:text-white rounded-xl h-12 transition-all duration-300 group"
-                      >
-                        <Shield className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform" />
-                        Admin
-                      </Button>
-                    </div>
-                  </div>
+{/* Botones de demo eliminados - Credenciales disponibles para el administrador */}
                 </TabsContent>
 
                 {/* Register Form */}
