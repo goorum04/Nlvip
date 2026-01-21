@@ -40,6 +40,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [memberProgressPhotos, setMemberProgressPhotos] = useState([])
   const [selectedMemberForPhotos, setSelectedMemberForPhotos] = useState(null)
 
+  // Profile modal state
+  const [showProfileModal, setShowProfileModal] = useState(false)
+
   // Form states
   const [newTrainerEmail, setNewTrainerEmail] = useState('')
   const [newTrainerPassword, setNewTrainerPassword] = useState('')
