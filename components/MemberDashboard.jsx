@@ -64,6 +64,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [showPhotoUploader, setShowPhotoUploader] = useState(false)
   const [postImage, setPostImage] = useState(null)
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
   // Feed form
   const [newPostContent, setNewPostContent] = useState('')
