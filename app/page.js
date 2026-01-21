@@ -124,10 +124,17 @@ export default function App() {
         hasPremium = true
       }
 
-      // Create auth user
+      // Create auth user with redirect URL
+      const redirectUrl = typeof window !== 'undefined' 
+        ? `${window.location.origin}/auth/callback`
+        : `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`
+      
       const { data, error } = await supabase.auth.signUp({ 
         email: regEmail, 
-        password: regPassword 
+        password: regPassword,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
       })
       if (error) throw error
 
