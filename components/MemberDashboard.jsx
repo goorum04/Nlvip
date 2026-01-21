@@ -409,6 +409,11 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <AvatarBubble 
+                profile={profile} 
+                size="md" 
+                onClick={() => setShowProfileModal(true)} 
+              />
               <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
                 <LogOut className="w-5 h-5" />
               </Button>
@@ -416,8 +421,12 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           </div>
 
           <div className="flex items-end gap-4">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-3xl font-black text-black shadow-xl shadow-violet-500/30">
-              {profile.name?.charAt(0)}
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-3xl font-black text-black shadow-xl shadow-violet-500/30 overflow-hidden">
+              {profile.avatar_url ? (
+                <AvatarBubble profile={profile} size="xl" onClick={() => setShowProfileModal(true)} />
+              ) : (
+                profile.name?.charAt(0)
+              )}
             </div>
             <div className="pb-1">
               <p className="text-gray-400 text-sm">Bienvenido de vuelta,</p>
@@ -439,6 +448,18 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           </div>
         </div>
       </header>
+
+      {/* Profile Modal */}
+      <ProfileModal
+        user={user}
+        profile={profile}
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        onProfileUpdate={(updatedProfile) => {
+          window.location.reload()
+        }}
+        onLogout={onLogout}
+      />
 
       <main className="container mx-auto px-4 py-6">
         <Tabs defaultValue="activity" className="space-y-6">
