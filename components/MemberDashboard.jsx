@@ -27,6 +27,7 @@ import { MemberRecipePlan } from './RecipePlan'
 import { RecipesGallery } from './RecipesManager'
 import ActivityTracker from './ActivityTracker'
 import FoodTracker from './FoodTracker'
+import { AvatarBubble, ProfileModal } from './UserProfile'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
