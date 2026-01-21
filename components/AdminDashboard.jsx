@@ -18,6 +18,7 @@ import { RecipesManager } from './RecipesManager'
 import AdminAssistant from './AdminAssistant'
 import { ProgressPhotoGallery } from './ProgressPhotos'
 import { FeedSection } from './FeedSection'
+import { AvatarBubble, ProfileModal } from './UserProfile'
 
 export default function AdminDashboard({ user, profile, onLogout }) {
   const [trainers, setTrainers] = useState([])
