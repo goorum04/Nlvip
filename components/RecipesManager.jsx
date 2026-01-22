@@ -254,9 +254,10 @@ function AIRecipeGeneratorModal({ isOpen, onClose, onRecipeGenerated }) {
     if (!generatedRecipe) return
 
     const recipeData = {
-      name: generatedRecipe.receta.nombre,
+      title: generatedRecipe.receta.nombre,
       description: generatedRecipe.receta.descripcion,
-      instructions: generatedRecipe.receta.instrucciones.join('\n'),
+      steps: generatedRecipe.receta.instrucciones.join('\n'),
+      ingredients: generatedRecipe.receta.ingredientes.join('\n'),
       category: generatedRecipe.receta.categoria === 'almuerzo' ? 'lunch' : 
                 generatedRecipe.receta.categoria === 'desayuno' ? 'breakfast' :
                 generatedRecipe.receta.categoria === 'cena' ? 'dinner' : 
@@ -264,10 +265,8 @@ function AIRecipeGeneratorModal({ isOpen, onClose, onRecipeGenerated }) {
       calories: generatedRecipe.receta.macros_por_porcion.calorias,
       protein_g: generatedRecipe.receta.macros_por_porcion.proteinas_g,
       carbs_g: generatedRecipe.receta.macros_por_porcion.carbohidratos_g,
-      fat_g: generatedRecipe.receta.macros_por_porcion.grasas_g,
-      servings: generatedRecipe.receta.porciones,
-      image_url: generatedRecipe.receta.imagen_url,
-      ingredients: generatedRecipe.receta.ingredientes.join('\n')
+      fats_g: generatedRecipe.receta.macros_por_porcion.grasas_g,
+      image_path: generatedRecipe.receta.imagen_url
     }
 
     onRecipeGenerated(recipeData)
