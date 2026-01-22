@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
 
-export default function AuthCallback() {
+// Componente interno que usa useSearchParams
+function AuthCallbackContent() {
   const [status, setStatus] = useState('loading') // loading, success, error
   const [message, setMessage] = useState('Verificando tu cuenta...')
   const router = useRouter()
@@ -148,5 +149,40 @@ export default function AuthCallback() {
         </p>
       </div>
     </div>
+  )
+}
+
+// Componente de loading para el Suspense
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6">
+      <div className="text-center max-w-sm">
+        <div className="flex justify-center mb-6">
+          <img 
+            src="/logo-nl-vip.jpg" 
+            alt="NL VIP TEAM" 
+            className="w-24 h-24 object-contain rounded-2xl shadow-2xl shadow-violet-500/30"
+          />
+        </div>
+        
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+          <Loader2 className="w-12 h-12 text-violet-500 animate-spin mx-auto mb-4" />
+          <p className="text-white text-lg font-medium">Cargando...</p>
+        </div>
+
+        <p className="text-gray-600 text-xs mt-6">
+          © 2025 NL VIP Club
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// Componente principal exportado con Suspense boundary
+export default function AuthCallback() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <AuthCallbackContent />
+    </Suspense>
   )
 }
