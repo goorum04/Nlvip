@@ -1412,14 +1412,26 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               <CardContent className="space-y-3">
                 {dietTemplates.map(diet => (
                   <div key={diet.id} className="p-4 bg-black/50 rounded-2xl border border-violet-500/10">
-                    <h4 className="font-bold text-white mb-2">{diet.name}</h4>
-                    <div className="flex gap-4 text-sm">
-                      <span className="text-violet-400 font-semibold">{diet.calories} kcal</span>
-                      <span className="text-gray-400">P: {diet.protein_g}g</span>
-                      <span className="text-gray-400">C: {diet.carbs_g}g</span>
-                      <span className="text-gray-400">G: {diet.fat_g}g</span>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-bold text-white mb-2">{diet.name}</h4>
+                        <div className="flex gap-4 text-sm">
+                          <span className="text-violet-400 font-semibold">{diet.calories} kcal</span>
+                          <span className="text-gray-400">P: {diet.protein_g}g</span>
+                          <span className="text-gray-400">C: {diet.carbs_g}g</span>
+                          <span className="text-gray-400">G: {diet.fat_g}g</span>
+                        </div>
+                        <p className="text-xs text-violet-400 mt-2">Creado por: {diet.trainer?.name || 'Admin'}</p>
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-500/10"
+                        onClick={() => handleDeleteDiet(diet.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <p className="text-xs text-violet-400 mt-2">Creado por: {diet.trainer?.name || 'Admin'}</p>
                   </div>
                 ))}
                 {dietTemplates.length === 0 && <p className="text-center text-gray-400 py-8">No hay dietas creadas</p>}
