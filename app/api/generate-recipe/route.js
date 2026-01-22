@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-// Verificar que la API key existe
-const apiKey = process.env.OPENAI_API_KEY
-
 function getOpenAIClient() {
+  // Leer la API key en cada request para asegurar que esté disponible
+  const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY no está configurada en las variables de entorno')
   }
