@@ -904,6 +904,7 @@ export function RecipesManager({ userId }) {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [showForm, setShowForm] = useState(false)
+  const [showAIGenerator, setShowAIGenerator] = useState(false)
   const [editingRecipe, setEditingRecipe] = useState(null)
   const { toast } = useToast()
 
