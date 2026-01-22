@@ -916,7 +916,17 @@ export function RecipesManager({ userId }) {
       .from('recipes')
       .select('*')
       .order('created_at', { ascending: false })
-    setRecipes(data || [])
+    
+    // Mapear nombres de columnas de la DB a los nombres del frontend
+    const mappedRecipes = (data || []).map(r => ({
+      ...r,
+      name: r.title,
+      instructions: r.steps,
+      prep_time_minutes: r.prep_time_min,
+      fat_g: r.fats_g,
+      image_url: r.image_path
+    }))
+    setRecipes(mappedRecipes)
     setLoading(false)
   }
 
