@@ -968,8 +968,19 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         <p className="font-semibold text-white">{trainer.name}</p>
                         <p className="text-sm text-gray-400">{trainer.email}</p>
                       </div>
-                      <div className="text-sm text-gray-400">
-                        {new Date(trainer.created_at).toLocaleDateString()}
+                      <div className="flex items-center gap-3">
+                        <div className="text-sm text-gray-400">
+                          {new Date(trainer.created_at).toLocaleDateString()}
+                        </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-500/10"
+                          onClick={() => handleDeleteTrainer(trainer.id)}
+                          title="Quitar rol de entrenador"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
