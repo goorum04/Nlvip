@@ -584,18 +584,17 @@ function RecipeFormModal({ isOpen, onClose, recipe = null, onSave }) {
       }
 
       const recipeData = {
-        name: formData.name,
+        title: formData.name,
         description: formData.description || null,
-        instructions: formData.instructions || null,
+        steps: formData.instructions || null,
+        ingredients: formData.ingredients || null,
         category: formData.category,
-        prep_time_minutes: formData.prep_time_minutes ? parseInt(formData.prep_time_minutes) : null,
-        cook_time_minutes: formData.cook_time_minutes ? parseInt(formData.cook_time_minutes) : null,
-        servings: formData.servings ? parseInt(formData.servings) : 1,
+        prep_time_min: formData.prep_time_minutes ? parseInt(formData.prep_time_minutes) : null,
         calories: formData.calories ? parseInt(formData.calories) : null,
         protein_g: formData.protein_g ? parseFloat(formData.protein_g) : null,
         carbs_g: formData.carbs_g ? parseFloat(formData.carbs_g) : null,
-        fat_g: formData.fat_g ? parseFloat(formData.fat_g) : null,
-        image_url: imageUrl || null
+        fats_g: formData.fat_g ? parseFloat(formData.fat_g) : null,
+        image_path: imageUrl || null
       }
 
       await onSave(recipeData, recipe?.id)
