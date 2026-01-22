@@ -521,6 +521,7 @@ function RecipeFormModal({ isOpen, onClose, recipe = null, onSave }) {
       setFormData({
         name: '',
         description: '',
+        ingredients: '',
         instructions: '',
         category: 'lunch',
         prep_time_minutes: '',
