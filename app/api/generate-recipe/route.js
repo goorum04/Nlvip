@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-})
+// Verificar que la API key existe
+const apiKey = process.env.OPENAI_API_KEY
+
+function getOpenAIClient() {
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY no está configurada en las variables de entorno')
+  }
+  return new OpenAI({ apiKey })
+}
 
 // Función para buscar imagen de receta en Unsplash
 async function searchRecipeImage(recipeName) {
