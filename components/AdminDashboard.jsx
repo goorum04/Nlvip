@@ -1184,61 +1184,70 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
           {/* RUTINAS / WORKOUTS */}
           <TabsContent value="workouts" className="space-y-4">
-            <Card className="bg-[#1a1a1a] border-violet-500/20">
-              <CardHeader>
-                <CardTitle className="text-violet-400 flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  Crear Rutina
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCreateWorkout} className="space-y-4">
-                  <div>
-                    <Label className="text-gray-400 text-sm">Nombre</Label>
-                    <Input 
-                      value={newWorkoutName} 
-                      onChange={(e) => setNewWorkoutName(e.target.value)} 
-                      placeholder="Ej: Full Body Explosivo" 
-                      required 
-                      className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1" 
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-gray-400 text-sm">Descripción / Ejercicios</Label>
-                    <Textarea 
-                      value={newWorkoutDesc} 
-                      onChange={(e) => setNewWorkoutDesc(e.target.value)} 
-                      placeholder="Detalla los ejercicios, series, repeticiones..." 
-                      required 
-                      className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1 min-h-[150px]" 
-                    />
-                  </div>
-                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-2xl py-6">
-                    <Dumbbell className="w-5 h-5 mr-2" /> Crear Rutina
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+            {showWorkoutBuilder ? (
+              <WorkoutBuilder
+                trainerId={user.id}
+                existingWorkout={editingWorkout}
+                onSave={() => {
+                  setShowWorkoutBuilder(false)
+                  setEditingWorkout(null)
+                  loadWorkoutTemplates()
+                }}
+                onCancel={() => {
+                  setShowWorkoutBuilder(false)
+                  setEditingWorkout(null)
+                }}
+              />
+            ) : (
+              <>
+                <Card className="bg-[#1a1a1a] border-violet-500/20">
+                  <CardContent className="pt-6">
+                    <Button 
+                      onClick={() => setShowWorkoutBuilder(true)}
+                      className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-2xl py-6"
+                    >
+                      <Plus className="w-5 h-5 mr-2" /> Crear Nueva Rutina (con días y ejercicios)
+                    </Button>
+                    <p className="text-xs text-gray-500 text-center mt-2">
+                      Crea rutinas divididas por días con videos explicativos para cada ejercicio
+                    </p>
+                  </CardContent>
+                </Card>
 
-            <Card className="bg-[#1a1a1a] border-violet-500/20">
-              <CardHeader>
-                <CardTitle className="text-violet-400">Todas las Rutinas ({workoutTemplates.length})</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {workoutTemplates.map(workout => (
-                  <div key={workout.id} className="p-4 bg-black/50 rounded-2xl border border-violet-500/10">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-bold text-white">{workout.name}</h4>
-                        <p className="text-sm text-gray-400 line-clamp-2 mt-1">{workout.description}</p>
-                        <p className="text-xs text-violet-400 mt-2">Creado por: {workout.trainer?.name || 'Admin'}</p>
+                <Card className="bg-[#1a1a1a] border-violet-500/20">
+                  <CardHeader>
+                    <CardTitle className="text-violet-400">Todas las Rutinas ({workoutTemplates.length})</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {workoutTemplates.map(workout => (
+                      <div 
+                        key={workout.id} 
+                        className="p-4 bg-black/50 rounded-2xl border border-violet-500/10 cursor-pointer hover:bg-violet-500/10 hover:border-violet-500/30 transition-all"
+                        onClick={() => {
+                          setEditingWorkout(workout)
+                          setShowWorkoutBuilder(true)
+                        }}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
+                              <Dumbbell className="w-6 h-6 text-black" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-white">{workout.name}</h4>
+                              <p className="text-sm text-gray-400 line-clamp-1 mt-1">{workout.description}</p>
+                              <p className="text-xs text-violet-400 mt-1">Creado por: {workout.trainer?.name || 'Admin'}</p>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500">Click para editar →</p>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
-                {workoutTemplates.length === 0 && <p className="text-center text-gray-400 py-8">No hay rutinas creadas</p>}
-              </CardContent>
-            </Card>
+                    ))}
+                    {workoutTemplates.length === 0 && <p className="text-center text-gray-400 py-8">No hay rutinas creadas</p>}
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </TabsContent>
 
           {/* DIETAS */}
