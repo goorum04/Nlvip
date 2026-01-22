@@ -41,6 +41,9 @@ async function searchRecipeImage(recipeName) {
 
 export async function POST(request) {
   try {
+    // Obtener la API key en el momento de la request
+    const apiKey = process.env.OPENAI_API_KEY
+    
     // Verificar API key primero
     if (!apiKey) {
       console.error('ERROR: OPENAI_API_KEY no está configurada')
