@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { 
   UtensilsCrossed, Search, Flame, Clock, Users, Plus, Edit2, Trash2,
-  Coffee, Sun, Moon, Apple, ChefHat, Loader2, ImagePlus, X
+  Coffee, Sun, Moon, Apple, ChefHat, Loader2, ImagePlus, X, Camera, Sparkles, Wand2
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
