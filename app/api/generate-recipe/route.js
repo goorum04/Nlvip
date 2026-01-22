@@ -174,9 +174,30 @@ Formato de respuesta (JSON):
 
   } catch (error) {
     console.error('Recipe generation error:', error)
+    
+    // Mejorar mensaje de error según el tipo
+    let errorMessage = 'Error al generar la receta'
+    let statusCode = 500
+    
+    if (error.status === 401) {
+      errorMessage = 'Error de autenticación con OpenAI. La API key puede ser inválida o estar expirada. Por favor, verifica la configuración en Vercel.'
+      statusCode = 401
+    } else if (error.status === 429) {
+      errorMessage = 'Has excedido el límite de uso de la API de OpenAI. Intenta de nuevo más tarde.'
+      statusCode = 429
+    } else if (error.status === 400) {
+      errorMessage = 'La imagen no pudo ser procesada. Intenta con otra imagen.'
+      statusCode = 400
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
     return NextResponse.json(
-      { error: error.message || 'Error al generar la receta' },
-      { status: 500 }
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
+      { status: statusCode }
     )
   }
 }
