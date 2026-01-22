@@ -45,6 +45,14 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   // Profile modal state
   const [showProfileModal, setShowProfileModal] = useState(false)
 
+  // Member detail panel state
+  const [selectedMember, setSelectedMember] = useState(null)
+  const [showMemberDetail, setShowMemberDetail] = useState(false)
+
+  // Workout builder state
+  const [showWorkoutBuilder, setShowWorkoutBuilder] = useState(false)
+  const [editingWorkout, setEditingWorkout] = useState(null)
+
   // Form states
   const [newTrainerEmail, setNewTrainerEmail] = useState('')
   const [newTrainerPassword, setNewTrainerPassword] = useState('')
