@@ -1247,13 +1247,24 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                   return (
                     <div key={challenge.id} className="p-4 bg-black/50 rounded-2xl border border-violet-500/10">
                       <div className="flex items-start justify-between mb-3">
-                        <div>
+                        <div className="flex-1">
                           <h3 className="font-bold text-white text-lg">{challenge.title}</h3>
                           <p className="text-sm text-gray-400">{challenge.description}</p>
                           <p className="text-xs text-violet-400 mt-1">Creado por: {challenge.creator?.name}</p>
                         </div>
-                        <div className={`px-3 py-1 rounded-lg text-xs font-bold ${challenge.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
-                          {challenge.is_active ? `${daysLeft}d restantes` : 'Finalizado'}
+                        <div className="flex items-center gap-2">
+                          <div className={`px-3 py-1 rounded-lg text-xs font-bold ${challenge.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                            {challenge.is_active ? `${daysLeft}d restantes` : 'Finalizado'}
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-500/10"
+                            onClick={() => handleDeleteChallenge(challenge.id)}
+                            title="Eliminar reto"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                       
