@@ -1830,6 +1830,18 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         </Tabs>
       </main>
 
+      {/* Member Detail Panel */}
+      <MemberDetailPanel
+        member={selectedMember}
+        isOpen={showMemberDetail}
+        onClose={() => {
+          setShowMemberDetail(false)
+          setSelectedMember(null)
+        }}
+        trainers={trainers}
+        onRefresh={loadMembers}
+      />
+
       <Toaster />
     </div>
   )
