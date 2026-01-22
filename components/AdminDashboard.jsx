@@ -1003,16 +1003,31 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               <CardContent>
                 <div className="space-y-3">
                   {members.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-violet-500/10">
-                      <div>
-                        <p className="font-semibold text-white">{member.name}</p>
-                        <p className="text-sm text-gray-400">{member.email}</p>
-                        <p className="text-xs text-violet-400 mt-1">
-                          Entrenador: {member.trainer_members?.[0]?.trainer?.name || 'No asignado'}
-                        </p>
+                    <div 
+                      key={member.id} 
+                      className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-violet-500/10 cursor-pointer hover:bg-violet-500/10 hover:border-violet-500/30 transition-all"
+                      onClick={() => {
+                        setSelectedMember(member)
+                        setShowMemberDetail(true)
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold">
+                          {member.name?.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-white hover:text-violet-400 transition-colors">{member.name}</p>
+                          <p className="text-sm text-gray-400">{member.email}</p>
+                          <p className="text-xs text-violet-400 mt-1">
+                            Entrenador: {member.trainer_members?.[0]?.trainer?.name || 'No asignado'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-400">
-                        {new Date(member.created_at).toLocaleDateString()}
+                      <div className="text-right">
+                        <div className="text-sm text-gray-400">
+                          {new Date(member.created_at).toLocaleDateString()}
+                        </div>
+                        <p className="text-xs text-violet-400 mt-1">Click para ver detalles →</p>
                       </div>
                     </div>
                   ))}
