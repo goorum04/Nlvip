@@ -186,6 +186,297 @@ function RecipeCard({ recipe, onEdit, onDelete, canEdit = false }) {
   )
 }
 
+// Modal para crear receta con IA desde foto de producto
+function AIRecipeGeneratorModal({ isOpen, onClose, onRecipeGenerated }) {
+  const [imagePreview, setImagePreview] = useState(null)
+  const [imageBase64, setImageBase64] = useState(null)
+  const [generating, setGenerating] = useState(false)
+  const [generatedRecipe, setGeneratedRecipe] = useState(null)
+  const [error, setError] = useState(null)
+  const { toast } = useToast()
+
+  const handleImageCapture = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validar tipo y tamaño
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Error', description: 'Solo se permiten imágenes', variant: 'destructive' })
+      return
+    }
+
+    // Crear preview
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      setImagePreview(event.target.result)
+      // Extraer base64 sin el prefijo
+      const base64 = event.target.result.split(',')[1]
+      setImageBase64(base64)
+    }
+    reader.readAsDataURL(file)
+    setGeneratedRecipe(null)
+    setError(null)
+  }
+
+  const handleGenerate = async () => {
+    if (!imageBase64) {
+      toast({ title: 'Error', description: 'Primero sube una foto del producto', variant: 'destructive' })
+      return
+    }
+
+    setGenerating(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/generate-recipe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64 })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al generar la receta')
+      }
+
+      setGeneratedRecipe(data)
+      toast({ title: '¡Receta generada!', description: `Basada en: ${data.producto_detectado}` })
+    } catch (err) {
+      setError(err.message)
+      toast({ title: 'Error', description: err.message, variant: 'destructive' })
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const handleSaveRecipe = () => {
+    if (!generatedRecipe) return
+
+    const recipeData = {
+      name: generatedRecipe.receta.nombre,
+      description: generatedRecipe.receta.descripcion,
+      instructions: generatedRecipe.receta.instrucciones.join('\n'),
+      category: generatedRecipe.receta.categoria === 'almuerzo' ? 'lunch' : 
+                generatedRecipe.receta.categoria === 'desayuno' ? 'breakfast' :
+                generatedRecipe.receta.categoria === 'cena' ? 'dinner' : 
+                generatedRecipe.receta.categoria === 'snack' ? 'snack' : 'lunch',
+      calories: generatedRecipe.receta.macros_por_porcion.calorias,
+      protein_g: generatedRecipe.receta.macros_por_porcion.proteinas_g,
+      carbs_g: generatedRecipe.receta.macros_por_porcion.carbohidratos_g,
+      fat_g: generatedRecipe.receta.macros_por_porcion.grasas_g,
+      servings: generatedRecipe.receta.porciones,
+      image_url: generatedRecipe.receta.imagen_url,
+      ingredients: generatedRecipe.receta.ingredientes.join('\n')
+    }
+
+    onRecipeGenerated(recipeData)
+    handleClose()
+  }
+
+  const handleClose = () => {
+    setImagePreview(null)
+    setImageBase64(null)
+    setGeneratedRecipe(null)
+    setError(null)
+    onClose()
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="bg-[#0a0a0a] border-violet-500/20 max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-white flex items-center gap-2">
+            <Wand2 className="w-5 h-5 text-violet-400" />
+            Crear Receta con IA
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Paso 1: Subir imagen */}
+          {!generatedRecipe && (
+            <div className="space-y-4">
+              <p className="text-gray-400 text-sm">
+                📸 Sube una foto de un producto o ingrediente y la IA creará una receta saludable completa.
+              </p>
+
+              {/* Área de imagen */}
+              <div className="relative">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img 
+                      src={imagePreview} 
+                      alt="Producto" 
+                      className="w-full aspect-video object-cover rounded-xl border border-violet-500/20"
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
+                      onClick={() => { setImagePreview(null); setImageBase64(null); }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full aspect-video bg-white/5 border-2 border-dashed border-violet-500/30 rounded-xl cursor-pointer hover:bg-white/10 transition-all">
+                    <Camera className="w-12 h-12 text-violet-400 mb-3" />
+                    <span className="text-white font-medium">Subir foto del producto</span>
+                    <span className="text-gray-500 text-sm mt-1">Toca para hacer foto o seleccionar imagen</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleImageCapture}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* Botón generar */}
+              {imagePreview && (
+                <Button
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold py-6 rounded-xl"
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Analizando producto y creando receta...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      Generar Receta con IA
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {error && (
+                <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Paso 2: Mostrar receta generada */}
+          {generatedRecipe && (
+            <div className="space-y-4">
+              {/* Producto detectado */}
+              <div className="p-3 bg-violet-500/10 border border-violet-500/30 rounded-xl">
+                <p className="text-violet-400 text-sm">
+                  🔍 Producto detectado: <span className="font-semibold text-white">{generatedRecipe.producto_detectado}</span>
+                </p>
+              </div>
+
+              {/* Imagen de la receta */}
+              {generatedRecipe.receta.imagen_url && (
+                <img 
+                  src={generatedRecipe.receta.imagen_url} 
+                  alt={generatedRecipe.receta.nombre}
+                  className="w-full aspect-video object-cover rounded-xl"
+                />
+              )}
+
+              {/* Nombre y descripción */}
+              <div>
+                <h3 className="text-xl font-bold text-white">{generatedRecipe.receta.nombre}</h3>
+                <p className="text-gray-400 mt-1">{generatedRecipe.receta.descripcion}</p>
+              </div>
+
+              {/* Macros */}
+              <div className="grid grid-cols-4 gap-2">
+                <div className="bg-orange-500/10 rounded-xl p-3 text-center">
+                  <p className="text-orange-400 font-bold">{generatedRecipe.receta.macros_por_porcion.calorias}</p>
+                  <p className="text-xs text-gray-500">kcal</p>
+                </div>
+                <div className="bg-blue-500/10 rounded-xl p-3 text-center">
+                  <p className="text-blue-400 font-bold">{generatedRecipe.receta.macros_por_porcion.proteinas_g}g</p>
+                  <p className="text-xs text-gray-500">Prot</p>
+                </div>
+                <div className="bg-amber-500/10 rounded-xl p-3 text-center">
+                  <p className="text-amber-400 font-bold">{generatedRecipe.receta.macros_por_porcion.carbohidratos_g}g</p>
+                  <p className="text-xs text-gray-500">Carbs</p>
+                </div>
+                <div className="bg-purple-500/10 rounded-xl p-3 text-center">
+                  <p className="text-purple-400 font-bold">{generatedRecipe.receta.macros_por_porcion.grasas_g}g</p>
+                  <p className="text-xs text-gray-500">Grasas</p>
+                </div>
+              </div>
+
+              {/* Info adicional */}
+              <div className="flex gap-4 text-sm text-gray-400">
+                <span>⏱️ {generatedRecipe.receta.tiempo_preparacion}</span>
+                <span>👥 {generatedRecipe.receta.porciones} porciones</span>
+                <span>📊 Dificultad: {generatedRecipe.receta.dificultad}</span>
+              </div>
+
+              {/* Ingredientes */}
+              <div>
+                <h4 className="text-white font-semibold mb-2">🥗 Ingredientes</h4>
+                <ul className="space-y-1">
+                  {generatedRecipe.receta.ingredientes.map((ing, idx) => (
+                    <li key={idx} className="text-gray-400 text-sm flex items-start gap-2">
+                      <span className="text-violet-400">•</span>
+                      {ing}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Instrucciones */}
+              <div>
+                <h4 className="text-white font-semibold mb-2">📝 Instrucciones</h4>
+                <ol className="space-y-2">
+                  {generatedRecipe.receta.instrucciones.map((step, idx) => (
+                    <li key={idx} className="text-gray-400 text-sm flex items-start gap-3">
+                      <span className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400 text-xs font-bold flex-shrink-0">
+                        {idx + 1}
+                      </span>
+                      {step.replace(/^Paso \d+:\s*/i, '')}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              {/* Consejos */}
+              {generatedRecipe.receta.consejos && (
+                <div className="p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-xl">
+                  <p className="text-cyan-400 text-sm">
+                    💡 <span className="font-semibold">Consejo:</span> {generatedRecipe.receta.consejos}
+                  </p>
+                </div>
+              )}
+
+              {/* Botones de acción */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => { setGeneratedRecipe(null); setImagePreview(null); setImageBase64(null); }}
+                  className="flex-1 border-white/10 text-gray-300"
+                >
+                  Generar otra
+                </Button>
+                <Button
+                  onClick={handleSaveRecipe}
+                  className="flex-1 bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Guardar Receta
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // Modal crear/editar receta
 function RecipeFormModal({ isOpen, onClose, recipe = null, onSave }) {
   const [formData, setFormData] = useState({
