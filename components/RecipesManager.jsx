@@ -975,7 +975,7 @@ export function RecipesManager({ userId }) {
 
   return (
     <div className="space-y-4">
-      {/* Header con botón crear */}
+      {/* Header con botones crear */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 flex-1 w-full">
           <div className="relative flex-1">
@@ -1000,13 +1000,22 @@ export function RecipesManager({ userId }) {
             </SelectContent>
           </Select>
         </div>
-        <Button 
-          onClick={() => { setEditingRecipe(null); setShowForm(true); }}
-          className="bg-gradient-to-r from-violet-600 to-cyan-600 text-white w-full sm:w-auto"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nueva Receta
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button 
+            onClick={() => setShowAIGenerator(true)}
+            className="flex-1 sm:flex-none bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+          >
+            <Wand2 className="w-4 h-4 mr-2" />
+            Crear con IA
+          </Button>
+          <Button 
+            onClick={() => { setEditingRecipe(null); setShowForm(true); }}
+            className="flex-1 sm:flex-none bg-gradient-to-r from-violet-600 to-cyan-600 text-white"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nueva Receta
+          </Button>
+        </div>
       </div>
 
       {/* Grid de recetas */}
@@ -1026,17 +1035,36 @@ export function RecipesManager({ userId }) {
         <div className="text-center py-20 bg-white/[0.02] rounded-2xl border border-white/5">
           <UtensilsCrossed className="w-16 h-16 mx-auto text-gray-700 mb-4" />
           <p className="text-gray-500 mb-4">No hay recetas creadas</p>
-          <Button 
-            onClick={() => { setEditingRecipe(null); setShowForm(true); }}
-            className="bg-gradient-to-r from-violet-600 to-cyan-600 text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Crear primera receta
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button 
+              onClick={() => setShowAIGenerator(true)}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+            >
+              <Wand2 className="w-4 h-4 mr-2" />
+              Crear con IA
+            </Button>
+            <Button 
+              onClick={() => { setEditingRecipe(null); setShowForm(true); }}
+              className="bg-gradient-to-r from-violet-600 to-cyan-600 text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Crear manual
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* Modal form */}
+      {/* Modal crear con IA */}
+      <AIRecipeGeneratorModal
+        isOpen={showAIGenerator}
+        onClose={() => setShowAIGenerator(false)}
+        onRecipeGenerated={async (recipeData) => {
+          await handleSave(recipeData)
+          setShowAIGenerator(false)
+        }}
+      />
+
+      {/* Modal form manual */}
       <RecipeFormModal
         isOpen={showForm}
         onClose={() => { setShowForm(false); setEditingRecipe(null); }}
