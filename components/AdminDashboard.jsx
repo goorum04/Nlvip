@@ -209,6 +209,89 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     }
   }
 
+  // Delete workout template
+  const handleDeleteWorkout = async (workoutId) => {
+    if (!confirm('¿Eliminar esta rutina? Se eliminarán también todos los días y ejercicios asociados.')) return
+    try {
+      // Primero eliminar ejercicios de los días
+      const { data: days } = await supabase.from('workout_days').select('id').eq('workout_template_id', workoutId)
+      if (days && days.length > 0) {
+        const dayIds = days.map(d => d.id)
+        await supabase.from('workout_exercises').delete().in('workout_day_id', dayIds)
+      }
+      // Eliminar días
+      await supabase.from('workout_days').delete().eq('workout_template_id', workoutId)
+      // Eliminar rutina
+      const { error } = await supabase.from('workout_templates').delete().eq('id', workoutId)
+      if (error) throw error
+      toast({ title: 'Rutina eliminada' })
+      loadWorkoutTemplates()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
+  }
+
+  // Delete diet template
+  const handleDeleteDiet = async (dietId) => {
+    if (!confirm('¿Eliminar esta dieta?')) return
+    try {
+      const { error } = await supabase.from('diet_templates').delete().eq('id', dietId)
+      if (error) throw error
+      toast({ title: 'Dieta eliminada' })
+      loadDietTemplates()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
+  }
+
+  // Delete trainer (change to member)
+  const handleDeleteTrainer = async (trainerId) => {
+    if (!confirm('¿Quitar rol de entrenador a este usuario? Se convertirá en socio.')) return
+    try {
+      const { error } = await supabase.from('profiles').update({ role: 'member' }).eq('id', trainerId)
+      if (error) throw error
+      toast({ title: 'Entrenador degradado a socio' })
+      loadTrainers()
+      loadMembers()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
+  }
+
+  // Delete member
+  const handleDeleteMember = async (memberId) => {
+    if (!confirm('¿Eliminar este socio? Esta acción no se puede deshacer.')) return
+    try {
+      // Eliminar datos relacionados
+      await supabase.from('workout_assignments').delete().eq('member_id', memberId)
+      await supabase.from('diet_assignments').delete().eq('member_id', memberId)
+      await supabase.from('food_logs').delete().eq('member_id', memberId)
+      await supabase.from('progress_photos').delete().eq('member_id', memberId)
+      await supabase.from('feed_posts').delete().eq('author_id', memberId)
+      // Finalmente eliminar perfil
+      const { error } = await supabase.from('profiles').delete().eq('id', memberId)
+      if (error) throw error
+      toast({ title: 'Socio eliminado' })
+      loadMembers()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
+  }
+
+  // Delete challenge
+  const handleDeleteChallenge = async (challengeId) => {
+    if (!confirm('¿Eliminar este reto?')) return
+    try {
+      await supabase.from('challenge_participants').delete().eq('challenge_id', challengeId)
+      const { error } = await supabase.from('challenges').delete().eq('id', challengeId)
+      if (error) throw error
+      toast({ title: 'Reto eliminado' })
+      loadChallenges()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
+  }
+
   // Create challenge
   const handleCreateChallenge = async (e) => {
     e.preventDefault()
