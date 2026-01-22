@@ -10,7 +10,7 @@ import time
 import sys
 
 # Configuration
-BASE_URL = "https://fitapp-supabase.preview.emergentagent.com"
+BASE_URL = "https://fitness-clubhouse.preview.emergentagent.com"
 API_ENDPOINT = f"{BASE_URL}/api/admin-assistant"
 TIMEOUT = 60
 
