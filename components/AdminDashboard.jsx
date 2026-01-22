@@ -1099,13 +1099,15 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                   {members.map((member) => (
                     <div 
                       key={member.id} 
-                      className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-violet-500/10 cursor-pointer hover:bg-violet-500/10 hover:border-violet-500/30 transition-all"
-                      onClick={() => {
-                        setSelectedMember(member)
-                        setShowMemberDetail(true)
-                      }}
+                      className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-violet-500/10 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all"
                     >
-                      <div className="flex items-center gap-3">
+                      <div 
+                        className="flex items-center gap-3 flex-1 cursor-pointer"
+                        onClick={() => {
+                          setSelectedMember(member)
+                          setShowMemberDetail(true)
+                        }}
+                      >
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold">
                           {member.name?.charAt(0)}
                         </div>
@@ -1117,11 +1119,25 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm text-gray-400">
-                          {new Date(member.created_at).toLocaleDateString()}
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <div className="text-sm text-gray-400">
+                            {new Date(member.created_at).toLocaleDateString()}
+                          </div>
+                          <p className="text-xs text-violet-400 mt-1">Click para ver detalles →</p>
                         </div>
-                        <p className="text-xs text-violet-400 mt-1">Click para ver detalles →</p>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-500/10"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteMember(member.id)
+                          }}
+                          title="Eliminar socio"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
