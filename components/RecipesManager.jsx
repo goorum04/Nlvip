@@ -482,6 +482,7 @@ function RecipeFormModal({ isOpen, onClose, recipe = null, onSave }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    ingredients: '',
     instructions: '',
     category: 'lunch',
     prep_time_minutes: '',
