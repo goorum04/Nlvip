@@ -1,23 +1,59 @@
 #!/bin/bash
-# Build script for Capacitor (iOS/Android)
-# Run this to prepare the app for mobile
 
-echo "🔨 Building NL VIP CLUB for mobile..."
+# ============================================
+# NL VIP CLUB - Script de Build para App Store
+# ============================================
 
-# 1. Create production build
-echo "📦 Creating Next.js build..."
+echo "🚀 Iniciando build para App Store..."
+
+# 1. Instalar dependencias
+echo "📦 Instalando dependencias..."
+yarn install
+
+# 2. Build de Next.js con configuración móvil
+echo "🔨 Generando build de producción..."
+cp next.config.js next.config.backup.js
+cp next.config.mobile.js next.config.js
 yarn build
+mv next.config.backup.js next.config.js
 
-# 2. Export static files
-echo "📤 Exporting static files..."
-yarn next export -o out
+# 3. Verificar que existe la carpeta 'out'
+if [ ! -d "out" ]; then
+    echo "❌ Error: No se generó la carpeta 'out'"
+    exit 1
+fi
 
-# 3. Sync with Capacitor
-echo "📱 Syncing with Capacitor..."
+echo "✅ Build completado en carpeta 'out'"
+
+# 4. Sincronizar con Capacitor
+echo "📱 Sincronizando con Capacitor..."
+
+# Añadir plataformas si no existen
+if [ ! -d "ios" ]; then
+    echo "📱 Añadiendo plataforma iOS..."
+    npx cap add ios
+fi
+
+if [ ! -d "android" ]; then
+    echo "🤖 Añadiendo plataforma Android..."
+    npx cap add android
+fi
+
+# Sincronizar
 npx cap sync
 
-echo "✅ Build complete!"
 echo ""
-echo "Next steps:"
-echo "  iOS:     npx cap open ios"
-echo "  Android: npx cap open android"
+echo "============================================"
+echo "✅ ¡BUILD COMPLETADO!"
+echo "============================================"
+echo ""
+echo "Próximos pasos:"
+echo ""
+echo "📱 Para iOS:"
+echo "   npx cap open ios"
+echo "   (Se abrirá Xcode)"
+echo ""
+echo "🤖 Para Android:"
+echo "   npx cap open android"
+echo "   (Se abrirá Android Studio)"
+echo ""
