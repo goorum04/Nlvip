@@ -2002,3 +2002,4 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     </div>
   )
 }
+// Admin moderation enabled
