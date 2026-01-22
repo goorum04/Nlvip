@@ -1305,14 +1305,16 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                     {workoutTemplates.map(workout => (
                       <div 
                         key={workout.id} 
-                        className="p-4 bg-black/50 rounded-2xl border border-violet-500/10 cursor-pointer hover:bg-violet-500/10 hover:border-violet-500/30 transition-all"
-                        onClick={() => {
-                          setEditingWorkout(workout)
-                          setShowWorkoutBuilder(true)
-                        }}
+                        className="p-4 bg-black/50 rounded-2xl border border-violet-500/10 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all"
                       >
                         <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
+                          <div 
+                            className="flex items-center gap-3 flex-1 cursor-pointer"
+                            onClick={() => {
+                              setEditingWorkout(workout)
+                              setShowWorkoutBuilder(true)
+                            }}
+                          >
                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
                               <Dumbbell className="w-6 h-6 text-black" />
                             </div>
@@ -1322,7 +1324,19 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                               <p className="text-xs text-violet-400 mt-1">Creado por: {workout.trainer?.name || 'Admin'}</p>
                             </div>
                           </div>
-                          <p className="text-xs text-gray-500">Click para editar →</p>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-500/10"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteWorkout(workout.id)
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
