@@ -42,6 +42,24 @@ async function searchRecipeImage(recipeName) {
 
 export async function POST(request) {
   try {
+    // Verificar API key primero
+    if (!apiKey) {
+      console.error('ERROR: OPENAI_API_KEY no está configurada')
+      return NextResponse.json({ 
+        error: 'Error de configuración: La API key de OpenAI no está configurada en el servidor. Contacta al administrador.',
+        debug: 'OPENAI_API_KEY is missing'
+      }, { status: 500 })
+    }
+
+    // Verificar formato básico de la API key
+    if (!apiKey.startsWith('sk-')) {
+      console.error('ERROR: OPENAI_API_KEY tiene formato inválido')
+      return NextResponse.json({ 
+        error: 'Error de configuración: La API key de OpenAI tiene un formato inválido.',
+        debug: 'Invalid API key format'
+      }, { status: 500 })
+    }
+
     const { imageBase64, imageUrl } = await request.json()
 
     if (!imageBase64 && !imageUrl) {
@@ -52,6 +70,9 @@ export async function POST(request) {
     const imageContent = imageBase64 
       ? { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } }
       : { type: 'image_url', image_url: { url: imageUrl } }
+
+    // Obtener cliente de OpenAI
+    const openai = getOpenAIClient()
 
     // Paso 1: Analizar el producto con visión
     const analysisResponse = await openai.chat.completions.create({
