@@ -3,12 +3,6 @@ import './globals.css'
 export const metadata = {
   title: 'NL VIP Club',
   description: 'Premium Fitness Experience - Tu gimnasio en tu bolsillo',
-  manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'NL VIP Club',
-  },
   formatDetection: {
     telephone: false,
   },
@@ -36,14 +30,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es">
       <head>
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="NL VIP Club" />
-        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#7c3aed" />
         <meta name="msapplication-tap-highlight" content="no" />
         <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
-        <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="overscroll-none">
         {children}
