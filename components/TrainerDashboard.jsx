@@ -351,23 +351,18 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div 
-                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-2xl font-black text-black shadow-lg shadow-violet-500/30 overflow-hidden cursor-pointer"
-                onClick={() => setShowProfileModal(true)}
-              >
-                {profile.avatar_url ? (
-                  <AvatarBubble profile={profile} size="xl" onClick={() => setShowProfileModal(true)} />
-                ) : (
-                  profile.name?.charAt(0)
-                )}
-              </div>
               <div className="text-right hidden md:block">
-                <p className="text-white font-semibold" onClick={() => setShowProfileModal(true)} className="cursor-pointer">{profile.name}</p>
+                <p className="text-white font-semibold">{profile.name}</p>
                 <div className="flex items-center gap-1 justify-end">
                   <Sparkles className="w-3 h-3 text-violet-400" />
                   <p className="text-xs text-violet-400">Entrenador</p>
                 </div>
               </div>
+              <AvatarBubble 
+                profile={profile} 
+                size="md" 
+                onClick={() => setShowProfileModal(true)} 
+              />
               <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
                 <LogOut className="w-5 h-5" />
               </Button>

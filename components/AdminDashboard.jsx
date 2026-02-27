@@ -697,20 +697,15 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div 
-                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-2xl font-black text-black shadow-lg shadow-violet-500/30 overflow-hidden cursor-pointer"
-                onClick={() => setShowProfileModal(true)}
-              >
-                {profile.avatar_url ? (
-                  <AvatarBubble profile={profile} size="xl" onClick={() => setShowProfileModal(true)} />
-                ) : (
-                  profile.name?.charAt(0)
-                )}
-              </div>
-              <div className="text-right hidden md:block" onClick={() => setShowProfileModal(true)} className="cursor-pointer">
+              <div className="text-right hidden md:block">
                 <p className="text-sm text-gray-300 font-semibold">{profile.name}</p>
                 <p className="text-xs text-violet-400">Administrador</p>
               </div>
+              <AvatarBubble 
+                profile={profile} 
+                size="md" 
+                onClick={() => setShowProfileModal(true)} 
+              />
               <Button
                 variant="outline" 
                 size="sm"

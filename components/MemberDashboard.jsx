@@ -409,6 +409,11 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <AvatarBubble 
+                profile={profile} 
+                size="md" 
+                onClick={() => setShowProfileModal(true)} 
+              />
               <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
                 <LogOut className="w-5 h-5" />
               </Button>
