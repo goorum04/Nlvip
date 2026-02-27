@@ -148,7 +148,20 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
 
       if (error) throw error
 
-      setAvatarUrl(fileName)
+      // Obtener URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName)
+
+      // Actualizar perfil con la nueva URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id)
+
+      if (updateError) throw updateError
+
+      setAvatarUrl(publicUrl)
 
       toast({ title: '¡Foto subida!' })
     } catch (error) {
