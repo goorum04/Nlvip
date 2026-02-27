@@ -127,8 +127,8 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       toast({ title: 'Error', description: 'Solo se permiten imágenes', variant: 'destructive' })
       return
     }
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: 'Error', description: 'La imagen no puede superar 2MB', variant: 'destructive' })
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'Error', description: 'La imagen no puede superar 10MB', variant: 'destructive' })
       return
     }
 

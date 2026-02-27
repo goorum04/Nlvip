@@ -34,9 +34,9 @@ export default function VideoUploader({ workoutTemplateId, uploaderId, onSuccess
       return
     }
 
-    // Validar tamaño (50MB)
-    if (selectedFile.size > 50 * 1024 * 1024) {
-      setValidationError('El vídeo es muy grande. Máximo 50MB')
+    // Validar tamaño (100MB)
+    if (selectedFile.size > 100 * 1024 * 1024) {
+      setValidationError('El vídeo es muy grande. Máximo 100MB')
       return
     }
 

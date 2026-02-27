@@ -16,7 +16,7 @@ export function useFileUpload() {
 
     try {
       // Validar tamaño
-      const maxSize = options.maxSize || 50 * 1024 * 1024 // 50MB default
+      const maxSize = options.maxSize || 100 * 1024 * 1024 // 100MB default
       if (file.size > maxSize) {
         throw new Error(`El archivo es demasiado grande. Máximo ${Math.round(maxSize / 1024 / 1024)}MB`)
       }
