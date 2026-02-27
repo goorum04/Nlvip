@@ -371,7 +371,12 @@ export default function AdminAssistant({ userId }) {
           ) : (
             <>
               {messages.map((msg, idx) => (
-                <ChatMessage key={idx} message={msg.content} isUser={msg.role === 'user'} />
+               <ChatMessage key={idx} message={msg.content} isUser={msg.role === 'user'} />
+              {msg.role === 'assistant' && (
+              <p style={{fontSize:'11px', color:'#888', marginTop:'-8px', marginBottom:'8px', paddingLeft:'8px'}}>
+             ⚠️ Información orientativa. Consulta siempre a un profesional de salud. Fuentes: <a href="https://www.who.int" target="_blank" style={{color:'#a78bfa'}}>OMS</a>, <a href="https://www.nih.gov" target="_blank" style={{color:'#a78bfa'}}>NIH</a>
+             </p>
+           )}
               ))}
               {isLoading && <ChatMessage message="" isUser={false} isLoading={true} />}
               {pendingPlan && (
