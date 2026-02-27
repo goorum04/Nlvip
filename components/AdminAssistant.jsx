@@ -409,8 +409,7 @@ export default function AdminAssistant({ userId }) {
       </p>
     )}
   </div>
-))}
-              ))}
+   ))}
               {isLoading && <ChatMessage message="" isUser={false} isLoading={true} />}
               {pendingPlan && (
                 <ExecutionPlan 
