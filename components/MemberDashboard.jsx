@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle, 
   Flag, Sparkles, Flame, Target, Zap, Star, ShoppingBag,
-  Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift
+  Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift, User
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
@@ -409,6 +409,15 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-xl text-gray-400 hover:text-violet-400 hover:bg-violet-400/10"
+                onClick={() => window.location.href = '/profile'}
+                title="Editar perfil"
+              >
+                <User className="w-5 h-5" />
+              </Button>
               <AvatarBubble 
                 profile={profile} 
                 size="md" 
