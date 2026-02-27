@@ -370,13 +370,46 @@ export default function AdminAssistant({ userId }) {
             </div>
           ) : (
             <>
-              {messages.map((msg, idx) => (
-               <ChatMessage key={idx} message={msg.content} isUser={msg.role === 'user'} />
-              {msg.role === 'assistant' && (
-              <p style={{fontSize:'11px', color:'#888', marginTop:'-8px', marginBottom:'8px', paddingLeft:'8px'}}>
-             ⚠️ Información orientativa. Consulta siempre a un profesional de salud. Fuentes: <a href="https://www.who.int" target="_blank" style={{color:'#a78bfa'}}>OMS</a>, <a href="https://www.nih.gov" target="_blank" style={{color:'#a78bfa'}}>NIH</a>
-             </p>
-           )}
+             {messages.map((msg, idx) => (
+  <div key={idx}>
+    <ChatMessage
+      message={msg.content}
+      isUser={msg.role === "user"}
+    />
+
+    {msg.role === "assistant" && (
+      <p
+        style={{
+          fontSize: "11px",
+          color: "#888",
+          marginTop: "8px",
+          marginBottom: "8px",
+          paddingLeft: "8px",
+        }}
+      >
+        Información orientativa. Consulte siempre a un profesional de salud.{" "}
+        Fuentes:{" "}
+        <a
+          href="https://www.who.int"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "#a78bfa" }}
+        >
+          OMS
+        </a>{" "}
+        /{" "}
+        <a
+          href="https://www.nih.gov"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "#a78bfa" }}
+        >
+          NIH
+        </a>
+      </p>
+    )}
+  </div>
+))}
               ))}
               {isLoading && <ChatMessage message="" isUser={false} isLoading={true} />}
               {pendingPlan && (
