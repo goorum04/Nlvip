@@ -311,8 +311,8 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                   <Camera className="w-4 h-4 text-white" />
                 )}
                 <input
-                  type="file"
-                  accept="image/*"
+                  type="file"    
+                  accept="image/jpeg,image/png,image/webp,image/heic"
                   onChange={handleAvatarUpload}
                   disabled={uploading}
                   className="hidden"
