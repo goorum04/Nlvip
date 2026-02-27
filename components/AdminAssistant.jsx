@@ -431,9 +431,7 @@ const isIOS = typeof navigator !== "undefined" &&
         <div className="p-4 border-t border-white/5 bg-black/50 backdrop-blur-xl">
           <div className="flex gap-3">
             {/* Voice button */}
-           {!isIOS && (
-            <button
-            )} 
+            <button 
               onClick={() => {
   if (!isIOS) toggleListening();
 }}
