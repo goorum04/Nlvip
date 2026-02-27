@@ -136,10 +136,16 @@ export default function AdminAssistant({ userId }) {
         handleSend(transcript)
       }
 
-      recognitionRef.current.onerror = () => {
-        setIsListening(false)
-        toast({ title: 'Error de voz', description: 'No se pudo reconocer tu voz', variant: 'destructive' })
-      }
+      recognitionRef.current.onerror = (e) => {
+       setIsListening(false)
+       if (e.error === 'not-allowed') {
+      toast({ title: 'Permiso denegado', description: 'Activa el micrófono en Ajustes > Safari > Micrófono', variant: 'destructive' })
+       } else if (e.error === 'no-speech') {
+       toast({ title: 'No se detectó voz', description: 'Inténtalo de nuevo', variant: 'destructive' })
+       } else {
+       toast({ title: 'Error de voz', description: 'No se pudo reconocer tu voz', variant: 'destructive' })
+  }
+}
 
       recognitionRef.current.onend = () => setIsListening(false)
     }
