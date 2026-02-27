@@ -120,8 +120,10 @@ export default function AdminAssistant({ userId }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
-const isIOS = typeof navigator !== "undefined" &&
-  /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isIOS = typeof navigator !== "undefined" && (
+  /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+);
   useEffect(() => {
     if (!isIOS &&
     typeof window !== 'undefined' &&
