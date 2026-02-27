@@ -86,6 +86,9 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
   const [birthDate, setBirthDate] = useState(profile?.birth_date || '')
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
   const [previewUrl, setPreviewUrl] = useState(null)
+  const [weight, setWeight] = useState(profile?.weight_kg || '')
+  const [height, setHeight] = useState(profile?.height_cm || '')
+  const [sex, setSex] = useState(profile?.sex || '')
 
   useEffect(() => {
     if (profile) {
@@ -93,6 +96,9 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       setPhone(profile.phone || '')
       setBirthDate(profile.birth_date || '')
       setAvatarUrl(profile.avatar_url || '')
+      setWeight(profile.weight_kg || '')
+      setHeight(profile.height_cm || '')
+      setSex(profile.sex || '')
       loadAvatarPreview()
     }
   }, [profile])
@@ -174,6 +180,9 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
           phone: phone.trim() || null,
           birth_date: birthDate || null,
           avatar_url: avatarUrl || null,
+          weight_kg: weight === '' ? null : Number(weight),
+          height_cm: height === '' ? null : Number(height),
+          sex: sex || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
@@ -368,6 +377,42 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                 onChange={(e) => setBirthDate(e.target.value)}
                 className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
               />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label className="text-gray-300 text-sm">Peso (kg)</Label>
+                <Input
+                  type="number"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  placeholder="70"
+                  className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300 text-sm">Altura (cm)</Label>
+                <Input
+                  type="number"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  placeholder="175"
+                  className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-300 text-sm">Sexo</Label>
+                <select
+                  value={sex}
+                  onChange={(e) => setSex(e.target.value)}
+                  className="bg-black/50 border border-violet-500/20 rounded-xl text-white mt-1 w-full h-10 px-3"
+                >
+                  <option value="">Seleccionar</option>
+                  <option value="male">Hombre</option>
+                  <option value="female">Mujer</option>
+                  <option value="other">Otro</option>
+                </select>
+              </div>
             </div>
           </div>
 
