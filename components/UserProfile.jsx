@@ -77,7 +77,6 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
 
   // Form states
   const [name, setName] = useState(profile?.name || '')
-  const [phone, setPhone] = useState(profile?.phone || '')
   const [birthDate, setBirthDate] = useState(profile?.birth_date || '')
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -88,7 +87,6 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
   useEffect(() => {
     if (profile) {
       setName(profile.name || '')
-      setPhone(profile.phone || '')
       setBirthDate(profile.birth_date || '')
       setAvatarUrl(profile.avatar_url || '')
       setWeight(profile.weight_kg || '')
@@ -172,7 +170,6 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
         .from('profiles')
         .update({
           name: name.trim(),
-          phone: phone.trim() || null,
           birth_date: birthDate || null,
           avatar_url: avatarUrl || null,
           weight_kg: weight === '' ? null : Number(weight),
@@ -191,7 +188,6 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
         onProfileUpdate({
           ...profile,
           name: name.trim(),
-          phone: phone.trim() || null,
           birth_date: birthDate || null,
           avatar_url: avatarUrl || null
         })
@@ -351,16 +347,6 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                 className="bg-black/30 border-violet-500/10 rounded-xl text-gray-500 mt-1"
               />
               <p className="text-xs text-gray-600 mt-1">El email no se puede modificar</p>
-            </div>
-
-            <div>
-              <Label className="text-gray-300 text-sm">Teléfono (opcional)</Label>
-              <Input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+34 600 000 000"
-                className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
-              />
             </div>
 
             <div>
