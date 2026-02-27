@@ -135,14 +135,20 @@ export default function AdminAssistant({ userId }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
-const isIOS = typeof navigator !== "undefined" && (
-  /iPhone|iPad|iPod/.test(navigator.userAgent) ||
-  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
-);
+
+  const isSpeechSupported = typeof window !== 'undefined' && (
+    'SpeechRecognition' in window || 'webkitSpeechRecognition' in window
+  )
+  const isIOS = typeof navigator !== 'undefined' && (
+    /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  )
+
   useEffect(() => {
-    if (!isIOS &&
+    if (
     typeof window !== 'undefined' &&
-    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+    (isSpeechSupported && !isIOS)) {
+      try {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
       recognitionRef.current = new SpeechRecognition()
       recognitionRef.current.continuous = false
@@ -164,10 +170,13 @@ const isIOS = typeof navigator !== "undefined" && (
        toast({ title: 'No se detectó voz', description: 'Inténtalo de nuevo', variant: 'destructive' })
        } else {
        toast({ title: 'Error de voz', description: 'No se pudo reconocer tu voz', variant: 'destructive' })
-  }
-}
+      }
+    }
 
       recognitionRef.current.onend = () => setIsListening(false)
+      } catch (e) {
+        console.log('Speech recognition not available')
+      }
     }
   }, [])
 
@@ -447,24 +456,23 @@ const isIOS = typeof navigator !== "undefined" && (
         {/* INPUT AREA - Premium */}
         <div className="p-4 border-t border-white/5 bg-black/50 backdrop-blur-xl">
           <div className="flex gap-3">
-            {/* Voice button */}
-            <button 
-              onClick={() => {
-  if (!isIOS) toggleListening();
-}}
-              disabled={isLoading || isIOS}
-              style={{ display: isIOS ? "none" : "flex" }}
-              className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
-                isListening 
-                  ? 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30' 
-                  : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10'
-              }`}
-            >
-              {isListening && (
-                <div className="absolute inset-0 rounded-2xl bg-red-500 animate-ping opacity-30"></div>
-              )}
-              {isListening ? <MicOff className="w-6 h-6 relative" /> : <Mic className="w-6 h-6" />}
-            </button>
+            {/* Voice button - only show on supported devices */}
+            {isSpeechSupported && !isIOS && (
+              <button 
+                onClick={toggleListening}
+                disabled={isLoading}
+                className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
+                  isListening 
+                    ? 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30' 
+                    : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10'
+                }`}
+              >
+                {isListening && (
+                  <div className="absolute inset-0 rounded-2xl bg-red-500 animate-ping opacity-30"></div>
+                )}
+                {isListening ? <MicOff className="w-6 h-6 relative" /> : <Mic className="w-6 h-6" />}
+              </button>
+            )}
             
             {/* Text input */}
             <div className="flex-1 relative">
