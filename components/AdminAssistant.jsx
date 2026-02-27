@@ -120,9 +120,14 @@ export default function AdminAssistant({ userId }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
-
+const isIOS = typeof navigator !== "undefined" && (
+  /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+);
   useEffect(() => {
-    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+    if (!isIOS &&
+    typeof window !== 'undefined' &&
+    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
       recognitionRef.current = new SpeechRecognition()
       recognitionRef.current.continuous = false
@@ -428,9 +433,12 @@ export default function AdminAssistant({ userId }) {
         <div className="p-4 border-t border-white/5 bg-black/50 backdrop-blur-xl">
           <div className="flex gap-3">
             {/* Voice button */}
-            <button
-              onClick={toggleListening}
-              disabled={isLoading}
+            <button 
+              onClick={() => {
+  if (!isIOS) toggleListening();
+}}
+              disabled={isLoading || isIOS}
+              style={{ display: isIOS ? "none" : "flex" }}
               className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
                 isListening 
                   ? 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30' 
