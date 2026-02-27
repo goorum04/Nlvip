@@ -432,8 +432,10 @@ const isIOS = typeof navigator !== "undefined" &&
           <div className="flex gap-3">
             {/* Voice button */}
             <button
-              onClick={toggleListening}
-              disabled={isLoading}
+              onClick={() => {
+  if (!isIOS) toggleListening();
+}}
+              disabled={isLoading || isIOS}
               className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
                 isListening 
                   ? 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30' 
