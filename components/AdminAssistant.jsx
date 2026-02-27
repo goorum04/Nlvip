@@ -11,6 +11,9 @@ import { useToast } from '@/hooks/use-toast'
 
 // Componente de mensaje individual
 function ChatMessage({ message, isUser, isLoading }) {
+  // Detectar si el mensaje contiene recomendaciones de salud/ejercicios/dieta
+  const hasHealthContent = /dieta|ejercicio|peso|calor|proteína|grasa|muscular|entrenamiento|salud|macros/i.test(message);
+  
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} animate-in slide-in-from-bottom-2 duration-300`}>
       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg ${
@@ -35,7 +38,19 @@ function ChatMessage({ message, isUser, isLoading }) {
             <span className="text-gray-400">Procesando...</span>
           </div>
         ) : (
-          <p className="whitespace-pre-wrap leading-relaxed">{message}</p>
+          <>
+            <p className="whitespace-pre-wrap leading-relaxed">{message}</p>
+            {hasHealthContent && (
+              <div className="mt-3 pt-3 border-t border-white/10">
+                <p className="text-xs text-amber-400/80">
+                  ℹ️ Esta información es de carácter general. Consulta con un profesional de la salud antes de realizar cambios en tu dieta o rutina de ejercicios. Fuentes: {' '}
+                  <a href="https://www.who.int/news-room/fact-sheets/diet-and-physical-activity" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">OMS</a>
+                  {' • '}
+                  <a href="https://www.acsm.org/get-stay-fit/fitness-basics" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">ACSM</a>
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -6,15 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { User, Camera, Save, Trash2, Loader2, X, AlertTriangle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-// Detectar iOS/iPadOS (incluye iPadOS que se identifica como Mac)
-const isIOSDevice =
-  typeof navigator !== "undefined" &&
-  (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
 // Avatar Bubble Component - Para mostrar en el header
 export function AvatarBubble({ profile, size = 'md', onClick }) {
   const [imageUrl, setImageUrl] = useState(null)
@@ -139,6 +134,11 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
 
     setUploading(true)
     try {
+      // Crear preview local primero
+      const reader = new FileReader()
+      reader.onload = (e) => setPreviewUrl(e.target.result)
+      reader.readAsDataURL(file)
+
       // Generar nombre único
       const ext = file.name.split('.').pop()
       const fileName = `${user.id}/${Date.now()}.${ext}`
@@ -151,11 +151,6 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       if (error) throw error
 
       setAvatarUrl(fileName)
-      
-      // Crear preview local
-      const reader = new FileReader()
-      reader.onload = (e) => setPreviewUrl(e.target.result)
-      reader.readAsDataURL(file)
 
       toast({ title: '¡Foto subida!' })
     } catch (error) {
@@ -317,22 +312,21 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                   <span>{name?.charAt(0)?.toUpperCase() || '?'}</span>
                 )}
               </div>
-              {!isIOSDevice && (
-  <label className="absolute bottom-0 right-0 w-8 h-8 bg-violet-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-violet-600 transition-colors">
-    {uploading ? (
-      <Loader2 className="w-4 h-4 text-white animate-spin" />
-    ) : (
-      <Camera className="w-4 h-4 text-white" />
-    )}
-    <input
-      type="file"
-      accept="image/jpeg,image/png,image/webp,image/heic"
-      onChange={handleAvatarUpload}
-      disabled={uploading}
-      className="hidden"
-    />
-  </label>
-)}
+              <label className="absolute bottom-0 right-0 w-8 h-8 bg-violet-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-violet-600 transition-colors">
+                {uploading ? (
+                  <Loader2 className="w-4 h-4 text-white animate-spin" />
+                ) : (
+                  <Camera className="w-4 h-4 text-white" />
+                )}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic"
+                  capture="environment"
+                  onChange={handleAvatarUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
             </div>
             <p className="text-xs text-gray-500">Haz clic en el icono para cambiar la foto</p>
           </div>

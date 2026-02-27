@@ -114,6 +114,7 @@ export default function VideoUploader({ workoutTemplateId, uploaderId, onSuccess
         ref={fileInputRef}
         type="file"
         accept="video/mp4,video/webm,video/quicktime"
+        capture="environment"
         onChange={handleFileSelect}
         className="hidden"
         disabled={uploading || validating}

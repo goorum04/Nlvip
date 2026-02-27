@@ -647,6 +647,7 @@ function RecipeFormModal({ isOpen, onClose, recipe = null, onSave }) {
                   <input
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     onChange={handleImageChange}
                     className="hidden"
                   />

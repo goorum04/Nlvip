@@ -52,6 +52,7 @@ export default function ImageUploader({ onImageSelect, onImageRemove, disabled }
         ref={fileInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/gif"
+        capture="environment"
         onChange={handleFileSelect}
         className="hidden"
         disabled={disabled}

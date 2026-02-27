@@ -74,6 +74,7 @@ function ExerciseVideoUploader({ onVideoUploaded, existingVideo, trainerId }) {
         ref={fileInputRef}
         type="file"
         accept="video/*"
+        capture="environment"
         onChange={handleUpload}
         className="hidden"
       />
