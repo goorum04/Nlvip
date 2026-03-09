@@ -596,14 +596,14 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
           {/* ACTIVITY TAB - Step Counter */}
           <TabsContent value="activity" className="space-y-4">
-            <ActivityTracker userId={user.id} />
-            
-            {/* Cycle Module - Solo para mujeres */}
+            {/* Cycle Module - Lo primero que ve la usuaria */}
             <CycleModule 
               user={user} 
               profile={profile}
               onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)}
             />
+            
+            <ActivityTracker userId={user.id} />
           </TabsContent>
 
           {/* CHALLENGES TAB */}
