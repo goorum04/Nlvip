@@ -28,6 +28,7 @@ import { RecipesGallery } from './RecipesManager'
 import ActivityTracker from './ActivityTracker'
 import FoodTracker from './FoodTracker'
 import { AvatarBubble, ProfileModal } from './UserProfile'
+import { CycleModule } from './CycleModule'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
@@ -456,7 +457,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         onProfileUpdate={(updatedProfile) => {
-          window.location.reload()
+          setProfile(updatedProfile)
         }}
         onLogout={onLogout}
       />
@@ -596,6 +597,13 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           {/* ACTIVITY TAB - Step Counter */}
           <TabsContent value="activity" className="space-y-4">
             <ActivityTracker userId={user.id} />
+            
+            {/* Cycle Module - Solo para mujeres */}
+            <CycleModule 
+              user={user} 
+              profile={profile}
+              onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)}
+            />
           </TabsContent>
 
           {/* CHALLENGES TAB */}

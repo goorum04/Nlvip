@@ -83,6 +83,10 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
   const [weight, setWeight] = useState(profile?.weight_kg || '')
   const [height, setHeight] = useState(profile?.height_cm || '')
   const [sex, setSex] = useState(profile?.sex || '')
+  const [cycleEnabled, setCycleEnabled] = useState(profile?.cycle_enabled || false)
+  const [cycleStartDate, setCycleStartDate] = useState(profile?.cycle_start_date || '')
+  const [cycleLengthDays, setCycleLengthDays] = useState(profile?.cycle_length_days || 28)
+  const [periodLengthDays, setPeriodLengthDays] = useState(profile?.period_length_days || 5)
 
   useEffect(() => {
     if (profile) {
@@ -92,6 +96,10 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       setWeight(profile.weight_kg || '')
       setHeight(profile.height_cm || '')
       setSex(profile.sex || '')
+      setCycleEnabled(profile.cycle_enabled || false)
+      setCycleStartDate(profile.cycle_start_date || '')
+      setCycleLengthDays(profile.cycle_length_days || 28)
+      setPeriodLengthDays(profile.period_length_days || 5)
       loadAvatarPreview()
     }
   }, [profile])
@@ -188,6 +196,10 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
           weight_kg: weight === '' ? null : Number(weight),
           height_cm: height === '' ? null : Number(height),
           sex: sex || null,
+          cycle_enabled: sex === 'female' ? cycleEnabled : false,
+          cycle_start_date: sex === 'female' && cycleEnabled ? cycleStartDate : null,
+          cycle_length_days: sex === 'female' && cycleEnabled ? cycleLengthDays : 28,
+          period_length_days: sex === 'female' && cycleEnabled ? periodLengthDays : 5,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
@@ -202,7 +214,12 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
           ...profile,
           name: name.trim(),
           birth_date: birthDate || null,
-          avatar_url: avatarUrl || null
+          avatar_url: avatarUrl || null,
+          sex: sex || null,
+          cycle_enabled: sex === 'female' ? cycleEnabled : false,
+          cycle_start_date: sex === 'female' && cycleEnabled ? cycleStartDate : null,
+          cycle_length_days: sex === 'female' && cycleEnabled ? cycleLengthDays : 28,
+          period_length_days: sex === 'female' && cycleEnabled ? periodLengthDays : 5
         })
       }
     } catch (error) {
@@ -407,6 +424,67 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                 </select>
               </div>
             </div>
+
+            {sex === 'female' && (
+              <div className="mt-4 pt-4 border-t border-violet-500/20">
+                <Label className="text-gray-300 text-sm font-medium">Seguimiento del ciclo</Label>
+                <p className="text-xs text-gray-500 mb-3">Activa para recibir recomendaciones personalizadas</p>
+                
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-gray-300 text-sm">Activar seguimiento</span>
+                  <input
+                    type="checkbox"
+                    checked={cycleEnabled}
+                    onChange={(e) => setCycleEnabled(e.target.checked)}
+                    className="w-5 h-5 rounded bg-black/50 border-violet-500/20"
+                  />
+                </div>
+
+                {cycleEnabled && (
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-gray-400 text-xs">Fecha de inicio del último periodo</Label>
+                      <Input
+                        type="date"
+                        value={cycleStartDate}
+                        onChange={(e) => setCycleStartDate(e.target.value)}
+                        className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-gray-400 text-xs">Duración del ciclo</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Input
+                            type="number"
+                            min="21"
+                            max="35"
+                            value={cycleLengthDays}
+                            onChange={(e) => setCycleLengthDays(parseInt(e.target.value) || 28)}
+                            className="bg-black/50 border-violet-500/20 rounded-xl text-white"
+                          />
+                          <span className="text-gray-500 text-xs">días</span>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-gray-400 text-xs">Duración del periodo</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Input
+                            type="number"
+                            min="2"
+                            max="10"
+                            value={periodLengthDays}
+                            onChange={(e) => setPeriodLengthDays(parseInt(e.target.value) || 5)}
+                            className="bg-black/50 border-violet-500/20 rounded-xl text-white"
+                          />
+                          <span className="text-gray-500 text-xs">días</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Save Button */}
