@@ -468,6 +468,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
                 { value: 'activity', icon: Footprints, label: 'Actividad', premium: false },
+                profile?.sex === 'female' ? { value: 'bienestar', icon: Heart, label: 'Bienestar', premium: false } : null,
                 { value: 'feed', icon: Home, label: 'Feed', premium: true },
                 { value: 'challenges', icon: Target, label: 'Retos', premium: false },
                 { value: 'badges', icon: Trophy, label: 'Logros', premium: true },
@@ -596,15 +597,28 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
           {/* ACTIVITY TAB - Step Counter */}
           <TabsContent value="activity" className="space-y-4">
-            {/* Cycle Module - Lo primero que ve la usuaria */}
+            {/* Cycle Phase Card - Solo la fase */}
             <CycleModule 
               user={user} 
               profile={profile}
+              variant="compact"
               onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)}
             />
             
             <ActivityTracker userId={user.id} />
           </TabsContent>
+
+          {/* BIENESTAR TAB - Solo mujeres */}
+          {profile?.sex === 'female' && (
+            <TabsContent value="bienestar" className="space-y-4">
+              <CycleModule 
+                user={user} 
+                profile={profile}
+                variant="full"
+                onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)}
+              />
+            </TabsContent>
+          )}
 
           {/* CHALLENGES TAB */}
           <TabsContent value="challenges" className="space-y-4">

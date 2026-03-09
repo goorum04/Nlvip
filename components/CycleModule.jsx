@@ -85,7 +85,7 @@ const PHASE_CONFIG = {
   }
 }
 
-export function CycleModule({ user, profile, onProfileUpdate }) {
+export function CycleModule({ user, profile, onProfileUpdate, variant = 'full' }) {
   const [loading, setLoading] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
   const [stepsToday] = useState(0)
@@ -182,6 +182,12 @@ export function CycleModule({ user, profile, onProfileUpdate }) {
   }
 
   if (!cycleData) {
+    // Compact variant - no mostrar nada si no hay datos
+    if (variant === 'compact') {
+      return null
+    }
+    
+    // Full variant - mostrar劝 activate card
     return (
       <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
         <CardContent className="py-8 px-4">
@@ -215,6 +221,34 @@ export function CycleModule({ user, profile, onProfileUpdate }) {
 
   const PhaseIcon = cycleData.phaseConfig.icon
 
+  // Compact variant - solo la fase para actividad
+  if (variant === 'compact') {
+    return (
+      <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden cursor-pointer" onClick={() => setShowConfig(true)}>
+        <div className={`bg-gradient-to-br ${cycleData.phaseConfig.gradientDark} p-4 relative overflow-hidden`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl ${cycleData.phaseConfig.accent} flex items-center justify-center`}>
+                <PhaseIcon className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs text-white/60 uppercase tracking-wider font-medium">Tu fase</p>
+                <h3 className="text-lg font-bold text-white">
+                  {getPhaseName(cycleData.phase)}
+                </h3>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-black text-white">{cycleData.cycleDay}</span>
+              <span className="text-white/60 text-sm">/ {cycleData.cycleLength}</span>
+            </div>
+          </div>
+        </div>
+      </Card>
+    )
+  }
+
+  // Full variant - toda la información
   return (
     <div className="space-y-3">
       <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
