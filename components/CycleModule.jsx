@@ -8,19 +8,19 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { 
-  getCyclePhase, 
-  calculateTotalCalories, 
-  calculateMacros, 
+import {
+  getCyclePhase,
+  calculateTotalCalories,
+  calculateMacros,
   getWorkoutRecommendation,
   getPhaseName
 } from '@/lib/cycleFunctions'
-import { 
-  Heart, 
-  Flame, 
-  Activity, 
-  Settings, 
-  Moon, 
+import {
+  Heart,
+  Flame,
+  Activity,
+  Settings,
+  Moon,
   Sun,
   Zap,
   Droplets,
@@ -28,14 +28,17 @@ import {
   Info,
   Dumbbell,
   Sparkles,
-  Wind
+  Wind,
+  Salad,
+  Apple
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { SymptomsTracker } from '@/components/SymptomsTracker'
 
 const PHASE_CONFIG = {
-  menstrual: { 
-    icon: Moon, 
-    gradient: 'from-violet-200 via-purple-200 to-pink-100', 
+  menstrual: {
+    icon: Moon,
+    gradient: 'from-violet-200 via-purple-200 to-pink-100',
     gradientDark: 'from-violet-600/30 via-purple-600/20 to-pink-500/10',
     accent: 'bg-violet-400',
     text: 'text-violet-700',
@@ -43,9 +46,9 @@ const PHASE_CONFIG = {
     glow: 'shadow-violet-400/20',
     name: 'Descanso'
   },
-  follicular: { 
-    icon: Sun, 
-    gradient: 'from-teal-200 via-cyan-200 to-emerald-100', 
+  follicular: {
+    icon: Sun,
+    gradient: 'from-teal-200 via-cyan-200 to-emerald-100',
     gradientDark: 'from-teal-600/30 via-cyan-600/20 to-emerald-500/10',
     accent: 'bg-teal-400',
     text: 'text-teal-700',
@@ -53,9 +56,9 @@ const PHASE_CONFIG = {
     glow: 'shadow-teal-400/20',
     name: 'Energía'
   },
-  ovulation: { 
-    icon: Zap, 
-    gradient: 'from-amber-200 via-orange-200 to-yellow-100', 
+  ovulation: {
+    icon: Zap,
+    gradient: 'from-amber-200 via-orange-200 to-yellow-100',
     gradientDark: 'from-amber-600/30 via-orange-600/20 to-yellow-500/10',
     accent: 'bg-amber-400',
     text: 'text-amber-700',
@@ -63,9 +66,9 @@ const PHASE_CONFIG = {
     glow: 'shadow-amber-400/20',
     name: 'Pico'
   },
-  luteal: { 
-    icon: TrendingUp, 
-    gradient: 'from-rose-200 via-pink-200 to-purple-100', 
+  luteal: {
+    icon: TrendingUp,
+    gradient: 'from-rose-200 via-pink-200 to-purple-100',
     gradientDark: 'from-rose-600/30 via-pink-600/20 to-purple-500/10',
     accent: 'bg-rose-400',
     text: 'text-rose-700',
@@ -73,15 +76,49 @@ const PHASE_CONFIG = {
     glow: 'shadow-rose-400/20',
     name: 'Equilibrio'
   },
-  unknown: { 
-    icon: Activity, 
-    gradient: 'from-gray-200 via-slate-100 to-gray-100', 
+  unknown: {
+    icon: Activity,
+    gradient: 'from-gray-200 via-slate-100 to-gray-100',
     gradientDark: 'from-gray-600/30 via-slate-600/20 to-gray-500/10',
     accent: 'bg-gray-400',
     text: 'text-gray-700',
     border: 'border-gray-300',
     glow: 'shadow-gray-400/20',
     name: 'Sin config'
+  }
+}
+
+// Sugerencias nutricionales por fase
+const PHASE_NUTRITION = {
+  menstrual: {
+    emoji: '🥩',
+    title: 'Enfoque antiinflamatorio',
+    nutrients: ['Hierro (carne roja, legumbres)', 'Magnesio (chocolate negro, semillas)', 'Vitamina C (naranja, kiwi)', 'Omega-3 (salmón, nueces)'],
+    limit: ['Cafeína', 'Alcohol', 'Azúcar refinado', 'Sal en exceso']
+  },
+  follicular: {
+    emoji: '🥗',
+    title: 'Proteínas y antioxidantes',
+    nutrients: ['Proteínas magras (pollo, huevo, legumbres)', 'Probióticos (yogur, kéfir)', 'Zinc (semillas calabaza, carne)', 'Vitamina B6 (plátano, atún)'],
+    limit: []
+  },
+  ovulation: {
+    emoji: '🥦',
+    title: 'Fibra y glutatión',
+    nutrients: ['Fibra (brócoli, alcachofa, avena)', 'Vitamina B (cereales integrales)', 'Antioxidantes (frutos rojos, espinacas)', 'Hidratación extra (+500ml)'],
+    limit: []
+  },
+  luteal: {
+    emoji: '🥜',
+    title: 'Calcio y reducir antojos',
+    nutrients: ['Calcio (lácteos, almendras, brócoli)', 'Vitamina D (pescado azul, yema huevo)', 'Magnesio (reduce calambres)', 'Triptófano (pavo, plátano, avena)'],
+    limit: ['Azúcar refinado (aumenta síntomas)', 'Cafeína (aumenta irritabilidad)']
+  },
+  unknown: {
+    emoji: '🥙',
+    title: 'Alimentación equilibrada',
+    nutrients: ['Proteínas en cada comida', 'Verduras variadas', 'Grasas saludables', 'Hidratación adecuada'],
+    limit: []
   }
 }
 
@@ -154,7 +191,7 @@ export function CycleModule({ user, profile, onProfileUpdate, variant = 'full' }
       if (error) throw error
 
       toast({ title: '¡Guardado!' })
-      
+
       if (onProfileUpdate) {
         onProfileUpdate({
           ...profile,
@@ -164,7 +201,7 @@ export function CycleModule({ user, profile, onProfileUpdate, variant = 'full' }
           period_length_days: configForm.period_length_days
         })
       }
-      
+
       setShowConfig(false)
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -186,7 +223,7 @@ export function CycleModule({ user, profile, onProfileUpdate, variant = 'full' }
     if (variant === 'compact') {
       return null
     }
-    
+
     // Full variant - mostrar劝 activate card
     return (
       <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
@@ -197,7 +234,7 @@ export function CycleModule({ user, profile, onProfileUpdate, variant = 'full' }
             </div>
             <h3 className="text-xl font-bold text-white mb-2">Bienestar Femenino</h3>
             <p className="text-gray-400 text-sm mb-5">Tu seguimiento personalizado del ciclo</p>
-            <Button 
+            <Button
               onClick={() => setShowConfig(true)}
               className="bg-gradient-to-r from-violet-500 via-pink-500 to-rose-500 hover:from-violet-600 hover:via-pink-600 hover:to-rose-600 text-white rounded-full px-6 shadow-lg shadow-pink-500/25"
             >
@@ -255,7 +292,7 @@ export function CycleModule({ user, profile, onProfileUpdate, variant = 'full' }
         <div className={`bg-gradient-to-br ${cycleData.phaseConfig.gradientDark} p-5 relative overflow-hidden`}>
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12 blur-xl"></div>
-          
+
           <div className="relative">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -304,6 +341,7 @@ export function CycleModule({ user, profile, onProfileUpdate, variant = 'full' }
         </CardContent>
       </Card>
 
+      {/* Macros y calorías */}
       <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
         <CardHeader className="pb-2 px-4 pt-4">
           <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
@@ -314,9 +352,9 @@ export function CycleModule({ user, profile, onProfileUpdate, variant = 'full' }
         <CardContent className="space-y-3 px-4 pb-4">
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-gradient-to-br from-violet-500/20 to-pink-500/10 rounded-2xl p-4 border border-violet-500/20">
-              <p className="text-xs text-gray-400 mb-1">Calorías</p>
+              <p className="text-xs text-gray-400 mb-1">Calorías orient.</p>
               <p className="text-3xl font-bold text-white">{cycleData.calories}</p>
-              <p className="text-xs text-gray-500">kcal</p>
+              <p className="text-xs text-gray-500">kcal estimadas</p>
             </div>
             <div className="bg-gradient-to-br from-pink-500/20 to-rose-500/10 rounded-2xl p-4 border border-pink-500/20">
               <p className="text-xs text-gray-400 mb-1">Intensidad</p>
@@ -350,11 +388,49 @@ export function CycleModule({ user, profile, onProfileUpdate, variant = 'full' }
         </CardContent>
       </Card>
 
+      {/* NUTRICIÓN POR FASE */}
+      {(() => {
+        const nutrition = PHASE_NUTRITION[cycleData.phase] || PHASE_NUTRITION.unknown
+        return (
+          <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+            <CardHeader className="pb-2 px-4 pt-4">
+              <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
+                <span className="text-base">{nutrition.emoji}</span>
+                Nutrición • {nutrition.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 space-y-3">
+              <div>
+                <p className="text-[10px] text-green-400 font-medium uppercase tracking-wide mb-2">✅ Priorizar</p>
+                <div className="space-y-1">
+                  {nutrition.nutrients.map((n, i) => (
+                    <p key={i} className="text-xs text-gray-300">• {n}</p>
+                  ))}
+                </div>
+              </div>
+              {nutrition.limit.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-red-400 font-medium uppercase tracking-wide mb-2">⚠️ Limitar</p>
+                  <div className="space-y-1">
+                    {nutrition.limit.map((n, i) => (
+                      <p key={i} className="text-xs text-gray-400">• {n}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
+      })()}
+
+      {/* SÍNTOMAS DEL DÍA */}
+      <SymptomsTracker userId={user.id} phase={cycleData.phase} />
+
       <div className="bg-gray-800/30 rounded-2xl p-3 border border-gray-700/50">
         <div className="flex items-start gap-2">
           <Info className="w-3.5 h-3.5 text-gray-500 flex-shrink-0 mt-0.5" />
           <p className="text-[10px] text-gray-500 leading-relaxed">
-            La información mostrada es orientativa y no sustituye el consejo médico o nutricional profesional.
+            La información mostrada es orientativa y no sustituye el consejo médico o nutricional profesional. Consulta siempre a tu médico ante cualquier duda sobre tu salud.
           </p>
         </div>
       </div>

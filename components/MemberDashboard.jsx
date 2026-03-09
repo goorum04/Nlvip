@@ -9,8 +9,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle, 
+import {
+  Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle,
   Flag, Sparkles, Flame, Target, Zap, Star, ShoppingBag,
   Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift
 } from 'lucide-react'
@@ -29,6 +29,7 @@ import ActivityTracker from './ActivityTracker'
 import FoodTracker from './FoodTracker'
 import { AvatarBubble, ProfileModal } from './UserProfile'
 import { CycleModule } from './CycleModule'
+import { LifeStageSelector, PregnancyMode, PostpartumMode, LactationTracker } from './LifeStageModules'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
@@ -43,6 +44,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [myTrainer, setMyTrainer] = useState(null)
   const [storeProducts, setStoreProducts] = useState([])
   const [feedImageUrls, setFeedImageUrls] = useState({})
+  const [localProfile, setLocalProfile] = useState(profile)
   const { toast } = useToast()
   const { getSignedUrl } = useSignedUrl()
 
@@ -128,13 +130,13 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       // Transform workout data by week
       const workoutsByWeek = {}
       const now = new Date()
-      ;(checkins || []).forEach(c => {
-        const date = new Date(c.checked_in_at)
-        const weekStart = new Date(date)
-        weekStart.setDate(date.getDate() - date.getDay())
-        const weekKey = weekStart.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
-        workoutsByWeek[weekKey] = (workoutsByWeek[weekKey] || 0) + 1
-      })
+        ; (checkins || []).forEach(c => {
+          const date = new Date(c.checked_in_at)
+          const weekStart = new Date(date)
+          weekStart.setDate(date.getDate() - date.getDay())
+          const weekKey = weekStart.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+          workoutsByWeek[weekKey] = (workoutsByWeek[weekKey] || 0) + 1
+        })
 
       const workoutsData = Object.entries(workoutsByWeek).map(([week, workouts]) => ({
         week,
@@ -144,13 +146,13 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
       // Calculate adherence (current month)
       const currentMonth = now.getMonth()
-      const currentMonthCheckins = (checkins || []).filter(c => 
+      const currentMonthCheckins = (checkins || []).filter(c =>
         new Date(c.checked_in_at).getMonth() === currentMonth
       ).length
 
       // Calculate previous month data
       const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1
-      const prevMonthCheckins = (checkins || []).filter(c => 
+      const prevMonthCheckins = (checkins || []).filter(c =>
         new Date(c.checked_in_at).getMonth() === prevMonth
       )
 
@@ -200,7 +202,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .eq('is_hidden', false)
       .order('created_at', { ascending: false })
       .limit(50)
-    
+
     if (data) {
       setFeedPosts(data)
       // Load signed URLs for images
@@ -221,7 +223,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .select(`*, workout:workout_templates!member_workouts_workout_template_id_fkey(id, name, description)`)
       .eq('member_id', user.id)
       .single()
-    
+
     if (data) {
       setMyWorkout(data)
       // Load videos for this workout
@@ -276,7 +278,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .or(`member_id.eq.${user.id},member_id.is.null`)
       .order('created_at', { ascending: false })
       .limit(20)
-    
+
     if (data) {
       setNotices(data)
       setUnreadNotices(data.filter(n => !n.notice_reads || n.notice_reads.length === 0).length)
@@ -286,22 +288,22 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const handleCreatePost = async (e) => {
     e.preventDefault()
     if (!newPostContent.trim() && !postImage) return
-    
+
     setLoading(true)
     try {
       let imagePath = null
-      
+
       // Upload image if selected
       if (postImage) {
         const fileId = generateFileId()
         const ext = getFileExtension(postImage.name)
         imagePath = `feed/${user.id}/${fileId}.${ext}`
-        
+
         const result = await uploadFile('feed_images', imagePath, postImage, {
           maxSize: 5 * 1024 * 1024,
           allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
         })
-        
+
         if (!result.success) throw new Error(result.error)
       }
 
@@ -310,7 +312,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         content: newPostContent,
         image_url: imagePath
       }])
-      
+
       if (error) throw error
       toast({ title: '¡Post publicado!' })
       setNewPostContent('')
@@ -395,13 +397,13 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       <header className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 via-transparent to-violet-500/10" />
         <div className="absolute top-0 left-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-        
+
         <div className="relative container mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <img 
-                src="/logo-nl-vip.jpg" 
-                alt="NL VIP TEAM" 
+              <img
+                src="/logo-nl-vip.jpg"
+                alt="NL VIP TEAM"
                 className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-violet-500/20"
               />
               <div>
@@ -410,10 +412,10 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <AvatarBubble 
-                profile={profile} 
-                size="md" 
-                onClick={() => setShowProfileModal(true)} 
+              <AvatarBubble
+                profile={profile}
+                size="md"
+                onClick={() => setShowProfileModal(true)}
               />
               <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
                 <LogOut className="w-5 h-5" />
@@ -481,7 +483,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               ].map(tab => {
                 const isLocked = tab.premium && !hasPremium
                 return (
-                  <TabsTrigger 
+                  <TabsTrigger
                     key={tab.value}
                     value={isLocked ? 'locked' : tab.value}
                     disabled={isLocked}
@@ -523,9 +525,9 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                     onImageRemove={() => setPostImage(null)}
                     disabled={loading || uploading}
                   />
-                  <Button 
-                    type="submit" 
-                    disabled={loading || uploading || (!newPostContent.trim() && !postImage)} 
+                  <Button
+                    type="submit"
+                    disabled={loading || uploading || (!newPostContent.trim() && !postImage)}
                     className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 hover:opacity-90 text-black font-bold rounded-2xl py-6 shadow-lg shadow-violet-500/20"
                   >
                     {uploading ? (
@@ -553,9 +555,9 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                       <Flag className="w-4 h-4" />
                     </Button>
                   </div>
-                  
+
                   {post.content && <p className="text-gray-200 mb-4 leading-relaxed">{post.content}</p>}
-                  
+
                   {/* Post Image */}
                   {feedImageUrls[post.id] && (
                     <div className="mb-4 rounded-2xl overflow-hidden border border-[#2a2a2a]">
@@ -566,7 +568,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                       />
                     </div>
                   )}
-                  
+
                   <div className="flex items-center gap-4 pt-3 border-t border-[#2a2a2a]">
                     <Button variant="ghost" size="sm" className={`rounded-xl ${isLikedByMe(post) ? 'text-violet-500' : 'text-gray-400'} hover:text-violet-500`} onClick={() => handleLikePost(post.id)}>
                       <Heart className="w-5 h-5 mr-2" fill={isLikedByMe(post) ? 'currentColor' : 'none'} />
@@ -598,25 +600,62 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           {/* ACTIVITY TAB - Step Counter */}
           <TabsContent value="activity" className="space-y-4">
             {/* Cycle Phase Card - Solo la fase */}
-            <CycleModule 
-              user={user} 
-              profile={profile}
+            <CycleModule
+              user={user}
+              profile={localProfile}
               variant="compact"
-              onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)}
+              onProfileUpdate={setLocalProfile}
             />
-            
+
             <ActivityTracker userId={user.id} />
           </TabsContent>
 
           {/* BIENESTAR TAB - Solo mujeres */}
-          {profile?.sex === 'female' && (
+          {localProfile?.sex === 'female' && (
             <TabsContent value="bienestar" className="space-y-4">
-              <CycleModule 
-                user={user} 
-                profile={profile}
-                variant="full"
-                onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)}
+              {/* Selector de etapa de vida */}
+              <LifeStageSelector
+                userId={user.id}
+                profile={localProfile}
+                onUpdate={setLocalProfile}
               />
+
+              {/* Módulo según etapa */}
+              {(!localProfile?.life_stage || localProfile.life_stage === 'cycle') && (
+                <CycleModule
+                  user={user}
+                  profile={localProfile}
+                  variant="full"
+                  onProfileUpdate={setLocalProfile}
+                />
+              )}
+
+              {localProfile?.life_stage === 'pregnant' && (
+                <PregnancyMode
+                  userId={user.id}
+                  profile={localProfile}
+                  onUpdate={setLocalProfile}
+                />
+              )}
+
+              {localProfile?.life_stage === 'postpartum' && (
+                <PostpartumMode
+                  userId={user.id}
+                  profile={localProfile}
+                  onUpdate={setLocalProfile}
+                />
+              )}
+
+              {localProfile?.life_stage === 'lactating' && (
+                <>
+                  <LactationTracker userId={user.id} />
+                  <PostpartumMode
+                    userId={user.id}
+                    profile={localProfile}
+                    onUpdate={setLocalProfile}
+                  />
+                </>
+              )}
             </TabsContent>
           )}
 
@@ -751,7 +790,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
           {/* STATS TAB - Advanced Charts */}
           <TabsContent value="stats" className="space-y-4">
-            <ProgressCharts 
+            <ProgressCharts
               weightData={chartData.weight}
               workoutsData={chartData.workouts}
               adherenceData={chartData.adherence}
@@ -898,7 +937,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       )}
 
       {/* Floating Chat */}
-      <FloatingChat 
+      <FloatingChat
         userId={user.id}
         userRole="member"
         trainerId={myTrainer?.id}
