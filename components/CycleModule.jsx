@@ -28,7 +28,8 @@ import {
   Info,
   Dumbbell,
   Sparkles,
-  Wind
+  Wind,
+  Sun as SunIcon
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -303,7 +304,7 @@ export function CycleModule({ user, profile, onProfileUpdate }) {
               <p className="text-xs text-gray-500">Grasas</p>
             </div>
             <div className="bg-gradient-to-br from-rose-500/10 to-orange-500/5 rounded-2xl p-3 text-center border border-rose-500/15">
-              <Sun className="w-5 h-5 text-rose-400 mx-auto mb-1.5" />
+              <SunIcon className="w-5 h-5 text-rose-400 mx-auto mb-1.5" />
               <p className="text-xl font-bold text-white">{cycleData.macros.carbs}<span className="text-xs font-normal text-gray-400">g</span></p>
               <p className="text-xs text-gray-500">Carbs</p>
             </div>
