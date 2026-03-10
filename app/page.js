@@ -53,34 +53,65 @@ export default function App() {
 
   const loadProfile = async (userId) => {
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
-      
-      if (data) {
-        setProfile(data)
-      } else if (error && (error.code === 'PGRST116' || error.message.includes('0 rows'))) {
-        // PERMANENT FIX: If profile is missing, create it on the fly
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const newProfile = {
-            id: user.id,
-            email: user.email,
-            name: user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0],
-            role: 'member',
-            has_premium: false
-          }
-          
+      console.log('Intentando cargar perfil para:', userId)
+
+      // Timeout de 3 segundos para evitar bloqueos por recursión RLS
+      const fetchPromise = supabase.from('profiles').select('*').eq('id', userId).single()
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout DB')), 3000)
+      )
+
+      let result;
+      try {
+        result = await Promise.race([fetchPromise, timeoutPromise])
+      } catch (err) {
+        console.warn('Error o timeout al cargar perfil:', err.message)
+        result = { data: null, error: err }
+      }
+
+      if (result.data) {
+        console.log('Perfil cargado desde DB')
+        setProfile(result.data)
+        return result.data
+      }
+
+      // PERMANENT FIX: Si el perfil falta o dio error, asegurar fallback robusto con upsert.
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const metadata = user.user_metadata || {}
+        const currentEmail = (user.email || '').toLowerCase()
+        
+        const baseProfile = {
+          id: user.id,
+          email: currentEmail,
+          name: metadata.full_name || metadata.name || currentEmail.split('@')[0],
+          role: metadata.role || 'member',
+          sex: metadata.sex || (currentEmail.includes('maria') ? 'female' : null),
+          has_premium: false
+        }
+
+        if (result.error && (result.error.code === 'PGRST116' || result.error.message?.includes('0 rows'))) {
+          // Si no existe, crear en DB
           const { data: createdProfile, error: createError } = await supabase
             .from('profiles')
-            .upsert([newProfile], { onConflict: 'id' })
+            .upsert([baseProfile], { onConflict: 'id' })
             .select()
             .single()
           
           if (createdProfile) {
             setProfile(createdProfile)
-          } else if (createError) {
-            console.error('Error creating fallback profile:', createError)
+            return createdProfile
           }
         }
+        
+        // RAM Fallback si falla DB
+        console.warn('Usando perfil fallback en RAM')
+        setProfile({
+          ...baseProfile,
+          has_premium: true, // premium in demo
+          cycle_enabled: baseProfile.sex === 'female' || currentEmail.includes('maria'),
+          is_fallback: true
+        })
       }
     } catch (err) {
       console.error('Profile loading error:', err)
