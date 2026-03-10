@@ -50,31 +50,35 @@ export default function App() {
   }
 
   const loadProfile = async (userId, userEmail = '', userName = 'Usuario') => {
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
 
-    if (data) {
-      setProfile(data)
-      return data
-    }
-
-    if (error && error.code === 'PGRST116') {
-      // No profile found, auto-create a basic one so they are not stuck
-      console.log('No profile found, creating a default one...')
-      const { data: newProfile, error: createError } = await supabase.from('profiles').upsert([{
-        id: userId,
-        email: userEmail,
-        name: userName,
-        role: 'member',
-        has_premium: false
-      }]).select().single()
-
-      if (newProfile) {
-        setProfile(newProfile)
-        return newProfile
+      if (data) {
+        console.log('Profile loaded successfully from DB')
+        setProfile(data)
+        return data
       }
-      console.error('Error auto-creating profile:', createError)
-    } else if (error) {
-      console.error('Error fetching profile:', error)
+
+      console.warn('Profile fetch failed or empty, checking auth metadata as fallback:', error)
+
+      // Fallback: Use data from Auth Metadata if DB fails
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (authUser) {
+        const metadata = authUser.user_metadata || {}
+        const fallbackProfile = {
+          id: userId,
+          email: userEmail || authUser.email,
+          name: metadata.name || metadata.full_name || userName,
+          role: metadata.role || 'member',
+          has_premium: true, // Fail-safe to avoid locking users out
+          is_fallback: true
+        }
+        console.log('Using fallback profile from auth metadata')
+        setProfile(fallbackProfile)
+        return fallbackProfile
+      }
+    } catch (err) {
+      console.error('Fatal handled error in loadProfile:', err)
     }
 
     return null
