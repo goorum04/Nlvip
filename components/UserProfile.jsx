@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 // Avatar Bubble Component - Para mostrar en el header
 export function AvatarBubble({ profile, size = 'md', onClick }) {
   const [imageUrl, setImageUrl] = useState(null)
-  
+
   useEffect(() => {
     if (profile?.avatar_url) {
       loadAvatarUrl()
@@ -22,18 +22,18 @@ export function AvatarBubble({ profile, size = 'md', onClick }) {
 
   const loadAvatarUrl = async () => {
     if (!profile?.avatar_url) return
-    
+
     // Si es una URL completa, usarla directamente
     if (profile.avatar_url.startsWith('http')) {
       setImageUrl(profile.avatar_url)
       return
     }
-    
+
     // Si es un path de Supabase, obtener URL firmada
     const { data } = await supabase.storage
       .from('avatars')
       .createSignedUrl(profile.avatar_url, 3600)
-    
+
     if (data?.signedUrl) {
       setImageUrl(data.signedUrl)
     }
@@ -54,8 +54,8 @@ export function AvatarBubble({ profile, size = 'md', onClick }) {
       className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 transition-all hover:scale-105 cursor-pointer border-2 border-white/20`}
     >
       {imageUrl ? (
-        <img 
-          src={imageUrl} 
+        <img
+          src={imageUrl}
           alt={profile?.name || 'Avatar'}
           className="w-full h-full object-cover"
         />
@@ -109,16 +109,16 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       setPreviewUrl(null)
       return
     }
-    
+
     if (profile.avatar_url.startsWith('http')) {
       setPreviewUrl(profile.avatar_url)
       return
     }
-    
+
     const { data } = await supabase.storage
       .from('avatars')
       .createSignedUrl(profile.avatar_url, 3600)
-    
+
     if (data?.signedUrl) {
       setPreviewUrl(data.signedUrl)
     }
@@ -207,7 +207,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       if (error) throw error
 
       toast({ title: '¡Perfil actualizado!' })
-      
+
       // Notificar al componente padre para recargar el perfil
       if (onProfileUpdate) {
         onProfileUpdate({
@@ -249,37 +249,37 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
 
       // Eliminar datos relacionados del usuario
       // El orden importa por las foreign keys
-      
+
       // 1. Eliminar fotos de progreso
       await supabase.from('progress_photos').delete().eq('member_id', user.id)
-      
+
       // 2. Eliminar registros de progreso
       await supabase.from('progress_records').delete().eq('member_id', user.id)
-      
+
       // 3. Eliminar participaciones en retos
       await supabase.from('challenge_participants').delete().eq('member_id', user.id)
-      
+
       // 4. Eliminar likes del feed
       await supabase.from('feed_likes').delete().eq('user_id', user.id)
-      
+
       // 5. Eliminar comentarios del feed
       await supabase.from('feed_comments').delete().eq('commenter_id', user.id)
-      
+
       // 6. Eliminar posts del feed
       await supabase.from('feed_posts').delete().eq('author_id', user.id)
-      
+
       // 7. Eliminar asignaciones de dieta
       await supabase.from('member_diets').delete().eq('member_id', user.id)
-      
+
       // 8. Eliminar asignaciones de rutina
       await supabase.from('member_workouts').delete().eq('member_id', user.id)
-      
+
       // 9. Eliminar relación trainer-member
       await supabase.from('trainer_members').delete().eq('member_id', user.id)
-      
+
       // 10. Eliminar actividad diaria
       await supabase.from('daily_activity').delete().eq('user_id', user.id)
-      
+
       // 11. Eliminar food logs
       await supabase.from('food_logs').delete().eq('user_id', user.id)
 
@@ -298,7 +298,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
 
       // 14. Cerrar sesión (esto también intentará eliminar el usuario de auth)
       toast({ title: 'Cuenta eliminada', description: 'Tu cuenta ha sido eliminada correctamente' })
-      
+
       setTimeout(() => {
         onLogout()
       }, 1500)
@@ -347,7 +347,6 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/heic"
-                  capture="environment"
                   onChange={handleAvatarUpload}
                   disabled={uploading}
                   className="hidden"
@@ -429,7 +428,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
               <div className="mt-4 pt-4 border-t border-violet-500/20">
                 <Label className="text-gray-300 text-sm font-medium">Seguimiento del ciclo</Label>
                 <p className="text-xs text-gray-500 mb-3">Activa para recibir recomendaciones personalizadas</p>
-                
+
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-gray-300 text-sm">Activar seguimiento</span>
                   <input
@@ -528,7 +527,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                     </ul>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                
+
                 <div className="py-4">
                   <Label className="text-gray-300 text-sm">Introduce tu contraseña para confirmar</Label>
                   <Input
