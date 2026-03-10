@@ -153,3 +153,84 @@ code {
     @apply bg-background text-foreground;
     }
 }
+
+/* =============================================================
+   FEMALE WELLNESS THEMES
+   ============================================================= */
+
+/* Base transitions */
+.header-transition {
+    transition: background 0.7s ease, border-color 0.7s ease;
+}
+
+.header-glow {
+    transition: background-color 0.7s ease, opacity 0.7s ease;
+}
+
+.header-gradient {
+    transition: opacity 0.7s ease, background 0.7s ease;
+}
+
+/* Default Theme (Violet/Cyan) */
+.theme-default .header-glow {
+    background-color: rgb(139, 92, 246, 0.1); /* violet-500 */
+}
+.theme-default .header-gradient {
+    background-image: linear-gradient(to bottom right, rgb(139, 92, 246, 0.2), transparent, rgb(139, 92, 246, 0.1));
+}
+
+/* Menstrual Theme (Violet/Purple) */
+.theme-menstrual .header-glow {
+    background-color: rgb(167, 139, 250, 0.15); /* violet-400 */
+}
+.theme-menstrual .header-gradient {
+    background-image: linear-gradient(to bottom right, rgb(139, 92, 246, 0.25), transparent, rgb(192, 132, 252, 0.15));
+}
+
+/* Follicular Theme (Teal/Emerald) */
+.theme-follicular .header-glow {
+    background-color: rgb(45, 212, 191, 0.15); /* teal-400 */
+}
+.theme-follicular .header-gradient {
+    background-image: linear-gradient(to bottom right, rgb(20, 184, 166, 0.25), transparent, rgb(16, 185, 129, 0.15));
+}
+
+/* Ovulation Theme (Amber/Orange) */
+.theme-ovulation .header-glow {
+    background-color: rgb(251, 191, 36, 0.15); /* amber-400 */
+}
+.theme-ovulation .header-gradient {
+    background-image: linear-gradient(to bottom right, rgb(245, 158, 11, 0.25), transparent, rgb(249, 115, 22, 0.15));
+}
+
+/* Luteal Theme (Rose/Pink) */
+.theme-luteal .header-glow {
+    background-color: rgb(251, 113, 133, 0.15); /* rose-400 */
+}
+.theme-luteal .header-gradient {
+    background-image: linear-gradient(to bottom right, rgb(244, 63, 94, 0.25), transparent, rgb(236, 72, 153, 0.15));
+}
+
+/* Pregnancy Theme (Rose/Soft Pink) */
+.theme-pregnant .header-glow {
+    background-color: rgb(251, 113, 133, 0.1); 
+}
+.theme-pregnant .header-gradient {
+    background-image: linear-gradient(to bottom right, rgb(244, 63, 153, 0.2), transparent, rgb(219, 39, 119, 0.1));
+}
+
+/* Postpartum Theme (Violet/Lavender) */
+.theme-postpartum .header-glow {
+    background-color: rgb(139, 92, 246, 0.1);
+}
+.theme-postpartum .header-gradient {
+    background-image: linear-gradient(to bottom right, rgb(139, 92, 246, 0.2), transparent, rgb(167, 139, 250, 0.1));
+}
+
+/* Lactating Theme (Blue/Cyan) */
+.theme-lactating .header-glow {
+    background-color: rgb(59, 130, 246, 0.1);
+}
+.theme-lactating .header-gradient {
+    background-image: linear-gradient(to bottom right, rgb(59, 130, 246, 0.2), transparent, rgb(34, 211, 238, 0.1));
+}

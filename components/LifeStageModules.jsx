@@ -63,8 +63,8 @@ export function LifeStageSelector({ userId, profile, onUpdate }) {
                             onClick={() => handleSelect(stage.value)}
                             disabled={saving}
                             className={`p-3 rounded-2xl border text-center transition-all ${profile?.life_stage === stage.value
-                                    ? 'bg-gradient-to-br from-pink-500/30 to-violet-500/20 border-pink-500 text-white'
-                                    : 'border-[#2a2a2a] text-gray-500 hover:border-pink-500/40'
+                                ? 'bg-gradient-to-br from-pink-500/30 to-violet-500/20 border-pink-500 text-white'
+                                : 'border-[#2a2a2a] text-gray-500 hover:border-pink-500/40'
                                 }`}
                         >
                             <div className="text-2xl mb-1">{stage.emoji}</div>
@@ -81,7 +81,7 @@ export function LifeStageSelector({ userId, profile, onUpdate }) {
 // =============================================================
 // PREGNANCY MODE — Modo Embarazo
 // =============================================================
-export function PregnancyMode({ userId, profile, onUpdate }) {
+export function PregnancyMode({ userId, profile, onUpdate, onThemeChange }) {
     const [showConfig, setShowConfig] = useState(false)
     const [dueDate, setDueDate] = useState(profile?.due_date || '')
     const [saving, setSaving] = useState(false)
@@ -106,6 +106,13 @@ export function PregnancyMode({ userId, profile, onUpdate }) {
     }
 
     const info = getWeekInfo(week)
+
+    // Notify theme change
+    useEffect(() => {
+        if (onThemeChange) {
+            onThemeChange('pregnant')
+        }
+    }, [onThemeChange])
 
     const handleSave = async () => {
         if (!dueDate) return
@@ -239,7 +246,7 @@ export function PregnancyMode({ userId, profile, onUpdate }) {
 // =============================================================
 // POSTPARTUM MODE — Modo Postparto
 // =============================================================
-export function PostpartumMode({ userId, profile, onUpdate }) {
+export function PostpartumMode({ userId, profile, onUpdate, onThemeChange }) {
     const [showConfig, setShowConfig] = useState(false)
     const [birthDate, setBirthDate] = useState(profile?.postpartum_date || '')
     const [saving, setSaving] = useState(false)
@@ -264,6 +271,13 @@ export function PostpartumMode({ userId, profile, onUpdate }) {
     }
 
     const phase = getPhase(weeks)
+
+    // Notify theme change
+    useEffect(() => {
+        if (onThemeChange) {
+            onThemeChange('postpartum')
+        }
+    }, [onThemeChange])
 
     const handleSave = async () => {
         if (!birthDate) return
@@ -368,7 +382,7 @@ export function PostpartumMode({ userId, profile, onUpdate }) {
 // =============================================================
 // LACTATION TRACKER — Registro de tomas de lactancia
 // =============================================================
-export function LactationTracker({ userId }) {
+export function LactationTracker({ userId, onThemeChange }) {
     const [sessions, setSessions] = useState([])
     const [loading, setLoading] = useState(true)
     const [showAdd, setShowAdd] = useState(false)
@@ -402,7 +416,10 @@ export function LactationTracker({ userId }) {
 
     useEffect(() => {
         loadSessions()
-    }, [userId])
+        if (onThemeChange) {
+            onThemeChange('lactating')
+        }
+    }, [userId, onThemeChange])
 
     const handleSave = async () => {
         setSaving(true)
@@ -524,8 +541,8 @@ export function LactationTracker({ userId }) {
                                         key={t.value}
                                         onClick={() => setForm(f => ({ ...f, session_type: t.value }))}
                                         className={`p-2 rounded-xl border text-center transition-all ${form.session_type === t.value
-                                                ? 'bg-blue-500/20 border-blue-500 text-white'
-                                                : 'border-gray-700 text-gray-500'
+                                            ? 'bg-blue-500/20 border-blue-500 text-white'
+                                            : 'border-gray-700 text-gray-500'
                                             }`}
                                     >
                                         <div className="text-xl">{t.label}</div>
@@ -545,8 +562,8 @@ export function LactationTracker({ userId }) {
                                             key={side}
                                             onClick={() => setForm(f => ({ ...f, breast_side: side }))}
                                             className={`py-1.5 rounded-xl border text-xs transition-all ${form.breast_side === side
-                                                    ? 'bg-blue-500/20 border-blue-500 text-white'
-                                                    : 'border-gray-700 text-gray-500'
+                                                ? 'bg-blue-500/20 border-blue-500 text-white'
+                                                : 'border-gray-700 text-gray-500'
                                                 }`}
                                         >
                                             {side === 'left' ? '← Izq' : side === 'right' ? 'Der →' : '↔ Ambos'}

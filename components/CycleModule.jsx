@@ -122,7 +122,7 @@ const PHASE_NUTRITION = {
   }
 }
 
-export function CycleModule({ user, profile, onProfileUpdate, variant = 'full' }) {
+export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, variant = 'full' }) {
   const [loading, setLoading] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
   const [stepsToday] = useState(0)
@@ -160,9 +160,17 @@ export function CycleModule({ user, profile, onProfileUpdate, variant = 'full' }
       workout,
       phaseConfig,
       cycleLength: profile.cycle_length_days || 28,
-      periodLength: profile.period_length_days || 5
+      periodLength: profile.period_length_days || 5,
+      theme: phaseConfig === PHASE_CONFIG.unknown ? 'default' : phase
     }
   }, [profile, stepsToday])
+
+  // Notificar cambio de tema al padre
+  useEffect(() => {
+    if (onThemeChange && variant === 'full' && cycleData?.theme) {
+      onThemeChange(cycleData.theme)
+    }
+  }, [cycleData?.theme, onThemeChange, variant])
 
   const handleSaveConfig = async () => {
     if (!configForm.cycle_enabled) {

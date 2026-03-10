@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { 
-  User, Dumbbell, Apple, Activity, Calendar, Mail, Phone, 
+import {
+  User, Dumbbell, Apple, Activity, Calendar, Mail, Phone,
   Loader2, ChevronRight, X, Edit, Flame, Target, Zap, Star
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
@@ -40,7 +40,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
         .select('*')
         .eq('id', member.id)
         .single()
-      
+
       setMemberData(profile)
 
       // Cargar rutina asignada
@@ -85,7 +85,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
         .from('workout_templates')
         .select('id, name, trainer_id')
         .order('created_at', { ascending: false })
-      
+
       setAvailableWorkouts(workouts || [])
 
       // Cargar dietas disponibles
@@ -93,7 +93,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
         .from('diet_templates')
         .select('id, name, calories, protein_g, carbs_g, fat_g')
         .order('created_at', { ascending: false })
-      
+
       setAvailableDiets(diets || [])
 
     } catch (error) {
@@ -168,35 +168,52 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
           </div>
         ) : (
           <div className="space-y-6 py-4">
-            {/* Info básica */}
-            <div className="grid grid-cols-2 gap-3">
-              {memberData?.phone && (
-                <div className="flex items-center gap-2 p-3 bg-black/30 rounded-xl">
-                  <Phone className="w-4 h-4 text-violet-400" />
-                  <span className="text-sm text-gray-300">{memberData.phone}</span>
-                </div>
-              )}
-              {memberData?.birth_date && (
-                <div className="flex items-center gap-2 p-3 bg-black/30 rounded-xl">
-                  <Calendar className="w-4 h-4 text-violet-400" />
-                  <span className="text-sm text-gray-300">
-                    {new Date(memberData.birth_date).toLocaleDateString('es-ES')}
-                  </span>
-                </div>
-              )}
-              <div className="flex items-center gap-2 p-3 bg-black/30 rounded-xl">
-                <Activity className="w-4 h-4 text-violet-400" />
-                <span className="text-sm text-gray-300">
-                  {memberData?.has_premium ? 'Premium' : 'Básico'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 p-3 bg-black/30 rounded-xl">
-                <Calendar className="w-4 h-4 text-violet-400" />
-                <span className="text-sm text-gray-300">
-                  Desde {new Date(memberData?.created_at).toLocaleDateString('es-ES')}
-                </span>
-              </div>
-            </div>
+            {/* Bienestar Femenino (Solo si es mujer) */}
+            {memberData?.sex === 'female' && (
+              <Card className="bg-gradient-to-br from-pink-500/10 to-violet-500/5 border-pink-500/20 rounded-2xl">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-white text-base flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-pink-400" />
+                    Bienestar Femenino
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-black/30 rounded-xl">
+                    <span className="text-sm text-gray-400">Etapa actual:</span>
+                    <span className="text-sm font-bold text-pink-300 uppercase">
+                      {memberData.life_stage === 'cycle' ? 'Ciclo Natural' :
+                        memberData.life_stage === 'pregnant' ? 'Embarazo' :
+                          memberData.life_stage === 'postpartum' ? 'Post-parto' :
+                            memberData.life_stage === 'lactating' ? 'Lactancia' : 'No configurado'}
+                    </span>
+                  </div>
+
+                  {memberData.life_stage === 'pregnant' && memberData.due_date && (
+                    <div className="p-3 bg-black/30 rounded-xl">
+                      <p className="text-xs text-gray-500">Fecha probable de parto:</p>
+                      <p className="text-sm text-white font-semibold">{new Date(memberData.due_date).toLocaleDateString()}</p>
+                    </div>
+                  )}
+
+                  {memberData.life_stage === 'cycle' && memberData.cycle_enabled && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2 bg-black/30 rounded-lg">
+                        <p className="text-[10px] text-gray-500 font-bold uppercase">Ciclo</p>
+                        <p className="text-sm text-white">{memberData.cycle_length_days} días</p>
+                      </div>
+                      <div className="p-2 bg-black/30 rounded-lg">
+                        <p className="text-[10px] text-gray-500 font-bold uppercase">Periodo</p>
+                        <p className="text-sm text-white">{memberData.period_length_days} días</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button variant="outline" size="sm" className="w-full border-pink-500/30 text-pink-300 hover:bg-pink-500/10 rounded-xl text-xs">
+                    Ver historial de síntomas
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Rutina Asignada */}
             <Card className="bg-black/30 border-violet-500/20 rounded-2xl">
@@ -208,7 +225,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
               </CardHeader>
               <CardContent className="space-y-3">
                 {assignedWorkout ? (
-                  <div 
+                  <div
                     className="p-4 bg-violet-500/10 border border-violet-500/30 rounded-xl cursor-pointer hover:bg-violet-500/20 transition-all"
                     onClick={() => setShowWorkoutDetail(true)}
                   >
@@ -261,7 +278,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                   <div className="space-y-3">
                     <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
                       <h4 className="font-semibold text-white mb-3">{assignedDiet.name}</h4>
-                      
+
                       {/* Macros Grid */}
                       <div className="grid grid-cols-4 gap-2">
                         <div className="bg-orange-500/20 rounded-xl p-3 text-center">
