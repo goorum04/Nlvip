@@ -52,6 +52,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [dietViewMode, setDietViewMode] = useState('daily')
   const [myTrainer, setMyTrainer] = useState(null)
   const [storeProducts, setStoreProducts] = useState([])
+  const [gymAdmin, setGymAdmin] = useState(null)
   const [feedImageUrls, setFeedImageUrls] = useState({})
   const [pageTheme, setPageTheme] = useState('default')
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -160,19 +161,26 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   }, [])
 
   const loadData = async () => {
-    await Promise.all([
-      loadFeed(),
-      loadMyWorkout(),
-      loadMyDiet(),
-      loadProgress(),
-      loadProgressPhotos(),
-      loadNotices(),
-      loadOnboarding(),
-      loadMyTrainer(),
-      loadStoreProducts(),
-      loadChartData(),
-      loadMyPrs()
-    ])
+    try {
+      await Promise.all([
+        loadFeed().catch(e => console.error('Error loading feed:', e)),
+        loadMyWorkout().catch(e => console.error('Error loading workout:', e)),
+        loadMyDiet().catch(e => console.error('Error loading diet:', e)),
+        loadProgress().catch(e => console.error('Error loading progress:', e)),
+        loadProgressPhotos().catch(e => console.error('Error loading photos:', e)),
+        loadNotices().catch(e => console.error('Error loading notices:', e)),
+        loadOnboarding().catch(e => console.error('Error loading onboarding:', e)),
+        loadMyTrainer().catch(e => console.error('Error loading trainer:', e)),
+        loadGymAdmin().catch(e => console.error('Error loading admin:', e)),
+        loadStoreProducts().catch(e => console.error('Error loading store products:', e)),
+        loadChartData().catch(e => console.error('Error loading chart data:', e)),
+        loadMyPrs().catch(e => console.error('Error loading PRs:', e))
+      ])
+    } catch (err) {
+      console.error('Fatal error loading dashboard data:', err)
+    } finally {
+      setOnboardingChecked(true)
+    }
   }
 
   const loadMyPrs = async () => {
@@ -198,8 +206,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       setPendingOnboarding(data || null)
     } catch (e) {
       console.warn('Error fetching onboarding:', e.message)
-    } finally {
-      setOnboardingChecked(true)
     }
   }
 
@@ -307,6 +313,17 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     } catch (error) {
       console.error('Error loading trainer:', error)
     }
+  }
+
+  const loadGymAdmin = async () => {
+    // Fetch the owner/admin (assuming there is one with role admin)
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .eq('role', 'admin')
+      .limit(1)
+      .single()
+    if (data) setGymAdmin(data)
   }
 
   const loadFeed = async () => {
@@ -1097,6 +1114,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         userRole="member"
         trainerId={myTrainer?.id}
         trainerName={myTrainer?.name}
+        adminId={gymAdmin?.id}
+        adminName={gymAdmin?.name}
       />
 
       <Toaster />

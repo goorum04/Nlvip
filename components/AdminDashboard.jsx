@@ -2464,6 +2464,11 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       <FloatingAdminAssistant userId={user.id} />
 
       <Toaster />
+      <FloatingChat
+        userId={user.id}
+        userRole={profile?.role}
+        members={members}
+      />
     </div>
   )
 }
