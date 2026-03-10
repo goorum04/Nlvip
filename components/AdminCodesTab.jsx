@@ -18,7 +18,7 @@ export function AdminCodesTab({
     onRefresh,
     onDeleteCode
 }) {
-    const [selectedTrainerId, setSelectedTrainerId] = useState('')
+    const [selectedTrainerId, setSelectedTrainerId] = useState('all')
     const [codeMaxUses, setCodeMaxUses] = useState('10')
     const [codeExpireDays, setCodeExpireDays] = useState('30')
     const [loading, setLoading] = useState(false)
@@ -33,7 +33,7 @@ export function AdminCodesTab({
 
             const { error } = await supabase.from('invitation_codes').insert([{
                 code,
-                trainer_id: selectedTrainerId || null,
+                trainer_id: selectedTrainerId === 'all' ? null : selectedTrainerId,
                 max_uses: parseInt(codeMaxUses),
                 expires_at: expires.toISOString()
             }])
@@ -69,7 +69,7 @@ export function AdminCodesTab({
                                             <SelectValue placeholder="Cualquiera" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">Cualquier Entrenador</SelectItem>
+                                            <SelectItem value="all">Cualquier Entrenador</SelectItem>
                                             {trainers.map(t => (
                                                 <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                                             ))}
@@ -136,7 +136,7 @@ export function AdminCodesTab({
                                                 </td>
                                                 <td className="px-4 py-4 text-center">
                                                     <div className="flex items-center justify-center gap-1.5">
-                                                        <span className="text-sm font-bold text-white">{code.current_uses}</span>
+                                                        <span className="text-sm font-bold text-white">{code.uses_count || 0}</span>
                                                         <span className="text-gray-600 text-xs">/ {code.max_uses}</span>
                                                     </div>
                                                 </td>
