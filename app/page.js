@@ -182,8 +182,10 @@ export default function App() {
           id: data.user.id,
           email: regEmail,
           name: regName,
+          sex: regSex || null,
+          cycle_enabled: regSex === 'female',
+          life_stage: regSex === 'female' ? 'cycle' : null,
           role: 'member',
-          sex: regSex,
           has_premium: hasPremium
         }], { onConflict: 'id' })
 

@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import {
   Dumbbell, Users, Bell, LogOut, Plus, Apple, Sparkles, Eye, Send,
-  Video, Camera, TrendingUp, Trash2, Loader2, Calculator, Target, Trophy, UtensilsCrossed, MessageSquare, ChefHat
+  Video, Camera, TrendingUp, Trash2, Loader2, Calculator, Target, Trophy, UtensilsCrossed, MessageSquare, ChefHat, Heart
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
@@ -182,7 +182,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const loadMembers = async () => {
     const { data } = await supabase
       .from('trainer_members')
-      .select(`member_id, member:profiles!trainer_members_member_id_fkey(id, name, email, created_at)`)
+      .select(`member_id, member:profiles!trainer_members_member_id_fkey(id, name, email, created_at, sex, life_stage)`)
       .eq('trainer_id', user.id)
     if (data) setMembers(data.map(tm => tm.member))
   }
@@ -594,7 +594,10 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                             {member.name?.charAt(0)}
                           </div>
                           <div>
-                            <p className="font-semibold text-white">{member.name}</p>
+                            <p className="font-semibold text-white flex items-center gap-2">
+                              {member.name}
+                              {member.sex === 'female' && <Heart className="w-3 h-3 text-pink-400" />}
+                            </p>
                             <p className="text-sm text-gray-500">{member.email}</p>
                           </div>
                         </div>
@@ -605,8 +608,22 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                     </DialogTrigger>
                     <DialogContent className="bg-[#1a1a1a] border-[#2a2a2a] rounded-3xl max-w-lg">
                       <DialogHeader>
-                        <DialogTitle className="text-white text-xl">{member.name}</DialogTitle>
-                        <DialogDescription className="text-gray-500">{member.email}</DialogDescription>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <DialogTitle className="text-white text-xl">{member.name}</DialogTitle>
+                            <DialogDescription className="text-gray-500">{member.email}</DialogDescription>
+                          </div>
+                          {member.sex === 'female' && (
+                            <div className="bg-pink-500/10 border border-pink-500/20 px-3 py-1 rounded-full flex items-center gap-2">
+                              <Heart className="w-4 h-4 text-pink-500" />
+                              <span className="text-xs text-pink-400 font-bold uppercase tracking-wider">
+                                {member.life_stage === 'pregnant' ? 'Embarazada' :
+                                  member.life_stage === 'postpartum' ? 'Post-parto' :
+                                    member.life_stage === 'lactating' ? 'Lactancia' : 'Ciclo Regular'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </DialogHeader>
                       <div className="space-y-4 pt-4">
                         <div>
