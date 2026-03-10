@@ -267,14 +267,27 @@ export default function App() {
 
   // Dashboard routing
   if (user && profile) {
-    if (profile.role === 'admin') return <AdminDashboard user={user} profile={profile} onLogout={handleLogout} />
-    if (profile.role === 'trainer') return <TrainerDashboard user={user} profile={profile} onLogout={handleLogout} />
-    if (profile.role === 'member') return <MemberDashboard user={user} profile={profile} onLogout={handleLogout} />
+    try {
+      if (profile.role === 'admin') return <AdminDashboard user={user} profile={profile} onLogout={handleLogout} />
+      if (profile.role === 'trainer') return <TrainerDashboard user={user} profile={profile} onLogout={handleLogout} />
+      if (profile.role === 'member') return <MemberDashboard user={user} profile={profile} onLogout={handleLogout} />
+    } catch (e) {
+      console.error('Crash in Dashboard:', e)
+      return (
+        <div className="p-10 bg-red-900/20 text-red-500 rounded-3xl m-4 border border-red-500/30">
+          <h2 className="text-xl font-bold mb-2">Error de sistema</h2>
+          <p className="text-sm">{e.message}</p>
+          <Button onClick={() => window.location.reload()} className="mt-4 bg-red-500 text-white">Reintentar</Button>
+        </div>
+      )
+    }
   }
 
   // Login/Register screen
   return (
     <div className="min-h-screen bg-[#030303] relative overflow-hidden">
+      <Toaster />
+
       {/* Animated gradient orbs */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[120px] animate-pulse" />
