@@ -255,7 +255,7 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
       const data = await res.json()
       const error = data.error
 
-      if (error) throw error
+      if (error) throw new Error(error)
 
       toast({ title: '¡Guardado!' })
 

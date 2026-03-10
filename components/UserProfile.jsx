@@ -146,7 +146,26 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
 
       if (error) throw error
 
-      setAvatarUrl(fileName)
+      // Obtener URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName)
+
+      // Actualizar perfil con la nueva URL
+      const res = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: user.id,
+          updates: { avatar_url: publicUrl }
+        })
+      })
+      const dataX = await res.json()
+      const updateError = dataX.error
+
+      if (updateError) throw new Error(updateError)
+
+      setAvatarUrl(publicUrl)
       
       // Crear preview local
       const reader = new FileReader()
@@ -169,21 +188,27 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
 
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          name: name.trim(),
-          phone: phone.trim() || null,
-          birth_date: birthDate || null,
-          sex: sex || null,
-          height_cm: parseInt(heightCm) || null,
-          weight_kg: parseFloat(weightKg) || null,
-          avatar_url: avatarUrl || null,
-          updated_at: new Date().toISOString()
+      const res = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: user.id,
+          updates: {
+            name: name.trim(),
+            phone: phone.trim() || null,
+            birth_date: birthDate || null,
+            sex: sex || null,
+            height_cm: parseInt(heightCm) || null,
+            weight_kg: parseFloat(weightKg) || null,
+            avatar_url: avatarUrl || null,
+            updated_at: new Date().toISOString()
+          }
         })
-        .eq('id', user.id)
+      })
+      const data = await res.json()
+      const error = data.error
 
-      if (error) throw error
+      if (error) throw new Error(error)
 
       toast({ title: '¡Perfil actualizado!' })
       

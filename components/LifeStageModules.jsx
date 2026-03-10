@@ -43,7 +43,7 @@ export function LifeStageSelector({ userId, profile, onUpdate }) {
             const data = await res.json()
             const error = data.error
 
-            if (error) throw error
+            if (error) throw new Error(error)
             onUpdate?.({ ...profile, life_stage: stage })
             toast({ title: `✅ Modo ${stages.find(s => s.value === stage)?.label} activado` })
         } catch (error) {
@@ -147,7 +147,7 @@ export function PregnancyMode({ userId, profile, onUpdate, onThemeChange }) {
             })
             const data = await res.json()
             const error = data.error
-            if (error) throw error
+            if (error) throw new Error(error)
             onUpdate?.({ ...profile, due_date: dueDate })
             toast({ title: '✅ Fecha guardada' })
             setShowConfig(false)
@@ -335,7 +335,7 @@ export function PostpartumMode({ userId, profile, onUpdate, onThemeChange }) {
             })
             const data = await res.json()
             const error = data.error
-            if (error) throw error
+            if (error) throw new Error(error)
             onUpdate?.({ ...profile, postpartum_date: birthDate })
             toast({ title: '✅ Fecha guardada' })
             setShowConfig(false)

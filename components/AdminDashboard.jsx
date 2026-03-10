@@ -213,6 +213,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     }
   }
 
+
   const handleCreateDiet = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -621,6 +622,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         description: !currentStatus ? 'Código activado' : 'Código desactivado'
       })
       loadCodes()
+    } else {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
     }
   }
 
@@ -636,6 +639,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         description: 'El post ya no será visible en el feed'
       })
       loadFeedPosts()
+    } else {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
     }
   }
 
