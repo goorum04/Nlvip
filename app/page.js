@@ -49,40 +49,52 @@ export default function App() {
     }
   }
 
-  const loadProfile = async (userId, userEmail = '', userName = 'Usuario') => {
+  const loadProfile = async (userId, userEmail = '', userName = 'Usuario', authUser = null) => {
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
+      console.log('Intentando cargar perfil para:', userId)
 
-      if (data) {
-        console.log('Profile loaded successfully from DB')
-        setProfile(data)
-        return data
+      // Timeout de 3 segundos para evitar bloqueos por recursión RLS
+      const fetchPromise = supabase.from('profiles').select('*').eq('id', userId).single()
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout DB')), 3000)
+      )
+
+      let result;
+      try {
+        result = await Promise.race([fetchPromise, timeoutPromise])
+      } catch (err) {
+        console.warn('Error o timeout al cargar perfil:', err.message)
+        result = { data: null, error: err }
       }
 
-      console.warn('Profile fetch failed or empty, checking auth metadata as fallback:', error)
+      if (result.data) {
+        console.log('Perfil cargado desde DB')
+        setProfile(result.data)
+        return result.data
+      }
 
-      // Fallback: Use data from Auth Metadata if DB fails
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (authUser) {
-        const metadata = authUser.user_metadata || {}
+      // Fallback: Usar metadatos de Auth
+      const userToUse = authUser || (await supabase.auth.getUser()).data.user
+      if (userToUse) {
+        const metadata = userToUse.user_metadata || {}
         const fallbackProfile = {
           id: userId,
-          email: userEmail || authUser.email,
+          email: userEmail || userToUse.email,
           name: metadata.name || metadata.full_name || userName,
           role: metadata.role || 'member',
-          has_premium: true, // Fail-safe to avoid locking users out
+          has_premium: true,
           is_fallback: true
         }
-        console.log('Using fallback profile from auth metadata')
+        console.log('Usando perfil de fallback (Auth metadata)')
         setProfile(fallbackProfile)
         return fallbackProfile
       }
     } catch (err) {
-      console.error('Fatal handled error in loadProfile:', err)
+      console.error('Error en loadProfile:', err)
     }
-
     return null
   }
+
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -92,13 +104,14 @@ export default function App() {
       if (error) throw error
       setUser(data.user)
 
-      const loadedProfile = await loadProfile(data.user.id, data.user.email, data.user.user_metadata?.full_name || 'Usuario')
+      const loadedProfile = await loadProfile(data.user.id, data.user.email, data.user.user_metadata?.full_name || 'Usuario', data.user)
 
       if (loadedProfile) {
-        toast({ title: '¡Bienvenido!' })
+        toast({ title: '¡Bienvenido!', description: `Sesión iniciada como ${loadedProfile.role}` })
       } else {
         toast({ title: 'Aviso', description: 'Iniciaste sesión pero no se pudo cargar tu perfil. Intenta refrescar la página.' })
       }
+
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
@@ -118,7 +131,7 @@ export default function App() {
       })
       if (error) throw error
       setUser(data.user)
-      await loadProfile(data.user.id)
+      await loadProfile(data.user.id, data.user.email, account.name, data.user)
       toast({ title: `¡Bienvenido ${account.name}!` })
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })

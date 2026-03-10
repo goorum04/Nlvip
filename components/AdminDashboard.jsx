@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import {
-  Users, Bot, Dumbbell, Apple, Key, LogOut, Settings, Toaster, Loader2, MessageSquare
+  Users, Bot, Dumbbell, Apple, Key, LogOut, Settings, Loader2, MessageSquare
 } from 'lucide-react'
+import { Toaster } from '@/components/ui/toaster'
 import { useToast } from '@/hooks/use-toast'
 
 // Refactored Components
