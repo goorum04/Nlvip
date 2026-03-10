@@ -71,6 +71,20 @@ export default function App() {
 
       if (result.data) {
         console.log('Perfil cargado desde DB')
+        // Auto-fix for missing fields if they exist in auth metadata
+        const actualUser = authUser || (await supabase.auth.getUser()).data.user
+        const metadata = actualUser?.user_metadata || {}
+        if (!result.data.sex && metadata.sex) {
+          console.log('Sincronizando sexo desde metadatos...')
+          const sex = metadata.sex
+          const updates = { sex, cycle_enabled: sex === 'female', life_stage: sex === 'female' ? 'cycle' : null }
+          fetch('/api/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: userId, updates })
+          })
+          result.data = { ...result.data, ...updates }
+        }
         setProfile(result.data)
         return result.data
       }
@@ -171,7 +185,14 @@ export default function App() {
 
       const { data, error } = await supabase.auth.signUp({
         email: regEmail,
-        password: regPassword
+        password: regPassword,
+        options: {
+          data: {
+            name: regName,
+            sex: regSex || null,
+            role: 'member'
+          }
+        }
       })
       if (error) throw error
 

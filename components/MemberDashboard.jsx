@@ -160,6 +160,10 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     }
   }, [])
 
+  useEffect(() => {
+    if (profile) setLocalProfile(profile)
+  }, [profile])
+
   const loadData = async () => {
     try {
       await Promise.all([
