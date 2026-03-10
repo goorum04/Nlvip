@@ -207,6 +207,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       if (error) throw error
 
       toast({ title: '¡Perfil actualizado!' })
+      onClose() // Auto-close modal after save
 
       // Notificar al componente padre para recargar el perfil
       if (onProfileUpdate) {
@@ -318,10 +319,15 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-white text-xl flex items-center gap-2">
-            <User className="w-5 h-5 text-violet-400" />
-            Mi Perfil
-          </DialogTitle>
+          <div className="flex items-center justify-between w-full">
+            <DialogTitle className="text-white text-xl flex items-center gap-2">
+              <User className="w-5 h-5 text-violet-400" />
+              Mi Perfil
+            </DialogTitle>
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full text-gray-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
           <DialogDescription className="text-gray-400">
             Gestiona tu información personal
           </DialogDescription>
