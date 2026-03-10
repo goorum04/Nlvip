@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_build'
 })
 
 export async function POST(request) {
@@ -14,7 +14,7 @@ export async function POST(request) {
     }
 
     // Prepare the image for the API
-    const imageContent = imageBase64 
+    const imageContent = imageBase64
       ? { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } }
       : { type: 'image_url', image_url: { url: imageUrl } }
 
@@ -56,7 +56,7 @@ Formato de respuesta (JSON):
     })
 
     const content = response.choices[0]?.message?.content || ''
-    
+
     // Parse the JSON response
     let analysis
     try {

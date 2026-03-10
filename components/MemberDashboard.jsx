@@ -394,12 +394,12 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a]">
       {/* HEADER */}
-      <header className="relative overflow-hidden">
+      <header className="relative overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 via-transparent to-violet-500/10" />
         <div className="absolute top-0 left-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
 
-        <div className="relative container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-8">
+        <div className="relative container mx-auto px-4 pt-4 pb-4">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <img
                 src="/logo-nl-vip.jpg"
@@ -459,7 +459,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         onProfileUpdate={(updatedProfile) => {
-          setProfile(updatedProfile)
+          setLocalProfile(updatedProfile)
         }}
         onLogout={onLogout}
       />

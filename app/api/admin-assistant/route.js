@@ -3,7 +3,7 @@ import OpenAI from 'openai'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_build'
 })
 
 const DIET_RULES = `
@@ -168,7 +168,7 @@ export async function POST(request) {
         if (newToolCalls.length > 0) {
           const newAutoExecute = newToolCalls.filter(c => readOnlyTools.includes(c.function.name))
           const newNeedsConfirmation = newToolCalls.filter(c => !readOnlyTools.includes(c.function.name))
-          
+
           // Ejecutar automáticamente las nuevas herramientas de solo lectura
           for (const call of newAutoExecute) {
             try {

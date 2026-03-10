@@ -60,7 +60,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [selectedTrainerId, setSelectedTrainerId] = useState('')
   const [codeMaxUses, setCodeMaxUses] = useState('10')
   const [codeExpireDays, setCodeExpireDays] = useState('30')
-  
+
   // Video form
   const [videoTitle, setVideoTitle] = useState('')
   const [videoDescription, setVideoDescription] = useState('')
@@ -138,7 +138,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       .from('challenges')
       .select('*, creator:profiles!challenges_created_by_fkey(name)')
       .order('created_at', { ascending: false })
-    
+
     if (data) {
       setChallenges(data)
       for (const challenge of data) {
@@ -168,10 +168,10 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     e.preventDefault()
     setLoading(true)
     try {
-      const { error } = await supabase.from('workout_templates').insert([{ 
-        trainer_id: user.id, 
-        name: newWorkoutName, 
-        description: newWorkoutDesc 
+      const { error } = await supabase.from('workout_templates').insert([{
+        trainer_id: user.id,
+        name: newWorkoutName,
+        description: newWorkoutDesc
       }])
       if (error) throw error
       toast({ title: '¡Rutina creada!' })
@@ -190,12 +190,12 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     setLoading(true)
     try {
       const { error } = await supabase.from('diet_templates').insert([{
-        trainer_id: user.id, 
-        name: newDietName, 
+        trainer_id: user.id,
+        name: newDietName,
         calories: parseInt(newDietCalories),
-        protein_g: parseInt(newDietProtein), 
-        carbs_g: parseInt(newDietCarbs), 
-        fat_g: parseInt(newDietFat), 
+        protein_g: parseInt(newDietProtein),
+        carbs_g: parseInt(newDietCarbs),
+        fat_g: parseInt(newDietFat),
         content: newDietContent
       }])
       if (error) throw error
@@ -303,7 +303,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     try {
       const startDate = new Date()
       const endDate = new Date(startDate.getTime() + parseInt(challengeDays) * 86400000)
-      
+
       const { error } = await supabase.from('challenges').insert([{
         title: challengeTitle,
         description: challengeDesc,
@@ -314,7 +314,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         created_by: user.id,
         is_active: true
       }])
-      
+
       if (error) throw error
       toast({ title: '¡Reto creado!', description: 'Los socios ya pueden unirse' })
       setChallengeTitle('')
@@ -334,7 +334,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       .select('*')
       .eq('role', 'trainer')
       .order('created_at', { ascending: false })
-    
+
     if (data) setTrainers(data)
   }
 
@@ -343,7 +343,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       .from('invitation_codes')
       .select('*, profiles!invitation_codes_trainer_id_fkey(name)')
       .order('created_at', { ascending: false })
-    
+
     if (data) setCodes(data)
   }
 
@@ -358,7 +358,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       `)
       .eq('role', 'member')
       .order('created_at', { ascending: false })
-    
+
     if (data) setMembers(data)
   }
 
@@ -373,7 +373,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       .eq('is_hidden', false)
       .order('created_at', { ascending: false })
       .limit(20)
-    
+
     if (data) setFeedPosts(data)
   }
 
@@ -505,7 +505,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       `)
       .order('date', { ascending: false })
       .limit(100)
-    
+
     if (data) setAllProgress(data)
   }
 
@@ -518,7 +518,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         workout:workout_templates(name, description),
         assigned:profiles!member_workouts_assigned_by_fkey(name)
       `)
-    
+
     const { data: diets } = await supabase
       .from('member_diets')
       .select(`
@@ -527,7 +527,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         diet:diet_templates(name, calories, protein_g, carbs_g, fat_g),
         assigned:profiles!member_diets_assigned_by_fkey(name)
       `)
-    
+
     setAllAssignments({ workouts: workouts || [], diets: diets || [] })
   }
 
@@ -540,7 +540,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         approver:profiles!training_videos_approved_by_fkey(name)
       `)
       .order('created_at', { ascending: false })
-    
+
     if (data) setTrainingVideos(data)
   }
 
@@ -645,7 +645,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     try {
       const member = members.find(m => m.id === selectedMemberForMacros)
       const dietName = `Plan Nutricional - ${member?.name || 'Socio'}`
-      
+
       // Create the diet template
       const { data: diet, error: dietError } = await supabase.from('diet_templates').insert([{
         trainer_id: selectedTrainerForMacros,
@@ -656,7 +656,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         fat_g: macroResults.fat,
         content: `Plan personalizado:\n- Calorías: ${macroResults.calories} kcal\n- Proteína: ${macroResults.protein}g\n- Carbohidratos: ${macroResults.carbs}g\n- Grasas: ${macroResults.fat}g`
       }]).select().single()
-      
+
       if (dietError) throw dietError
 
       // Assign to member
@@ -682,13 +682,13 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   return (
     <div className="min-h-screen bg-[#0B0B0B]">
       {/* Modern Admin Header */}
-      <header className="bg-gradient-to-br from-black via-[#1a1a1a] to-black border-b border-violet-500/20 sticky top-0 z-50 backdrop-blur-sm">
+      <header className="bg-gradient-to-br from-black via-[#1a1a1a] to-black border-b border-violet-500/20 sticky top-0 z-50 backdrop-blur-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <img 
-                src="/logo-nl-vip.jpg" 
-                alt="NL VIP TEAM" 
+              <img
+                src="/logo-nl-vip.jpg"
+                alt="NL VIP TEAM"
                 className="w-12 h-12 rounded-xl object-cover shadow-lg shadow-violet-500/30"
               />
               <div>
@@ -701,13 +701,13 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 <p className="text-sm text-gray-300 font-semibold">{profile.name}</p>
                 <p className="text-xs text-violet-400">Administrador</p>
               </div>
-              <AvatarBubble 
-                profile={profile} 
-                size="md" 
-                onClick={() => setShowProfileModal(true)} 
+              <AvatarBubble
+                profile={profile}
+                size="md"
+                onClick={() => setShowProfileModal(true)}
               />
               <Button
-                variant="outline" 
+                variant="outline"
                 size="sm"
                 className="border-violet-500/40 text-violet-400 hover:bg-gradient-to-r from-violet-600 to-cyan-600/10 rounded-full"
                 onClick={onLogout}
@@ -735,8 +735,19 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
       <main className="container mx-auto px-4 py-8 overflow-x-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          {/* Back button - visible when not on the default tab */}
+          {activeTab !== 'assistant' && (
+            <button
+              onClick={() => setActiveTab('assistant')}
+              className="flex items-center gap-2 text-sm text-violet-400 hover:text-violet-300 transition-colors mb-2 group"
+            >
+              <span className="w-7 h-7 flex items-center justify-center rounded-full bg-violet-500/15 border border-violet-500/30 group-hover:bg-violet-500/25 transition-all">←</span>
+              <span>Volver al inicio</span>
+            </button>
+          )}
+
           <div className="flex items-center gap-2 pb-2 flex-wrap">
-            
+
             {/* Tabs principales - Solo 2 */}
             <TabsList className="bg-[#1a1a1a] border border-violet-500/20 inline-flex">
               <TabsTrigger value="assistant" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap px-4">
@@ -752,13 +763,12 @@ export default function AdminDashboard({ user, profile, onLogout }) {
             {/* Menú SOCIOS */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${
-                    ['members', 'progress'].includes(activeTab) 
-                      ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent' 
+                <Button
+                  variant="outline"
+                  className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${['members', 'progress'].includes(activeTab)
+                      ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent'
                       : 'text-gray-300'
-                  }`}
+                    }`}
                 >
                   <Users className="w-4 h-4" />
                   Socios
@@ -766,14 +776,14 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-[#1a1a1a] border-violet-500/30 text-white min-w-[180px]">
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => setActiveTab('members')}
                   className={`cursor-pointer gap-3 ${activeTab === 'members' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
                   <Users className="w-4 h-4" />
                   Lista de Socios
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => setActiveTab('progress')}
                   className={`cursor-pointer gap-3 ${activeTab === 'progress' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
@@ -786,13 +796,12 @@ export default function AdminDashboard({ user, profile, onLogout }) {
             {/* Menú ENTRENAMIENTOS */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${
-                    ['challenges', 'workouts', 'diets', 'recipes', 'calculator'].includes(activeTab) 
-                      ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent' 
+                <Button
+                  variant="outline"
+                  className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${['challenges', 'workouts', 'diets', 'recipes', 'calculator'].includes(activeTab)
+                      ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent'
                       : 'text-gray-300'
-                  }`}
+                    }`}
                 >
                   <Dumbbell className="w-4 h-4" />
                   Entrenamientos
@@ -800,14 +809,14 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-[#1a1a1a] border-violet-500/30 text-white min-w-[180px]">
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => setActiveTab('challenges')}
                   className={`cursor-pointer gap-3 ${activeTab === 'challenges' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
                   <Target className="w-4 h-4" />
                   Retos
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => setActiveTab('workouts')}
                   className={`cursor-pointer gap-3 ${activeTab === 'workouts' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
@@ -815,14 +824,14 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                   Rutinas
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-violet-500/20" />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => setActiveTab('diets')}
                   className={`cursor-pointer gap-3 ${activeTab === 'diets' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
                   <Apple className="w-4 h-4" />
                   Dietas
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => setActiveTab('recipes')}
                   className={`cursor-pointer gap-3 ${activeTab === 'recipes' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
@@ -830,7 +839,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                   Recetas
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-violet-500/20" />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => setActiveTab('calculator')}
                   className={`cursor-pointer gap-3 ${activeTab === 'calculator' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
@@ -843,13 +852,12 @@ export default function AdminDashboard({ user, profile, onLogout }) {
             {/* Menú GESTIÓN */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${
-                    ['trainers', 'codes', 'assignments', 'moderation'].includes(activeTab) 
-                      ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent' 
+                <Button
+                  variant="outline"
+                  className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${['trainers', 'codes', 'assignments', 'moderation'].includes(activeTab)
+                      ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent'
                       : 'text-gray-300'
-                  }`}
+                    }`}
                 >
                   <Settings className="w-4 h-4" />
                   Gestión
@@ -859,21 +867,21 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               <DropdownMenuContent className="bg-[#1a1a1a] border-violet-500/30 text-white min-w-[200px]">
                 <DropdownMenuLabel className="text-violet-400 text-xs">Administración</DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-violet-500/20" />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => setActiveTab('trainers')}
                   className={`cursor-pointer gap-3 ${activeTab === 'trainers' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
                   <Users className="w-4 h-4" />
                   Entrenadores
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => setActiveTab('codes')}
                   className={`cursor-pointer gap-3 ${activeTab === 'codes' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
                   <Key className="w-4 h-4" />
                   Códigos de Invitación
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => setActiveTab('assignments')}
                   className={`cursor-pointer gap-3 ${activeTab === 'assignments' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
@@ -881,7 +889,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                   Asignaciones
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-violet-500/20" />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => setActiveTab('moderation')}
                   className={`cursor-pointer gap-3 ${activeTab === 'moderation' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
@@ -944,8 +952,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       />
                     </div>
                   </div>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:bg-[rgb(6, 182, 212)] text-black"
                     disabled={loading}
                   >
@@ -1042,8 +1050,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       />
                     </div>
                   </div>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:bg-[rgb(6, 182, 212)] text-black"
                     disabled={loading || !selectedTrainerId}
                   >
@@ -1066,7 +1074,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         <p className="font-mono font-bold text-violet-400 text-lg">{code.code}</p>
                         <p className="text-sm text-gray-400">Entrenador: {code.profiles?.name}</p>
                         <p className="text-xs text-gray-500">
-                          Usos: {code.uses_count}/{code.max_uses} | 
+                          Usos: {code.uses_count}/{code.max_uses} |
                           Expira: {new Date(code.expires_at).toLocaleDateString()}
                         </p>
                       </div>
@@ -1097,11 +1105,11 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               <CardContent>
                 <div className="space-y-3">
                   {members.map((member) => (
-                    <div 
-                      key={member.id} 
+                    <div
+                      key={member.id}
                       className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-violet-500/10 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all"
                     >
-                      <div 
+                      <div
                         className="flex items-center gap-3 flex-1 cursor-pointer"
                         onClick={() => {
                           setSelectedMember(member)
@@ -1163,8 +1171,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <Label className="text-gray-400 text-xs">Título del Reto</Label>
-                      <Input 
-                        placeholder="💪 Desafío de Fuerza" 
+                      <Input
+                        placeholder="💪 Desafío de Fuerza"
                         value={challengeTitle}
                         onChange={(e) => setChallengeTitle(e.target.value)}
                         className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
@@ -1172,8 +1180,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                     </div>
                     <div className="md:col-span-2">
                       <Label className="text-gray-400 text-xs">Descripción</Label>
-                      <Textarea 
-                        placeholder="Describe el reto..." 
+                      <Textarea
+                        placeholder="Describe el reto..."
                         value={challengeDesc}
                         onChange={(e) => setChallengeDesc(e.target.value)}
                         className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
@@ -1196,9 +1204,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       <Label className="text-gray-400 text-xs">
                         Objetivo ({challengeType === 'workouts' ? 'entrenos' : challengeType === 'consistency' ? 'días' : 'kg'})
                       </Label>
-                      <Input 
-                        type="number" 
-                        placeholder="10" 
+                      <Input
+                        type="number"
+                        placeholder="10"
                         value={challengeTarget}
                         onChange={(e) => setChallengeTarget(e.target.value)}
                         className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
@@ -1220,8 +1228,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       </Select>
                     </div>
                   </div>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     disabled={loading}
                     className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-2xl py-6"
                   >
@@ -1243,7 +1251,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 {challenges.map(challenge => {
                   const participants = challengeParticipants[challenge.id] || []
                   const daysLeft = Math.max(0, Math.ceil((new Date(challenge.end_date) - new Date()) / 86400000))
-                  
+
                   return (
                     <div key={challenge.id} className="p-4 bg-black/50 rounded-2xl border border-violet-500/10">
                       <div className="flex items-start justify-between mb-3">
@@ -1267,7 +1275,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                           </Button>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-4 text-sm text-gray-400 mb-3">
                         <span>🎯 Meta: {challenge.target_value} {challenge.type === 'workouts' ? 'entrenos' : challenge.type === 'consistency' ? 'días' : 'kg'}</span>
                         <span>👥 {participants.length} participantes</span>
@@ -1280,7 +1288,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                             <div key={p.id} className="flex items-center gap-3">
                               <span className="text-white text-sm w-24 truncate">{p.member?.name}</span>
                               <div className="flex-1 h-2 bg-black/50 rounded-full overflow-hidden">
-                                <div 
+                                <div
                                   className={`h-full rounded-full ${p.completed ? 'bg-green-500' : 'bg-gradient-to-r from-violet-500 to-cyan-500'}`}
                                   style={{ width: `${Math.min((p.progress_value / challenge.target_value) * 100, 100)}%` }}
                                 />
@@ -1323,7 +1331,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               <>
                 <Card className="bg-[#1a1a1a] border-violet-500/20">
                   <CardContent className="pt-6">
-                    <Button 
+                    <Button
                       onClick={() => setShowWorkoutBuilder(true)}
                       className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-2xl py-6"
                     >
@@ -1341,12 +1349,12 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {workoutTemplates.map(workout => (
-                      <div 
-                        key={workout.id} 
+                      <div
+                        key={workout.id}
                         className="p-4 bg-black/50 rounded-2xl border border-violet-500/10 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all"
                       >
                         <div className="flex items-start justify-between">
-                          <div 
+                          <div
                             className="flex items-center gap-3 flex-1 cursor-pointer"
                             onClick={() => {
                               setEditingWorkout(workout)
@@ -1398,12 +1406,12 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 <form onSubmit={handleCreateDiet} className="space-y-4">
                   <div>
                     <Label className="text-gray-400 text-sm">Nombre</Label>
-                    <Input 
-                      value={newDietName} 
-                      onChange={(e) => setNewDietName(e.target.value)} 
-                      placeholder="Ej: Definición 2000kcal" 
-                      required 
-                      className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1" 
+                    <Input
+                      value={newDietName}
+                      onChange={(e) => setNewDietName(e.target.value)}
+                      placeholder="Ej: Definición 2000kcal"
+                      required
+                      className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
                     />
                   </div>
                   <div className="grid grid-cols-4 gap-3">
@@ -1415,25 +1423,25 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                     ].map(f => (
                       <div key={f.label}>
                         <Label className="text-gray-400 text-xs">{f.label}</Label>
-                        <Input 
-                          type="number" 
-                          value={f.value} 
-                          onChange={(e) => f.setter(e.target.value)} 
-                          placeholder={f.placeholder} 
-                          required 
-                          className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1" 
+                        <Input
+                          type="number"
+                          value={f.value}
+                          onChange={(e) => f.setter(e.target.value)}
+                          placeholder={f.placeholder}
+                          required
+                          className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
                         />
                       </div>
                     ))}
                   </div>
                   <div>
                     <Label className="text-gray-400 text-sm">Plan de Comidas</Label>
-                    <Textarea 
-                      value={newDietContent} 
-                      onChange={(e) => setNewDietContent(e.target.value)} 
-                      placeholder="Desayuno:&#10;Almuerzo:&#10;Cena:..." 
-                      required 
-                      className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1 min-h-[150px]" 
+                    <Textarea
+                      value={newDietContent}
+                      onChange={(e) => setNewDietContent(e.target.value)}
+                      placeholder="Desayuno:&#10;Almuerzo:&#10;Cena:..."
+                      required
+                      className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1 min-h-[150px]"
                     />
                   </div>
                   <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-2xl py-6">
@@ -1571,7 +1579,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                     >
                       ← Volver a la lista
                     </Button>
-                    
+
                     <div className="flex items-center gap-3 mb-4 p-3 bg-black/50 rounded-xl border border-violet-500/20">
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold">
                         {selectedMemberForPhotos.name?.charAt(0)}
@@ -1581,7 +1589,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         <p className="text-xs text-gray-400">{memberProgressPhotos.length} fotos de progreso</p>
                       </div>
                     </div>
-                    
+
                     <ProgressPhotoGallery
                       photos={memberProgressPhotos}
                       canDelete={true}
@@ -1709,8 +1717,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       className="bg-black border-violet-500/20 text-white"
                     />
                   </div>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:bg-[rgb(6, 182, 212)] text-black"
                     disabled={loading}
                   >
@@ -1764,9 +1772,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                           </Button>
                         </div>
                       </div>
-                      <a 
-                        href={video.video_url} 
-                        target="_blank" 
+                      <a
+                        href={video.video_url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-violet-400 hover:underline"
                       >
@@ -1898,8 +1906,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                           </Select>
                         </div>
                       </div>
-                      <Button 
-                        onClick={assignMacrosToMember} 
+                      <Button
+                        onClick={assignMacrosToMember}
                         disabled={loading || !selectedMemberForMacros || !selectedTrainerForMacros}
                         className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold py-5"
                       >
@@ -1948,9 +1956,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       </div>
                       <p className="text-gray-200 mb-3">{post.content}</p>
                       {post.image_url && (
-                        <img 
-                          src={post.image_url} 
-                          alt="Post" 
+                        <img
+                          src={post.image_url}
+                          alt="Post"
                           className="rounded-lg max-h-64 object-cover mb-3"
                         />
                       )}

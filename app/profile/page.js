@@ -1,12 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+import { supabase } from '@/lib/supabase'
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null)
@@ -79,7 +74,7 @@ export default function ProfilePage() {
       <h1>Editar Perfil</h1>
 
       <div style={{ marginBottom: 10 }}>
-        <label>Peso (kg)</label><br/>
+        <label>Peso (kg)</label><br />
         <input
           type="number"
           value={weight}
@@ -88,7 +83,7 @@ export default function ProfilePage() {
       </div>
 
       <div style={{ marginBottom: 10 }}>
-        <label>Altura (cm)</label><br/>
+        <label>Altura (cm)</label><br />
         <input
           type="number"
           value={height}
@@ -97,7 +92,7 @@ export default function ProfilePage() {
       </div>
 
       <div style={{ marginBottom: 10 }}>
-        <label>Sexo</label><br/>
+        <label>Sexo</label><br />
         <select value={sex} onChange={(e) => setSex(e.target.value)}>
           <option value="">Seleccionar</option>
           <option value="male">Hombre</option>

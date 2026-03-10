@@ -27,6 +27,7 @@ export default function App() {
   const [regEmail, setRegEmail] = useState('')
   const [regPassword, setRegPassword] = useState('')
   const [regName, setRegName] = useState('')
+  const [regSex, setRegSex] = useState('')
   const [invitationCode, setInvitationCode] = useState('')
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export default function App() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUser(user)
-        await loadProfile(user.id)
+        await loadProfile(user.id, user.email, user.user_metadata?.full_name || user.user_metadata?.name || 'Usuario')
       }
     } catch (error) {
       console.error('Error:', error)
@@ -47,9 +48,35 @@ export default function App() {
     }
   }
 
-  const loadProfile = async (userId) => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
-    if (data) setProfile(data)
+  const loadProfile = async (userId, userEmail = '', userName = 'Usuario') => {
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
+
+    if (data) {
+      setProfile(data)
+      return data
+    }
+
+    if (error && error.code === 'PGRST116') {
+      // No profile found, auto-create a basic one so they are not stuck
+      console.log('No profile found, creating a default one...')
+      const { data: newProfile, error: createError } = await supabase.from('profiles').upsert([{
+        id: userId,
+        email: userEmail,
+        name: userName,
+        role: 'member',
+        has_premium: false
+      }]).select().single()
+
+      if (newProfile) {
+        setProfile(newProfile)
+        return newProfile
+      }
+      console.error('Error auto-creating profile:', createError)
+    } else if (error) {
+      console.error('Error fetching profile:', error)
+    }
+
+    return null
   }
 
   const handleLogin = async (e) => {
@@ -59,8 +86,14 @@ export default function App() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
       setUser(data.user)
-      await loadProfile(data.user.id)
-      toast({ title: '¡Bienvenido!' })
+
+      const loadedProfile = await loadProfile(data.user.id, data.user.email, data.user.user_metadata?.full_name || 'Usuario')
+
+      if (loadedProfile) {
+        toast({ title: '¡Bienvenido!' })
+      } else {
+        toast({ title: 'Aviso', description: 'Iniciaste sesión pero no se pudo cargar tu perfil. Intenta refrescar la página.' })
+      }
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
@@ -92,11 +125,11 @@ export default function App() {
   const handleRegister = async (e) => {
     e.preventDefault()
     setLoading(true)
-    
+
     try {
       let trainerId = null
       let hasPremium = false
-      
+
       // If invitation code provided, validate it
       if (invitationCode.trim()) {
         const { data: codeData, error: codeError } = await supabase
@@ -125,12 +158,12 @@ export default function App() {
       }
 
       // Create auth user with redirect URL
-      const redirectUrl = typeof window !== 'undefined' 
+      const redirectUrl = typeof window !== 'undefined'
         ? `${window.location.origin}/auth/callback`
         : `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`
-      
-      const { data, error } = await supabase.auth.signUp({ 
-        email: regEmail, 
+
+      const { data, error } = await supabase.auth.signUp({
+        email: regEmail,
         password: regPassword,
         options: {
           emailRedirectTo: redirectUrl
@@ -145,6 +178,7 @@ export default function App() {
           id: data.user.id,
           email: regEmail,
           name: regName,
+          sex: regSex || null,
           role: 'member',
           has_premium: hasPremium
         }], { onConflict: 'id' })
@@ -162,7 +196,7 @@ export default function App() {
             .select('uses_count')
             .eq('code', invitationCode.toUpperCase())
             .single()
-          
+
           if (currentCode) {
             await supabase
               .from('invitation_codes')
@@ -179,16 +213,17 @@ export default function App() {
         }
       }
 
-      toast({ 
-        title: '¡Cuenta creada!', 
-        description: hasPremium 
-          ? 'Tienes acceso completo. Ya puedes iniciar sesión.' 
+      toast({
+        title: '¡Cuenta creada!',
+        description: hasPremium
+          ? 'Tienes acceso completo. Ya puedes iniciar sesión.'
           : 'Cuenta básica creada. Usa un código para acceso premium.'
       })
       setAuthMode('login')
       setRegEmail('')
       setRegPassword('')
       setRegName('')
+      setRegSex('')
       setInvitationCode('')
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -210,14 +245,14 @@ export default function App() {
       <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6">
         <div className="text-center max-w-sm">
           <div className="flex justify-center mb-6">
-            <img 
-              src="/logo-nl-vip.jpg" 
-              alt="NL VIP TEAM" 
+            <img
+              src="/logo-nl-vip.jpg"
+              alt="NL VIP TEAM"
               className="w-32 h-32 object-contain rounded-2xl shadow-2xl shadow-violet-500/30 animate-pulse"
             />
           </div>
           <p className="text-gray-300 text-lg font-medium leading-relaxed">
-            No más empezar de cero.<br/>
+            No más empezar de cero.<br />
             <span className="text-violet-400">Esta vez hay estrategia, guía y resultados reales.</span>
           </p>
         </div>
@@ -238,12 +273,12 @@ export default function App() {
       {/* Animated gradient orbs */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[120px] animate-pulse" style={{animationDelay: '1s'}} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[150px] animate-pulse" style={{animationDelay: '2s'}} />
+        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
-      
+
       {/* Background Image */}
-      <div 
+      <div
         className="absolute inset-0 bg-cover bg-center opacity-30"
         style={{
           backgroundImage: 'url(https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200)',
@@ -257,9 +292,9 @@ export default function App() {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="inline-flex flex-col items-center gap-3 px-8 py-6 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl">
-              <img 
-                src="/logo-nl-vip.jpg" 
-                alt="NL VIP TEAM" 
+              <img
+                src="/logo-nl-vip.jpg"
+                alt="NL VIP TEAM"
                 className="w-24 h-24 object-contain rounded-xl shadow-lg shadow-violet-500/30"
               />
               <div className="text-center">
@@ -274,14 +309,14 @@ export default function App() {
             <CardContent className="p-8">
               <Tabs value={authMode} onValueChange={setAuthMode} className="space-y-6">
                 <TabsList className="grid w-full grid-cols-2 bg-black/40 rounded-2xl p-1.5 gap-1">
-                  <TabsTrigger 
-                    value="login" 
+                  <TabsTrigger
+                    value="login"
                     className="rounded-xl py-3 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=inactive]:text-gray-400 transition-all duration-300"
                   >
                     Iniciar Sesión
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="register" 
+                  <TabsTrigger
+                    value="register"
                     className="rounded-xl py-3 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=inactive]:text-gray-400 transition-all duration-300"
                   >
                     Registro
@@ -313,8 +348,8 @@ export default function App() {
                         className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
                       />
                     </div>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       disabled={loading}
                       className="w-full h-12 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white font-bold rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-300 hover:scale-[1.02]"
                     >
@@ -322,7 +357,7 @@ export default function App() {
                     </Button>
                   </form>
 
-{/* Botones de demo eliminados - Credenciales disponibles para el administrador */}
+                  {/* Botones de demo eliminados - Credenciales disponibles para el administrador */}
                 </TabsContent>
 
                 {/* Register Form */}
@@ -338,6 +373,19 @@ export default function App() {
                         required
                         className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 transition-all"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-gray-300 text-sm font-medium">Sexo</Label>
+                      <Select value={regSex} onValueChange={setRegSex} required>
+                        <SelectTrigger className="bg-white/5 border-white/10 rounded-xl h-12 text-white">
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#1a1a1a] border-[#2a2a2a] text-white">
+                          <SelectItem value="male">Hombre</SelectItem>
+                          <SelectItem value="female">Mujer</SelectItem>
+                          <SelectItem value="other">Otro</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-gray-300 text-sm font-medium">Email</Label>
@@ -362,7 +410,7 @@ export default function App() {
                         className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 transition-all"
                       />
                     </div>
-                    
+
                     {/* Invitation Code - OPTIONAL */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -386,9 +434,9 @@ export default function App() {
                         </p>
                       </div>
                     </div>
-                    
-                    <Button 
-                      type="submit" 
+
+                    <Button
+                      type="submit"
                       disabled={loading}
                       className="w-full h-12 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white font-bold rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-300 hover:scale-[1.02]"
                     >
@@ -399,7 +447,7 @@ export default function App() {
               </Tabs>
             </CardContent>
           </Card>
-          
+
           {/* Footer */}
           <p className="text-center text-gray-600 text-xs mt-6">
             © 2025 NL VIP Club. Premium Fitness Experience.

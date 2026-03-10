@@ -10,8 +10,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { 
-  Dumbbell, Users, Bell, LogOut, Plus, Apple, Sparkles, Eye, Send, 
+import {
+  Dumbbell, Users, Bell, LogOut, Plus, Apple, Sparkles, Eye, Send,
   Video, Camera, TrendingUp, Trash2, Loader2, Calculator, Target, Trophy, UtensilsCrossed, MessageSquare
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
@@ -35,6 +35,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const [selectedWorkoutForVideos, setSelectedWorkoutForVideos] = useState(null)
   const [workoutVideos, setWorkoutVideos] = useState({})
   const [showVideoUploader, setShowVideoUploader] = useState(null)
+  const [activeTab, setActiveTab] = useState('members')
   const { toast } = useToast()
 
   const [newWorkoutName, setNewWorkoutName] = useState('')
@@ -86,7 +87,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
       .select('*')
       .eq('created_by', user.id)
       .order('created_at', { ascending: false })
-    
+
     if (data) {
       setChallenges(data)
       // Load participants for each challenge
@@ -112,7 +113,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
     try {
       const startDate = new Date()
       const endDate = new Date(startDate.getTime() + parseInt(challengeDays) * 86400000)
-      
+
       const { error } = await supabase.from('challenges').insert([{
         title: challengeTitle,
         description: challengeDesc,
@@ -123,7 +124,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
         created_by: user.id,
         is_active: true
       }])
-      
+
       if (error) throw error
       toast({ title: '¡Reto creado!', description: 'Los socios ya pueden unirse' })
       setChallengeTitle('')
@@ -244,7 +245,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
 
   const handleDeleteVideo = async (videoId) => {
     if (!confirm('¿Eliminar este vídeo?')) return
-    
+
     const { error } = await supabase.from('workout_videos').delete().eq('id', videoId)
     if (!error) {
       toast({ title: 'Vídeo eliminado' })
@@ -296,7 +297,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
     try {
       const member = members.find(m => m.id === selectedMemberForMacros)
       const dietName = `Plan Nutricional - ${member?.name || 'Socio'}`
-      
+
       // Create the diet template
       const { data: diet, error: dietError } = await supabase.from('diet_templates').insert([{
         trainer_id: user.id,
@@ -307,7 +308,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
         fat_g: macroResults.fat,
         content: `Plan personalizado:\n- Calorías: ${macroResults.calories} kcal\n- Proteína: ${macroResults.protein}g\n- Carbohidratos: ${macroResults.carbs}g\n- Grasas: ${macroResults.fat}g`
       }]).select().single()
-      
+
       if (dietError) throw dietError
 
       // Assign to member
@@ -333,16 +334,16 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a]">
       {/* HEADER */}
-      <header className="relative overflow-hidden border-b border-[#2a2a2a]">
+      <header className="relative overflow-hidden border-b border-[#2a2a2a]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-[rgb(139, 92, 246)]/5" />
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-r from-violet-600 to-cyan-600/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
-        
-        <div className="relative container mx-auto px-4 py-5">
+
+        <div className="relative container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <img 
-                src="/logo-nl-vip.jpg" 
-                alt="NL VIP TEAM" 
+              <img
+                src="/logo-nl-vip.jpg"
+                alt="NL VIP TEAM"
                 className="w-14 h-14 rounded-2xl object-cover shadow-lg shadow-violet-500/30"
               />
               <div>
@@ -358,10 +359,10 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                   <p className="text-xs text-violet-400">Entrenador</p>
                 </div>
               </div>
-              <AvatarBubble 
-                profile={profile} 
-                size="md" 
-                onClick={() => setShowProfileModal(true)} 
+              <AvatarBubble
+                profile={profile}
+                size="md"
+                onClick={() => setShowProfileModal(true)}
               />
               <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
                 <LogOut className="w-5 h-5" />
@@ -384,7 +385,16 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
       />
 
       <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="members" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          {activeTab !== 'members' && (
+            <button
+              onClick={() => setActiveTab('members')}
+              className="flex items-center gap-2 text-sm text-violet-400 hover:text-violet-300 transition-colors mb-2 group"
+            >
+              <span className="w-7 h-7 flex items-center justify-center rounded-full bg-violet-500/15 border border-violet-500/30 group-hover:bg-violet-500/25 transition-all">←</span>
+              <span>Volver a Socios</span>
+            </button>
+          )}
           <div className="overflow-x-auto pb-2 -mx-4 px-4">
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
@@ -398,9 +408,9 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                 { value: 'progress', icon: TrendingUp, label: 'Progreso' },
                 { value: 'notices', icon: Bell, label: 'Avisos' }
               ].map(tab => (
-                <TabsTrigger 
+                <TabsTrigger
                   key={tab.value}
-                  value={tab.value} 
+                  value={tab.value}
                   className="px-5 py-3 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-cyan-500 data-[state=active]:text-black data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:shadow-[rgb(139, 92, 246)]/20 transition-all"
                 >
                   <tab.icon className="w-4 h-4 mr-2" />
@@ -507,8 +517,8 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <Label className="text-gray-400 text-xs">Título del Reto</Label>
-                      <Input 
-                        placeholder="💪 Desafío de Fuerza" 
+                      <Input
+                        placeholder="💪 Desafío de Fuerza"
                         value={challengeTitle}
                         onChange={(e) => setChallengeTitle(e.target.value)}
                         className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1"
@@ -516,8 +526,8 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                     </div>
                     <div className="md:col-span-2">
                       <Label className="text-gray-400 text-xs">Descripción</Label>
-                      <Textarea 
-                        placeholder="Describe el reto..." 
+                      <Textarea
+                        placeholder="Describe el reto..."
                         value={challengeDesc}
                         onChange={(e) => setChallengeDesc(e.target.value)}
                         className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1"
@@ -540,9 +550,9 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                       <Label className="text-gray-400 text-xs">
                         Objetivo ({challengeType === 'workouts' ? 'entrenos' : challengeType === 'consistency' ? 'días' : 'kg'})
                       </Label>
-                      <Input 
-                        type="number" 
-                        placeholder="10" 
+                      <Input
+                        type="number"
+                        placeholder="10"
                         value={challengeTarget}
                         onChange={(e) => setChallengeTarget(e.target.value)}
                         className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1"
@@ -564,8 +574,8 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                       </Select>
                     </div>
                   </div>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     disabled={loading}
                     className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-2xl py-6"
                   >
@@ -588,7 +598,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                 {challenges.map(challenge => {
                   const participants = challengeParticipants[challenge.id] || []
                   const daysLeft = Math.max(0, Math.ceil((new Date(challenge.end_date) - new Date()) / 86400000))
-                  
+
                   return (
                     <div key={challenge.id} className="p-4 bg-black/30 rounded-2xl border border-[#2a2a2a]">
                       <div className="flex items-start justify-between mb-3">
@@ -600,7 +610,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                           {challenge.is_active ? `${daysLeft}d restantes` : 'Finalizado'}
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-4 text-sm text-gray-400 mb-3">
                         <span>🎯 Meta: {challenge.target_value} {challenge.type === 'workouts' ? 'entrenos' : challenge.type === 'consistency' ? 'días' : 'kg'}</span>
                         <span>👥 {participants.length} participantes</span>
@@ -613,7 +623,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                             <div key={p.id} className="flex items-center gap-3">
                               <span className="text-white text-sm w-24 truncate">{p.member?.name}</span>
                               <div className="flex-1 h-2 bg-black/50 rounded-full overflow-hidden">
-                                <div 
+                                <div
                                   className={`h-full rounded-full ${p.completed ? 'bg-green-500' : 'bg-gradient-to-r from-violet-500 to-cyan-500'}`}
                                   style={{ width: `${Math.min((p.progress_value / challenge.target_value) * 100, 100)}%` }}
                                 />
@@ -679,7 +689,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                         <p className="text-sm text-gray-400 line-clamp-2 mt-1">{workout.description}</p>
                       </div>
                     </div>
-                    
+
                     {/* Videos section */}
                     <div className="mt-4 pt-4 border-t border-[#2a2a2a]">
                       <div className="flex items-center justify-between mb-3">
@@ -695,7 +705,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                           <Plus className="w-3 h-3 mr-1" /> Añadir
                         </Button>
                       </div>
-                      
+
                       {showVideoUploader === workout.id ? (
                         <VideoUploader
                           workoutTemplateId={workout.id}
@@ -711,7 +721,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                         <div className="grid grid-cols-2 gap-2">
                           {workoutVideos[workout.id].map(video => (
                             <div key={video.id} className="relative group">
-                              <VideoCard video={video} onClick={() => {}} />
+                              <VideoCard video={video} onClick={() => { }} />
                               <Button
                                 size="icon"
                                 variant="destructive"
@@ -906,8 +916,8 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button 
-                        onClick={assignMacrosToMember} 
+                      <Button
+                        onClick={assignMacrosToMember}
                         disabled={loading || !selectedMemberForMacros}
                         className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold rounded-2xl py-5"
                       >
@@ -972,7 +982,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                     >
                       ← Volver a la lista
                     </Button>
-                    
+
                     <div className="flex items-center gap-3 mb-4 p-3 bg-black/30 rounded-xl">
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold">
                         {selectedMemberForProgress.name?.charAt(0)}
@@ -982,7 +992,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                         <p className="text-xs text-gray-500">{memberProgressPhotos.length} fotos</p>
                       </div>
                     </div>
-                    
+
                     <ProgressPhotoGallery
                       photos={memberProgressPhotos}
                       canDelete={false}
@@ -1067,7 +1077,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
       </main>
 
       {/* Floating Chat */}
-      <FloatingChat 
+      <FloatingChat
         userId={user.id}
         userRole="trainer"
         members={members}
