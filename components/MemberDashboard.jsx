@@ -410,7 +410,12 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         </Tabs>
       </main>
 
-      <FloatingChat user={user} profile={localProfile} companion={myTrainer} />
+      <FloatingChat
+        userId={user.id}
+        userRole={localProfile?.role}
+        trainerId={myTrainer?.id}
+        trainerName={myTrainer?.name}
+      />
       <SupportDrawer />
       <Toaster />
     </div>
