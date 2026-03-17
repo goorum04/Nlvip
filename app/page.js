@@ -56,7 +56,7 @@ export default function App() {
       // Timeout de 3 segundos para evitar bloqueos por recursión RLS
       const fetchPromise = supabase.from('profiles').select('*').eq('id', userId).single()
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout DB')), 3000)
+        setTimeout(() => reject(new Error('Timeout DB')), 10000)
       )
 
       let result;
