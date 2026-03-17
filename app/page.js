@@ -6,7 +6,6 @@ import { DEMO_ACCOUNTS } from '@/lib/demo-credentials'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dumbbell, Sparkles, Shield, Gift, Lock } from 'lucide-react'
@@ -28,7 +27,6 @@ export default function App() {
   const [regEmail, setRegEmail] = useState('')
   const [regPassword, setRegPassword] = useState('')
   const [regName, setRegName] = useState('')
-  const [regSex, setRegSex] = useState('')
   const [invitationCode, setInvitationCode] = useState('')
 
   useEffect(() => {
@@ -40,7 +38,7 @@ export default function App() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUser(user)
-        await loadProfile(user.id, user.email, user.user_metadata?.full_name || user.user_metadata?.name || 'Usuario')
+        await loadProfile(user.id)
       }
     } catch (error) {
       console.error('Error:', error)
@@ -49,52 +47,10 @@ export default function App() {
     }
   }
 
-  const loadProfile = async (userId, userEmail = '', userName = 'Usuario', authUser = null) => {
-    try {
-      console.log('Intentando cargar perfil para:', userId)
-
-      // Timeout de 3 segundos para evitar bloqueos por recursión RLS
-      const fetchPromise = supabase.from('profiles').select('*').eq('id', userId).single()
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout DB')), 3000)
-      )
-
-      let result;
-      try {
-        result = await Promise.race([fetchPromise, timeoutPromise])
-      } catch (err) {
-        console.warn('Error o timeout al cargar perfil:', err.message)
-        result = { data: null, error: err }
-      }
-
-      if (result.data) {
-        console.log('Perfil cargado desde DB')
-        setProfile(result.data)
-        return result.data
-      }
-
-      // Fallback: Usar metadatos de Auth
-      const userToUse = authUser || (await supabase.auth.getUser()).data.user
-      if (userToUse) {
-        const metadata = userToUse.user_metadata || {}
-        const fallbackProfile = {
-          id: userId,
-          email: userEmail || userToUse.email,
-          name: metadata.name || metadata.full_name || userName,
-          role: metadata.role || 'member',
-          has_premium: true,
-          is_fallback: true
-        }
-        console.log('Usando perfil de fallback (Auth metadata)')
-        setProfile(fallbackProfile)
-        return fallbackProfile
-      }
-    } catch (err) {
-      console.error('Error en loadProfile:', err)
-    }
-    return null
+  const loadProfile = async (userId) => {
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+    if (data) setProfile(data)
   }
-
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -103,15 +59,8 @@ export default function App() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
       setUser(data.user)
-
-      const loadedProfile = await loadProfile(data.user.id, data.user.email, data.user.user_metadata?.full_name || 'Usuario', data.user)
-
-      if (loadedProfile) {
-        toast({ title: '¡Bienvenido!', description: `Sesión iniciada como ${loadedProfile.role}` })
-      } else {
-        toast({ title: 'Aviso', description: 'Iniciaste sesión pero no se pudo cargar tu perfil. Intenta refrescar la página.' })
-      }
-
+      await loadProfile(data.user.id)
+      toast({ title: '¡Bienvenido!' })
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
@@ -131,7 +80,7 @@ export default function App() {
       })
       if (error) throw error
       setUser(data.user)
-      await loadProfile(data.user.id, data.user.email, account.name, data.user)
+      await loadProfile(data.user.id)
       toast({ title: `¡Bienvenido ${account.name}!` })
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -143,11 +92,11 @@ export default function App() {
   const handleRegister = async (e) => {
     e.preventDefault()
     setLoading(true)
-
+    
     try {
       let trainerId = null
       let hasPremium = false
-
+      
       // If invitation code provided, validate it
       if (invitationCode.trim()) {
         const { data: codeData, error: codeError } = await supabase
@@ -176,12 +125,12 @@ export default function App() {
       }
 
       // Create auth user with redirect URL
-      const redirectUrl = typeof window !== 'undefined'
+      const redirectUrl = typeof window !== 'undefined' 
         ? `${window.location.origin}/auth/callback`
         : `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`
-
-      const { data, error } = await supabase.auth.signUp({
-        email: regEmail,
+      
+      const { data, error } = await supabase.auth.signUp({ 
+        email: regEmail, 
         password: regPassword,
         options: {
           emailRedirectTo: redirectUrl
@@ -196,7 +145,6 @@ export default function App() {
           id: data.user.id,
           email: regEmail,
           name: regName,
-          sex: regSex || null,
           role: 'member',
           has_premium: hasPremium
         }], { onConflict: 'id' })
@@ -214,7 +162,7 @@ export default function App() {
             .select('uses_count')
             .eq('code', invitationCode.toUpperCase())
             .single()
-
+          
           if (currentCode) {
             await supabase
               .from('invitation_codes')
@@ -231,17 +179,16 @@ export default function App() {
         }
       }
 
-      toast({
-        title: '¡Cuenta creada!',
-        description: hasPremium
-          ? 'Tienes acceso completo. Ya puedes iniciar sesión.'
+      toast({ 
+        title: '¡Cuenta creada!', 
+        description: hasPremium 
+          ? 'Tienes acceso completo. Ya puedes iniciar sesión.' 
           : 'Cuenta básica creada. Usa un código para acceso premium.'
       })
       setAuthMode('login')
       setRegEmail('')
       setRegPassword('')
       setRegName('')
-      setRegSex('')
       setInvitationCode('')
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -263,14 +210,14 @@ export default function App() {
       <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6">
         <div className="text-center max-w-sm">
           <div className="flex justify-center mb-6">
-            <img
-              src="/logo-nl-vip.jpg"
-              alt="NL VIP TEAM"
+            <img 
+              src="/logo-nl-vip.jpg" 
+              alt="NL VIP TEAM" 
               className="w-32 h-32 object-contain rounded-2xl shadow-2xl shadow-violet-500/30 animate-pulse"
             />
           </div>
           <p className="text-gray-300 text-lg font-medium leading-relaxed">
-            No más empezar de cero.<br />
+            No más empezar de cero.<br/>
             <span className="text-violet-400">Esta vez hay estrategia, guía y resultados reales.</span>
           </p>
         </div>
@@ -280,36 +227,23 @@ export default function App() {
 
   // Dashboard routing
   if (user && profile) {
-    try {
-      if (profile.role === 'admin') return <AdminDashboard user={user} profile={profile} onLogout={handleLogout} />
-      if (profile.role === 'trainer') return <TrainerDashboard user={user} profile={profile} onLogout={handleLogout} />
-      if (profile.role === 'member') return <MemberDashboard user={user} profile={profile} onLogout={handleLogout} />
-    } catch (e) {
-      console.error('Crash in Dashboard:', e)
-      return (
-        <div className="p-10 bg-red-900/20 text-red-500 rounded-3xl m-4 border border-red-500/30">
-          <h2 className="text-xl font-bold mb-2">Error de sistema</h2>
-          <p className="text-sm">{e.message}</p>
-          <Button onClick={() => window.location.reload()} className="mt-4 bg-red-500 text-white">Reintentar</Button>
-        </div>
-      )
-    }
+    if (profile.role === 'admin') return <AdminDashboard user={user} profile={profile} onLogout={handleLogout} />
+    if (profile.role === 'trainer') return <TrainerDashboard user={user} profile={profile} onLogout={handleLogout} />
+    if (profile.role === 'member') return <MemberDashboard user={user} profile={profile} onLogout={handleLogout} />
   }
 
   // Login/Register screen
   return (
     <div className="min-h-screen bg-[#030303] relative overflow-hidden">
-      <Toaster />
-
       {/* Animated gradient orbs */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[120px] animate-pulse" style={{animationDelay: '1s'}} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[150px] animate-pulse" style={{animationDelay: '2s'}} />
       </div>
-
+      
       {/* Background Image */}
-      <div
+      <div 
         className="absolute inset-0 bg-cover bg-center opacity-30"
         style={{
           backgroundImage: 'url(https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200)',
@@ -323,9 +257,9 @@ export default function App() {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="inline-flex flex-col items-center gap-3 px-8 py-6 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl">
-              <img
-                src="/logo-nl-vip.jpg"
-                alt="NL VIP TEAM"
+              <img 
+                src="/logo-nl-vip.jpg" 
+                alt="NL VIP TEAM" 
                 className="w-24 h-24 object-contain rounded-xl shadow-lg shadow-violet-500/30"
               />
               <div className="text-center">
@@ -340,14 +274,14 @@ export default function App() {
             <CardContent className="p-8">
               <Tabs value={authMode} onValueChange={setAuthMode} className="space-y-6">
                 <TabsList className="grid w-full grid-cols-2 bg-black/40 rounded-2xl p-1.5 gap-1">
-                  <TabsTrigger
-                    value="login"
+                  <TabsTrigger 
+                    value="login" 
                     className="rounded-xl py-3 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=inactive]:text-gray-400 transition-all duration-300"
                   >
                     Iniciar Sesión
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="register"
+                  <TabsTrigger 
+                    value="register" 
                     className="rounded-xl py-3 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=inactive]:text-gray-400 transition-all duration-300"
                   >
                     Registro
@@ -379,8 +313,8 @@ export default function App() {
                         className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
                       />
                     </div>
-                    <Button
-                      type="submit"
+                    <Button 
+                      type="submit" 
                       disabled={loading}
                       className="w-full h-12 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white font-bold rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-300 hover:scale-[1.02]"
                     >
@@ -388,7 +322,7 @@ export default function App() {
                     </Button>
                   </form>
 
-                  {/* Botones de demo eliminados - Credenciales disponibles para el administrador */}
+{/* Botones de demo eliminados - Credenciales disponibles para el administrador */}
                 </TabsContent>
 
                 {/* Register Form */}
@@ -404,19 +338,6 @@ export default function App() {
                         required
                         className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 transition-all"
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-gray-300 text-sm font-medium">Sexo</Label>
-                      <Select value={regSex} onValueChange={setRegSex} required>
-                        <SelectTrigger className="bg-white/5 border-white/10 rounded-xl h-12 text-white">
-                          <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#1a1a1a] border-[#2a2a2a] text-white">
-                          <SelectItem value="male">Hombre</SelectItem>
-                          <SelectItem value="female">Mujer</SelectItem>
-                          <SelectItem value="other">Otro</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-gray-300 text-sm font-medium">Email</Label>
@@ -441,7 +362,7 @@ export default function App() {
                         className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 transition-all"
                       />
                     </div>
-
+                    
                     {/* Invitation Code - OPTIONAL */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -465,9 +386,9 @@ export default function App() {
                         </p>
                       </div>
                     </div>
-
-                    <Button
-                      type="submit"
+                    
+                    <Button 
+                      type="submit" 
                       disabled={loading}
                       className="w-full h-12 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white font-bold rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-300 hover:scale-[1.02]"
                     >
@@ -478,7 +399,7 @@ export default function App() {
               </Tabs>
             </CardContent>
           </Card>
-
+          
           {/* Footer */}
           <p className="text-center text-gray-600 text-xs mt-6">
             © 2025 NL VIP Club. Premium Fitness Experience.

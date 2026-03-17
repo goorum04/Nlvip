@@ -2,33 +2,32 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Toaster } from '@/components/ui/toaster'
-import { useToast } from '@/hooks/use-toast'
-import {
-  Home, Dumbbell, Apple, TrendingUp, Bell, Plus, Heart,
-  Target, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock
-} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-
-// Components
+import { 
+  Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle, 
+  Flag, Sparkles, Flame, Target, Zap, Star, ShoppingBag,
+  Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift
+} from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { Toaster } from '@/components/ui/toaster'
 import FloatingChat from './FloatingChat'
-import { ProfileModal } from './UserProfile'
-import { useFileUpload, useSignedUrl } from '@/hooks/useStorage'
-import { CycleModule } from './CycleModule'
-import { LifeStageSelector, PregnancyMode, PostpartumMode, LactationTracker } from './LifeStageModules'
-import ActivityTracker from './ActivityTracker'
-import { RecipesGallery } from './RecipesManager'
+import ImageUploader from './ImageUploader'
+import VideoPlayer, { VideoCard } from './VideoPlayer'
+import { ProgressPhotoUploader, ProgressPhotoGallery } from './ProgressPhotos'
+import { useFileUpload, useSignedUrl, generateFileId, getFileExtension } from '@/hooks/useStorage'
 import { ChallengesSection, BadgesGallery } from './ChallengesBadges'
-
-// Refactored Tabs
-import { DashboardHeader } from './DashboardHeader'
-import { SupportDrawer } from './SupportDrawer'
-import { FeedTab } from './FeedTab'
-import { WorkoutTab } from './WorkoutTab'
-import { DietTab } from './DietTab'
-import { ProgressTab } from './ProgressTab'
-import { StatsTab } from './StatsTab'
-import { NoticesTab } from './NoticesTab'
+import ProgressCharts from './ProgressCharts'
+import { MemberRecipePlan } from './RecipePlan'
+import { RecipesGallery } from './RecipesManager'
+import ActivityTracker from './ActivityTracker'
+import FoodTracker from './FoodTracker'
+import { AvatarBubble, ProfileModal } from './UserProfile'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
@@ -41,96 +40,146 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [unreadNotices, setUnreadNotices] = useState(0)
   const [loading, setLoading] = useState(false)
   const [myTrainer, setMyTrainer] = useState(null)
+  const [storeProducts, setStoreProducts] = useState([])
   const [feedImageUrls, setFeedImageUrls] = useState({})
-  const [localProfile, setLocalProfile] = useState(profile)
-  const [activeTab, setActiveTab] = useState('activity')
-  const [pageTheme, setPageTheme] = useState('default')
-  const [showProfileModal, setShowProfileModal] = useState(false)
-  const [selectedVideo, setSelectedVideo] = useState(null)
+  const { toast } = useToast()
+  const { getSignedUrl } = useSignedUrl()
 
+  // Check if user has premium access (registered with invitation code)
+  const hasPremium = profile?.has_premium === true
+
+  // Premium-only features
+  const premiumFeatures = ['feed', 'badges', 'workout', 'diet', 'progress']
+
+  // Chart data states
+  const [workoutCheckins, setWorkoutCheckins] = useState([])
   const [chartData, setChartData] = useState({
     weight: [],
     workouts: [],
     adherence: { completed: 0, target: 12 },
-    comparison: { current: { workouts: 0, duration: 0, activeDays: 0 }, previous: { workouts: 0, duration: 0, activeDays: 0 } }
+    comparison: { current: {}, previous: {} }
   })
 
-  const { toast } = useToast()
-  const { getSignedUrl } = useSignedUrl()
-  const { uploadFile, uploading, progress } = useFileUpload()
+  // UI states
+  const [selectedVideo, setSelectedVideo] = useState(null)
+  const [showPhotoUploader, setShowPhotoUploader] = useState(false)
+  const [postImage, setPostImage] = useState(null)
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
-  const hasPremium = localProfile?.has_premium === true
+  // Feed form
+  const [newPostContent, setNewPostContent] = useState('')
+  const [commentingPost, setCommentingPost] = useState(null)
+  const [newComment, setNewComment] = useState('')
+
+  // Progress form
+  const [newWeight, setNewWeight] = useState('')
+  const [newChest, setNewChest] = useState('')
+  const [newWaist, setNewWaist] = useState('')
+  const [newHips, setNewHips] = useState('')
+  const [newArms, setNewArms] = useState('')
+  const [newLegs, setNewLegs] = useState('')
+  const [progressNotes, setProgressNotes] = useState('')
+
+  // Macro calculator removed - only trainers/admins can calculate macros
+
+  const { uploadFile, uploading, progress } = useFileUpload()
 
   useEffect(() => {
     loadData()
   }, [])
 
   const loadData = async () => {
-    setLoading(true)
-    try {
-      await Promise.all([
-        loadFeed().catch(e => console.error('Error loading feed:', e)),
-        loadMyWorkout().catch(e => console.error('Error loading workout:', e)),
-        loadMyDiet().catch(e => console.error('Error loading diet:', e)),
-        loadProgress().catch(e => console.error('Error loading progress:', e)),
-        loadProgressPhotos().catch(e => console.error('Error loading photos:', e)),
-        loadNotices().catch(e => console.error('Error loading notices:', e)),
-        loadMyTrainer().catch(e => console.error('Error loading trainer:', e)),
-        loadChartData().catch(e => console.error('Error loading chart data:', e))
-      ])
-    } catch (err) {
-      console.error('Fatal error loading dashboard data:', err)
-    } finally {
-      setLoading(false)
-    }
+    await Promise.all([
+      loadFeed(),
+      loadMyWorkout(),
+      loadMyDiet(),
+      loadProgress(),
+      loadProgressPhotos(),
+      loadNotices(),
+      loadMyTrainer(),
+      loadStoreProducts(),
+      loadChartData()
+    ])
   }
 
   const loadChartData = async () => {
     try {
-      const [{ data: checkins }, { data: progressData }] = await Promise.all([
-        supabase.from('workout_checkins').select('*').eq('member_id', user.id).order('checked_in_at', { ascending: true }),
-        supabase.from('progress_records').select('*').eq('member_id', user.id).order('date', { ascending: true })
-      ])
+      // Load workout checkins for charts
+      const { data: checkins } = await supabase
+        .from('workout_checkins')
+        .select('*')
+        .eq('member_id', user.id)
+        .order('checked_in_at', { ascending: true })
 
+      // Load progress records for weight chart
+      const { data: progressData } = await supabase
+        .from('progress_records')
+        .select('*')
+        .eq('member_id', user.id)
+        .order('date', { ascending: true })
+
+      // Transform weight data
+      const weightData = (progressData || []).map(p => ({
+        date: new Date(p.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
+        weight: p.weight_kg
+      }))
+
+      // Transform workout data by week
+      const workoutsByWeek = {}
       const now = new Date()
+      ;(checkins || []).forEach(c => {
+        const date = new Date(c.checked_in_at)
+        const weekStart = new Date(date)
+        weekStart.setDate(date.getDate() - date.getDay())
+        const weekKey = weekStart.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+        workoutsByWeek[weekKey] = (workoutsByWeek[weekKey] || 0) + 1
+      })
+
+      const workoutsData = Object.entries(workoutsByWeek).map(([week, workouts]) => ({
+        week,
+        workouts,
+        date: new Date()
+      })).slice(-8)
+
+      // Calculate adherence (current month)
       const currentMonth = now.getMonth()
+      const currentMonthCheckins = (checkins || []).filter(c => 
+        new Date(c.checked_in_at).getMonth() === currentMonth
+      ).length
+
+      // Calculate previous month data
       const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1
+      const prevMonthCheckins = (checkins || []).filter(c => 
+        new Date(c.checked_in_at).getMonth() === prevMonth
+      )
 
-      // Weight data with safety checks
-      const weightData = (progressData || []).map(p => {
-        const d = new Date(p.date)
-        const dateLabel = isNaN(d.getTime()) ? '---' : d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
-        return {
-          date: dateLabel,
-          weight: p.weight_kg
-        }
-      }).filter(item => item.date !== '---')
+      const currentMonthDuration = (checkins || [])
+        .filter(c => new Date(c.checked_in_at).getMonth() === currentMonth)
+        .reduce((acc, c) => acc + (c.duration_minutes || 0), 0)
 
-      // Stats calculations
-      const currentMonthCheckins = (checkins || []).filter(c => {
-        const d = new Date(c.checked_in_at)
-        return !isNaN(d.getTime()) && d.getMonth() === currentMonth
-      })
+      const prevMonthDuration = prevMonthCheckins.reduce((acc, c) => acc + (c.duration_minutes || 0), 0)
 
-      const prevMonthCheckins = (checkins || []).filter(c => {
-        const d = new Date(c.checked_in_at)
-        return !isNaN(d.getTime()) && d.getMonth() === prevMonth
-      })
+      // Count active days
+      const currentActiveDays = new Set((checkins || [])
+        .filter(c => new Date(c.checked_in_at).getMonth() === currentMonth)
+        .map(c => new Date(c.checked_in_at).toDateString())
+      ).size
 
-      const currentActiveDays = new Set(currentMonthCheckins.map(c => new Date(c.checked_in_at).toDateString())).size
-      const prevActiveDays = new Set(prevMonthCheckins.map(c => new Date(c.checked_in_at).toDateString())).size
+      const prevActiveDays = new Set(prevMonthCheckins
+        .map(c => new Date(c.checked_in_at).toDateString())
+      ).size
 
       setChartData({
         weight: weightData,
-        workouts: [],
-        adherence: { completed: currentMonthCheckins.length, target: 12 },
+        workouts: workoutsData,
+        adherence: { completed: currentMonthCheckins, target: 12 },
         comparison: {
-          current: { workouts: currentMonthCheckins.length, activeDays: currentActiveDays },
-          previous: { workouts: prevMonthCheckins.length, activeDays: prevActiveDays }
+          current: { workouts: currentMonthCheckins, duration: currentMonthDuration, activeDays: currentActiveDays },
+          previous: { workouts: prevMonthCheckins.length, duration: prevMonthDuration, activeDays: prevActiveDays }
         }
       })
-    } catch (e) {
-      console.error('Chart Data Error:', e)
+    } catch (error) {
+      console.error('Error loading chart data:', error)
     }
   }
 
@@ -150,9 +199,10 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .eq('is_hidden', false)
       .order('created_at', { ascending: false })
       .limit(50)
-
+    
     if (data) {
       setFeedPosts(data)
+      // Load signed URLs for images
       const urls = {}
       for (const post of data) {
         if (post.image_url) {
@@ -170,10 +220,15 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .select(`*, workout:workout_templates!member_workouts_workout_template_id_fkey(id, name, description)`)
       .eq('member_id', user.id)
       .single()
-
+    
     if (data) {
       setMyWorkout(data)
-      const { data: videos } = await supabase.from('workout_videos').select('*').eq('workout_template_id', data.workout.id).order('created_at')
+      // Load videos for this workout
+      const { data: videos } = await supabase
+        .from('workout_videos')
+        .select('*')
+        .eq('workout_template_id', data.workout.id)
+        .order('created_at')
       if (videos) setWorkoutVideos(videos)
     }
   }
@@ -188,13 +243,29 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   }
 
   const loadProgress = async () => {
-    const { data } = await supabase.from('progress_records').select('*').eq('member_id', user.id).order('date', { ascending: false }).limit(20)
+    const { data } = await supabase
+      .from('progress_records')
+      .select('*')
+      .eq('member_id', user.id)
+      .order('date', { ascending: false })
+      .limit(20)
     if (data) setProgressRecords(data)
   }
 
   const loadProgressPhotos = async () => {
-    const { data } = await supabase.from('progress_photos').select('*').eq('member_id', user.id).order('date', { ascending: false })
+    const { data } = await supabase
+      .from('progress_photos')
+      .select('*')
+      .eq('member_id', user.id)
+      .order('date', { ascending: false })
     if (data) setProgressPhotos(data)
+  }
+
+  const loadStoreProducts = async () => {
+    try {
+      const { data } = await supabase.from('store_products').select('*').eq('is_active', true).order('category')
+      if (data) setStoreProducts(data)
+    } catch (e) { /* Table may not exist */ }
   }
 
   const loadNotices = async () => {
@@ -204,10 +275,50 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .or(`member_id.eq.${user.id},member_id.is.null`)
       .order('created_at', { ascending: false })
       .limit(20)
-
+    
     if (data) {
       setNotices(data)
       setUnreadNotices(data.filter(n => !n.notice_reads || n.notice_reads.length === 0).length)
+    }
+  }
+
+  const handleCreatePost = async (e) => {
+    e.preventDefault()
+    if (!newPostContent.trim() && !postImage) return
+    
+    setLoading(true)
+    try {
+      let imagePath = null
+      
+      // Upload image if selected
+      if (postImage) {
+        const fileId = generateFileId()
+        const ext = getFileExtension(postImage.name)
+        imagePath = `feed/${user.id}/${fileId}.${ext}`
+        
+        const result = await uploadFile('feed_images', imagePath, postImage, {
+          maxSize: 5 * 1024 * 1024,
+          allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+        })
+        
+        if (!result.success) throw new Error(result.error)
+      }
+
+      const { error } = await supabase.from('feed_posts').insert([{
+        author_id: user.id,
+        content: newPostContent,
+        image_url: imagePath
+      }])
+      
+      if (error) throw error
+      toast({ title: '¡Post publicado!' })
+      setNewPostContent('')
+      setPostImage(null)
+      loadFeed()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -221,10 +332,14 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     loadFeed()
   }
 
-  const handleComment = async (postId, content) => {
-    if (!content.trim()) return
-    const { error } = await supabase.from('feed_comments').insert([{ post_id: postId, commenter_id: user.id, content }])
-    if (!error) loadFeed()
+  const handleComment = async (postId) => {
+    if (!newComment.trim()) return
+    const { error } = await supabase.from('feed_comments').insert([{ post_id: postId, commenter_id: user.id, content: newComment }])
+    if (!error) {
+      setNewComment('')
+      setCommentingPost(null)
+      loadFeed()
+    }
   }
 
   const handleReportPost = async (postId) => {
@@ -232,22 +347,24 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     toast({ title: 'Post reportado', description: 'El administrador lo revisará' })
   }
 
-  const handleAddProgress = async (formData) => {
+  const handleAddProgress = async (e) => {
+    e.preventDefault()
     setLoading(true)
     try {
       const { error } = await supabase.from('progress_records').insert([{
         member_id: user.id,
         date: new Date().toISOString(),
-        weight_kg: parseFloat(formData.weight) || null,
-        chest_cm: parseFloat(formData.chest) || null,
-        waist_cm: parseFloat(formData.waist) || null,
-        hips_cm: parseFloat(formData.hips) || null,
-        arms_cm: parseFloat(formData.arms) || null,
-        legs_cm: parseFloat(formData.legs) || null,
-        notes: formData.notes
+        weight_kg: parseFloat(newWeight) || null,
+        chest_cm: parseFloat(newChest) || null,
+        waist_cm: parseFloat(newWaist) || null,
+        hips_cm: parseFloat(newHips) || null,
+        arms_cm: parseFloat(newArms) || null,
+        legs_cm: parseFloat(newLegs) || null,
+        notes: progressNotes
       }])
       if (error) throw error
       toast({ title: '¡Progreso registrado!' })
+      setNewWeight(''); setNewChest(''); setNewWaist(''); setNewHips(''); setNewArms(''); setNewLegs(''); setProgressNotes('')
       loadProgress()
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -269,51 +386,87 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     loadNotices()
   }
 
-  const getThemeClasses = () => {
-    switch (pageTheme) {
-      case 'menstrual': return 'theme-menstrual'
-      case 'follicular': return 'theme-follicular'
-      case 'ovulation': return 'theme-ovulation'
-      case 'luteal': return 'theme-luteal'
-      case 'pregnant': return 'theme-pregnant'
-      case 'postpartum': return 'theme-postpartum'
-      case 'lactating': return 'theme-lactating'
-      default: return ''
-    }
-  }
+  const isLikedByMe = (post) => post.feed_likes?.some(like => like.user_id === user.id)
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a] transition-colors duration-700 ${getThemeClasses()}`}>
-      <DashboardHeader
-        profile={localProfile}
-        hasPremium={hasPremium}
-        onLogout={onLogout}
-        onProfileClick={() => setShowProfileModal(true)}
-      />
+    <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a]">
+      {/* HEADER */}
+      <header className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 via-transparent to-violet-500/10" />
+        <div className="absolute top-0 left-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        
+        <div className="relative container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <img 
+                src="/logo-nl-vip.jpg" 
+                alt="NL VIP TEAM" 
+                className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-violet-500/20"
+              />
+              <div>
+                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500">NL VIP TEAM</h1>
+                <p className="text-xs text-gray-500">Premium Fitness</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <AvatarBubble 
+                profile={profile} 
+                size="md" 
+                onClick={() => setShowProfileModal(true)} 
+              />
+              <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
 
+          <div className="flex items-end gap-4">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-3xl font-black text-black shadow-xl shadow-violet-500/30 overflow-hidden">
+              {profile.avatar_url ? (
+                <AvatarBubble profile={profile} size="xl" onClick={() => setShowProfileModal(true)} />
+              ) : (
+                profile.name?.charAt(0)
+              )}
+            </div>
+            <div className="pb-1">
+              <p className="text-gray-400 text-sm">Bienvenido de vuelta,</p>
+              <h2 className="text-3xl font-black text-white">{profile.name?.split(' ')[0]}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                {hasPremium ? (
+                  <>
+                    <Sparkles className="w-4 h-4 text-violet-500" />
+                    <span className="text-sm text-violet-500 font-semibold">Socio VIP</span>
+                  </>
+                ) : (
+                  <>
+                    <Gift className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-400 font-semibold">Cuenta Básica</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Profile Modal */}
       <ProfileModal
         user={user}
-        profile={localProfile}
+        profile={profile}
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
-        onProfileUpdate={setLocalProfile}
+        onProfileUpdate={(updatedProfile) => {
+          window.location.reload()
+        }}
         onLogout={onLogout}
       />
 
       <main className="container mx-auto px-4 py-6">
-        <Tabs
-          value={activeTab}
-          onValueChange={(val) => {
-            setActiveTab(val)
-            if (val !== 'bienestar') setPageTheme('default')
-          }}
-          className="space-y-6"
-        >
+        <Tabs defaultValue="activity" className="space-y-6">
           <div className="overflow-x-auto pb-2 -mx-4 px-4">
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
                 { value: 'activity', icon: Footprints, label: 'Actividad', premium: false },
-                localProfile?.sex === 'female' ? { value: 'bienestar', icon: Heart, label: 'Bienestar', premium: false } : null,
                 { value: 'feed', icon: Home, label: 'Feed', premium: true },
                 { value: 'challenges', icon: Target, label: 'Retos', premium: false },
                 { value: 'badges', icon: Trophy, label: 'Logros', premium: true },
@@ -323,22 +476,23 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                 { value: 'stats', icon: BarChart3, label: 'Estadísticas', premium: false },
                 { value: 'progress', icon: TrendingUp, label: 'Progreso', premium: true },
                 { value: 'notices', icon: Bell, label: 'Avisos', badge: unreadNotices, premium: false }
-              ].filter(Boolean).map(tab => {
+              ].map(tab => {
                 const isLocked = tab.premium && !hasPremium
-                const value = isLocked ? 'locked' : tab.value
-
                 return (
-                  <TabsTrigger
+                  <TabsTrigger 
                     key={tab.value}
-                    value={value}
+                    value={isLocked ? 'locked' : tab.value}
                     disabled={isLocked}
                     onClick={(e) => {
                       if (isLocked) {
                         e.preventDefault()
-                        toast({ title: '🔒 Función Premium', description: 'Necesitas un código de invitación.' })
+                        toast({
+                          title: '🔒 Función Premium',
+                          description: 'Necesitas un código de invitación para acceder a esta función.',
+                        })
                       }
                     }}
-                    className={`relative px-4 py-2.5 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-cyan-500 data-[state=active]:text-black transition-all duration-300 ${isLocked ? 'opacity-50' : ''}`}
+                    className={`relative px-4 py-2.5 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-cyan-500 data-[state=active]:text-black data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:shadow-violet-500/20 transition-all duration-300 ${isLocked ? 'opacity-50' : ''}`}
                   >
                     {isLocked ? <Lock className="w-4 h-4 mr-2" /> : <tab.icon className="w-4 h-4 mr-2" />}
                     {tab.label}
@@ -351,72 +505,384 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             </TabsList>
           </div>
 
+          {/* FEED TAB */}
+          <TabsContent value="feed" className="space-y-4">
+            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
+              <CardContent className="p-5">
+                <form onSubmit={handleCreatePost} className="space-y-4">
+                  <Textarea
+                    value={newPostContent}
+                    onChange={(e) => setNewPostContent(e.target.value)}
+                    placeholder="¿Qué logro compartes hoy? 💪"
+                    className="bg-black/50 border-[#2a2a2a] text-white rounded-2xl min-h-[80px] resize-none focus:border-violet-500 placeholder:text-gray-500"
+                  />
+                  <ImageUploader
+                    onImageSelect={setPostImage}
+                    onImageRemove={() => setPostImage(null)}
+                    disabled={loading || uploading}
+                  />
+                  <Button 
+                    type="submit" 
+                    disabled={loading || uploading || (!newPostContent.trim() && !postImage)} 
+                    className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 hover:opacity-90 text-black font-bold rounded-2xl py-6 shadow-lg shadow-violet-500/20"
+                  >
+                    {uploading ? (
+                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Subiendo {progress}%</>
+                    ) : (
+                      <><Zap className="w-5 h-5 mr-2" /> Publicar</>
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {feedPosts.map((post) => (
+              <Card key={post.id} className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden hover:border-violet-500/30 transition-all duration-300">
+                <CardContent className="p-5">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500/20 to-cyan-500/10 flex items-center justify-center text-violet-500 font-bold border border-violet-500/20">
+                      {post.author?.name?.charAt(0)}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-white">{post.author?.name}</p>
+                      <p className="text-xs text-gray-500">{new Date(post.created_at).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="rounded-xl text-gray-500 hover:text-violet-500" onClick={() => handleReportPost(post.id)}>
+                      <Flag className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  {post.content && <p className="text-gray-200 mb-4 leading-relaxed">{post.content}</p>}
+                  
+                  {/* Post Image */}
+                  {feedImageUrls[post.id] && (
+                    <div className="mb-4 rounded-2xl overflow-hidden border border-[#2a2a2a]">
+                      <img
+                        src={feedImageUrls[post.id]}
+                        alt="Post"
+                        className="w-full max-h-96 object-cover"
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-4 pt-3 border-t border-[#2a2a2a]">
+                    <Button variant="ghost" size="sm" className={`rounded-xl ${isLikedByMe(post) ? 'text-violet-500' : 'text-gray-400'} hover:text-violet-500`} onClick={() => handleLikePost(post.id)}>
+                      <Heart className="w-5 h-5 mr-2" fill={isLikedByMe(post) ? 'currentColor' : 'none'} />
+                      {post.feed_likes?.length || 0}
+                    </Button>
+                    <Button variant="ghost" size="sm" className="rounded-xl text-gray-400 hover:text-violet-500" onClick={() => setCommentingPost(commentingPost === post.id ? null : post.id)}>
+                      <MessageCircle className="w-5 h-5 mr-2" />
+                      {post.feed_comments?.length || 0}
+                    </Button>
+                  </div>
+                  {post.feed_comments?.length > 0 && (
+                    <div className="mt-4 space-y-2 pl-4 border-l-2 border-violet-500/20">
+                      {post.feed_comments.slice(0, 3).map((c) => (
+                        <p key={c.id} className="text-sm"><span className="text-violet-500 font-semibold">{c.commenter?.name}</span> <span className="text-gray-300">{c.content}</span></p>
+                      ))}
+                    </div>
+                  )}
+                  {commentingPost === post.id && (
+                    <div className="mt-4 flex gap-2">
+                      <Input value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Comenta..." className="bg-black/50 border-[#2a2a2a] rounded-xl text-white" />
+                      <Button onClick={() => handleComment(post.id)} className="bg-violet-500 text-black rounded-xl px-4">Enviar</Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </TabsContent>
+
+          {/* ACTIVITY TAB - Step Counter */}
           <TabsContent value="activity" className="space-y-4">
-            <CycleModule user={user} profile={localProfile} variant="compact" onProfileUpdate={setLocalProfile} />
             <ActivityTracker userId={user.id} />
           </TabsContent>
 
-          {localProfile?.sex === 'female' && (
-            <TabsContent value="bienestar" className="space-y-4">
-              <LifeStageSelector userId={user.id} profile={localProfile} onUpdate={setLocalProfile} />
-              {(!localProfile?.life_stage || localProfile.life_stage === 'cycle') && (
-                <CycleModule user={user} profile={localProfile} variant="full" onProfileUpdate={setLocalProfile} onThemeChange={setPageTheme} />
-              )}
-              {localProfile?.life_stage === 'pregnant' && <PregnancyMode userId={user.id} profile={localProfile} onUpdate={setLocalProfile} onThemeChange={setPageTheme} />}
-              {localProfile?.life_stage === 'postpartum' && <PostpartumMode userId={user.id} profile={localProfile} onUpdate={setLocalProfile} onThemeChange={setPageTheme} />}
-              {localProfile?.life_stage === 'lactating' && (
-                <>
-                  <LactationTracker userId={user.id} onThemeChange={setPageTheme} />
-                  <PostpartumMode userId={user.id} profile={localProfile} onUpdate={setLocalProfile} onThemeChange={setPageTheme} />
-                </>
-              )}
-            </TabsContent>
-          )}
+          {/* CHALLENGES TAB */}
+          <TabsContent value="challenges" className="space-y-4">
+            <ChallengesSection userId={user.id} />
+          </TabsContent>
 
-          <TabsContent value="feed">
-            <FeedTab
-              user={user} posts={feedPosts} imageUrls={feedImageUrls}
-              loading={loading} uploading={uploading} progress={progress}
-              onPostCreated={loadFeed} onLike={handleLikePost} onComment={handleComment}
-              onReport={handleReportPost} uploadFile={uploadFile}
+          {/* BADGES TAB */}
+          <TabsContent value="badges" className="space-y-4">
+            <BadgesGallery userId={user.id} />
+          </TabsContent>
+
+          {/* WORKOUT TAB */}
+          <TabsContent value="workout" className="space-y-4">
+            {myWorkout ? (
+              <>
+                <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
+                  <div className="h-32 bg-gradient-to-br from-violet-500/30 to-violet-500/5 flex items-center justify-center">
+                    <Dumbbell className="w-20 h-20 text-violet-500/30" />
+                  </div>
+                  <CardHeader>
+                    <CardTitle className="text-2xl text-white flex items-center gap-3">
+                      <Flame className="w-6 h-6 text-violet-500" />
+                      {myWorkout.workout?.name}
+                    </CardTitle>
+                    <CardDescription className="text-gray-500">Asignada el {new Date(myWorkout.assigned_at).toLocaleDateString()}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="bg-black/30 rounded-2xl p-5 border border-[#2a2a2a]">
+                      <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{myWorkout.workout?.description}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Workout Videos */}
+                {workoutVideos.length > 0 && (
+                  <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Video className="w-5 h-5 text-violet-500" />
+                        Vídeos de la Rutina ({workoutVideos.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-3">
+                        {workoutVideos.map(video => (
+                          <VideoCard
+                            key={video.id}
+                            video={video}
+                            onClick={() => setSelectedVideo(video)}
+                          />
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            ) : (
+              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+                <CardContent className="py-20 text-center">
+                  <Dumbbell className="w-20 h-20 mx-auto text-violet-500/20 mb-4" />
+                  <p className="text-gray-500">Tu entrenador aún no te ha asignado una rutina</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* DIET TAB */}
+          <TabsContent value="diet" className="space-y-4">
+            {myDiet ? (
+              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="text-2xl text-white flex items-center gap-3">
+                    <Apple className="w-6 h-6 text-violet-500" />
+                    {myDiet.diet?.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      { label: 'Calorías', value: myDiet.diet?.calories || '-', icon: Flame, color: 'from-orange-500/20 to-orange-500/5' },
+                      { label: 'Proteína', value: myDiet.diet?.protein_g ? `${myDiet.diet.protein_g}g` : '-', icon: Target, color: 'from-blue-500/20 to-blue-500/5' },
+                      { label: 'Carbos', value: myDiet.diet?.carbs_g ? `${myDiet.diet.carbs_g}g` : '-', icon: Zap, color: 'from-yellow-500/20 to-yellow-500/5' },
+                      { label: 'Grasas', value: myDiet.diet?.fat_g ? `${myDiet.diet.fat_g}g` : '-', icon: Star, color: 'from-purple-500/20 to-purple-500/5' },
+                    ].map(m => (
+                      <div key={m.label} className={`bg-gradient-to-br ${m.color} rounded-2xl p-4 border border-white/5`}>
+                        <m.icon className="w-5 h-5 text-violet-500 mb-2" />
+                        <p className="text-2xl font-black text-white">{m.value}</p>
+                        <p className="text-xs text-gray-500">{m.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-black/30 rounded-2xl p-5 border border-[#2a2a2a]">
+                    <p className="text-gray-300 whitespace-pre-wrap">{myDiet.diet?.content || 'Sin detalles de dieta'}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+                <CardContent className="py-20 text-center">
+                  <Apple className="w-20 h-20 mx-auto text-violet-500/20 mb-4" />
+                  <p className="text-gray-500">Tu entrenador aún no te ha asignado una dieta</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* FOOD TRACKER - Contador de macros con fotos */}
+            <FoodTracker userId={user.id} />
+
+            {/* Plan de Recetas Semanal */}
+            <MemberRecipePlan userId={user.id} />
+          </TabsContent>
+
+          {/* RECIPES TAB - Browse all recipes */}
+          <TabsContent value="recipes" className="space-y-4">
+            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <UtensilsCrossed className="w-5 h-5 text-violet-500" />
+                  Catálogo de Recetas
+                </CardTitle>
+                <CardDescription className="text-gray-500">
+                  Explora todas las recetas saludables disponibles
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RecipesGallery />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* STATS TAB - Advanced Charts */}
+          <TabsContent value="stats" className="space-y-4">
+            <ProgressCharts 
+              weightData={chartData.weight}
+              workoutsData={chartData.workouts}
+              adherenceData={chartData.adherence}
+              comparisonData={chartData.comparison}
             />
           </TabsContent>
 
-          <TabsContent value="challenges"><ChallengesSection userId={user.id} /></TabsContent>
-          <TabsContent value="badges"><BadgesGallery userId={user.id} /></TabsContent>
+          {/* PROGRESS TAB */}
+          <TabsContent value="progress" className="space-y-4">
+            {/* Photos Section */}
+            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-violet-500" />
+                    Fotos de Progreso
+                  </CardTitle>
+                  {!showPhotoUploader && (
+                    <Button
+                      onClick={() => setShowPhotoUploader(true)}
+                      className="bg-gradient-to-r from-violet-500 to-cyan-500 text-black rounded-xl"
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Subir
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {showPhotoUploader ? (
+                  <ProgressPhotoUploader
+                    memberId={user.id}
+                    onSuccess={() => {
+                      setShowPhotoUploader(false)
+                      loadProgressPhotos()
+                      toast({ title: '¡Foto guardada!' })
+                    }}
+                    onCancel={() => setShowPhotoUploader(false)}
+                  />
+                ) : (
+                  <ProgressPhotoGallery
+                    photos={progressPhotos}
+                    canDelete={true}
+                    onDelete={handleDeletePhoto}
+                  />
+                )}
+              </CardContent>
+            </Card>
 
-          <TabsContent value="workout">
-            <WorkoutTab workout={myWorkout} videos={workoutVideos} onVideoSelect={setSelectedVideo} />
+            {/* Measurements Section */}
+            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-violet-500" />
+                  Registrar Medidas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleAddProgress} className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {[
+                      { label: 'Peso (kg)', value: newWeight, setter: setNewWeight },
+                      { label: 'Pecho (cm)', value: newChest, setter: setNewChest },
+                      { label: 'Cintura (cm)', value: newWaist, setter: setNewWaist },
+                      { label: 'Cadera (cm)', value: newHips, setter: setNewHips },
+                      { label: 'Brazos (cm)', value: newArms, setter: setNewArms },
+                      { label: 'Piernas (cm)', value: newLegs, setter: setNewLegs },
+                    ].map(f => (
+                      <div key={f.label}>
+                        <Label className="text-gray-400 text-xs">{f.label}</Label>
+                        <Input type="number" step="0.1" value={f.value} onChange={(e) => f.setter(e.target.value)} className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1" />
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <Label className="text-gray-400 text-xs">Notas</Label>
+                    <Textarea value={progressNotes} onChange={(e) => setProgressNotes(e.target.value)} placeholder="¿Cómo te sientes?" className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1" />
+                  </div>
+                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-2xl py-6">
+                    Guardar Medidas
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {progressRecords.length > 0 && (
+              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+                <CardHeader>
+                  <CardTitle className="text-white">Historial de Medidas</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {progressRecords.map(r => (
+                    <div key={r.id} className="bg-black/30 rounded-2xl p-4 border border-[#2a2a2a]">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-violet-500 font-semibold">{new Date(r.date).toLocaleDateString()}</p>
+                        {r.weight_kg && <p className="text-2xl font-black text-white">{r.weight_kg} kg</p>}
+                      </div>
+                      <div className="flex flex-wrap gap-3 text-xs text-gray-400">
+                        {r.chest_cm && <span>Pecho: {r.chest_cm}cm</span>}
+                        {r.waist_cm && <span>Cintura: {r.waist_cm}cm</span>}
+                        {r.hips_cm && <span>Cadera: {r.hips_cm}cm</span>}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
-          <TabsContent value="diet">
-            <DietTab user={user} diet={myDiet} />
-          </TabsContent>
-
-          <TabsContent value="recipes"><RecipesGallery /></TabsContent>
-          <TabsContent value="stats"><StatsTab chartData={chartData} /></TabsContent>
-
-          <TabsContent value="progress">
-            <ProgressTab
-              user={user} records={progressRecords} photos={progressPhotos}
-              chartData={chartData} loading={loading}
-              onAddProgress={handleAddProgress} onDeletePhoto={handleDeletePhoto}
-            />
-          </TabsContent>
-
-          <TabsContent value="notices">
-            <NoticesTab notices={notices} onMarkAsRead={markNoticeAsRead} />
+          {/* NOTICES TAB */}
+          <TabsContent value="notices" className="space-y-4">
+            {notices.length > 0 ? (
+              notices.map(notice => (
+                <Card key={notice.id} className={`bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl ${notice.priority === 'high' ? 'border-l-4 border-l-red-500' : notice.priority === 'normal' ? 'border-l-4 border-l-violet-500' : ''}`} onClick={() => markNoticeAsRead(notice.id)}>
+                  <CardContent className="p-5">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-white">{notice.title}</h3>
+                      <span className={`text-xs px-2 py-1 rounded-full ${notice.priority === 'high' ? 'bg-red-500/20 text-red-400' : notice.priority === 'normal' ? 'bg-violet-500/20 text-violet-500' : 'bg-blue-500/20 text-blue-400'}`}>
+                        {notice.priority === 'high' ? 'Urgente' : notice.priority === 'normal' ? 'Normal' : 'Info'}
+                      </span>
+                    </div>
+                    <p className="text-gray-400 text-sm">{notice.message}</p>
+                    <p className="text-xs text-gray-600 mt-3">{new Date(notice.created_at).toLocaleString()}</p>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+                <CardContent className="py-20 text-center">
+                  <Bell className="w-20 h-20 mx-auto text-violet-500/20 mb-4" />
+                  <p className="text-gray-500">No tienes avisos</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </main>
 
-      <FloatingChat
+      {/* Video Player Modal */}
+      {selectedVideo && (
+        <VideoPlayer
+          video={selectedVideo}
+          onClose={() => setSelectedVideo(null)}
+        />
+      )}
+
+      {/* Floating Chat */}
+      <FloatingChat 
         userId={user.id}
-        userRole={localProfile?.role}
+        userRole="member"
         trainerId={myTrainer?.id}
         trainerName={myTrainer?.name}
       />
-      <SupportDrawer />
+
       <Toaster />
     </div>
   )

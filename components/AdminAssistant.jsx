@@ -11,9 +11,6 @@ import { useToast } from '@/hooks/use-toast'
 
 // Componente de mensaje individual
 function ChatMessage({ message, isUser, isLoading }) {
-  // Detectar si el mensaje contiene recomendaciones de salud/ejercicios/dieta
-  const hasHealthContent = /dieta|ejercicio|peso|calor|proteína|grasa|muscular|entrenamiento|salud|macros/i.test(message);
-  
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} animate-in slide-in-from-bottom-2 duration-300`}>
       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg ${
@@ -38,19 +35,7 @@ function ChatMessage({ message, isUser, isLoading }) {
             <span className="text-gray-400">Procesando...</span>
           </div>
         ) : (
-          <>
-            <p className="whitespace-pre-wrap leading-relaxed">{message}</p>
-            {hasHealthContent && (
-              <div className="mt-3 pt-3 border-t border-white/10">
-                <p className="text-xs text-amber-400/80">
-                  ℹ️ Esta información es de carácter general. Consulta con un profesional de la salud antes de realizar cambios en tu dieta o rutina de ejercicios. Fuentes: {' '}
-                  <a href="https://www.who.int/news-room/fact-sheets/diet-and-physical-activity" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">OMS</a>
-                  {' • '}
-                  <a href="https://www.acsm.org/get-stay-fit/fitness-basics" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">ACSM</a>
-                </p>
-              </div>
-            )}
-          </>
+          <p className="whitespace-pre-wrap leading-relaxed">{message}</p>
         )}
       </div>
     </div>
@@ -136,19 +121,8 @@ export default function AdminAssistant({ userId }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const isSpeechSupported = typeof window !== 'undefined' && (
-    'SpeechRecognition' in window || 'webkitSpeechRecognition' in window
-  )
-  const isIOS = typeof navigator !== 'undefined' && (
-    /iPhone|iPad|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  )
-
   useEffect(() => {
-    if (
-    typeof window !== 'undefined' &&
-    (isSpeechSupported && !isIOS)) {
-      try {
+    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
       recognitionRef.current = new SpeechRecognition()
       recognitionRef.current.continuous = false
@@ -162,21 +136,12 @@ export default function AdminAssistant({ userId }) {
         handleSend(transcript)
       }
 
-      recognitionRef.current.onerror = (e) => {
-       setIsListening(false)
-       if (e.error === 'not-allowed') {
-      toast({ title: 'Permiso denegado', description: 'Activa el micrófono en Ajustes > Safari > Micrófono', variant: 'destructive' })
-       } else if (e.error === 'no-speech') {
-       toast({ title: 'No se detectó voz', description: 'Inténtalo de nuevo', variant: 'destructive' })
-       } else {
-       toast({ title: 'Error de voz', description: 'No se pudo reconocer tu voz', variant: 'destructive' })
+      recognitionRef.current.onerror = () => {
+        setIsListening(false)
+        toast({ title: 'Error de voz', description: 'No se pudo reconocer tu voz', variant: 'destructive' })
       }
-    }
 
       recognitionRef.current.onend = () => setIsListening(false)
-      } catch (e) {
-        console.log('Speech recognition not available')
-      }
     }
   }, [])
 
@@ -296,14 +261,82 @@ export default function AdminAssistant({ userId }) {
   ]
 
   return (
-    <div className="h-[calc(100vh-180px)] flex flex-col bg-[#1a1a1a] border border-violet-500/20 rounded-3xl overflow-hidden">
+    <div className="h-[calc(100vh-180px)] flex flex-col">
+      {/* PREMIUM HEADER */}
+      <div className="relative overflow-hidden rounded-t-3xl">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 opacity-90"></div>
+        
+        {/* Glow effects */}
+        <div className="absolute top-0 left-1/4 w-32 h-32 bg-white/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-24 h-24 bg-cyan-400/30 rounded-full blur-2xl"></div>
+        
+        <div className="relative px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Premium AI Icon */}
+              <div className="relative">
+                <div className="absolute inset-0 bg-white/30 rounded-2xl blur-lg"></div>
+                <div className="relative w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center shadow-xl">
+                  <Wand2 className="w-7 h-7 text-white" />
+                </div>
+                {/* Online indicator */}
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white shadow-lg shadow-emerald-400/50"></div>
+              </div>
+              
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-white tracking-tight">NL VIP Assistant</h2>
+                  <div className="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full">
+                    <span className="text-[10px] font-semibold text-white/90 uppercase tracking-wider">Pro</span>
+                  </div>
+                </div>
+                <p className="text-sm text-white/70 mt-0.5">Tu asistente de gestión con IA</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Status badges */}
+              {isListening && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 backdrop-blur-sm rounded-full border border-red-400/30 animate-pulse">
+                  <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                  <span className="text-xs font-medium text-red-200">Escuchando</span>
+                </div>
+              )}
+              {isSpeaking && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/20 backdrop-blur-sm rounded-full border border-cyan-400/30">
+                  <Volume2 className="w-3 h-3 text-cyan-300 animate-pulse" />
+                  <span className="text-xs font-medium text-cyan-200">Hablando</span>
+                </div>
+              )}
+              
+              {/* TTS Toggle */}
+              <button
+                onClick={() => setTtsEnabled(!ttsEnabled)}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                  ttsEnabled 
+                    ? 'bg-white/20 text-white hover:bg-white/30' 
+                    : 'bg-black/20 text-white/50 hover:bg-black/30'
+                }`}
+              >
+                {ttsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* CHAT AREA */}
-      <div className="flex-1 overflow-y-auto flex flex-col">
+      <div className="flex-1 bg-gradient-to-b from-[#0a0a0a] to-[#111] border-x border-violet-500/10 overflow-hidden flex flex-col">
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
-              <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mb-4">
-                <Bot className="w-8 h-8 text-violet-400" />
+              {/* Empty state - Premium */}
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-full blur-2xl opacity-20"></div>
+                <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-violet-500/10 to-cyan-500/10 border border-white/10 flex items-center justify-center">
+                  <Sparkles className="w-10 h-10 text-violet-400/50" />
+                </div>
               </div>
               
               <h3 className="text-xl font-semibold text-white mb-2">¿En qué puedo ayudarte?</h3>
@@ -331,46 +364,9 @@ export default function AdminAssistant({ userId }) {
             </div>
           ) : (
             <>
-             {messages.map((msg, idx) => (
-  <div key={idx}>
-    <ChatMessage
-      message={msg.content}
-      isUser={msg.role === "user"}
-    />
-
-    {msg.role === "assistant" && (
-      <p
-        style={{
-          fontSize: "11px",
-          color: "#888",
-          marginTop: "8px",
-          marginBottom: "8px",
-          paddingLeft: "8px",
-        }}
-      >
-        Información orientativa. Consulte siempre a un profesional de salud.{" "}
-        Fuentes:{" "}
-        <a
-          href="https://www.who.int"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "#a78bfa" }}
-        >
-          OMS
-        </a>{" "}
-        /{" "}
-        <a
-          href="https://www.nih.gov"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "#a78bfa" }}
-        >
-          NIH
-        </a>
-      </p>
-    )}
-  </div>
-   ))}
+              {messages.map((msg, idx) => (
+                <ChatMessage key={idx} message={msg.content} isUser={msg.role === 'user'} />
+              ))}
               {isLoading && <ChatMessage message="" isUser={false} isLoading={true} />}
               {pendingPlan && (
                 <ExecutionPlan 
@@ -388,23 +384,21 @@ export default function AdminAssistant({ userId }) {
         {/* INPUT AREA - Premium */}
         <div className="p-4 border-t border-white/5 bg-black/50 backdrop-blur-xl">
           <div className="flex gap-3">
-            {/* Voice button - only show on supported devices */}
-            {isSpeechSupported && !isIOS && (
-              <button 
-                onClick={toggleListening}
-                disabled={isLoading}
-                className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
-                  isListening 
-                    ? 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30' 
-                    : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10'
-                }`}
-              >
-                {isListening && (
-                  <div className="absolute inset-0 rounded-2xl bg-red-500 animate-ping opacity-30"></div>
-                )}
-                {isListening ? <MicOff className="w-6 h-6 relative" /> : <Mic className="w-6 h-6" />}
-              </button>
-            )}
+            {/* Voice button */}
+            <button
+              onClick={toggleListening}
+              disabled={isLoading}
+              className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
+                isListening 
+                  ? 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30' 
+                  : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10'
+              }`}
+            >
+              {isListening && (
+                <div className="absolute inset-0 rounded-2xl bg-red-500 animate-ping opacity-30"></div>
+              )}
+              {isListening ? <MicOff className="w-6 h-6 relative" /> : <Mic className="w-6 h-6" />}
+            </button>
             
             {/* Text input */}
             <div className="flex-1 relative">
@@ -426,20 +420,6 @@ export default function AdminAssistant({ userId }) {
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
               </Button>
             </div>
-
-            {/* TTS Toggle Bottom */}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setTtsEnabled(!ttsEnabled)}
-              className={`h-14 w-14 rounded-2xl border border-white/10 flex items-center justify-center transition-all ${
-                ttsEnabled 
-                  ? 'bg-white/10 text-violet-400' 
-                  : 'bg-white/5 text-gray-500'
-              }`}
-            >
-              {ttsEnabled ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
-            </Button>
           </div>
           
           <p className="text-center text-xs text-gray-600 mt-3">
@@ -447,6 +427,9 @@ export default function AdminAssistant({ userId }) {
           </p>
         </div>
       </div>
+
+      {/* Bottom rounded border */}
+      <div className="h-2 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 rounded-b-3xl"></div>
     </div>
   )
 }

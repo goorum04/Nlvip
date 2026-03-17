@@ -6,14 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { User, Camera, Save, Trash2, Loader2, X, AlertTriangle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+
 // Avatar Bubble Component - Para mostrar en el header
 export function AvatarBubble({ profile, size = 'md', onClick }) {
   const [imageUrl, setImageUrl] = useState(null)
-
+  
   useEffect(() => {
     if (profile?.avatar_url) {
       loadAvatarUrl()
@@ -22,18 +23,18 @@ export function AvatarBubble({ profile, size = 'md', onClick }) {
 
   const loadAvatarUrl = async () => {
     if (!profile?.avatar_url) return
-
+    
     // Si es una URL completa, usarla directamente
     if (profile.avatar_url.startsWith('http')) {
       setImageUrl(profile.avatar_url)
       return
     }
-
+    
     // Si es un path de Supabase, obtener URL firmada
     const { data } = await supabase.storage
       .from('avatars')
       .createSignedUrl(profile.avatar_url, 3600)
-
+    
     if (data?.signedUrl) {
       setImageUrl(data.signedUrl)
     }
@@ -54,8 +55,8 @@ export function AvatarBubble({ profile, size = 'md', onClick }) {
       className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 transition-all hover:scale-105 cursor-pointer border-2 border-white/20`}
     >
       {imageUrl ? (
-        <img
-          src={imageUrl}
+        <img 
+          src={imageUrl} 
           alt={profile?.name || 'Avatar'}
           className="w-full h-full object-cover"
         />
@@ -77,29 +78,17 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
 
   // Form states
   const [name, setName] = useState(profile?.name || '')
+  const [phone, setPhone] = useState(profile?.phone || '')
   const [birthDate, setBirthDate] = useState(profile?.birth_date || '')
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
   const [previewUrl, setPreviewUrl] = useState(null)
-  const [weight, setWeight] = useState(profile?.weight_kg || '')
-  const [height, setHeight] = useState(profile?.height_cm || '')
-  const [sex, setSex] = useState(profile?.sex || '')
-  const [cycleEnabled, setCycleEnabled] = useState(profile?.cycle_enabled || false)
-  const [cycleStartDate, setCycleStartDate] = useState(profile?.cycle_start_date || '')
-  const [cycleLengthDays, setCycleLengthDays] = useState(profile?.cycle_length_days || 28)
-  const [periodLengthDays, setPeriodLengthDays] = useState(profile?.period_length_days || 5)
 
   useEffect(() => {
     if (profile) {
       setName(profile.name || '')
+      setPhone(profile.phone || '')
       setBirthDate(profile.birth_date || '')
       setAvatarUrl(profile.avatar_url || '')
-      setWeight(profile.weight_kg || '')
-      setHeight(profile.height_cm || '')
-      setSex(profile.sex || '')
-      setCycleEnabled(profile.cycle_enabled || false)
-      setCycleStartDate(profile.cycle_start_date || '')
-      setCycleLengthDays(profile.cycle_length_days || 28)
-      setPeriodLengthDays(profile.period_length_days || 5)
       loadAvatarPreview()
     }
   }, [profile])
@@ -109,16 +98,16 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       setPreviewUrl(null)
       return
     }
-
+    
     if (profile.avatar_url.startsWith('http')) {
       setPreviewUrl(profile.avatar_url)
       return
     }
-
+    
     const { data } = await supabase.storage
       .from('avatars')
       .createSignedUrl(profile.avatar_url, 3600)
-
+    
     if (data?.signedUrl) {
       setPreviewUrl(data.signedUrl)
     }
@@ -133,18 +122,13 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       toast({ title: 'Error', description: 'Solo se permiten imágenes', variant: 'destructive' })
       return
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: 'Error', description: 'La imagen no puede superar 10MB', variant: 'destructive' })
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'Error', description: 'La imagen no puede superar 2MB', variant: 'destructive' })
       return
     }
 
     setUploading(true)
     try {
-      // Crear preview local primero
-      const reader = new FileReader()
-      reader.onload = (e) => setPreviewUrl(e.target.result)
-      reader.readAsDataURL(file)
-
       // Generar nombre único
       const ext = file.name.split('.').pop()
       const fileName = `${user.id}/${Date.now()}.${ext}`
@@ -156,20 +140,12 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
 
       if (error) throw error
 
-      // Obtener URL pública
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName)
-
-      // Actualizar perfil con la nueva URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', user.id)
-
-      if (updateError) throw updateError
-
-      setAvatarUrl(publicUrl)
+      setAvatarUrl(fileName)
+      
+      // Crear preview local
+      const reader = new FileReader()
+      reader.onload = (e) => setPreviewUrl(e.target.result)
+      reader.readAsDataURL(file)
 
       toast({ title: '¡Foto subida!' })
     } catch (error) {
@@ -191,15 +167,9 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
         .from('profiles')
         .update({
           name: name.trim(),
+          phone: phone.trim() || null,
           birth_date: birthDate || null,
           avatar_url: avatarUrl || null,
-          weight_kg: weight === '' ? null : Number(weight),
-          height_cm: height === '' ? null : Number(height),
-          sex: sex || null,
-          cycle_enabled: sex === 'female' ? cycleEnabled : false,
-          cycle_start_date: sex === 'female' && cycleEnabled ? cycleStartDate : null,
-          cycle_length_days: sex === 'female' && cycleEnabled ? cycleLengthDays : 28,
-          period_length_days: sex === 'female' && cycleEnabled ? periodLengthDays : 5,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
@@ -207,20 +177,15 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       if (error) throw error
 
       toast({ title: '¡Perfil actualizado!' })
-      onClose() // Auto-close modal after save
-
+      
       // Notificar al componente padre para recargar el perfil
       if (onProfileUpdate) {
         onProfileUpdate({
           ...profile,
           name: name.trim(),
+          phone: phone.trim() || null,
           birth_date: birthDate || null,
-          avatar_url: avatarUrl || null,
-          sex: sex || null,
-          cycle_enabled: sex === 'female' ? cycleEnabled : false,
-          cycle_start_date: sex === 'female' && cycleEnabled ? cycleStartDate : null,
-          cycle_length_days: sex === 'female' && cycleEnabled ? cycleLengthDays : 28,
-          period_length_days: sex === 'female' && cycleEnabled ? periodLengthDays : 5
+          avatar_url: avatarUrl || null
         })
       }
     } catch (error) {
@@ -250,37 +215,37 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
 
       // Eliminar datos relacionados del usuario
       // El orden importa por las foreign keys
-
+      
       // 1. Eliminar fotos de progreso
       await supabase.from('progress_photos').delete().eq('member_id', user.id)
-
+      
       // 2. Eliminar registros de progreso
       await supabase.from('progress_records').delete().eq('member_id', user.id)
-
+      
       // 3. Eliminar participaciones en retos
       await supabase.from('challenge_participants').delete().eq('member_id', user.id)
-
+      
       // 4. Eliminar likes del feed
       await supabase.from('feed_likes').delete().eq('user_id', user.id)
-
+      
       // 5. Eliminar comentarios del feed
       await supabase.from('feed_comments').delete().eq('commenter_id', user.id)
-
+      
       // 6. Eliminar posts del feed
       await supabase.from('feed_posts').delete().eq('author_id', user.id)
-
+      
       // 7. Eliminar asignaciones de dieta
       await supabase.from('member_diets').delete().eq('member_id', user.id)
-
+      
       // 8. Eliminar asignaciones de rutina
       await supabase.from('member_workouts').delete().eq('member_id', user.id)
-
+      
       // 9. Eliminar relación trainer-member
       await supabase.from('trainer_members').delete().eq('member_id', user.id)
-
+      
       // 10. Eliminar actividad diaria
       await supabase.from('daily_activity').delete().eq('user_id', user.id)
-
+      
       // 11. Eliminar food logs
       await supabase.from('food_logs').delete().eq('user_id', user.id)
 
@@ -299,7 +264,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
 
       // 14. Cerrar sesión (esto también intentará eliminar el usuario de auth)
       toast({ title: 'Cuenta eliminada', description: 'Tu cuenta ha sido eliminada correctamente' })
-
+      
       setTimeout(() => {
         onLogout()
       }, 1500)
@@ -319,15 +284,10 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between w-full">
-            <DialogTitle className="text-white text-xl flex items-center gap-2">
-              <User className="w-5 h-5 text-violet-400" />
-              Mi Perfil
-            </DialogTitle>
-            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full text-gray-400 hover:text-white">
-              <X className="w-5 h-5" />
-            </Button>
-          </div>
+          <DialogTitle className="text-white text-xl flex items-center gap-2">
+            <User className="w-5 h-5 text-violet-400" />
+            Mi Perfil
+          </DialogTitle>
           <DialogDescription className="text-gray-400">
             Gestiona tu información personal
           </DialogDescription>
@@ -344,7 +304,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                   <span>{name?.charAt(0)?.toUpperCase() || '?'}</span>
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 w-8 h-8 bg-violet-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-violet-600 transition-colors">
+              <label className="absolute bottom-0 right-0 w-8 h-8 bg-violet-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-violet-400 transition-colors shadow-lg">
                 {uploading ? (
                   <Loader2 className="w-4 h-4 text-white animate-spin" />
                 ) : (
@@ -352,7 +312,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                 )}
                 <input
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,image/heic"
+                  accept="image/*"
                   onChange={handleAvatarUpload}
                   disabled={uploading}
                   className="hidden"
@@ -385,6 +345,16 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
             </div>
 
             <div>
+              <Label className="text-gray-300 text-sm">Teléfono (opcional)</Label>
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+34 600 000 000"
+                className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
+              />
+            </div>
+
+            <div>
               <Label className="text-gray-300 text-sm">Fecha de nacimiento (opcional)</Label>
               <Input
                 type="date"
@@ -393,103 +363,6 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                 className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
               />
             </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label className="text-gray-300 text-sm">Peso (kg)</Label>
-                <Input
-                  type="number"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                  placeholder="70"
-                  className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-gray-300 text-sm">Altura (cm)</Label>
-                <Input
-                  type="number"
-                  value={height}
-                  onChange={(e) => setHeight(e.target.value)}
-                  placeholder="175"
-                  className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-gray-300 text-sm">Sexo</Label>
-                <select
-                  value={sex}
-                  onChange={(e) => setSex(e.target.value)}
-                  className="bg-black/50 border border-violet-500/20 rounded-xl text-white mt-1 w-full h-10 px-3"
-                >
-                  <option value="">Seleccionar</option>
-                  <option value="male">Hombre</option>
-                  <option value="female">Mujer</option>
-                  <option value="other">Otro</option>
-                </select>
-              </div>
-            </div>
-
-            {sex === 'female' && (
-              <div className="mt-4 pt-4 border-t border-violet-500/20">
-                <Label className="text-gray-300 text-sm font-medium">Seguimiento del ciclo</Label>
-                <p className="text-xs text-gray-500 mb-3">Activa para recibir recomendaciones personalizadas</p>
-
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-gray-300 text-sm">Activar seguimiento</span>
-                  <input
-                    type="checkbox"
-                    checked={cycleEnabled}
-                    onChange={(e) => setCycleEnabled(e.target.checked)}
-                    className="w-5 h-5 rounded bg-black/50 border-violet-500/20"
-                  />
-                </div>
-
-                {cycleEnabled && (
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-gray-400 text-xs">Fecha de inicio del último periodo</Label>
-                      <Input
-                        type="date"
-                        value={cycleStartDate}
-                        onChange={(e) => setCycleStartDate(e.target.value)}
-                        className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-gray-400 text-xs">Duración del ciclo</Label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Input
-                            type="number"
-                            min="21"
-                            max="35"
-                            value={cycleLengthDays}
-                            onChange={(e) => setCycleLengthDays(parseInt(e.target.value) || 28)}
-                            className="bg-black/50 border-violet-500/20 rounded-xl text-white"
-                          />
-                          <span className="text-gray-500 text-xs">días</span>
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-gray-400 text-xs">Duración del periodo</Label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Input
-                            type="number"
-                            min="2"
-                            max="10"
-                            value={periodLengthDays}
-                            onChange={(e) => setPeriodLengthDays(parseInt(e.target.value) || 5)}
-                            className="bg-black/50 border-violet-500/20 rounded-xl text-white"
-                          />
-                          <span className="text-gray-500 text-xs">días</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Save Button */}
@@ -533,7 +406,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                     </ul>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-
+                
                 <div className="py-4">
                   <Label className="text-gray-300 text-sm">Introduce tu contraseña para confirmar</Label>
                   <Input
