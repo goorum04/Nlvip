@@ -19,7 +19,7 @@ import { AdminCodesTab } from './AdminCodesTab'
 import { AdminFeedTab } from './AdminFeedTab'
 import { MemberDetailPanel } from './MemberDetailPanel'
 import { WorkoutBuilder } from './WorkoutBuilder'
-import { ProfileModal } from './UserProfile'
+import { ProfileModal, AvatarBubble } from './UserProfile'
 
 export default function AdminDashboard({ user, profile, onLogout }) {
   const [trainers, setTrainers] = useState([])
