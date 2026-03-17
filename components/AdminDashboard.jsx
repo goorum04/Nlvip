@@ -683,7 +683,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     <div className="min-h-screen bg-[#0B0B0B]">
       {/* Modern Admin Header */}
       <header className="bg-gradient-to-br from-black via-[#1a1a1a] to-black border-b border-violet-500/20 sticky top-0 z-50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 pt-12 pb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <img 
