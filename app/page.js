@@ -53,24 +53,18 @@ export default function App() {
     try {
       console.log('Intentando cargar perfil para:', userId)
 
-      // Timeout de 3 segundos para evitar bloqueos por recursión RLS
-      const fetchPromise = supabase.from('profiles').select('*').eq('id', userId).single()
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout DB')), 10000)
-      )
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
 
-      let result;
-      try {
-        result = await Promise.race([fetchPromise, timeoutPromise])
-      } catch (err) {
-        console.warn('Error o timeout al cargar perfil:', err.message)
-        result = { data: null, error: err }
+      if (data) {
+        console.log('Perfil cargado desde DB:', data.name, data.role)
+        setProfile(data)
+        return data
       }
 
-      if (result.data) {
-        console.log('Perfil cargado desde DB')
-        setProfile(result.data)
-        return result.data
+      // Mostrar error real temporalmente para diagnóstico
+      if (error) {
+        console.error('Error cargando perfil:', error.code, error.message)
+        toast({ title: '⚠️ Debug perfil', description: `Código: ${error.code} | ${error.message}`, variant: 'destructive' })
       }
 
       // Fallback: Usar metadatos de Auth
@@ -91,6 +85,7 @@ export default function App() {
       }
     } catch (err) {
       console.error('Error en loadProfile:', err)
+      toast({ title: '⚠️ Debug perfil', description: err.message, variant: 'destructive' })
     }
     return null
   }
