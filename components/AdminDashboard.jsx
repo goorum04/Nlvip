@@ -120,9 +120,11 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       <header className="sticky top-0 z-40 bg-[#0f0f10]/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center">
-              <span className="font-black text-white italic">NL</span>
-            </div>
+            <img 
+              src="/logo-nl-vip.jpg" 
+              alt="NL VIP TEAM" 
+              className="w-12 h-12 rounded-xl object-cover shadow-lg shadow-violet-500/30"
+            />
             <div>
               <h1 className="font-black text-lg tracking-tighter text-white uppercase italic">VIP CLUB</h1>
               <p className="text-[10px] text-violet-400 font-bold tracking-widest uppercase">Admin Panel</p>
@@ -131,7 +133,14 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
           <div className="flex items-center gap-4">
             {loading && <Loader2 className="w-4 h-4 animate-spin text-violet-400" />}
-            <span className="text-sm font-bold text-gray-400 hidden sm:inline">{profile?.name}</span>
+            <div className="text-right hidden md:block">
+              <span className="text-sm font-bold text-gray-400">{profile?.name}</span>
+            </div>
+            <AvatarBubble 
+              profile={profile} 
+              size="md" 
+              onClick={() => setShowProfileModal(true)} 
+            />
             <Button variant="ghost" size="icon" onClick={onLogout} className="text-gray-500 hover:text-red-400">
               <LogOut className="w-5 h-5" />
             </Button>
