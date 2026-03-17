@@ -290,15 +290,10 @@ CREATE POLICY "Usuarios pueden actualizar su propio perfil"
   TO authenticated
   USING (auth.uid() = id);
 
-CREATE POLICY "Admin puede insertar profiles"
+CREATE POLICY "Usuarios pueden crear su propio perfil"
   ON profiles FOR INSERT
   TO authenticated
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  WITH CHECK (id = auth.uid());
 
 -- ================================================
 -- POLÍTICAS RLS - INVITATION_CODES
@@ -591,12 +586,36 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Trigger para profiles
+-- Trigger para profiles (updated_at)
 DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
 CREATE TRIGGER update_profiles_updated_at
     BEFORE UPDATE ON profiles
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
+-- ================================================
+-- TRIGGER: Crear perfil automáticamente al registrarse
+-- ================================================
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, name, role, has_premium)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
+    COALESCE(NEW.raw_user_meta_data->>'role', 'member'),
+    false
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ================================================
 -- INSERTAR DATOS DEMO
