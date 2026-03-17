@@ -117,7 +117,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
   return (
     <div className="min-h-screen bg-[#0f0f10] text-gray-100 font-sans pb-20">
-      <header className="sticky top-0 z-40 bg-[#0f0f10]/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
+      <header className="sticky top-0 z-40 bg-[#0f0f10]/90 backdrop-blur-xl border-b border-white/5 px-6 pt-12 pb-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
