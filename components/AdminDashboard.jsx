@@ -694,7 +694,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       <header className="sticky top-0 z-50 bg-[#0B0B0B]/80 backdrop-blur-xl border-b border-violet-500/20">
         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-violet-500/5 header-gradient opacity-30" />
         
-        <div className="relative container mx-auto px-4 pt-10 pb-4">
+        <div className="relative container mx-auto px-4 pt-14 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
