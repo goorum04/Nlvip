@@ -12,6 +12,41 @@ import {
 
 const ADMIN_ID = '64145053-45fd-473c-b2c4-7523d181aad3' // ID de Nacho (Admin)
 
+// Componente AudioPlayer (Fuera del principal para evitar re-renders innecesarios)
+const AudioPlayer = ({ path }) => {
+  const [playing, setPlaying] = useState(false)
+  const audioRef = useRef(null)
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/chat_audios/${path}`
+
+  if (!path) return null
+
+  return (
+    <div className="flex items-center gap-3 bg-black/20 rounded-xl p-2 min-w-[200px]">
+      <button 
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          if (playing) audioRef.current.pause()
+          else audioRef.current.play()
+          setPlaying(!playing)
+        }}
+        className="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center text-black"
+      >
+        {playing ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
+      </button>
+      <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+        <div className={`h-full bg-violet-500 ${playing ? 'animate-progress' : ''}`} style={{ width: playing ? '100%' : '0%', transition: playing ? 'width 30s linear' : 'none' }}></div>
+      </div>
+      <audio 
+        ref={audioRef} 
+        src={url} 
+        onEnded={() => setPlaying(false)} 
+        className="hidden" 
+      />
+    </div>
+  )
+}
+
 export default function FloatingChat({ userId, userRole, trainerId, trainerName, members }) {
   const [isOpen, setIsOpen] = useState(false)
   const [activeConversation, setActiveConversation] = useState(null)
@@ -93,34 +128,49 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   }
 
   const getOrCreateConversation = async (type, participants) => {
-    // Check if conversation exists
-    const { data: existing } = await supabase
-      .from('conversations')
-      .select('*, conversation_participants!inner(user_id)')
-      .eq('type', type)
-      .filter('conversation_participants.user_id', 'in', `(${participants.join(',')})`)
-    
-    // Filter manually for exact participants match (Supabase filters can be tricky with arrays/joins)
-    const exactMatch = existing?.find(c => {
-      // In a real app we'd check if ALL participants are there and ONLY them
-      // For now, this is a simplified check
-      return true 
-    })
+    // Validar participantes (UUIDs válidos)
+    const validParticipants = participants.filter(id => id && id.length > 30)
+    if (validParticipants.length < 2) return null
 
-    if (exactMatch) return exactMatch
+    try {
+      // Check if conversation exists
+      const { data: existing, error: checkError } = await supabase
+        .from('conversations')
+        .select(`
+          id, 
+          type,
+          conversation_participants!inner(user_id)
+        `)
+        .eq('type', type)
+        .filter('conversation_participants.user_id', 'in', `(${validParticipants.join(',')})`)
+      
+      if (checkError) throw checkError
 
-    // Create new conversation
-    const { data: newConv, error } = await supabase
-      .from('conversations')
-      .insert([{ type, created_by: userId }])
-      .select()
-      .single()
-    
-    if (newConv) {
-      await supabase.from('conversation_participants').insert(
-        participants.map(pid => ({ conversation_id: newConv.id, user_id: pid }))
-      )
-      return newConv
+      // Filtrar manualmente para encontrar la conversación que tiene EXACTAMENTE estos participantes
+      const exactMatch = existing?.find(conv => {
+        const pIds = conv.conversation_participants.map(p => p.user_id)
+        return validParticipants.every(vId => pIds.includes(vId)) && pIds.length === validParticipants.length
+      })
+
+      if (exactMatch) return exactMatch
+
+      // Create new conversation
+      const { data: newConv, error: createError } = await supabase
+        .from('conversations')
+        .insert([{ type, created_by: userId }])
+        .select()
+        .single()
+      
+      if (createError) throw createError
+
+      if (newConv) {
+        await supabase.from('conversation_participants').insert(
+          validParticipants.map(pid => ({ conversation_id: newConv.id, user_id: pid }))
+        )
+        return newConv
+      }
+    } catch (err) {
+      console.error('Error in getOrCreateConversation:', err)
     }
     return null
   }
@@ -256,36 +306,6 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     }
   }
 
-  // Audio Player Component
-  const AudioPlayer = ({ path }) => {
-    const [playing, setPlaying] = useState(false)
-    const audioRef = useRef(null)
-    const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/chat_audios/${path}`
-
-    return (
-      <div className="flex items-center gap-3 bg-black/20 rounded-xl p-2 min-w-[200px]">
-        <button 
-          onClick={() => {
-            if (playing) audioRef.current.pause()
-            else audioRef.current.play()
-            setPlaying(!playing)
-          }}
-          className="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center text-black"
-        >
-          {playing ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
-        </button>
-        <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
-          <div className={`h-full bg-violet-500 ${playing ? 'animate-progress' : ''}`} style={{ width: '0%' }}></div>
-        </div>
-        <audio 
-          ref={audioRef} 
-          src={url} 
-          onEnded={() => setPlaying(false)} 
-          className="hidden" 
-        />
-      </div>
-    )
-  }
 
   const handleTabSwitch = (tab) => {
     setActiveTab(tab)
@@ -363,13 +383,13 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
 
           {/* Area de Mensajes */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black/40">
-            {messages.length === 0 ? (
+            {(messages || []).length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
                 <Bot size={48} className="text-zinc-800 mb-4" />
                 <p className="text-sm text-zinc-500">No hay mensajes aún.<br/>Inicia la conversación.</p>
               </div>
             ) : (
-              messages.map((msg) => {
+              (messages || []).map((msg) => {
                 const isMe = msg.sender_id === userId
                 return (
                   <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2`}>
