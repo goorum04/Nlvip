@@ -391,30 +391,26 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     setLoading(true)
 
     try {
-      // Crear usuario en Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newTrainerEmail,
-        password: newTrainerPassword,
-        email_confirm: true,
-        user_metadata: {
+      // Obtener sesión actual para verificar admin
+      const { data: { session } } = await supabase.auth.getSession()
+
+      // Llamar al endpoint seguro
+      const response = await fetch('/api/create-trainer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newTrainerEmail,
+          password: newTrainerPassword,
           name: newTrainerName,
-          role: 'trainer'
-        }
+          adminToken: session?.access_token
+        })
       })
 
-      if (authError) throw authError
+      const result = await response.json()
 
-      // Crear perfil
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([{
-          id: authData.user.id,
-          email: newTrainerEmail,
-          name: newTrainerName,
-          role: 'trainer'
-        }])
-
-      if (profileError) throw profileError
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al crear entrenador')
+      }
 
       toast({
         title: '¡Entrenador creado!',
