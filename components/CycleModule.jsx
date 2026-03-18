@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -227,9 +227,26 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
   }
 
   if (!cycleData) {
-    // Compact variant - no mostrar nada si no hay datos
+    // Compact variant - mostrar recuadro de activación
     if (variant === 'compact') {
-      return null
+      return (
+        <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-pink-500/20 rounded-3xl overflow-hidden cursor-pointer hover:border-pink-500/40 transition-all group" onClick={() => setShowConfig(true)}>
+          <div className="bg-gradient-to-r from-pink-500/10 to-violet-500/10 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-pink-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Heart className="w-5 h-5 text-pink-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-white/60 uppercase tracking-wider font-medium">Bienestar</p>
+                  <h3 className="text-sm font-bold text-white">Configura tu ciclo</h3>
+                </div>
+              </div>
+              <Sparkles className="w-5 h-5 text-pink-400 animate-pulse" />
+            </div>
+          </div>
+        </Card>
+      )
     }
 
     // Full variant - mostrar劝 activate card
