@@ -12,6 +12,8 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { WorkoutViewer } from './WorkoutBuilder'
+import { CycleModule } from './CycleModule'
+import { PregnancyMode, PostpartumMode, LactationTracker } from './LifeStageModules'
 
 export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRefresh }) {
   const [loading, setLoading] = useState(true)
@@ -170,7 +172,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
           <div className="space-y-6 py-4">
             {/* Bienestar Femenino (Solo si es mujer) */}
             {memberData?.sex === 'female' && (
-              <Card className="bg-gradient-to-br from-pink-500/10 to-violet-500/5 border-pink-500/20 rounded-2xl">
+              <Card className="bg-gradient-to-br from-pink-500/10 to-violet-500/5 border-pink-500/20 rounded-2xl overflow-hidden">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-white text-base flex items-center gap-2">
                     <Heart className="w-5 h-5 text-pink-400" />
@@ -188,29 +190,21 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                     </span>
                   </div>
 
-                  {memberData.life_stage === 'pregnant' && memberData.due_date && (
-                    <div className="p-3 bg-black/30 rounded-xl">
-                      <p className="text-xs text-gray-500">Fecha probable de parto:</p>
-                      <p className="text-sm text-white font-semibold">{new Date(memberData.due_date).toLocaleDateString()}</p>
+                  {(!memberData?.life_stage || memberData.life_stage === 'cycle') && (
+                    <CycleModule user={{ id: member.id }} profile={memberData} variant="compact" onProfileUpdate={loadMemberData} />
+                  )}
+                  {memberData?.life_stage === 'pregnant' && (
+                    <PregnancyMode userId={member.id} profile={memberData} onUpdate={loadMemberData} />
+                  )}
+                  {memberData?.life_stage === 'postpartum' && (
+                    <PostpartumMode userId={member.id} profile={memberData} onUpdate={loadMemberData} />
+                  )}
+                  {memberData?.life_stage === 'lactating' && (
+                    <div className="space-y-4">
+                      <LactationTracker userId={member.id} />
+                      <PostpartumMode userId={member.id} profile={memberData} onUpdate={loadMemberData} />
                     </div>
                   )}
-
-                  {memberData.life_stage === 'cycle' && memberData.cycle_enabled && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="p-2 bg-black/30 rounded-lg">
-                        <p className="text-[10px] text-gray-500 font-bold uppercase">Ciclo</p>
-                        <p className="text-sm text-white">{memberData.cycle_length_days} días</p>
-                      </div>
-                      <div className="p-2 bg-black/30 rounded-lg">
-                        <p className="text-[10px] text-gray-500 font-bold uppercase">Periodo</p>
-                        <p className="text-sm text-white">{memberData.period_length_days} días</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <Button variant="outline" size="sm" className="w-full border-pink-500/30 text-pink-300 hover:bg-pink-500/10 rounded-xl text-xs">
-                    Ver historial de síntomas
-                  </Button>
                 </CardContent>
               </Card>
             )}

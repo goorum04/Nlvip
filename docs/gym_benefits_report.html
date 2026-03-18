@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma Fitness Premium - Reporte de Beneficios y Funcionalidades</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8B5CF6; /* Violet */
+            --secondary: #06B6D4; /* Cyan */
+            --bg: #0B0B0B;
+            --card-bg: #151515;
+            --text: #F5F5F5;
+            --text-dim: #A0A0A0;
+            --blue-gradient: linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%);
+            --dark-gradient: linear-gradient(180deg, #151515 0%, #0B0B0B 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Cover Page */
+        .cover {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border-bottom: 2px solid var(--secondary);
+            page-break-after: always;
+        }
+
+        .cover h1 {
+            font-size: 4rem;
+            margin-bottom: 10px;
+            background: var(--blue-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .cover p {
+            font-size: 1.2rem;
+            color: var(--secondary);
+            letter-spacing: 4px;
+        }
+
+        .report-info {
+            margin-top: 60px;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        /* Content Sections */
+        section {
+            padding: 60px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section-title {
+            font-size: 2rem;
+            color: var(--secondary);
+            margin-bottom: 30px;
+            border-left: 4px solid var(--secondary);
+            padding-left: 20px;
+        }
+
+        .feature-item {
+            margin-bottom: 40px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: border-color 0.3s ease;
+        }
+
+        .feature-item:hover {
+            border-color: rgba(6, 182, 212, 0.2);
+        }
+
+        .feature-item h3 {
+            color: var(--secondary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .feature-item h3 span {
+            font-size: 1.5rem;
+        }
+
+        .benefit-card {
+            background: var(--blue-gradient);
+            color: #000;
+            padding: 40px;
+            border-radius: 30px;
+            margin: 40px 0;
+        }
+
+        .benefit-card h2 {
+            color: #000;
+            margin-bottom: 20px;
+        }
+
+        .benefit-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .benefit-item h4 {
+            font-weight: 800;
+        }
+
+        /* Women's Wellness - Highlight Section */
+        .highlight-card {
+            background: linear-gradient(135deg, #FF69B4 0%, #FA8072 100%);
+            color: #fff;
+            padding: 30px;
+            border-radius: 20px;
+            margin-top: 20px;
+        }
+
+        /* Customize Section */
+        .custom-badge {
+            display: inline-block;
+            background: #2a2a2a;
+            color: #61dafb;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        /* Print optimization */
+        @media print {
+            body { background: white; color: black; }
+            .container { max-width: 100%; padding: 0; }
+            section { page-break-inside: avoid; border-bottom: 1px solid #eee; }
+            .cover { height: 100vh; border-bottom: 5px solid #06B6D4; }
+            .feature-item, .benefit-card, .highlight-card { 
+                break-inside: avoid; 
+                border: 1px solid #ccc !important;
+                background: white !important;
+                color: black !important;
+            }
+            .section-title { color: #0891B2 !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- COVER PAGE -->
+        <div class="cover">
+            <!-- Inserta aquí tu propia imagen o logotipo cuando lo desees -->
+            <h1>TU MARCA AQUÍ</h1>
+            <p>Ecosistema Fitness Totalmente Personalizable</p>
+            <div class="report-info">
+                <p>ANÁLISIS DE NEGOCIO: FUNCIONALIDADES ESPECIALIZADAS Y GESTIÓN VIP</p>
+                <p>ESTÉTICA Y MARCA 100% ADAPTABLES A TU IDENTIDAD VISUAL</p>
+            </div>
+        </div>
+
+        <!-- ANÁLISIS DEL APP -->
+        <section>
+            <h2 class="section-title">Tu Identidad, Tu App</h2>
+            <div class="feature-item">
+                <div class="custom-badge">100% MARCA BLANCA</div>
+                <p>
+                    A diferencia de otras soluciones cerradas, esta plataforma destaca por su flexibilidad. La aplicación está diseñada para ser <strong>completamente adaptable</strong> a la imagen corporativa, el logo y los colores de cualquier gimnasio o entrenador profesional (White-label ready).
+                </p>
+            </div>
+        </section>
+
+        <!-- FUNCIONALIDADES PARA MUJERES (BIENESTAR FEMENINO) -->
+        <section>
+            <h2 class="section-title">Diferencial Único: Bienestar Femenino</h2>
+            <p style="margin-bottom: 30px;">
+                Esta plataforma rompe el estándar con un módulo avanzado dedicado exclusivamente a la fisiología femenina, proporcionando un valor incalculable para entrenamientos de precisión.
+            </p>
+
+            <div class="highlight-card">
+                <h3 style="color: white; margin-bottom: 10px;">🌸 Sincronización del Ciclo Menstrual</h3>
+                <p>El sistema permite a las socias monitorizar sus fases (Menstrual, Folicular, Ovulatoria, Lútea) para optimizar su rendimiento.</p>
+            </div>
+
+            <div class="feature-item">
+                <h3><span>🏃‍♀️</span> Ajustes de Intensidad Deportiva</h3>
+                <p>Basado en la fase actual del ciclo, el app recomienda el tipo de esfuerzo ideal: desde fuerza máxima en fase folicular hasta entrenamiento regenerativo durante la menstruación.</p>
+            </div>
+
+            <div class="feature-item">
+                <h3><span>🍏</span> Nutrición y Macros Dinámicos</h3>
+                <p>El app ajusta automáticamente las recomendaciones de calorías y macros según las necesidades metabólicas de cada fase, compensando variables como la fatiga o el gasto calórico basal fluctuante.</p>
+            </div>
+
+            <div class="feature-item">
+                <h3><span>⚡</span> Monitorización de Energía</h3>
+                <p>Visualización del estado energético estimado ayudando a la socia y al entrenador a prevenir el sobreentrenamiento y las lesiones.</p>
+            </div>
+        </section>
+
+        <!-- BENEFICIOS PARA EL GIMNASIO / ENTRENADOR -->
+        <section class="benefit-card">
+            <h2>Beneficios para su Negocio</h2>
+            <div class="benefit-grid">
+                <div class="benefit-item">
+                    <h4>💎 Exclusividad Incomparable</h4>
+                    <p>Ofrezca un servicio de salud integral que incluye salud hormonal, algo que el 90% de los gimnasios tradicionales ignoran.</p>
+                </div>
+                <div class="benefit-item">
+                    <h4>🤝 Autoridad y Confianza</h4>
+                    <p>Un entrenador que entiende y ajusta la rutina basándose en datos fisiológicos reales gana una lealtad absoluta del cliente.</p>
+                </div>
+                <div class="benefit-item">
+                    <h4>🤖 Automatización IA</h4>
+                    <p>Delegue la gestión operativa (dietas, rutinas, avisos) en el Asistente IA, permitiéndole escalar su negocio sin perder calidad.</p>
+                </div>
+                <div class="benefit-item">
+                    <h4>📱 App Nativa (PWA)</h4>
+                    <p>Su marca en el bolsillo del cliente sin fricción, con notificaciones y acceso directo para una retención total.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FUNCIONALIDADES CENTRALES -->
+        <section>
+            <h2 class="section-title">Ecosistema Completo</h2>
+            <div class="feature-item">
+                <h3><span>🤖</span> Asistente IA del Administrador</h3>
+                <p>Control por voz/texto para: Buscar socios, calcular planes, crear códigos de acceso y moderar la comunidad instantáneamente.</p>
+            </div>
+            <div class="feature-item">
+                <h3><span>🏆</span> Gamificación y Retos</h3>
+                <p>Sistema de medallas y desafíos mensuales (workouts, pasos, etc.) que transforman el entrenamiento en una experiencia adictiva.</p>
+            </div>
+            <div class="feature-item">
+                <h3><span>📈</span> Analíticas de Progreso</h3>
+                <p>Gráficas avanzadas de evolución física, registro de medidas antropométricas y galería de fotos privada.</p>
+            </div>
+        </section>
+
+        <section style="text-align: center; border-bottom: none;">
+            <p style="font-size: 1.2rem; background: var(--blue-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">
+                TU MARCA, TUS COLORES, TU ÉXITO
+            </p>
+        </section>
+
+    </div>
+
+    <div style="text-align: center; padding: 40px; font-size: 0.7rem; color: #444;">
+        Este documento es un reporte actualizado de capacidades técnicas y beneficios corporativos. 2025 ®
+    </div>
+
+</body>
+</html>

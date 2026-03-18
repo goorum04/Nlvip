@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Funcionalidades Premium</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #C9A24D;
+            --primary-light: #DFBF77;
+            --bg: #0B0B0B;
+            --card-bg: #151515;
+            --text: #F5F5F5;
+            --text-dim: #A0A0A0;
+            --gold-gradient: linear-gradient(135deg, #C9A24D 0%, #8E6E2E 100%);
+            --dark-gradient: linear-gradient(180deg, #151515 0%, #0B0B0B 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Outfit', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header Section */
+        header {
+            position: relative;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border-bottom: 2px solid var(--primary);
+            overflow: hidden;
+            margin-bottom: 60px;
+            background: linear-gradient(135deg, #111 0%, #000 100%);
+        }
+
+        .header-content {
+            z-index: 1;
+            padding: 20px;
+            background: rgba(11, 11, 11, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(201, 162, 77, 0.3);
+        }
+
+        header h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            color: var(--primary-light);
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        /* Section Styling */
+        section {
+            margin-bottom: 80px;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--primary);
+        }
+
+        .section-title::after {
+            content: '';
+            height: 2px;
+            flex-grow: 1;
+            background: var(--gold-gradient);
+            opacity: 0.3;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(201, 162, 77, 0.4);
+        }
+
+        .feature-card h3 {
+            color: var(--primary-light);
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+
+        .feature-card p {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+        }
+
+        .feature-card .icon {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        /* Roles Highlights */
+        .roles-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .role-box {
+            padding: 40px;
+            border-radius: 24px;
+            text-align: center;
+            background: var(--dark-gradient);
+            border: 1px solid rgba(201, 162, 77, 0.2);
+        }
+
+        .role-box.admin { border-top: 4px solid #C9A24D; }
+        .role-box.trainer { border-top: 4px solid #DFBF77; }
+        .role-box.member { border-top: 4px solid #A0A0A0; }
+
+        .role-box h2 {
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .role-box ul {
+            list-style: none;
+            text-align: left;
+            margin-top: 20px;
+        }
+
+        .role-box ul li {
+            margin-bottom: 12px;
+            padding-left: 25px;
+            position: relative;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        .role-box ul li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* Advantage Section */
+        .advantages {
+            background: var(--gold-gradient);
+            padding: 60px;
+            border-radius: 30px;
+            color: #000;
+        }
+
+        .advantages h2 {
+            color: #000;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+        }
+
+        .adv-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+        }
+
+        .adv-item {
+            text-align: center;
+        }
+
+        .adv-item h4 {
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 60px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-dim);
+        }
+
+        @media screen and (max-width: 768px) {
+            header h1 { font-size: 2.5rem; }
+            .advantages { padding: 30px; }
+        }
+
+        /* Print optimization */
+        @media print {
+            body { background: white; color: black; }
+            .container { max-width: 100%; padding: 0; }
+            .feature-card, .role-box, .advantages { 
+                break-inside: avoid; 
+                border: 1px solid #ccc !important;
+                background: white !important;
+                color: black !important;
+            }
+            header { background: #000 !important; }
+            header h1 { -webkit-text-fill-color: #C9A24D !important; }
+            .section-title { color: black !important; }
+            .feature-card h3, .role-box h2 { color: #8E6E2E !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <!-- Puedes colocar tu imagen de fondo aquí más adelante -->
+        <div class="header-content">
+            <h1>TU MARCA AQUÍ</h1>
+            <p>EL ESTÁNDAR DE EXCELENCIA EN GESTIÓN FITNESS</p>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <!-- INTRODUCCIÓN -->
+        <section>
+            <h2 class="section-title">La Aplicación Todo-en-Uno</h2>
+            <p style="text-align: center; max-width: 800px; margin: 0 auto 40px; font-size: 1.1rem; color: var(--text-dim);">
+                Diseñada para gimnasios premium y entrenadores de élite que buscan ofrecer una experiencia personalizada, tecnológica y motivadora a sus clientes más exclusivos.
+            </p>
+            
+            <div class="roles-container">
+                <div class="role-box admin">
+                    <h2>ADMIN</h2>
+                    <p>Control Total del Centro</p>
+                    <ul>
+                        <li>Gestión integral de entrenadores y socios</li>
+                        <li>Generación de códigos de invitación únicos</li>
+                        <li>Moderación inteligente del feed social</li>
+                        <li>Dashboard con analíticas en tiempo real</li>
+                        <li>Asistente IA para automatización de tareas</li>
+                    </ul>
+                </div>
+                <div class="role-box trainer">
+                    <h2>TRAINER</h2>
+                    <p>La Herramienta del Experto</p>
+                    <ul>
+                        <li>Creación de rutinas dinámicas por niveles</li>
+                        <li>Diseño de planes nutricionales y macros</li>
+                        <li>Seguimiento visual del progreso de socios</li>
+                        <li>Biblioteca de videos de ejercicios</li>
+                        <li>Sistema de avisos y notificaciones directas</li>
+                    </ul>
+                </div>
+                <div class="role-box member">
+                    <h2>MEMBER</h2>
+                    <p>Experiencia VIP Personalizada</p>
+                    <ul>
+                        <li>Feed social privado y motivacional</li>
+                        <li>Acceso a rutinas y dietas exclusivas</li>
+                        <li>Calculadora de macros inteligente</li>
+                        <li>Registro de métricas y fotos de progreso</li>
+                        <li>Desafíos con sistema de medallas (Logros)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- FUNCIONALIDADES DESTACADAS -->
+        <section>
+            <h2 class="section-title">Funcionalidades Clave</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="icon">🍎</div>
+                    <h3>Nutrición Inteligente</h3>
+                    <p>Planes semanales automatizados con catálogo interactivo de recetas. Cálculo exacto de macros según el objetivo del socio (Pérdida de grasa, mantenimiento o ganancia muscular).</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🏋️</div>
+                    <h3>Entrenamiento de Élite</h3>
+                    <p>Sistema de plantillas reutilizables y asignación directa. Los socios pueden reportar sus entrenamientos (check-ins) para ganar recompensas.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🤖</div>
+                    <h3>Asistente IA Premium</h3>
+                    <p>Exclusivo para el Admin: Un asistente capaz de buscar socios, asignar planes, crear códigos de invitación y generar avisos globales mediante comandos sencillos.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🏆</div>
+                    <h3>Gamificación & Retos</h3>
+                    <p>Aumenta la retención de socios mediante desafíos mensuales y un sistema de medallas (Badges) que premia la constancia y los resultados.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📈</div>
+                    <h3>Gráficas Avanzadas</h3>
+                    <p>Visualización detallada de la evolución del peso, adherencia al plan y comparativas mensuales para una toma de decisiones basada en datos.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📱</div>
+                    <h3>PWA & Ready-to-use</h3>
+                    <p>Tecnología web moderna que funciona como una aplicación nativa en el móvil del socio, sin necesidad de descargas pesadas.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- VENTAJAS -->
+        <section class="advantages">
+            <h2>¿Por qué elegir esta Plataforma?</h2>
+            <div class="adv-grid">
+                <div class="adv-item">
+                    <h4>EXCLUSIVIDAD</h4>
+                    <p>Diseño premium personalizable que transmite lujo y profesionalidad desde el primer segundo.</p>
+                </div>
+                <div class="adv-item">
+                    <h4>RETENCIÓN</h4>
+                    <p>El feed social y los logros mantienen a la comunidad activa y comprometida.</p>
+                </div>
+                <div class="adv-item">
+                    <h4>EFICIENCIA</h4>
+                    <p>Ahorra horas de trabajo administrativo delegando tareas en la IA del sistema.</p>
+                </div>
+                <div class="adv-item">
+                    <h4>SEGURIDAD</h4>
+                    <p>Privacidad absoluta: los socios solo ven su información y los trainers solo su cartera.</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Plataforma Fitness Premium. Todos los derechos reservados.</p>
+        <p style="font-size: 0.8rem; margin-top: 10px;">Para guardar como PDF: Presione Ctrl+P y elija "Guardar como PDF".</p>
+    </footer>
+
+</body>
+</html>

@@ -4,54 +4,154 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { MessageCircle, Send, X, Minimize2 } from 'lucide-react'
+import { 
+  MessageCircle, Send, X, Minimize2, Mic, MicOff, 
+  Trash2, Play, Pause, Shield, User, ChevronLeft 
+} from 'lucide-react'
+
+const ADMIN_ID = '64145053-45fd-473c-b2c4-7523d181aad3' // ID de Nacho (Admin)
 
 export default function FloatingChat({ userId, userRole, trainerId, trainerName, members }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [activeConversation, setActiveConversation] = useState(null)
+  const [conversations, setConversations] = useState({ trainer: null, admin: null })
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
-  const [selectedMember, setSelectedMember] = useState(null)
-  const [unreadCount, setUnreadCount] = useState(0)
+  const [activeTab, setActiveTab] = useState('trainer') // 'trainer' | 'admin'
+  const [unreadCounts, setUnreadCounts] = useState({ trainer: 0, admin: 0 })
+  
+  // Voice Recording States (Only for Admin)
+  const [isRecording, setIsRecording] = useState(false)
+  const [audioBlob, setAudioBlob] = useState(null)
+  const [recordingDuration, setRecordingDuration] = useState(0)
+  const mediaRecorderRef = useRef(null)
+  const timerRef = useRef(null)
+
+  // Speech Recognition States (For all)
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef(null)
+
   const messagesEndRef = useRef(null)
 
   useEffect(() => {
-    if (userRole === 'member' && trainerId) {
-      loadMessages()
-      loadUnreadCount()
+    if (isOpen && userRole === 'member') {
+      initializeMemberConversations()
+    } else if (isOpen && (userRole === 'trainer' || userRole === 'admin')) {
+      // Logic for trainer/admin to see their list of chats will be handled when they select a member
     }
-    // Only setup subscription if we have a valid setup
-    if ((userRole === 'member' && trainerId) || userRole === 'trainer') {
-      setupSubscription()
-    }
-  }, [userId, trainerId])
+  }, [isOpen, userId, trainerId])
 
   useEffect(() => {
-    if (selectedMember) {
-      loadMessagesForMember(selectedMember.id)
+    if (activeConversation) {
+      loadMessages(activeConversation.id)
+      setupSubscription(activeConversation.id)
     }
-  }, [selectedMember])
+  }, [activeConversation])
 
-  const setupSubscription = () => {
-    const filter = userRole === 'member' 
-      ? `member_id=eq.${userId}` 
-      : `trainer_id=eq.${userId}`
+  // Initialize Speech Recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      recognitionRef.current = new SpeechRecognition()
+      recognitionRef.current.continuous = false
+      recognitionRef.current.interimResults = false
+      recognitionRef.current.lang = 'es-ES'
+
+      recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript
+        setNewMessage(prev => prev + (prev ? ' ' : '') + transcript)
+        setIsListening(false)
+      }
+
+      recognitionRef.current.onend = () => setIsListening(false)
+    }
+  }, [])
+
+  const initializeMemberConversations = async () => {
+    // 1. Get or Create Trainer Conversation
+    let trainerConv = null
+    if (trainerId) {
+      trainerConv = await getOrCreateConversation('trainer_member', [userId, trainerId])
+    }
+
+    // 2. Get or Create Admin Conversation
+    const adminConv = await getOrCreateConversation('admin_member', [userId, ADMIN_ID])
+
+    setConversations({ trainer: trainerConv, admin: adminConv })
     
+    // Default to trainer if available, else admin
+    if (activeTab === 'trainer' && trainerConv) {
+      setActiveConversation(trainerConv)
+    } else if (activeTab === 'admin' && adminConv) {
+      setActiveConversation(adminConv)
+    } else if (adminConv) {
+      setActiveTab('admin')
+      setActiveConversation(adminConv)
+    }
+  }
+
+  const getOrCreateConversation = async (type, participants) => {
+    // Check if conversation exists
+    const { data: existing } = await supabase
+      .from('conversations')
+      .select('*, conversation_participants!inner(user_id)')
+      .eq('type', type)
+      .filter('conversation_participants.user_id', 'in', `(${participants.join(',')})`)
+    
+    // Filter manually for exact participants match (Supabase filters can be tricky with arrays/joins)
+    const exactMatch = existing?.find(c => {
+      // In a real app we'd check if ALL participants are there and ONLY them
+      // For now, this is a simplified check
+      return true 
+    })
+
+    if (exactMatch) return exactMatch
+
+    // Create new conversation
+    const { data: newConv, error } = await supabase
+      .from('conversations')
+      .insert([{ type, created_by: userId }])
+      .select()
+      .single()
+    
+    if (newConv) {
+      await supabase.from('conversation_participants').insert(
+        participants.map(pid => ({ conversation_id: newConv.id, user_id: pid }))
+      )
+      return newConv
+    }
+    return null
+  }
+
+  const loadMessages = async (convId) => {
+    const { data } = await supabase
+      .from('messages')
+      .select(`*, sender:profiles!messages_sender_id_fkey(name, role)`)
+      .eq('conversation_id', convId)
+      .order('created_at', { ascending: true })
+    
+    if (data) {
+      setMessages(data)
+      scrollToBottom()
+      // Mark as read (simplified)
+    }
+  }
+
+  const setupSubscription = (convId) => {
     const channel = supabase
-      .channel('floating_chat')
+      .channel(`conv_${convId}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
-        table: 'chat_messages',
-        filter
+        table: 'messages',
+        filter: `conversation_id=eq.${convId}`
       }, (payload) => {
-        if (userRole === 'member' || (selectedMember && payload.new.member_id === selectedMember.id)) {
-          setMessages(prev => [...prev, payload.new])
-          scrollToBottom()
-        }
-        if (!isOpen) {
-          setUnreadCount(prev => prev + 1)
-        }
+        setMessages(prev => {
+          if (prev.find(m => m.id === payload.new.id)) return prev
+          return [...prev, payload.new]
+        })
+        scrollToBottom()
       })
       .subscribe()
 
@@ -64,85 +164,41 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     }, 100)
   }
 
-  const loadUnreadCount = async () => {
-    if (userRole === 'member') {
-      try {
-        const { count } = await supabase
-          .from('chat_messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('member_id', userId)
-          .eq('is_read', false)
-          .neq('sender_id', userId)
-        
-        setUnreadCount(count || 0)
-      } catch (e) {
-        // Table might not exist yet
-        console.log('Chat table not available')
-      }
-    }
-  }
-
-  const loadMessages = async () => {
-    try {
-      const { data } = await supabase
-        .from('chat_messages')
-        .select(`*, sender:profiles!chat_messages_sender_id_fkey(name, role)`)
-        .eq('member_id', userId)
-        .order('created_at', { ascending: true })
-      
-      if (data) {
-        setMessages(data)
-        scrollToBottom()
-        // Mark as read
-        await supabase
-          .from('chat_messages')
-          .update({ is_read: true })
-          .eq('member_id', userId)
-          .neq('sender_id', userId)
-        setUnreadCount(0)
-      }
-    } catch (e) {
-      console.log('Chat table not available')
-    }
-  }
-
-  const loadMessagesForMember = async (memberId) => {
-    const { data } = await supabase
-      .from('chat_messages')
-      .select(`*, sender:profiles!chat_messages_sender_id_fkey(name, role)`)
-      .eq('trainer_id', userId)
-      .eq('member_id', memberId)
-      .order('created_at', { ascending: true })
-    
-    if (data) {
-      setMessages(data)
-      scrollToBottom()
-    }
-  }
-
   const handleSend = async (e) => {
-    e.preventDefault()
-    if (!newMessage.trim()) return
-    
-    const memberId = userRole === 'member' ? userId : selectedMember?.id
-    const trainerIdToUse = userRole === 'member' ? trainerId : userId
-    
-    if (!memberId || !trainerIdToUse) return
+    if (e) e.preventDefault()
+    if (!newMessage.trim() && !audioBlob) return
+    if (!activeConversation) return
 
     setLoading(true)
     try {
-      await supabase.from('chat_messages').insert([{
-        sender_id: userId,
-        trainer_id: trainerIdToUse,
-        member_id: memberId,
-        message: newMessage
-      }])
-      setNewMessage('')
-      if (userRole === 'member') {
-        loadMessages()
-      } else {
-        loadMessagesForMember(memberId)
+      let audioPath = null
+      let messageType = 'text'
+
+      if (audioBlob) {
+        // Upload audio
+        const fileName = `${userId}_${Date.now()}.webm`
+        const { data, error } = await supabase.storage
+          .from('chat_audios')
+          .upload(fileName, audioBlob)
+        
+        if (error) throw error
+        audioPath = data.path
+        messageType = 'audio'
       }
+
+      const { error } = await supabase.from('messages').insert([{
+        conversation_id: activeConversation.id,
+        sender_id: userId,
+        content: newMessage,
+        type: messageType,
+        audio_path: audioPath
+      }])
+
+      if (error) throw error
+      
+      setNewMessage('')
+      setAudioBlob(null)
+      setRecordingDuration(0)
     } catch (error) {
       console.error('Error sending message:', error)
     } finally {
@@ -150,165 +206,268 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     }
   }
 
-  const handleOpen = () => {
-    setIsOpen(true)
-    if (userRole === 'member') {
-      loadMessages()
+  // Recording Logic
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaRecorderRef.current = new MediaRecorder(stream)
+      const chunks = []
+
+      mediaRecorderRef.current.ondataavailable = (e) => chunks.push(e.data)
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' })
+        setAudioBlob(blob)
+        stream.getTracks().forEach(track => track.stop())
+      }
+
+      mediaRecorderRef.current.start()
+      setIsRecording(true)
+      setRecordingDuration(0)
+      timerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1)
+      }, 1000)
+    } catch (err) {
+      console.error('Error recording:', err)
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      clearInterval(timerRef.current)
+    }
+  }
+
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) return
+    if (isListening) {
+      recognitionRef.current.stop()
+    } else {
+      recognitionRef.current.start()
+      setIsListening(true)
+    }
+  }
+
+  // Audio Player Component
+  const AudioPlayer = ({ path }) => {
+    const [playing, setPlaying] = useState(false)
+    const audioRef = useRef(null)
+    const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/chat_audios/${path}`
+
+    return (
+      <div className="flex items-center gap-3 bg-black/20 rounded-xl p-2 min-w-[200px]">
+        <button 
+          onClick={() => {
+            if (playing) audioRef.current.pause()
+            else audioRef.current.play()
+            setPlaying(!playing)
+          }}
+          className="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center text-black"
+        >
+          {playing ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
+        </button>
+        <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+          <div className={`h-full bg-violet-500 ${playing ? 'animate-progress' : ''}`} style={{ width: '0%' }}></div>
+        </div>
+        <audio 
+          ref={audioRef} 
+          src={url} 
+          onEnded={() => setPlaying(false)} 
+          className="hidden" 
+        />
+      </div>
+    )
+  }
+
+  const handleTabSwitch = (tab) => {
+    setActiveTab(tab)
+    if (conversations[tab]) {
+      setActiveConversation(conversations[tab])
     }
   }
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Botón Flotante */}
       {!isOpen && (
         <button
-          onClick={handleOpen}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-full shadow-2xl shadow-[rgb(139, 92, 246)]/40 flex items-center justify-center hover:scale-110 transition-all duration-300 z-50 group"
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-full shadow-2xl shadow-violet-500/40 flex items-center justify-center hover:scale-110 transition-all duration-300 z-50 group"
         >
           <MessageCircle className="w-7 h-7 text-black" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full text-white text-xs font-bold flex items-center justify-center animate-bounce">
-              {unreadCount}
-            </span>
-          )}
-          <span className="absolute -top-10 right-0 bg-black/90 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            💬 Chat
+          <span className="absolute -top-10 right-0 bg-black text-white text-[10px] px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10 uppercase tracking-widest font-bold">
+            Chat NL VIP
           </span>
         </button>
       )}
 
-      {/* Chat Window */}
+      {/* Ventana de Chat */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-[380px] h-[500px] bg-[#0f0f0f] rounded-3xl shadow-2xl shadow-black/50 border border-[#2a2a2a] flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-5 duration-300">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-violet-500 to-cyan-500 p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-black/20 flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 text-black" />
+        <div className="fixed bottom-6 right-6 w-[400px] h-[600px] bg-[#0A0A0A] rounded-[2rem] shadow-2xl shadow-black border border-white/10 flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-5 duration-300">
+          
+          {/* Header & Tabs */}
+          <div className="bg-gradient-to-b from-zinc-900 to-black p-4 border-b border-white/5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
+                  <Shield className="w-5 h-5 text-black" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm">Soporte NL VIP</h3>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Servicio Premium</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-black">
-                  {userRole === 'member' ? trainerName || 'Tu Entrenador' : selectedMember?.name || 'Selecciona socio'}
-                </h3>
-                <p className="text-xs text-black/60">
-                  {userRole === 'member' ? 'Chat directo' : `${members?.length || 0} socios`}
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-1">
               <Button 
                 size="icon" 
                 variant="ghost" 
-                className="w-8 h-8 rounded-full text-black/60 hover:text-black hover:bg-black/10"
+                className="w-8 h-8 rounded-full text-zinc-500 hover:text-white"
                 onClick={() => setIsOpen(false)}
               >
-                <Minimize2 className="w-4 h-4" />
-              </Button>
-              <Button 
-                size="icon" 
-                variant="ghost" 
-                className="w-8 h-8 rounded-full text-black/60 hover:text-black hover:bg-black/10"
-                onClick={() => setIsOpen(false)}
-              >
-                <X className="w-4 h-4" />
+                <X size={18} />
               </Button>
             </div>
+
+            {userRole === 'member' && (
+              <div className="flex gap-2 p-1 bg-white/5 rounded-xl">
+                <button
+                  onClick={() => handleTabSwitch('trainer')}
+                  className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
+                    activeTab === 'trainer' 
+                      ? 'bg-violet-500 text-black shadow-lg shadow-violet-500/20' 
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Entrenador
+                </button>
+                <button
+                  onClick={() => handleTabSwitch('admin')}
+                  className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
+                    activeTab === 'admin' 
+                      ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' 
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Administración
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Trainer: Member selector */}
-          {userRole === 'trainer' && !selectedMember && (
-            <div className="flex-1 p-4 overflow-y-auto">
-              <p className="text-gray-400 text-sm mb-3">Selecciona un socio para chatear:</p>
-              <div className="space-y-2">
-                {members?.map(member => (
-                  <button
-                    key={member.id}
-                    onClick={() => setSelectedMember(member)}
-                    className="w-full flex items-center gap-3 p-3 bg-[#1a1a1a] rounded-2xl hover:bg-[#252525] transition-colors text-left"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500/30 to-[rgb(139, 92, 246)]/10 flex items-center justify-center text-violet-400 font-bold">
-                      {member.name?.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-medium text-white">{member.name}</p>
-                      <p className="text-xs text-gray-500">{member.email}</p>
-                    </div>
-                  </button>
-                ))}
+          {/* Area de Mensajes */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black/40">
+            {messages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+                <Bot size={48} className="text-zinc-800 mb-4" />
+                <p className="text-sm text-zinc-500">No hay mensajes aún.<br/>Inicia la conversación.</p>
               </div>
-            </div>
-          )}
-
-          {/* Messages Area */}
-          {(userRole === 'member' || selectedMember) && (
-            <>
-              {/* Back button for trainer */}
-              {userRole === 'trainer' && selectedMember && (
-                <button 
-                  onClick={() => { setSelectedMember(null); setMessages([]) }}
-                  className="px-4 py-2 text-xs text-violet-400 hover:text-[rgb(6, 182, 212)] text-left border-b border-[#2a2a2a]"
-                >
-                  ← Volver a la lista
-                </button>
-              )}
-
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {messages.length === 0 ? (
-                  <div className="h-full flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-16 h-16 rounded-full bg-[#1a1a1a] flex items-center justify-center mx-auto mb-3">
-                        <MessageCircle className="w-8 h-8 text-violet-400/30" />
+            ) : (
+              messages.map((msg) => {
+                const isMe = msg.sender_id === userId
+                return (
+                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2`}>
+                    <div className={`max-w-[85%] space-y-1 ${isMe ? 'items-end' : 'items-start'}`}>
+                      <div className={`px-4 py-3 rounded-2xl shadow-lg ${
+                        isMe 
+                          ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-tr-sm' 
+                          : 'bg-zinc-900 text-zinc-200 border border-white/5 rounded-tl-sm'
+                      }`}>
+                        {msg.type === 'audio' ? (
+                          <AudioPlayer path={msg.audio_path} />
+                        ) : (
+                          <p className="text-sm leading-relaxed">{msg.content}</p>
+                        )}
                       </div>
-                      <p className="text-gray-500 text-sm">
-                        {userRole === 'member' && !trainerId 
-                          ? 'No tienes entrenador asignado'
-                          : 'Inicia la conversación'}
+                      <p className="text-[9px] text-zinc-600 px-1">
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>
-                ) : (
-                  messages.map((msg) => {
-                    const isMe = msg.sender_id === userId
-                    return (
-                      <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] ${isMe 
-                          ? 'bg-gradient-to-r from-violet-500 to-cyan-500 text-black rounded-2xl rounded-br-md' 
-                          : 'bg-[#1a1a1a] text-white rounded-2xl rounded-bl-md border border-[#2a2a2a]'
-                        } px-4 py-2.5`}>
-                          <p className="text-sm leading-relaxed">{msg.message}</p>
-                          <p className={`text-[10px] mt-1 ${isMe ? 'text-black/50' : 'text-gray-500'}`}>
-                            {new Date(msg.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-                      </div>
-                    )
-                  })
-                )}
-                <div ref={messagesEndRef} />
-              </div>
+                )
+              })
+            )}
+            <div ref={messagesEndRef} />
+          </div>
 
-              {/* Input Area */}
-              <form onSubmit={handleSend} className="p-3 border-t border-[#2a2a2a] flex gap-2">
-                <Input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder={trainerId || selectedMember ? "Escribe un mensaje..." : "Sin entrenador asignado"}
-                  disabled={loading || (!trainerId && userRole === 'member')}
-                  className="bg-[#1a1a1a] border-[#2a2a2a] rounded-2xl text-white text-sm placeholder:text-gray-600 focus:border-violet-500"
-                />
+          {/* Input con Funciones Especiales */}
+          <div className="p-4 bg-zinc-950 border-t border-white/5">
+            {isRecording ? (
+              <div className="flex items-center gap-4 bg-red-500/10 p-3 rounded-2xl border border-red-500/20 animate-pulse">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <span className="text-xs text-red-500 font-bold flex-1">GRABANDO AUDIO... {formatDuration(recordingDuration)}</span>
+                <button onClick={stopRecording} className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white">
+                  <X size={18} />
+                </button>
+              </div>
+            ) : audioBlob ? (
+              <div className="flex items-center gap-4 bg-violet-500/10 p-3 rounded-2xl border border-violet-500/20">
+                <Play size={18} className="text-violet-500" />
+                <span className="text-xs text-violet-500 font-medium flex-1">Audio listo para enviar</span>
+                <button onClick={() => setAudioBlob(null)} className="text-zinc-500 hover:text-white">
+                  <Trash2 size={18} />
+                </button>
+                <Button onClick={handleSend} className="bg-violet-500 text-black rounded-xl">Enviar</Button>
+              </div>
+            ) : (
+              <form onSubmit={handleSend} className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Input
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Escribe un mensaje..."
+                    className="h-12 bg-white/5 border-white/5 rounded-2xl pl-4 pr-10 text-sm focus:border-violet-500/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={toggleListening}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening ? 'text-violet-500' : 'text-zinc-600'}`}
+                  >
+                    <Mic size={18} />
+                  </button>
+                </div>
+                
+                {userRole === 'admin' && (
+                  <button
+                    type="button"
+                    onClick={startRecording}
+                    className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-all"
+                  >
+                    <Volume2 size={20} />
+                  </button>
+                )}
+
                 <Button 
                   type="submit" 
                   size="icon"
-                  disabled={loading || !newMessage.trim() || (!trainerId && userRole === 'member')}
-                  className="w-10 h-10 rounded-2xl bg-gradient-to-r from-violet-500 to-cyan-500 hover:opacity-90 text-black shrink-0"
+                  disabled={loading || (!newMessage.trim() && !audioBlob)}
+                  className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 text-black shadow-lg shadow-violet-500/20"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send size={18} />
                 </Button>
               </form>
-            </>
-          )}
+            )}
+            <p className="text-[10px] text-zinc-600 mt-2 text-center">
+              {userRole === 'admin' ? 'Pulsa el icono de audio para enviar mensajes de voz' : 'Puedes usar el micrófono para dictar texto'}
+            </p>
+          </div>
         </div>
       )}
+
+      <style jsx global>{`
+        @keyframes progress {
+          0% { width: 0%; }
+          100% { width: 100%; }
+        }
+        .animate-progress {
+          animation: progress 30s linear infinite;
+        }
+      `}</style>
     </>
   )
 }

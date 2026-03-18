@@ -102,7 +102,7 @@ function ExecutionPlan({ plan, onConfirm, onCancel, isExecuting }) {
   )
 }
 
-export default function AdminAssistant({ userId }) {
+export default function AdminAssistant({ userId, voiceTrigger }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -120,6 +120,12 @@ export default function AdminAssistant({ userId }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    if (voiceTrigger && !isLoading) {
+      toggleListening()
+    }
+  }, [voiceTrigger])
 
   useEffect(() => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
@@ -259,6 +265,8 @@ export default function AdminAssistant({ userId }) {
     { icon: '🥗', text: 'Generar dieta', command: 'Genera una dieta para Said con objetivo pérdida de grasa' },
     { icon: '👟', text: 'Ver actividad', command: 'Ver actividad física del socio Said' }
   ]
+
+  const [voiceTrigger, setVoiceTrigger] = useState(0)
 
   return (
     <div className="h-[calc(100vh-180px)] flex flex-col">

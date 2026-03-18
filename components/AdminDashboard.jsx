@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
-import { Users, Key, Shield, LogOut, UserPlus, Code, Plus, Calculator, Send, Loader2, UtensilsCrossed, Bot, Dumbbell, Apple, Target, Trophy, Camera, Eye, TrendingUp, Settings, ChevronDown, Link, FileCheck, MessageSquare, Trash2 } from 'lucide-react'
+import { Users, Key, Shield, LogOut, UserPlus, Code, Plus, Calculator, Send, Loader2, UtensilsCrossed, Bot, Dumbbell, Apple, Target, Trophy, Camera, Eye, TrendingUp, Settings, ChevronDown, Link, FileCheck, MessageSquare, Trash2, Search, Flame, Clock, Edit2, Mic } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { RecipesManager } from './RecipesManager'
@@ -28,7 +28,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [members, setMembers] = useState([])
   const [feedPosts, setFeedPosts] = useState([])
   const [allProgress, setAllProgress] = useState([])
-  const [activeTab, setActiveTab] = useState('assistant')
+  const [activeTab, setActiveTab] = useState('members')
+  const [voiceTrigger, setVoiceTrigger] = useState(0)
   const [allAssignments, setAllAssignments] = useState([])
   const [trainingVideos, setTrainingVideos] = useState([])
   const [loading, setLoading] = useState(false)
@@ -76,6 +77,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [newDietCarbs, setNewDietCarbs] = useState('')
   const [newDietFat, setNewDietFat] = useState('')
   const [newDietContent, setNewDietContent] = useState('')
+  const [newDietMeals, setNewDietMeals] = useState([
+    { name: 'Desayuno', time: '08:00', calories: '', protein: '', carbs: '', fat: '', note: '' }
+  ])
 
   // Challenge form states
   const [challengeTitle, setChallengeTitle] = useState('')
@@ -184,23 +188,28 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     }
   }
 
-  // Create diet template
   const handleCreateDiet = async (e) => {
     e.preventDefault()
     setLoading(true)
     try {
+      // Generar contenido estructurado a partir de las comidas
+      const structuredContent = newDietMeals.map(m => (
+        `### ${m.name} (${m.time})\n🔥 ${m.calories}kcal | 🥩 ${m.protein}g P | 🍚 ${m.carbs}g C | 🥑 ${m.fat}g G\n${m.note}`
+      )).join('\n\n')
+
       const { error } = await supabase.from('diet_templates').insert([{
         trainer_id: user.id, 
         name: newDietName, 
-        calories: parseInt(newDietCalories),
-        protein_g: parseInt(newDietProtein), 
-        carbs_g: parseInt(newDietCarbs), 
-        fat_g: parseInt(newDietFat), 
-        content: newDietContent
+        calories: parseInt(newDietCalories) || 0,
+        protein_g: parseInt(newDietProtein) || 0, 
+        carbs_g: parseInt(newDietCarbs) || 0, 
+        fat_g: parseInt(newDietFat) || 0, 
+        content: structuredContent || newDietContent
       }])
       if (error) throw error
-      toast({ title: '¡Dieta creada!' })
+      toast({ title: '¡Dieta Pro creada!' })
       setNewDietName(''); setNewDietCalories(''); setNewDietProtein(''); setNewDietCarbs(''); setNewDietFat(''); setNewDietContent('')
+      setNewDietMeals([{ name: 'Desayuno', time: '08:00', calories: '', protein: '', carbs: '', fat: '', note: '' }])
       loadDietTemplates()
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -683,18 +692,34 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     <div className="min-h-screen bg-[#0B0B0B]">
       {/* Modern Admin Header */}
       <header className="bg-gradient-to-br from-black via-[#1a1a1a] to-black border-b border-violet-500/20 sticky top-0 z-50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 pt-12 pb-6">
+        <div className="container mx-auto px-4 pt-24 pb-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img 
-                src="/logo-nl-vip.jpg" 
-                alt="NL VIP TEAM" 
-                className="w-12 h-12 rounded-xl object-cover shadow-lg shadow-violet-500/30"
-              />
-              <div>
-                <h1 className="text-2xl font-bold text-violet-400">NL VIP TEAM</h1>
-                <p className="text-xs text-gray-400">Panel de Administrador</p>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4">
+                <img 
+                  src="/logo-nl-vip.jpg" 
+                  alt="NL VIP TEAM" 
+                  className="w-12 h-12 rounded-xl object-cover shadow-lg shadow-violet-500/30"
+                />
+                <div>
+                  <h1 className="text-2xl font-bold text-violet-400">NL VIP TEAM</h1>
+                  <p className="text-xs text-gray-400">Panel de Administrador</p>
+                </div>
               </div>
+
+              {/* Botón de Voz Global */}
+              <Button 
+                size="icon"
+                variant="outline"
+                onClick={() => {
+                  setActiveTab('assistant')
+                  setVoiceTrigger(Date.now())
+                }}
+                className="h-12 w-12 rounded-2xl border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 hover:scale-110 transition-all flex-shrink-0"
+                title="Hablar con el Asistente"
+              >
+                <Mic className="w-6 h-6" />
+              </Button>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right hidden md:block">
@@ -895,7 +920,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
           {/* Asistente IA */}
           <TabsContent value="assistant" className="space-y-4">
-            <AdminAssistant userId={user.id} />
+            <AdminAssistant userId={user.id} voiceTrigger={voiceTrigger} />
           </TabsContent>
 
           {/* Entrenadores */}
@@ -1426,18 +1451,99 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       </div>
                     ))}
                   </div>
-                  <div>
-                    <Label className="text-gray-400 text-sm">Plan de Comidas</Label>
-                    <Textarea 
-                      value={newDietContent} 
-                      onChange={(e) => setNewDietContent(e.target.value)} 
-                      placeholder="Desayuno:&#10;Almuerzo:&#10;Cena:..." 
-                      required 
-                      className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1 min-h-[150px]" 
-                    />
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-violet-400 font-bold uppercase tracking-wider text-xs">Estructura de Comidas (Horarios y Macros)</Label>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        className="bg-violet-500/10 border-violet-500/20 text-violet-400 h-8 rounded-lg"
+                        onClick={() => setNewDietMeals([...newDietMeals, { name: 'Nueva Comida', time: '12:00', calories: '', protein: '', carbs: '', fat: '', note: '' }])}
+                      >
+                        <Plus className="w-4 h-4 mr-2" /> Añadir Comida
+                      </Button>
+                    </div>
+
+                    <div className="grid gap-4">
+                      {newDietMeals.map((meal, idx) => (
+                        <div key={idx} className="p-4 bg-black/40 rounded-2xl border border-white/5 space-y-3 relative group">
+                          <button 
+                            type="button"
+                            onClick={() => setNewDietMeals(newDietMeals.filter((_, i) => i !== idx))}
+                            className="absolute top-2 right-2 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                          
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-[10px] text-gray-500 uppercase">Nombre</Label>
+                              <Input 
+                                value={meal.name} 
+                                onChange={(e) => {
+                                  const updated = [...newDietMeals]
+                                  updated[idx].name = e.target.value
+                                  setNewDietMeals(updated)
+                                }}
+                                className="h-9 bg-black border-white/5 rounded-xl text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] text-gray-500 uppercase">Horario</Label>
+                              <Input 
+                                type="time"
+                                value={meal.time} 
+                                onChange={(e) => {
+                                  const updated = [...newDietMeals]
+                                  updated[idx].time = e.target.value
+                                  setNewDietMeals(updated)
+                                }}
+                                className="h-9 bg-black border-white/5 rounded-xl text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-2">
+                            {[
+                              { label: 'Kcal', key: 'calories' },
+                              { label: 'P(g)', key: 'protein' },
+                              { label: 'C(g)', key: 'carbs' },
+                              { label: 'G(g)', key: 'fat' },
+                            ].map(macro => (
+                              <div key={macro.label} className="space-y-1">
+                                <Label className="text-[9px] text-gray-600 uppercase">{macro.label}</Label>
+                                <Input 
+                                  type="number"
+                                  value={meal[macro.key]} 
+                                  onChange={(e) => {
+                                    const updated = [...newDietMeals]
+                                    updated[idx][macro.key] = e.target.value
+                                    setNewDietMeals(updated)
+                                  }}
+                                  className="h-8 bg-black/50 border-white/5 rounded-lg text-[11px]"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <Input 
+                            placeholder="Notas o alimentos sugeridos..." 
+                            value={meal.note} 
+                            onChange={(e) => {
+                              const updated = [...newDietMeals]
+                              updated[idx].note = e.target.value
+                              setNewDietMeals(updated)
+                            }}
+                            className="h-9 bg-black/30 border-dashed border-white/5 rounded-xl text-xs italic"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-2xl py-6">
-                    <Apple className="w-5 h-5 mr-2" /> Crear Dieta
+
+                  <Button type="submit" disabled={loading} className="w-full h-14 bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-2xl shadow-xl shadow-violet-500/20">
+                    <Apple className="w-5 h-5 mr-2" /> Guardar Dieta Pro
                   </Button>
                 </form>
               </CardContent>

@@ -28,6 +28,8 @@ import { RecipesGallery } from './RecipesManager'
 import ActivityTracker from './ActivityTracker'
 import FoodTracker from './FoodTracker'
 import { AvatarBubble, ProfileModal } from './UserProfile'
+import { CycleModule } from './CycleModule'
+import { LifeStageSelector, PregnancyMode, PostpartumMode, LactationTracker } from './LifeStageModules'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
@@ -42,6 +44,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [myTrainer, setMyTrainer] = useState(null)
   const [storeProducts, setStoreProducts] = useState([])
   const [feedImageUrls, setFeedImageUrls] = useState({})
+  const [pageTheme, setPageTheme] = useState('default')
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const { toast } = useToast()
   const { getSignedUrl } = useSignedUrl()
 
@@ -386,14 +390,25 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     loadNotices()
   }
 
-  const isLikedByMe = (post) => post.feed_likes?.some(like => like.user_id === user.id)
+  const getThemeClasses = () => {
+    switch (pageTheme) {
+      case 'menstrual': return 'theme-menstrual'
+      case 'follicular': return 'theme-follicular'
+      case 'ovulation': return 'theme-ovulation'
+      case 'luteal': return 'theme-luteal'
+      case 'pregnant': return 'theme-pregnant'
+      case 'postpartum': return 'theme-postpartum'
+      case 'lactating': return 'theme-lactating'
+      default: return 'theme-default'
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a]">
+    <div className={`min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a] transition-colors duration-700 ${getThemeClasses()}`}>
       {/* HEADER */}
-      <header className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 via-transparent to-violet-500/10" />
-        <div className="absolute top-0 left-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+      <header className="relative overflow-hidden header-transition">
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 via-transparent to-violet-500/10 header-gradient" />
+        <div className="absolute top-0 left-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 header-glow" />
         
         <div className="relative container mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-8">
@@ -462,11 +477,18 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       />
 
       <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="activity" className="space-y-6">
+        <Tabs 
+          defaultValue="activity" 
+          className="space-y-6"
+          onValueChange={(val) => {
+            if (val !== 'bienestar') setPageTheme('default')
+          }}
+        >
           <div className="overflow-x-auto pb-2 -mx-4 px-4">
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
                 { value: 'activity', icon: Footprints, label: 'Actividad', premium: false },
+                profile?.sex === 'female' ? { value: 'bienestar', icon: Heart, label: 'Bienestar', premium: false } : null,
                 { value: 'feed', icon: Home, label: 'Feed', premium: true },
                 { value: 'challenges', icon: Target, label: 'Retos', premium: false },
                 { value: 'badges', icon: Trophy, label: 'Logros', premium: true },
@@ -597,6 +619,24 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           <TabsContent value="activity" className="space-y-4">
             <ActivityTracker userId={user.id} />
           </TabsContent>
+
+          {/* BIENESTAR TAB */}
+          {profile?.sex === 'female' && (
+            <TabsContent value="bienestar" className="space-y-4">
+              <LifeStageSelector userId={user.id} profile={profile} onUpdate={() => window.location.reload()} />
+              {(!profile?.life_stage || profile.life_stage === 'cycle') && (
+                <CycleModule user={user} profile={profile} variant="full" onProfileUpdate={() => window.location.reload()} onThemeChange={setPageTheme} />
+              )}
+              {profile?.life_stage === 'pregnant' && <PregnancyMode userId={user.id} profile={profile} onUpdate={() => window.location.reload()} onThemeChange={setPageTheme} />}
+              {profile?.life_stage === 'postpartum' && <PostpartumMode userId={user.id} profile={profile} onUpdate={() => window.location.reload()} onThemeChange={setPageTheme} />}
+              {profile?.life_stage === 'lactating' && (
+                <>
+                  <LactationTracker userId={user.id} onThemeChange={setPageTheme} />
+                  <PostpartumMode userId={user.id} profile={profile} onUpdate={() => window.location.reload()} onThemeChange={setPageTheme} />
+                </>
+              )}
+            </TabsContent>
+          )}
 
           {/* CHALLENGES TAB */}
           <TabsContent value="challenges" className="space-y-4">
