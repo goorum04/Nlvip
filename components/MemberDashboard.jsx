@@ -68,7 +68,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [showPhotoUploader, setShowPhotoUploader] = useState(false)
   const [postImage, setPostImage] = useState(null)
-  const [showProfileModal, setShowProfileModal] = useState(false)
 
   // Feed form
   const [newPostContent, setNewPostContent] = useState('')
@@ -405,22 +404,22 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
   return (
     <div className={`min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a] transition-colors duration-700 ${getThemeClasses()}`}>
-      {/* HEADER */}
-      <header className="relative overflow-hidden header-transition">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 via-transparent to-violet-500/10 header-gradient" />
-        <div className="absolute top-0 left-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 header-glow" />
+      {/* HEADER     <div className="min-h-screen bg-[#030303]">
+      {/* Navbar Estática */}
+      <header className="sticky top-0 z-50 bg-[#030303]/80 backdrop-blur-xl border-b border-white/5">
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-violet-500/5 header-gradient opacity-50" />
         
-        <div className="relative container mx-auto px-4 pt-24 pb-12">
-          <div className="flex items-center justify-between mb-8">
+        <div className="relative container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img 
                 src="/logo-nl-vip.jpg" 
                 alt="NL VIP TEAM" 
-                className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-violet-500/20"
+                className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-violet-500/20"
               />
               <div>
-                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500">NL VIP TEAM</h1>
-                <p className="text-xs text-gray-500">Premium Fitness</p>
+                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP TEAM</h1>
+                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Premium Fitness</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -434,7 +433,13 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               </Button>
             </div>
           </div>
+        </div>
+      </header>
 
+      {/* Hero / Welcome Section (Este sí hace scroll) */}
+      <div className="relative overflow-hidden pt-12 pb-8">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+        <div className="container mx-auto px-4">
           <div className="flex items-end gap-4">
             <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-3xl font-black text-black shadow-xl shadow-violet-500/30 overflow-hidden">
               {profile.avatar_url ? (
@@ -444,25 +449,25 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               )}
             </div>
             <div className="pb-1">
-              <p className="text-gray-400 text-sm">Bienvenido de vuelta,</p>
+              <p className="text-gray-400 text-sm font-medium">Bienvenido de vuelta,</p>
               <h2 className="text-3xl font-black text-white">{profile.name?.split(' ')[0]}</h2>
               <div className="flex items-center gap-2 mt-1">
                 {hasPremium ? (
                   <>
                     <Sparkles className="w-4 h-4 text-violet-500" />
-                    <span className="text-sm text-violet-500 font-semibold">Socio VIP</span>
+                    <span className="text-sm text-violet-500 font-bold uppercase tracking-wider">Socio VIP</span>
                   </>
                 ) : (
                   <>
                     <Gift className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-400 font-semibold">Cuenta Básica</span>
+                    <span className="text-sm text-gray-400 font-bold uppercase tracking-wider">Cuenta Básica</span>
                   </>
                 )}
               </div>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Profile Modal */}
       <ProfileModal

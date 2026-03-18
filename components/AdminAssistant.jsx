@@ -67,7 +67,9 @@ function ExecutionPlan({ plan, onConfirm, onCancel, isExecuting }) {
                 <p className="text-white font-medium">{action.description}</p>
                 {action.args && Object.keys(action.args).length > 0 && (
                   <p className="text-xs text-gray-500 mt-1 font-mono">
-                    {Object.entries(action.args).map(([k, v]) => `${k}: ${v}`).join(' • ')}
+                    {Object.entries(action.args)
+                      .filter(([k]) => !k.toLowerCase().includes('id'))
+                      .map(([k, v]) => `${k}: ${v}`).join(' • ')}
                   </p>
                 )}
               </div>
@@ -265,8 +267,6 @@ export default function AdminAssistant({ userId, voiceTrigger }) {
     { icon: '🥗', text: 'Generar dieta', command: 'Genera una dieta para Said con objetivo pérdida de grasa' },
     { icon: '👟', text: 'Ver actividad', command: 'Ver actividad física del socio Said' }
   ]
-
-  const [voiceTrigger, setVoiceTrigger] = useState(0)
 
   return (
     <div className="h-[calc(100vh-180px)] flex flex-col">
