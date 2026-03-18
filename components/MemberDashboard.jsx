@@ -488,7 +488,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
                 { value: 'activity', icon: Footprints, label: 'Actividad', premium: false },
-                (profile?.sex === 'female' || !profile?.sex) ? { value: 'bienestar', icon: Heart, label: 'Bienestar', premium: false } : null,
+                profile?.sex === 'female' ? { value: 'bienestar', icon: Heart, label: 'Bienestar', premium: false } : null,
                 { value: 'feed', icon: Home, label: 'Feed', premium: true },
                 { value: 'challenges', icon: Target, label: 'Retos', premium: false },
                 { value: 'badges', icon: Trophy, label: 'Logros', premium: true },
@@ -620,8 +620,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             <ActivityTracker userId={user.id} />
           </TabsContent>
 
-            {/* Bienestar Femenino (Visible si no es estrictamente male) */}
-            {(profile?.sex === 'female' || !profile?.sex) && (
+            {/* Bienestar Femenino (Strictly female) */}
+            {profile?.sex === 'female' && (
             <TabsContent value="bienestar" className="space-y-4">
               <LifeStageSelector userId={user.id} profile={profile} onUpdate={() => window.location.reload()} />
               {(!profile?.life_stage || profile.life_stage === 'cycle') && (

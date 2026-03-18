@@ -80,6 +80,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
   const [name, setName] = useState(profile?.name || '')
   const [phone, setPhone] = useState(profile?.phone || '')
   const [birthDate, setBirthDate] = useState(profile?.birth_date || '')
+  const [sex, setSex] = useState(profile?.sex || '')
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
   const [previewUrl, setPreviewUrl] = useState(null)
 
@@ -88,6 +89,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       setName(profile.name || '')
       setPhone(profile.phone || '')
       setBirthDate(profile.birth_date || '')
+      setSex(profile.sex || '')
       setAvatarUrl(profile.avatar_url || '')
       loadAvatarPreview()
     }
@@ -169,6 +171,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
           name: name.trim(),
           phone: phone.trim() || null,
           birth_date: birthDate || null,
+          sex: sex || null,
           avatar_url: avatarUrl || null,
           updated_at: new Date().toISOString()
         })
@@ -185,6 +188,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
           name: name.trim(),
           phone: phone.trim() || null,
           birth_date: birthDate || null,
+          sex: sex || null,
           avatar_url: avatarUrl || null
         })
       }
@@ -362,6 +366,32 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                 onChange={(e) => setBirthDate(e.target.value)}
                 className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
               />
+            </div>
+            <div>
+              <Label className="text-gray-300 text-sm">Sexo</Label>
+              <div className="grid grid-cols-2 gap-3 mt-1">
+                <Button
+                  type="button"
+                  variant={sex === 'male' ? 'default' : 'outline'}
+                  onClick={() => setSex('male')}
+                  className={`rounded-xl border-violet-500/20 ${sex === 'male' ? 'bg-violet-600 text-white' : 'bg-black/50 text-gray-400'}`}
+                >
+                  Hombre
+                </Button>
+                <Button
+                  type="button"
+                  variant={sex === 'female' ? 'default' : 'outline'}
+                  onClick={() => setSex('female')}
+                  className={`rounded-xl border-violet-500/20 ${sex === 'female' ? 'bg-violet-600 text-white' : 'bg-black/50 text-gray-400'}`}
+                >
+                  Mujer
+                </Button>
+              </div>
+              {sex === 'female' && (
+                <p className="text-[10px] text-pink-400 mt-2 italic">
+                  * Activa el módulo de Bienestar Femenino en tu panel principal.
+                </p>
+              )}
             </div>
           </div>
 

@@ -27,6 +27,7 @@ export default function App() {
   const [regEmail, setRegEmail] = useState('')
   const [regPassword, setRegPassword] = useState('')
   const [regName, setRegName] = useState('')
+  const [regSex, setRegSex] = useState('female')
   const [invitationCode, setInvitationCode] = useState('')
 
   useEffect(() => {
@@ -146,6 +147,7 @@ export default function App() {
           email: regEmail,
           name: regName,
           role: 'member',
+          sex: regSex,
           has_premium: hasPremium
         }], { onConflict: 'id' })
 
@@ -361,6 +363,27 @@ export default function App() {
                         minLength={8}
                         className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 transition-all"
                       />
+                    </div>
+
+                    {/* Gender Selection */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-300 text-sm font-medium">Sexo</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          type="button"
+                          onClick={() => setRegSex('male')}
+                          className={`rounded-xl h-12 border border-white/10 transition-all ${regSex === 'male' ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-white border-transparent shadow-lg shadow-violet-600/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                        >
+                          Hombre
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => setRegSex('female')}
+                          className={`rounded-xl h-12 border border-white/10 transition-all ${regSex === 'female' ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-white border-transparent shadow-lg shadow-violet-600/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                        >
+                          Mujer
+                        </Button>
+                      </div>
                     </div>
                     
                     {/* Invitation Code - OPTIONAL */}
