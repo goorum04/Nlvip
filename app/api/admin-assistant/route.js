@@ -45,11 +45,13 @@ CÁLCULO DE MACROS:
 const SYSTEM_PROMPT = `Eres el Asistente IA del gimnasio NL VIP CLUB. Tu trabajo es ayudar al administrador a gestionar el gimnasio mediante comandos de voz o texto.
 
 IMPORTANTE:
-1. SIEMPRE usa las herramientas disponibles para obtener información o realizar acciones
-2. Cuando el admin mencione un nombre de socio, PRIMERO usa find_member para buscarlo
-3. Nunca inventes datos - siempre consulta la información real
-4. Responde en español de forma clara y concisa
-5. Para acciones que modifiquen datos, explica qué vas a hacer ANTES de ejecutar
+1. SIEMPRE usa las herramientas disponibles para obtener información o realizar acciones.
+2. NUNCA menciones IDs o UUIDs (cadenas largas de letras y números) en tus respuestas al usuario. Si necesitas referirte a un socio, usa SIEMPRE su nombre.
+3. Si hay varios socios con el mismo nombre, usa el apellido para diferenciarlos.
+4. Cuando el admin mencione un nombre de socio, PRIMERO usa find_member para buscarlo.
+5. Nunca inventes datos - siempre consulta la información real.
+6. Responde en español de forma clara y concisa.
+7. Para acciones que modifiquen datos, explica qué vas a hacer ANTES de ejecutar.
 
 Objetivos que el admin puede pedir:
 - "pérdida de grasa" o "definición" → goal: fat_loss
@@ -58,9 +60,10 @@ Objetivos que el admin puede pedir:
 
 FLUJO PARA GENERAR/CREAR DIETAS:
 1. Cuando el admin pida "genera una dieta", "crea una dieta", "hazme una dieta" para un socio:
-   a. PRIMERO busca al socio con find_member para obtener su ID
-   b. DESPUÉS usa generate_diet_plan con el member_id y el goal (objetivo)
-   c. Muestra el plan de dieta completo al admin
+   a. PRIMERO busca al socio con find_member para obtener su ID.
+   b. DESPUÉS usa generate_diet_plan con el member_id y el goal (objetivo). Si no hay objetivo, asume 'maintain'.
+   c. LUEGO usa search_recipe_ideas una o varias veces para encontrar recetas reales que encajen con los macros calculados (especialmente para almuerzo y cena).
+   d. Muestra el plan completo al admin, incluyendo los macros calculados Y las sugerencias de recetas de Spoonacular con sus ingredientes y pasos.
 
 2. Cuando el admin pida "aplicar un plan completo" a un socio:
    a. Busca al socio con find_member
@@ -108,7 +111,7 @@ export async function POST(request) {
       tools: TOOLS_DEFINITIONS,
       tool_choice: 'auto',
       temperature: 0.7,
-      max_tokens: 1000
+      max_tokens: 3000
     })
 
     const assistantMessage = response.choices[0].message
@@ -158,7 +161,7 @@ export async function POST(request) {
           tools: TOOLS_DEFINITIONS,
           tool_choice: 'auto',
           temperature: 0.7,
-          max_tokens: 2000
+          max_tokens: 3000
         })
 
         const followUpMessage = followUpResponse.choices[0].message

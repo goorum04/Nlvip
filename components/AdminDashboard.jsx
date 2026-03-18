@@ -690,24 +690,26 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
   return (
     <div className="min-h-screen bg-[#0B0B0B]">
-      {/* Modern Admin Header */}
-      <header className="bg-gradient-to-br from-black via-[#1a1a1a] to-black border-b border-violet-500/20 sticky top-0 z-50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 pt-24 pb-8">
+      {/* Navbar Estática */}
+      <header className="sticky top-0 z-50 bg-[#0B0B0B]/80 backdrop-blur-xl border-b border-violet-500/20">
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-violet-500/5 header-gradient opacity-30" />
+        
+        <div className="relative container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <img 
                   src="/logo-nl-vip.jpg" 
                   alt="NL VIP TEAM" 
-                  className="w-12 h-12 rounded-xl object-cover shadow-lg shadow-violet-500/30"
+                  className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-violet-500/20"
                 />
-                <div>
-                  <h1 className="text-2xl font-bold text-violet-400">NL VIP TEAM</h1>
-                  <p className="text-xs text-gray-400">Panel de Administrador</p>
+                <div className="hidden sm:block">
+                  <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP TEAM</h1>
+                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Master Admin</p>
                 </div>
               </div>
 
-              {/* Botón de Voz Global */}
+              {/* Botón de Voz Compacto */}
               <Button 
                 size="icon"
                 variant="outline"
@@ -715,35 +717,48 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                   setActiveTab('assistant')
                   setVoiceTrigger(Date.now())
                 }}
-                className="h-12 w-12 rounded-2xl border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 hover:scale-110 transition-all flex-shrink-0"
-                title="Hablar con el Asistente"
+                className="h-10 w-10 rounded-xl border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition-all flex-shrink-0"
               >
-                <Mic className="w-6 h-6" />
+                <Mic className="w-5 h-5" />
               </Button>
             </div>
+
             <div className="flex items-center gap-3">
-              <div className="text-right hidden md:block">
-                <p className="text-sm text-gray-300 font-semibold">{profile.name}</p>
-                <p className="text-xs text-violet-400">Administrador</p>
-              </div>
               <AvatarBubble 
                 profile={profile} 
                 size="md" 
                 onClick={() => setShowProfileModal(true)} 
               />
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="border-violet-500/40 text-violet-400 hover:bg-gradient-to-r from-violet-600 to-cyan-600/10 rounded-full"
-                onClick={onLogout}
-              >
-                <LogOut className="w-4 h-4 md:mr-2" />
-                <span className="hidden md:inline">Salir</span>
+              <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
+                <LogOut className="w-5 h-5" />
               </Button>
             </div>
           </div>
         </div>
       </header>
+
+      {/* Hero Section (Scrollable) */}
+      <div className="relative overflow-hidden pt-12 pb-8 border-b border-white/5 bg-black/40">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl" />
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-3xl font-black text-black shadow-xl shadow-violet-500/30">
+                A
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm font-medium">Control Total,</p>
+                <h2 className="text-2xl font-black text-white">{profile.name}</h2>
+                <div className="flex items-center gap-1 mt-1">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <p className="text-xs text-emerald-500 font-bold uppercase tracking-wider">Sistema Activo</p>
+                </div>
+              </div>
+            </div>
+            {/* Quick stats could go here */}
+          </div>
+        </div>
+      </div>
 
       {/* Profile Modal */}
       <ProfileModal

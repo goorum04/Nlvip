@@ -333,36 +333,28 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a]">
-      {/* HEADER */}
-      <header className="relative overflow-hidden border-b border-[#2a2a2a]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-[rgb(139, 92, 246)]/5" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-r from-violet-600 to-cyan-600/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
-
-        <div className="relative container mx-auto px-4 pt-24 pb-12">
+      {/* Navbar Estática */}
+      <header className="sticky top-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-violet-500/5 header-gradient opacity-50" />
+        
+        <div className="relative container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img
-                src="/logo-nl-vip.jpg"
-                alt="NL VIP TEAM"
-                className="w-14 h-14 rounded-2xl object-cover shadow-lg shadow-violet-500/30"
+            <div className="flex items-center gap-3">
+              <img 
+                src="/logo-nl-vip.jpg" 
+                alt="NL VIP TEAM" 
+                className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-violet-500/20"
               />
               <div>
-                <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500">NL VIP TEAM</h1>
-                <p className="text-sm text-gray-500">Panel de Entrenador</p>
+                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP TEAM</h1>
+                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Trainer Panel</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="text-right hidden md:block">
-                <p className="text-white font-semibold">{profile.name}</p>
-                <div className="flex items-center gap-1 justify-end">
-                  <Sparkles className="w-3 h-3 text-violet-400" />
-                  <p className="text-xs text-violet-400">Entrenador</p>
-                </div>
-              </div>
-              <AvatarBubble
-                profile={profile}
-                size="md"
-                onClick={() => setShowProfileModal(true)}
+            <div className="flex items-center gap-2">
+              <AvatarBubble 
+                profile={profile} 
+                size="md" 
+                onClick={() => setShowProfileModal(true)} 
               />
               <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
                 <LogOut className="w-5 h-5" />
@@ -371,6 +363,30 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
           </div>
         </div>
       </header>
+
+      {/* Welcome Section (Scrollable) */}
+      <div className="relative overflow-hidden pt-12 pb-8 border-b border-white/5 bg-black/20">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
+        <div className="container mx-auto px-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-2xl font-black text-black shadow-xl shadow-violet-500/30 overflow-hidden">
+              {profile.avatar_url ? (
+                <AvatarBubble profile={profile} size="lg" onClick={() => setShowProfileModal(true)} />
+              ) : (
+                profile.name?.charAt(0)
+              )}
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm font-medium">Panel de Gestión,</p>
+              <h2 className="text-2xl font-black text-white">{profile.name}</h2>
+              <div className="flex items-center gap-1 mt-1">
+                <Sparkles className="w-3 h-3 text-violet-400" />
+                <p className="text-xs text-violet-400 font-bold uppercase tracking-wider">Entrenador Oficial</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Profile Modal */}
       <ProfileModal
