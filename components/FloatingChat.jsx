@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { 
   MessageCircle, Send, X, Minimize2, Mic, MicOff, 
-  Trash2, Play, Pause, Shield, User, ChevronLeft 
+  Trash2, Play, Pause, Shield, User, ChevronLeft,
+  Bot, Volume2
 } from 'lucide-react'
 
 const ADMIN_ID = '64145053-45fd-473c-b2c4-7523d181aad3' // ID de Nacho (Admin)
