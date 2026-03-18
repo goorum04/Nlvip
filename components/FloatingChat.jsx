@@ -423,13 +423,15 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                     placeholder="Escribe un mensaje..."
                     className="h-12 bg-white/5 border-white/5 rounded-2xl pl-4 pr-10 text-sm focus:border-violet-500/50"
                   />
-                  <button
-                    type="button"
-                    onClick={toggleListening}
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening ? 'text-violet-500' : 'text-zinc-600'}`}
-                  >
-                    <Mic size={18} />
-                  </button>
+                  {userRole === 'admin' && (
+                    <button
+                      type="button"
+                      onClick={toggleListening}
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening ? 'text-violet-500' : 'text-zinc-600'}`}
+                    >
+                      <Mic size={18} />
+                    </button>
+                  )}
                 </div>
                 
                 {userRole === 'admin' && (
