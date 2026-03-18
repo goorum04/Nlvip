@@ -404,7 +404,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
   return (
     <div className={`min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a] transition-colors duration-700 ${getThemeClasses()}`}>
-      {/* HEADER     <div className="min-h-screen bg-[#030303]">
       {/* Navbar Estática */}
       <header className="sticky top-0 z-50 bg-[#030303]/80 backdrop-blur-xl border-b border-white/5">
         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-violet-500/5 header-gradient opacity-50" />

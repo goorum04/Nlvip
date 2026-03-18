@@ -38,54 +38,107 @@ import { SymptomsTracker } from '@/components/SymptomsTracker'
 const PHASE_CONFIG = {
   menstrual: {
     icon: Moon,
-    gradient: 'from-violet-200 via-purple-200 to-pink-100',
-    gradientDark: 'from-violet-600/30 via-purple-600/20 to-pink-500/10',
-    accent: 'bg-violet-400',
-    text: 'text-violet-700',
-    border: 'border-violet-300',
-    glow: 'shadow-violet-400/20',
-    name: 'Descanso'
+    gradient: 'from-violet-600/20 via-indigo-600/10 to-transparent',
+    accent: 'bg-violet-500',
+    text: 'text-violet-400',
+    border: 'border-violet-500/30',
+    glow: 'shadow-violet-500/40',
+    name: 'Fase Menstrual',
+    slogan: 'Tiempo de introspección y descanso.'
   },
   follicular: {
     icon: Sun,
-    gradient: 'from-teal-200 via-cyan-200 to-emerald-100',
-    gradientDark: 'from-teal-600/30 via-cyan-600/20 to-emerald-500/10',
-    accent: 'bg-teal-400',
-    text: 'text-teal-700',
-    border: 'border-teal-300',
-    glow: 'shadow-teal-400/20',
-    name: 'Energía'
+    gradient: 'from-teal-600/20 via-emerald-600/10 to-transparent',
+    accent: 'bg-teal-500',
+    text: 'text-teal-400',
+    border: 'border-teal-500/30',
+    glow: 'shadow-teal-500/40',
+    name: 'Fase Folicular',
+    slogan: 'Tu energía y creatividad despegan.'
   },
   ovulation: {
     icon: Zap,
-    gradient: 'from-amber-200 via-orange-200 to-yellow-100',
-    gradientDark: 'from-amber-600/30 via-orange-600/20 to-yellow-500/10',
-    accent: 'bg-amber-400',
-    text: 'text-amber-700',
-    border: 'border-amber-300',
-    glow: 'shadow-amber-400/20',
-    name: 'Pico'
+    gradient: 'from-amber-600/20 via-orange-600/10 to-transparent',
+    accent: 'bg-amber-500',
+    text: 'text-amber-400',
+    border: 'border-amber-500/30',
+    glow: 'shadow-amber-500/40',
+    name: 'Fase Ovulatoria',
+    slogan: 'Máxima potencia y confianza.'
   },
   luteal: {
     icon: TrendingUp,
-    gradient: 'from-rose-200 via-pink-200 to-purple-100',
-    gradientDark: 'from-rose-600/30 via-pink-600/20 to-purple-500/10',
-    accent: 'bg-rose-400',
-    text: 'text-rose-700',
-    border: 'border-rose-300',
-    glow: 'shadow-rose-400/20',
-    name: 'Equilibrio'
+    gradient: 'from-rose-600/20 via-pink-600/10 to-transparent',
+    accent: 'bg-rose-500',
+    text: 'text-rose-400',
+    border: 'border-rose-500/30',
+    glow: 'shadow-rose-500/40',
+    name: 'Fase Lútea',
+    slogan: 'Equilibrio, calma y nutrición.'
   },
   unknown: {
     icon: Activity,
-    gradient: 'from-gray-200 via-slate-100 to-gray-100',
-    gradientDark: 'from-gray-600/30 via-slate-600/20 to-gray-500/10',
-    accent: 'bg-gray-400',
-    text: 'text-gray-700',
-    border: 'border-gray-300',
-    glow: 'shadow-gray-400/20',
-    name: 'Sin config'
+    gradient: 'from-gray-600/20 to-transparent',
+    accent: 'bg-gray-500',
+    text: 'text-gray-400',
+    border: 'border-gray-500/30',
+    glow: 'shadow-gray-500/40',
+    name: 'Configuración',
+    slogan: 'Personaliza tu experiencia elite.'
   }
+}
+
+function CycleWheel({ day, totalDays, phaseConfig }) {
+  const radius = 80;
+  const circumference = 2 * Math.PI * radius;
+  const progress = (day / totalDays) * circumference;
+  
+  return (
+    <div className="relative w-56 h-56 mx-auto flex items-center justify-center">
+      <svg className="w-full h-full transform -rotate-90">
+        {/* Background track */}
+        <circle
+          cx="112" cy="112" r={radius}
+          stroke="currentColor"
+          strokeWidth="4"
+          fill="none"
+          className="text-white/5"
+        />
+        {/* Progress circle */}
+        <circle
+          cx="112" cy="112" r={radius}
+          stroke="currentColor"
+          strokeWidth="8"
+          fill="none"
+          strokeLinecap="round"
+          style={{
+            strokeDasharray: circumference,
+            strokeDashoffset: circumference - progress,
+            transition: 'stroke-dashoffset 1s ease-in-out'
+          }}
+          className={`${phaseConfig.text} drop-shadow-[0_0_8px_rgba(var(--phase-rgb),0.5)]`}
+        />
+      </svg>
+      
+      {/* Central Content */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <div className={`w-14 h-14 rounded-2xl ${phaseConfig.accent} flex items-center justify-center shadow-2xl mb-2 animate-bounce-slow`}>
+          <phaseConfig.icon className="w-7 h-7 text-white" />
+        </div>
+        <span className="text-4xl font-black text-white">{day}</span>
+        <span className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">Día del Ciclo</span>
+      </div>
+
+      {/* Rotating Dot */}
+      <div 
+        className="absolute w-4 h-4 rounded-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.8)] border-2 border-black transition-all duration-1000"
+        style={{
+          transform: `rotate(${(day / totalDays) * 360}deg) translateY(-${radius}px)`,
+          transformOrigin: 'center'
+        }}
+      />
+    </div>
+  )
 }
 
 // Sugerencias nutricionales por fase
@@ -312,138 +365,150 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
 
   // Full variant - toda la información
   return (
-    <div className="space-y-3">
-      <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
-        <div className={`bg-gradient-to-br ${cycleData.phaseConfig.gradientDark} p-5 relative overflow-hidden`}>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12 blur-xl"></div>
+    <div className="space-y-6 relative">
+      {/* Ambient Glow Background */}
+      <div className={`absolute -top-24 left-1/2 -translate-x-1/2 w-[150%] h-[150%] bg-gradient-to-b ${cycleData.phaseConfig.gradient} opacity-40 blur-[120px] pointer-events-none -z-10`} />
 
-          <div className="relative">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-2xl ${cycleData.phaseConfig.accent} flex items-center justify-center shadow-lg ${cycleData.phaseConfig.glow}`}>
-                  <PhaseIcon className="w-6 h-6 text-white" />
+      <Card className="bg-[#0B0B0B]/40 backdrop-blur-2xl border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <div className="p-8 relative">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  <span className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-black">Elite Edition</span>
                 </div>
-                <div>
-                  <p className="text-xs text-white/60 uppercase tracking-wider font-medium">Tu fase</p>
-                  <h3 className="text-xl font-bold text-white">
-                    {getPhaseName(cycleData.phase)}
-                  </h3>
-                </div>
+                <h2 className="text-2xl font-black text-white tracking-tight">Tu Bienestar</h2>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowConfig(true)}
-                className="rounded-full hover:bg-white/10"
-              >
-                <Settings className="w-4 h-4 text-white/60" />
-              </Button>
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowConfig(true)}
+              className="rounded-2xl bg-white/5 hover:bg-white/10 text-white/50 border border-white/5"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+          </div>
 
-            <div className="flex items-end justify-between">
-              <div className="flex items-baseline gap-1">
-                <span className="text-5xl font-black text-white">{cycleData.cycleDay}</span>
-                <span className="text-white/60 text-lg font-medium">/ {cycleData.cycleLength}</span>
-              </div>
-              <div className="text-right">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white ${cycleData.phaseConfig.accent} shadow-lg`}>
-                  <Dumbbell className="w-3 h-3" />
-                  {cycleData.workout.title}
-                </span>
-                <p className="text-white/50 text-xs mt-2">
-                  {cycleData.daysUntilPeriod} días para el periodo
-                </p>
-              </div>
+          <CycleWheel 
+            day={cycleData.cycleDay} 
+            totalDays={cycleData.cycleLength} 
+            phaseConfig={cycleData.phaseConfig} 
+          />
+
+          <div className="mt-8 text-center">
+            <h3 className={`text-3xl font-black ${cycleData.phaseConfig.text} mb-2`}>
+              {cycleData.phaseConfig.name}
+            </h3>
+            <p className="text-white/60 text-sm font-medium italic">
+              "{cycleData.phaseConfig.slogan}"
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-8">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+              <p className="text-[10px] text-white/30 uppercase font-black mb-1">Próximo Periodo</p>
+              <p className="text-xl font-bold text-white">{cycleData.daysUntilPeriod} días</p>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+              <p className="text-[10px] text-white/30 uppercase font-black mb-1">Entrenamiento</p>
+              <p className="text-xl font-bold text-white">{cycleData.workout.intensity}</p>
             </div>
           </div>
         </div>
 
-        <CardContent className="p-4 bg-[#1a1a1a]">
-          <p className="text-sm text-gray-300 leading-relaxed">
-            {cycleData.workout.description}
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Macros y calorías */}
-      <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
-        <CardHeader className="pb-2 px-4 pt-4">
-          <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
-            <Flame className="w-4 h-4 text-pink-400" />
-            Hoy
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 px-4 pb-4">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-gradient-to-br from-violet-500/20 to-pink-500/10 rounded-2xl p-4 border border-violet-500/20">
-              <p className="text-xs text-gray-400 mb-1">Calorías orient.</p>
-              <p className="text-3xl font-bold text-white">{cycleData.calories}</p>
-              <p className="text-xs text-gray-500">kcal estimadas</p>
+        <CardContent className="p-6 bg-white/[0.02] border-t border-white/5">
+          <div className="flex gap-4 items-start">
+            <div className={`w-10 h-10 rounded-xl ${cycleData.phaseConfig.accent}/20 flex items-center justify-center shrink-0`}>
+              <Info className={`w-5 h-5 ${cycleData.phaseConfig.text}`} />
             </div>
-            <div className="bg-gradient-to-br from-pink-500/20 to-rose-500/10 rounded-2xl p-4 border border-pink-500/20">
-              <p className="text-xs text-gray-400 mb-1">Intensidad</p>
-              <p className="text-lg font-semibold text-white capitalize">{cycleData.workout.intensity}</p>
-              <p className="text-xs text-gray-500">entrenamiento</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-gradient-to-br from-violet-500/10 to-purple-500/5 rounded-2xl p-3 text-center border border-violet-500/15">
-              <Droplets className="w-5 h-5 text-violet-400 mx-auto mb-1.5" />
-              <p className="text-xl font-bold text-white">{cycleData.macros.protein}<span className="text-xs font-normal text-gray-400">g</span></p>
-              <p className="text-xs text-gray-500">Proteína</p>
-            </div>
-            <div className="bg-gradient-to-br from-pink-500/10 to-rose-500/5 rounded-2xl p-3 text-center border border-pink-500/15">
-              <Flame className="w-5 h-5 text-pink-400 mx-auto mb-1.5" />
-              <p className="text-xl font-bold text-white">{cycleData.macros.fat}<span className="text-xs font-normal text-gray-400">g</span></p>
-              <p className="text-xs text-gray-500">Grasas</p>
-            </div>
-            <div className="bg-gradient-to-br from-rose-500/10 to-orange-500/5 rounded-2xl p-3 text-center border border-rose-500/15">
-              <Sun className="w-5 h-5 text-rose-400 mx-auto mb-1.5" />
-              <p className="text-xl font-bold text-white">{cycleData.macros.carbs}<span className="text-xs font-normal text-gray-400">g</span></p>
-              <p className="text-xs text-gray-500">Carbs</p>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-violet-500/10 to-pink-500/10 rounded-2xl p-3 border border-violet-500/10">
-            <p className="text-xs font-medium text-violet-300 mb-1">💡 Consejo</p>
-            <p className="text-xs text-gray-400">{cycleData.workout.tip}</p>
+            <p className="text-sm text-white/70 leading-relaxed font-medium">
+              {cycleData.workout.description}
+            </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* NUTRICIÓN POR FASE */}
+      {/* Macros Especializados */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="bg-[#0B0B0B]/40 backdrop-blur-xl border-white/5 rounded-3xl p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Flame className="w-4 h-4 text-orange-400" />
+            <h3 className="text-xs font-black text-white/40 uppercase tracking-widest">Metabolismo Hoy</h3>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-4xl font-black text-white">{cycleData.calories}</span>
+            <span className="text-sm font-bold text-white/30 tracking-tight">kcal/día</span>
+          </div>
+          <div className="mt-4 flex items-center gap-2">
+            <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${cycleData.phaseConfig.accent} opacity-50 transition-all duration-1000`} 
+                style={{ width: '70%' }} 
+              />
+            </div>
+            <span className="text-[10px] font-bold text-white/40">ÓPTIMO</span>
+          </div>
+        </Card>
+
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'PROT', value: cycleData.macros.protein, icon: Droplets, color: 'text-violet-400' },
+            { label: 'GRAS', value: cycleData.macros.fat, icon: Flame, color: 'text-rose-400' },
+            { label: 'CARB', value: cycleData.macros.carbs, icon: Sun, color: 'text-amber-400' }
+          ].map((macro, i) => (
+            <div key={i} className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 flex flex-col items-center justify-center">
+              <macro.icon className={`w-4 h-4 ${macro.color} mb-2`} />
+              <span className="text-lg font-black text-white">{macro.value}g</span>
+              <p className="text-[8px] font-black text-white/20 tracking-tighter uppercase">{macro.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Nutrición Elite */}
       {(() => {
         const nutrition = PHASE_NUTRITION[cycleData.phase] || PHASE_NUTRITION.unknown
         return (
-          <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
-            <CardHeader className="pb-2 px-4 pt-4">
-              <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
-                <span className="text-base">{nutrition.emoji}</span>
-                Nutrición • {nutrition.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 space-y-3">
-              <div>
-                <p className="text-[10px] text-green-400 font-medium uppercase tracking-wide mb-2">✅ Priorizar</p>
-                <div className="space-y-1">
-                  {nutrition.nutrients.map((n, i) => (
-                    <p key={i} className="text-xs text-gray-300">• {n}</p>
-                  ))}
+          <Card className="bg-[#0B0B0B]/60 backdrop-blur-2xl border-white/5 rounded-[2.5rem] overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-3xl">{nutrition.emoji}</span>
+                <div>
+                  <h3 className="text-sm font-black text-white">Dieta de Fase</h3>
+                  <p className="text-[10px] text-white/40 uppercase font-bold tracking-tight">{nutrition.title}</p>
                 </div>
               </div>
-              {nutrition.limit.length > 0 && (
-                <div>
-                  <p className="text-[10px] text-red-400 font-medium uppercase tracking-wide mb-2">⚠️ Limitar</p>
-                  <div className="space-y-1">
-                    {nutrition.limit.map((n, i) => (
-                      <p key={i} className="text-xs text-gray-400">• {n}</p>
+
+              <div className="space-y-4">
+                <div className="bg-emerald-500/5 rounded-2xl p-4 border border-emerald-500/10">
+                  <p className="text-[9px] font-black text-emerald-400/60 uppercase tracking-widest mb-3">Prioridad Nutricional</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {nutrition.nutrients.map((n, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <div className="w-1 h-1 rounded-full bg-emerald-500/40" />
+                        <p className="text-xs text-white/60 font-medium">{n}</p>
+                      </div>
                     ))}
                   </div>
                 </div>
-              )}
-            </CardContent>
+
+                {nutrition.limit.length > 0 && (
+                  <div className="bg-rose-500/5 rounded-2xl p-4 border border-rose-500/10">
+                    <p className="text-[9px] font-black text-rose-400/60 uppercase tracking-widest mb-3">Limitaciones Sugeridas</p>
+                    <div className="grid grid-cols-1 gap-2">
+                      {nutrition.limit.map((n, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <div className="w-1 h-1 rounded-full bg-rose-500/40" />
+                          <p className="text-xs text-white/40 font-medium line-through decoration-white/10">{n}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </Card>
         )
       })()}

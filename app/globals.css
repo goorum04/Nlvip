@@ -3,12 +3,20 @@
 @tailwind utilities;
 
 /* Hide scrollbar but keep functionality */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* Custom Theme Animations */
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+@keyframes pulse-gentle {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.05); }
+}
+.animate-bounce-slow {
+  animation: bounce-slow 4s infinite ease-in-out;
+}
+.animate-pulse-gentle {
+  animation: pulse-gentle 6s infinite ease-in-out;
 }
 
 /* Prevent horizontal page scroll */

@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast'
 import {
     Baby, Heart, Milk, Timer, Plus, TrendingUp,
     Clock, Loader2, ChevronLeft, ChevronRight,
-    Droplets, BarChart3, AlertCircle
+    Droplets, BarChart3, AlertCircle, Sparkles, Settings
 } from 'lucide-react'
 
 // =============================================================
@@ -48,28 +48,39 @@ export function LifeStageSelector({ userId, profile, onUpdate }) {
     }
 
     return (
-        <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
-            <CardHeader className="pb-2 px-4 pt-4">
-                <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
-                    <Heart className="w-4 h-4 text-pink-400" />
-                    Mi etapa de vida
+        <Card className="bg-[#0B0B0B]/40 backdrop-blur-xl border-white/5 rounded-[2.5rem] overflow-hidden">
+            <CardHeader className="p-6 pb-2">
+                <CardTitle className="text-xs font-black text-white/40 flex items-center gap-2 uppercase tracking-[0.2em]">
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    Etapa Actual
                 </CardTitle>
             </CardHeader>
-            <CardContent className="px-4 pb-4">
-                <div className="grid grid-cols-4 gap-2">
+            <CardContent className="p-6 pt-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {stages.map(stage => (
                         <button
                             key={stage.value}
                             onClick={() => handleSelect(stage.value)}
                             disabled={saving}
-                            className={`p-3 rounded-2xl border text-center transition-all ${profile?.life_stage === stage.value
-                                ? 'bg-gradient-to-br from-pink-500/30 to-violet-500/20 border-pink-500 text-white'
-                                : 'border-[#2a2a2a] text-gray-500 hover:border-pink-500/40'
+                            className={`group relative p-4 rounded-3xl border transition-all duration-500 overflow-hidden ${profile?.life_stage === stage.value
+                                ? 'bg-white/10 border-white/20 shadow-2xl'
+                                : 'bg-white/[0.02] border-white/5 hover:border-white/10'
                                 }`}
                         >
-                            <div className="text-2xl mb-1">{stage.emoji}</div>
-                            <div className="text-[10px] font-semibold">{stage.label}</div>
-                            <div className="text-[9px] text-gray-500 mt-0.5">{stage.desc}</div>
+                            {profile?.life_stage === stage.value && (
+                                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-pink-500/20 opacity-50 animate-pulse-gentle" />
+                            )}
+                            <div className="relative z-10">
+                                <div className={`text-3xl mb-2 transition-transform duration-500 group-hover:scale-110 ${profile?.life_stage === stage.value ? 'scale-110' : ''}`}>
+                                    {stage.emoji}
+                                </div>
+                                <div className={`text-xs font-black tracking-tight ${profile?.life_stage === stage.value ? 'text-white' : 'text-white/40'}`}>
+                                    {stage.label}
+                                </div>
+                                <div className="text-[9px] text-white/20 mt-1 font-bold uppercase tracking-tighter">
+                                    {stage.desc}
+                                </div>
+                            </div>
                         </button>
                     ))}
                 </div>
@@ -134,69 +145,86 @@ export function PregnancyMode({ userId, profile, onUpdate, onThemeChange }) {
     }
 
     return (
-        <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
-            <div className="bg-gradient-to-br from-rose-500/20 via-pink-500/10 to-orange-500/5 p-5">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-rose-500/30 flex items-center justify-center">
-                            <Baby className="w-6 h-6 text-rose-300" />
-                        </div>
-                        <div>
-                            <p className="text-xs text-white/60 uppercase tracking-wider">Modo embarazo</p>
-                            <h3 className="text-lg font-bold text-white">
-                                {week ? `Semana ${week}` : 'Configura tu fecha'}
-                            </h3>
-                        </div>
-                    </div>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowConfig(true)}
-                        className="text-white/50 hover:text-white hover:bg-white/10 rounded-xl text-xs"
-                    >
-                        Editar
-                    </Button>
-                </div>
-
-                {info && (
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                            <span className="text-2xl">{info.emoji}</span>
+        <Card className="bg-[#0B0B0B]/40 backdrop-blur-2xl border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
+            <div className="relative p-8">
+                {/* Ambient Glow */}
+                <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-pink-500/10 to-transparent opacity-50 header-gradient" />
+                
+                <div className="relative">
+                    <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center shadow-2xl backdrop-blur-xl border border-white/10">
+                                <Baby className="w-7 h-7 text-rose-400 animate-bounce-slow" />
+                            </div>
                             <div>
-                                <p className="text-xs text-white/50">Trimestre {info.trimester}/3</p>
-                                <p className="text-sm text-white font-medium">{info.desc}</p>
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="w-3 h-3 text-amber-400" />
+                                    <span className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-black">Embarazo Elite</span>
+                                </div>
+                                <h3 className="text-2xl font-black text-white tracking-tight">
+                                    {week ? `Semana ${week}` : 'Configuración'}
+                                </h3>
                             </div>
                         </div>
-                        <div className="w-full bg-white/10 rounded-full h-2">
-                            <div
-                                className="bg-gradient-to-r from-rose-400 to-pink-400 h-2 rounded-full transition-all"
-                                style={{ width: `${Math.min(100, ((week || 0) / 40) * 100)}%` }}
-                            />
-                        </div>
-                        <p className="text-xs text-white/40">{week}/40 semanas</p>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowConfig(true)}
+                            className="rounded-2xl bg-white/5 hover:bg-white/10 text-white/50 border border-white/5"
+                        >
+                            <Settings className="w-4 h-4" />
+                        </Button>
                     </div>
-                )}
+
+                    {info && (
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-4 bg-white/5 rounded-[1.5rem] p-4 border border-white/5">
+                                <span className="text-4xl">{info.emoji}</span>
+                                <div>
+                                    <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Estado Actual</p>
+                                    <p className="text-sm text-white/80 font-medium leading-relaxed">{info.desc}</p>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-end">
+                                    <span className="text-[10px] text-white/30 font-black uppercase tracking-tighter italic">{week}/40 semanas</span>
+                                    <span className="text-xs font-black text-rose-400 capitalize">Trimestre {info.trimester}</span>
+                                </div>
+                                <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden border border-white/5 p-0.5">
+                                    <div
+                                        className="bg-gradient-to-r from-rose-500 via-pink-500 to-rose-400 h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(244,63,94,0.5)]"
+                                        style={{ width: `${Math.min(100, ((week || 0) / 40) * 100)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {info && (
-                <CardContent className="p-4 space-y-3">
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-3">
-                        <p className="text-xs font-medium text-green-400 mb-1">✅ Ejercicio recomendado</p>
-                        <p className="text-xs text-gray-300">{info.exercise}</p>
+                <CardContent className="p-6 bg-white/[0.02] border-t border-white/5 space-y-4">
+                    <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4">
+                        <p className="text-[10px] font-black text-emerald-400/60 uppercase tracking-widest mb-2">Entrenamiento Seguro</p>
+                        <p className="text-xs text-white/70 font-medium leading-relaxed">{info.exercise}</p>
                     </div>
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-3">
-                        <p className="text-xs font-medium text-red-400 mb-1">⛔ Evitar</p>
-                        <p className="text-xs text-gray-300">Abdominales hiperpresivos, saltos, ejercicios boca abajo, cargas pesadas</p>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-rose-500/5 border border-rose-500/10 rounded-2xl p-4">
+                            <p className="text-[10px] font-black text-rose-400/60 uppercase tracking-widest mb-1 italic">Evitar</p>
+                            <p className="text-[10px] text-white/40 leading-tight">Esfuerzos hiperpresivos y saltos.</p>
+                        </div>
+                        <div className="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-4">
+                            <p className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest mb-1 italic">Hidratación</p>
+                            <p className="text-[10px] text-white/40 leading-tight">+300ml extra diarios.</p>
+                        </div>
                     </div>
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-3">
-                        <p className="text-xs font-medium text-blue-400 mb-1">💧 Hidratación extra</p>
-                        <p className="text-xs text-gray-300">Aumenta 300ml de agua al día. Necesitas ~2.5L diarios.</p>
-                    </div>
-                    {/* Medical disclaimer - OBLIGATORIO Apple */}
-                    <div className="flex items-start gap-2 p-2">
-                        <AlertCircle className="w-3 h-3 text-gray-600 flex-shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-gray-600 leading-relaxed">
-                            Consulta siempre con tu ginecólogo/a antes de realizar cualquier ejercicio durante el embarazo. Esta información es orientativa y no constituye consejo médico.
+
+                    <div className="flex items-start gap-3 p-4 bg-white/[0.01] rounded-2xl border border-white/5">
+                        <AlertCircle className="w-4 h-4 text-white/10 shrink-0 mt-0.5" />
+                        <p className="text-[9px] text-white/20 italic leading-relaxed">
+                            Consulta siempre con tu especialista antes de entrenar. Esta guía es exclusivamente informativa.
                         </p>
                     </div>
                 </CardContent>
@@ -299,54 +327,80 @@ export function PostpartumMode({ userId, profile, onUpdate, onThemeChange }) {
     }
 
     return (
-        <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
-            <div className={`bg-gradient-to-br ${phase?.color || 'from-violet-500/10 to-pink-500/5'} p-5`}>
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-violet-500/30 flex items-center justify-center">
-                            <Heart className="w-6 h-6 text-violet-300" />
+        <Card className="bg-[#0B0B0B]/40 backdrop-blur-2xl border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
+            <div className="relative p-8">
+                {/* Ambient Glow */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${phase?.color || 'from-violet-500/10 to-pink-500/5'} opacity-40 header-gradient`} />
+                
+                <div className="relative">
+                    <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center shadow-2xl backdrop-blur-xl border border-white/10">
+                                <Heart className="w-7 h-7 text-violet-400 animate-pulse-gentle" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="w-3 h-3 text-amber-400" />
+                                    <span className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-black">Postparto Elite</span>
+                                </div>
+                                <h3 className="text-2xl font-black text-white tracking-tight">
+                                    {weeks !== null ? `Semana ${weeks}` : 'Configuración'}
+                                </h3>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-xs text-white/60 uppercase tracking-wider">Postparto</p>
-                            <h3 className="text-lg font-bold text-white">
-                                {weeks !== null ? `Semana ${weeks}` : 'Configura tu fecha'}
-                            </h3>
-                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowConfig(true)}
+                            className="rounded-2xl bg-white/5 hover:bg-white/10 text-white/50 border border-white/5"
+                        >
+                            <Settings className="w-4 h-4" />
+                        </Button>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setShowConfig(true)} className="text-white/50 hover:text-white hover:bg-white/10 rounded-xl text-xs">
-                        Editar
-                    </Button>
-                </div>
-                {phase && <p className="text-sm text-white/70">{phase.label}</p>}
-            </div>
 
-            {phase && (
-                <CardContent className="p-4 space-y-3">
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-3">
-                        <p className="text-xs font-medium text-green-400 mb-2">✅ Ejercicios recomendados</p>
-                        {phase.exercises.map((ex, i) => (
-                            <p key={i} className="text-xs text-gray-300">• {ex}</p>
-                        ))}
-                    </div>
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-3">
-                        <p className="text-xs font-medium text-red-400 mb-2">⚠️ Precauciones</p>
-                        {phase.warnings.map((w, i) => (
-                            <p key={i} className="text-xs text-gray-300">• {w}</p>
-                        ))}
-                    </div>
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-3">
-                        <p className="text-xs font-medium text-blue-400 mb-1">🏥 Recomendación</p>
-                        <p className="text-xs text-gray-300">Visita a un fisioterapeuta especialista en suelo pélvico antes de retomar ejercicio intenso.</p>
-                    </div>
-                    {/* Disclaimer Apple obligatorio */}
-                    <div className="flex items-start gap-2 p-2">
-                        <AlertCircle className="w-3 h-3 text-gray-600 flex-shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-gray-600 leading-relaxed">
-                            Consulta siempre con tu médico o fisioterapeuta antes de retomar actividad física postparto. Esta información es orientativa y no constituye consejo médico.
-                        </p>
-                    </div>
-                </CardContent>
-            )}
+                    {phase && (
+                        <div className="space-y-6">
+                            <div className="bg-white/5 rounded-3xl p-5 border border-white/5">
+                                <p className="text-[10px] text-white/30 uppercase font-black tracking-widest mb-1">Fase Actual</p>
+                                <p className="text-lg font-bold text-white tracking-tight">{phase.label}</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4">
+                                    <p className="text-[10px] font-black text-emerald-400/60 uppercase tracking-widest mb-3">Ejercicios Recomendados</p>
+                                    <div className="space-y-2">
+                                        {phase.exercises.map((ex, i) => (
+                                            <div key={i} className="flex items-center gap-2">
+                                                <div className="w-1 h-1 rounded-full bg-emerald-500/40" />
+                                                <p className="text-xs text-white/60 font-medium">{ex}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-rose-500/5 border border-rose-500/10 rounded-2xl p-4">
+                                    <p className="text-[10px] font-black text-rose-400/60 uppercase tracking-widest mb-3">Precauciones Hoy</p>
+                                    <div className="space-y-2">
+                                        {phase.warnings.map((w, i) => (
+                                            <div key={i} className="flex items-center gap-2">
+                                                <div className="w-1 h-1 rounded-full bg-rose-500/40" />
+                                                <p className="text-xs text-white/40 font-medium">{w}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3 p-4 bg-white/[0.01] rounded-2xl border border-white/5">
+                                <AlertCircle className="w-4 h-4 text-white/10 shrink-0 mt-0.5" />
+                                <p className="text-[9px] text-white/20 italic leading-relaxed font-medium">
+                                    Visita a un especialista en suelo pélvico. Esta información es puramente orientativa.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
 
             {weeks === null && (
                 <CardContent className="p-4">
@@ -455,37 +509,41 @@ export function LactationTracker({ userId, onThemeChange }) {
     const SIDE_LABELS = { left: '← Izquierdo', right: 'Derecho →', both: '↔ Ambos' }
 
     return (
-        <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
-            <CardHeader className="pb-2 px-4 pt-4">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
-                        <Milk className="w-4 h-4 text-blue-400" />
-                        Registro de lactancia
-                    </CardTitle>
+        <Card className="bg-[#0B0B0B]/40 backdrop-blur-2xl border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
+            <CardHeader className="p-8 pb-4 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-50 header-gradient" />
+                <div className="relative flex items-center justify-between">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <Sparkles className="w-3 h-3 text-blue-400" />
+                            <span className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-black">Lactancia Elite</span>
+                        </div>
+                        <CardTitle className="text-2xl font-black text-white tracking-tight">Registro</CardTitle>
+                    </div>
                     <Button
                         onClick={() => setShowAdd(true)}
-                        size="sm"
-                        className="bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 rounded-xl border border-blue-500/30 text-xs"
+                        size="icon"
+                        className="w-12 h-12 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-2xl border border-blue-500/20 shadow-xl shadow-blue-500/10"
                     >
-                        <Plus className="w-3 h-3 mr-1" /> Registrar
+                        <Plus className="w-6 h-6" />
                     </Button>
                 </div>
             </CardHeader>
-            <CardContent className="px-4 pb-4 space-y-3">
-                {/* Stats de hoy */}
-                <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-blue-500/10 border border-blue-500/15 rounded-2xl p-3 text-center">
-                        <p className="text-xl font-bold text-white">{todaySessions.length}</p>
-                        <p className="text-[10px] text-gray-500">Tomas hoy</p>
-                    </div>
-                    <div className="bg-blue-500/10 border border-blue-500/15 rounded-2xl p-3 text-center">
-                        <p className="text-xl font-bold text-white">{todayMinutes}</p>
-                        <p className="text-[10px] text-gray-500">Minutos</p>
-                    </div>
-                    <div className="bg-blue-500/10 border border-blue-500/15 rounded-2xl p-3 text-center">
-                        <p className="text-xl font-bold text-white">{todayMl || '-'}</p>
-                        <p className="text-[10px] text-gray-500">ml extraídos</p>
-                    </div>
+
+            <CardContent className="px-8 pb-8 space-y-6 relative z-10">
+                {/* Stats Modernas */}
+                <div className="grid grid-cols-3 gap-3">
+                    {[
+                        { label: 'Tomas', value: todaySessions.length, suffix: '', sub: 'Hoy' },
+                        { label: 'Tiempo', value: todayMinutes, suffix: 'm', sub: 'Total' },
+                        { label: 'Volumen', value: todayMl || '-', suffix: 'ml', sub: 'Extraído' }
+                    ].map((s, i) => (
+                        <div key={i} className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 text-center">
+                            <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-2">{s.label}</p>
+                            <p className="text-2xl font-black text-white">{s.value}<span className="text-xs text-white/20 font-bold ml-0.5">{s.suffix}</span></p>
+                            <p className="text-[8px] font-bold text-white/10 uppercase mt-1">{s.sub}</p>
+                        </div>
+                    ))}
                 </div>
 
                 {/* Lista de sesiones recientes */}
@@ -496,23 +554,28 @@ export function LactationTracker({ userId, onThemeChange }) {
                 ) : sessions.length === 0 ? (
                     <p className="text-center text-gray-600 text-sm py-4">Aún no hay registros</p>
                 ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
+                        <p className="text-[10px] text-white/20 font-black uppercase tracking-widest pl-1">Actividad Reciente</p>
                         {sessions.slice(0, 5).map(s => (
-                            <div key={s.id} className="flex items-center gap-3 bg-white/3 rounded-2xl p-3">
-                                <div className="text-xl">{s.session_type === 'breastfeed' ? '🤱' : s.session_type === 'pump' ? '🍼' : '🍶'}</div>
+                            <div key={s.id} className="group flex items-center gap-4 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-3xl p-4 transition-all duration-300">
+                                <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform">
+                                    {s.session_type === 'breastfeed' ? '🤱' : s.session_type === 'pump' ? '🍼' : '🍶'}
+                                </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-medium text-white">{SESSION_LABELS[s.session_type]}</p>
-                                    <p className="text-[10px] text-gray-500">
+                                    <p className="text-sm font-black text-white/90">{SESSION_LABELS[s.session_type]}</p>
+                                    <p className="text-[10px] text-white/30 font-bold uppercase tracking-tighter">
                                         {new Date(s.start_time).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                         {s.breast_side && ` · ${SIDE_LABELS[s.breast_side]}`}
                                     </p>
                                 </div>
-                                {s.duration_minutes && (
-                                    <span className="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded-lg">{s.duration_minutes}min</span>
-                                )}
-                                {s.amount_ml && (
-                                    <span className="text-xs text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg">{s.amount_ml}ml</span>
-                                )}
+                                <div className="flex flex-col items-end gap-1">
+                                    {s.duration_minutes && (
+                                        <span className="text-[10px] font-black text-white/40 bg-white/5 px-2 py-1 rounded-lg border border-white/5">{s.duration_minutes}m</span>
+                                    )}
+                                    {s.amount_ml && (
+                                        <span className="text-[10px] font-black text-blue-400/80 bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-500/10">{s.amount_ml}ml</span>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>
