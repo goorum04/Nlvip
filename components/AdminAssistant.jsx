@@ -130,27 +130,38 @@ export default function AdminAssistant({ userId, voiceTrigger }) {
   }, [voiceTrigger])
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-      recognitionRef.current = new SpeechRecognition()
-      recognitionRef.current.continuous = false
-      recognitionRef.current.interimResults = false
-      recognitionRef.current.lang = 'es-ES'
+    const initRecognition = () => {
+      if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+        const recognition = new SpeechRecognition()
+        recognition.continuous = false
+        recognition.interimResults = false
+        recognition.lang = 'es-ES'
 
-      recognitionRef.current.onresult = (event) => {
-        const transcript = event.results[0][0].transcript
-        setInput(transcript)
-        setIsListening(false)
-        handleSend(transcript)
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript
+          setInput(transcript)
+          setIsListening(false)
+          handleSend(transcript)
+        }
+
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error)
+          setIsListening(false)
+          let message = 'No se pudo reconocer tu voz'
+          if (event.error === 'not-allowed') message = 'Permiso de micrófono denegado'
+          if (event.error === 'network') message = 'Error de red en el reconocimiento'
+          if (event.error === 'no-speech') return // Silencioso si no se detecta nada
+
+          toast({ title: 'Error de voz', description: message, variant: 'destructive' })
+        }
+
+        recognition.onend = () => setIsListening(false)
+        recognitionRef.current = recognition
       }
-
-      recognitionRef.current.onerror = () => {
-        setIsListening(false)
-        toast({ title: 'Error de voz', description: 'No se pudo reconocer tu voz', variant: 'destructive' })
-      }
-
-      recognitionRef.current.onend = () => setIsListening(false)
     }
+
+    initRecognition()
   }, [])
 
   const speak = (text) => {
@@ -166,15 +177,22 @@ export default function AdminAssistant({ userId, voiceTrigger }) {
 
   const toggleListening = () => {
     if (!recognitionRef.current) {
-      toast({ title: 'No disponible', description: 'Tu navegador no soporta reconocimiento de voz', variant: 'destructive' })
+      toast({ title: 'No disponible', description: 'Tu navegador no soporta reconocimiento de voz o el permiso fue denegado', variant: 'destructive' })
       return
     }
-    if (isListening) {
-      recognitionRef.current.stop()
+
+    try {
+      if (isListening) {
+        recognitionRef.current.stop()
+        setIsListening(false)
+      } else {
+        recognitionRef.current.start()
+        setIsListening(true)
+      }
+    } catch (err) {
+      console.error('Recognition start error:', err)
+      // Si falla al arrancar, intentamos re-inicializar
       setIsListening(false)
-    } else {
-      recognitionRef.current.start()
-      setIsListening(true)
     }
   }
 
