@@ -170,8 +170,8 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
           </div>
         ) : (
           <div className="space-y-6 py-4">
-            {/* Bienestar Femenino (Solo si es mujer) */}
-            {memberData?.sex === 'female' && (
+            {/* Bienestar Femenino (Solo si es mujer o no definido) */}
+            {(memberData?.sex === 'female' || !memberData?.sex) && (
               <Card className="bg-gradient-to-br from-pink-500/10 to-violet-500/5 border-pink-500/20 rounded-2xl overflow-hidden">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-white text-base flex items-center gap-2">

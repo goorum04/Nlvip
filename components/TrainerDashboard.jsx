@@ -338,7 +338,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-[rgb(139, 92, 246)]/5" />
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-r from-violet-600 to-cyan-600/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
 
-        <div className="relative container mx-auto px-4 py-4">
+        <div className="relative container mx-auto px-4 pt-24 pb-12">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <img

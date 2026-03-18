@@ -410,7 +410,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 via-transparent to-violet-500/10 header-gradient" />
         <div className="absolute top-0 left-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 header-glow" />
         
-        <div className="relative container mx-auto px-4 py-6">
+        <div className="relative container mx-auto px-4 pt-24 pb-12">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <img 
@@ -488,7 +488,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
                 { value: 'activity', icon: Footprints, label: 'Actividad', premium: false },
-                profile?.sex === 'female' ? { value: 'bienestar', icon: Heart, label: 'Bienestar', premium: false } : null,
+                (profile?.sex === 'female' || !profile?.sex) ? { value: 'bienestar', icon: Heart, label: 'Bienestar', premium: false } : null,
                 { value: 'feed', icon: Home, label: 'Feed', premium: true },
                 { value: 'challenges', icon: Target, label: 'Retos', premium: false },
                 { value: 'badges', icon: Trophy, label: 'Logros', premium: true },
@@ -498,7 +498,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                 { value: 'stats', icon: BarChart3, label: 'Estadísticas', premium: false },
                 { value: 'progress', icon: TrendingUp, label: 'Progreso', premium: true },
                 { value: 'notices', icon: Bell, label: 'Avisos', badge: unreadNotices, premium: false }
-              ].map(tab => {
+              ].filter(Boolean).map(tab => {
                 const isLocked = tab.premium && !hasPremium
                 return (
                   <TabsTrigger 
@@ -620,8 +620,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             <ActivityTracker userId={user.id} />
           </TabsContent>
 
-          {/* BIENESTAR TAB */}
-          {profile?.sex === 'female' && (
+            {/* Bienestar Femenino (Visible si no es estrictamente male) */}
+            {(profile?.sex === 'female' || !profile?.sex) && (
             <TabsContent value="bienestar" className="space-y-4">
               <LifeStageSelector userId={user.id} profile={profile} onUpdate={() => window.location.reload()} />
               {(!profile?.life_stage || profile.life_stage === 'cycle') && (
