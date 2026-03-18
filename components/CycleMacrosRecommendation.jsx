@@ -6,116 +6,63 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Apple, Activity, Flame, Droplets, Info } from 'lucide-react'
 
 export default function CycleMacrosRecommendation({ profile }) {
-    const [stepsToday, setStepsToday] = useState(0)
+    const [macrosData, setMacrosData] = useState(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         if (profile?.sex === 'female' && profile?.cycle_enabled) {
-            loadSteps()
+            loadMacrosData()
         }
     }, [profile])
 
-    const loadSteps = async () => {
+    const loadMacrosData = async () => {
         try {
-            // Get today's UTC date start in YYYY-MM-DD format based on local time
             const today = new Date()
-            // Create local ISO string date
-            const d = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
-            const dateString = d.toISOString().split('T')[0]
+            const dateString = today.toISOString().split('T')[0]
 
-            const { data } = await supabase
-                .from('daily_activity')
-                .select('steps')
-                .eq('member_id', profile.id)
-                .eq('activity_date', dateString)
-                .single()
+            const { data, error } = await supabase.rpc('rpc_get_daily_macros_summary', { p_date: dateString })
 
             if (data) {
-                setStepsToday(data.steps || 0)
+                setMacrosData(data)
             }
         } catch (e) {
-            console.log('No steps data found for today')
+            console.error('Error loading unified macros:', e)
         } finally {
             setLoading(false)
         }
     }
 
-    // Si no es mujer o no tiene activado el ciclo, no mostramos nada
-    if (profile?.sex !== 'female' || !profile?.cycle_enabled) {
+    if (!profile?.sex === 'female' || !profile?.cycle_enabled || loading || !macrosData) {
         return null
     }
 
-    const calculatePhase = () => {
-        if (!profile.cycle_start_date) return null
-
-        const start = new Date(profile.cycle_start_date)
-        start.setHours(0, 0, 0, 0)
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-
-        const diffTime = Math.abs(today - start)
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-        const cycleLength = profile.cycle_length_days || 28
-        const periodLength = profile.period_length_days || 5
-
-        // Current day of the cycle (1-indexed)
-        const currentDay = (diffDays % cycleLength) + 1
-
-        if (currentDay <= periodLength) return { id: 'menstrual', name: 'Menstrual', day: currentDay, color: 'text-rose-400', bg: 'bg-rose-500/10' }
-        if (currentDay <= 13) return { id: 'follicular', name: 'Folicular', day: currentDay, color: 'text-pink-400', bg: 'bg-pink-500/10' }
-        if (currentDay <= 16) return { id: 'ovulation', name: 'Ovulación', day: currentDay, color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10' }
-        return { id: 'luteal', name: 'Lútea', day: currentDay, color: 'text-purple-400', bg: 'bg-purple-500/10' }
-    }
-
-    const phase = calculatePhase()
-
-    // Calcular recomendaciones
-    // Peso base orientativo, si no hay peso en perfil, usamos un promedio (ej. 65kg)
-    const weight = profile.weight_kg || 65
-
-    // Mantenimiento orientativo = weight * 30
-    const baseCalories = weight * 30
-
-    // Ajuste por pasos diarios
-    let stepCalories = 0
-    if (stepsToday >= 15000) stepCalories = 300
-    else if (stepsToday >= 10000) stepCalories = 200
-    else if (stepsToday >= 5000) stepCalories = 100
+    const { assigned: finalMacros, phase, activity } = macrosData
+    const stepsToday = activity?.steps || 0
+    const finalCalories = finalMacros?.calories || 0
+    const proteinGrams = finalMacros?.protein_g || 0
+    const fatGrams = finalMacros?.fat_g || 0
+    const carbGrams = finalMacros?.carbs_g || 0
 
     // Ajuste y comentarios según fase
-    let phaseAdjustment = 0
     let recTraining = ''
     let macroNote = ''
 
     if (phase?.id === 'menstrual') {
-        phaseAdjustment = 0
         recTraining = 'Mantén o reduce ligeramente la intensidad. Prioriza descanso y buena hidratación.'
         macroNote = 'No es el mejor momento para un déficit agresivo.'
     } else if (phase?.id === 'follicular') {
-        phaseAdjustment = 50
         recTraining = 'Mejor tolerancia al esfuerzo. Buen momento para ganar músculo y rendir alto.'
         macroNote = 'Prioriza carbohidratos alrededor del entrenamiento.'
     } else if (phase?.id === 'ovulation') {
-        phaseAdjustment = 100
         recTraining = 'Pico de rendimiento de fuerza/potencia. Cuidado con ligamentos por la laxitud.'
         macroNote = 'Fase ideal para rendir alto. Mantén los carbohidratos estables.'
     } else if (phase?.id === 'luteal') {
-        phaseAdjustment = 125 // Entre 100 y 150
         recTraining = 'Es normal notar más fatiga en esta fase. Prioriza buena recuperación y baja un poco la intensidad si lo necesitas.'
-        macroNote = 'Aumenta la saciedad, mantén la proteína alta y equilibra los carbohidratos.'
+        macroNote = 'Aumento natural de energía: El sistema ha incrementado tus calorías un poco para esta fase.'
     } else {
-        // Si no hay fase calculada
         recTraining = 'Mantén la constancia en el entrenamiento.'
         macroNote = 'Ajusta la nutrición a tus objetivos de vida.'
     }
-
-    const finalCalories = Math.round(baseCalories + stepCalories + phaseAdjustment)
-
-    // Macros (orientativo)
-    const proteinGrams = Math.round(weight * 2.0) // 2.0g/kg
-    const fatGrams = Math.round(weight * 0.9) // 0.9g/kg
-    const carbCalories = finalCalories - (proteinGrams * 4) - (fatGrams * 9)
-    const carbGrams = Math.max(0, Math.round(carbCalories / 4))
 
     if (loading || !phase) return null
 
