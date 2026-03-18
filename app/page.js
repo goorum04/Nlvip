@@ -1,4 +1,5 @@
 'use client'
+// Sync commit: 2026-03-18 14:15
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
