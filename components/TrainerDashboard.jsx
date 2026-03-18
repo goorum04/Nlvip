@@ -365,7 +365,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
       </header>
 
       {/* Welcome Section (Scrollable) */}
-      <div className="relative overflow-hidden pt-12 pb-8 border-b border-white/5 bg-black/20">
+      <div className="relative overflow-hidden pt-24 pb-8 border-b border-white/5 bg-black/40">
         <div className="absolute top-0 right-0 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-4">
