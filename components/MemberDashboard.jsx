@@ -622,6 +622,14 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
           {/* ACTIVITY TAB - Step Counter */}
           <TabsContent value="activity" className="space-y-4">
+            {profile?.sex === 'female' && (
+              <CycleModule 
+                user={user} 
+                profile={profile} 
+                variant="compact" 
+                onProfileUpdate={() => window.location.reload()} 
+              />
+            )}
             <ActivityTracker userId={user.id} />
           </TabsContent>
 
