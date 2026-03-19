@@ -295,7 +295,7 @@ function EditRecipeModal({ isOpen, onClose, item, allRecipes, onSave }) {
 }
 
 // Componente principal - Vista para MEMBER
-export function MemberRecipePlan({ userId }) {
+export function MemberRecipePlan({ userId, forceFullWeek = false }) {
   const [plan, setPlan] = useState(null)
   const [items, setItems] = useState([])
   const [recipes, setRecipes] = useState([])
@@ -429,65 +429,85 @@ export function MemberRecipePlan({ userId }) {
 
       <CardContent className="p-5">
         <div className="space-y-4">
-          <div>
-            <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-              <Sun className="w-5 h-5 text-amber-400" />
-              Tu menú para hoy ({DAYS[todayIndex - 1]})
-            </h3>
-            <div className="grid gap-3">
-              {Object.keys(MEAL_SLOTS).map(slot => {
-                const item = todayItems.find(i => i.meal_slot === slot)
-                if (!item) return null
-                
-                return (
-                  <RecipeCard
-                    key={`today-${slot}`}
-                    item={item}
-                    recipe={getRecipe(item.recipe_id)}
-                    canEdit={false}
-                  />
-                )
-              })}
-              {todayItems.length === 0 && (
-                <div className="p-6 bg-white/5 border border-white/10 rounded-2xl text-center">
-                  <p className="text-gray-400">Hoy tienes el día libre o no hay recetas asignadas.</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <Dialog open={showFullWeek} onOpenChange={setShowFullWeek}>
-            <DialogTrigger asChild>
-              <Button className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 h-12 rounded-xl mt-2">
-                <Calendar className="w-5 h-5 mr-2 text-violet-400" />
-                Ver menú de toda la semana
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-[#0a0a0a] border-white/10 max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-              <DialogHeader className="p-6 border-b border-white/10 shrink-0">
-                <DialogTitle className="text-white flex items-center gap-2 text-xl">
-                  <ChefHat className="w-6 h-6 text-violet-400" />
-                  Plan Semanal Completo
-                </DialogTitle>
-                <div className="text-gray-400 mt-1">
-                  Semana del {weekStart.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                </div>
-              </DialogHeader>
-              <div className="p-6 overflow-y-auto custom-scrollbar">
-                <div className="flex gap-4 min-w-max pb-4">
-                  {[1, 2, 3, 4, 5, 6, 7].map(dayIndex => (
-                    <DayColumn
-                      key={dayIndex}
-                      dayIndex={dayIndex}
-                      items={items}
-                      recipes={recipes}
+          {!forceFullWeek ? (
+            <div>
+              <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
+                <Sun className="w-5 h-5 text-amber-400" />
+                Tu menú para hoy ({DAYS[todayIndex - 1]})
+              </h3>
+              <div className="grid gap-3">
+                {Object.keys(MEAL_SLOTS).map(slot => {
+                  const item = todayItems.find(i => i.meal_slot === slot)
+                  if (!item) return null
+                  
+                  return (
+                    <RecipeCard
+                      key={`today-${slot}`}
+                      item={item}
+                      recipe={getRecipe(item.recipe_id)}
                       canEdit={false}
                     />
-                  ))}
-                </div>
+                  )
+                })}
+                {todayItems.length === 0 && (
+                  <div className="p-6 bg-white/5 border border-white/10 rounded-2xl text-center">
+                    <p className="text-gray-400">Hoy tienes el día libre o no hay recetas asignadas.</p>
+                  </div>
+                )}
               </div>
-            </DialogContent>
-          </Dialog>
+
+              <Dialog open={showFullWeek} onOpenChange={setShowFullWeek}>
+                <DialogTrigger asChild>
+                  <Button className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 h-12 rounded-xl mt-2">
+                    <Calendar className="w-5 h-5 mr-2 text-violet-400" />
+                    Ver menú de toda la semana
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-[#0a0a0a] border-white/10 max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+                  <DialogHeader className="p-6 border-b border-white/10 shrink-0">
+                    <DialogTitle className="text-white flex items-center gap-2 text-xl">
+                      <ChefHat className="w-6 h-6 text-violet-400" />
+                      Plan Semanal Completo
+                    </DialogTitle>
+                    <div className="text-gray-400 mt-1">
+                      Semana del {weekStart.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                    </div>
+                  </DialogHeader>
+                  <div className="p-6 overflow-y-auto custom-scrollbar">
+                    <div className="flex gap-4 min-w-max pb-4">
+                      {[1, 2, 3, 4, 5, 6, 7].map(dayIndex => (
+                        <DayColumn
+                          key={dayIndex}
+                          dayIndex={dayIndex}
+                          items={items}
+                          recipes={recipes}
+                          canEdit={false}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          ) : (
+            <div>
+              <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-violet-400" />
+                Menú de la Semana
+              </h3>
+              <div className="flex gap-4 overflow-x-auto pb-6 custom-scrollbar">
+                {[1, 2, 3, 4, 5, 6, 7].map(dayIndex => (
+                  <DayColumn
+                    key={dayIndex}
+                    dayIndex={dayIndex}
+                    items={items}
+                    recipes={recipes}
+                    canEdit={false}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Leyenda */}

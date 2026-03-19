@@ -31,6 +31,7 @@ import { AvatarBubble, ProfileModal } from './UserProfile'
 import { CycleModule } from './CycleModule'
 import { LifeStageSelector, PregnancyMode, PostpartumMode, LactationTracker } from './LifeStageModules'
 import { DietOnboardingBanner } from './DietOnboardingForm'
+import { DietDailyView, DietWeeklyView } from './DietTabParts'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
@@ -44,6 +45,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [loading, setLoading] = useState(false)
   const [pendingOnboarding, setPendingOnboarding] = useState(null)
   const [onboardingChecked, setOnboardingChecked] = useState(false)
+  const [dietViewMode, setDietViewMode] = useState('daily')
   const [myTrainer, setMyTrainer] = useState(null)
   const [storeProducts, setStoreProducts] = useState([])
   const [feedImageUrls, setFeedImageUrls] = useState({})
@@ -740,7 +742,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           </TabsContent>
 
           {/* DIET TAB */}
-          <TabsContent value="diet" className="space-y-4">
+          <TabsContent value="diet" className="space-y-6">
             {onboardingChecked && pendingOnboarding && (
               <DietOnboardingBanner
                 requestId={pendingOnboarding.id}
@@ -753,33 +755,84 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             )}
 
             {myDiet ? (
-              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-white flex items-center gap-3">
-                    <Apple className="w-6 h-6 text-violet-500" />
-                    {myDiet.diet?.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-4 gap-3">
-                    {[
-                      { label: 'Calorías', value: myDiet.diet?.calories || '-', icon: Flame, color: 'from-orange-500/20 to-orange-500/5' },
-                      { label: 'Proteína', value: myDiet.diet?.protein_g ? `${myDiet.diet.protein_g}g` : '-', icon: Target, color: 'from-blue-500/20 to-blue-500/5' },
-                      { label: 'Carbos', value: myDiet.diet?.carbs_g ? `${myDiet.diet.carbs_g}g` : '-', icon: Zap, color: 'from-yellow-500/20 to-yellow-500/5' },
-                      { label: 'Grasas', value: myDiet.diet?.fat_g ? `${myDiet.diet.fat_g}g` : '-', icon: Star, color: 'from-purple-500/20 to-purple-500/5' },
-                    ].map(m => (
-                      <div key={m.label} className={`bg-gradient-to-br ${m.color} rounded-2xl p-4 border border-white/5`}>
-                        <m.icon className="w-5 h-5 text-violet-500 mb-2" />
-                        <p className="text-2xl font-black text-white">{m.value}</p>
-                        <p className="text-xs text-gray-500">{m.label}</p>
-                      </div>
-                    ))}
+              <div className="space-y-6">
+                {/* Header with Switcher */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/[0.03] p-4 rounded-3xl border border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-violet-600/20 flex items-center justify-center">
+                      <Apple className="w-5 h-5 text-violet-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-bold leading-none">{myDiet.diet?.name}</h3>
+                      <p className="text-gray-500 text-xs mt-1">Asignada el {new Date(myDiet.assigned_at).toLocaleDateString()}</p>
+                    </div>
                   </div>
-                  <div className="bg-black/30 rounded-2xl p-5 border border-[#2a2a2a]">
-                    <p className="text-gray-300 whitespace-pre-wrap">{myDiet.diet?.content || 'Sin detalles de dieta'}</p>
+                  
+                  <div className="flex p-1 bg-black/40 rounded-xl border border-white/5 w-full sm:w-auto">
+                    <button
+                      onClick={() => setDietViewMode('daily')}
+                      className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                        dietViewMode === 'daily' 
+                          ? 'bg-violet-600 text-white shadow-lg' 
+                          : 'text-gray-500 hover:text-gray-300'
+                      }`}
+                    >
+                      <Sun className="w-3.5 h-3.5" />
+                      DIARIO
+                    </button>
+                    <button
+                      onClick={() => setDietViewMode('weekly')}
+                      className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                        dietViewMode === 'weekly' 
+                          ? 'bg-violet-600 text-white shadow-lg' 
+                          : 'text-gray-500 hover:text-gray-300'
+                      }`}
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      SEMANAL
+                    </button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                {dietViewMode === 'daily' ? (
+                  <div className="space-y-8">
+                    {/* Compact Macros for Daily */}
+                    <div className="grid grid-cols-4 gap-2 sm:gap-4">
+                      {[
+                        { label: 'Kcal', value: myDiet.diet?.calories, color: 'text-orange-400' },
+                        { label: 'Prot', value: myDiet.diet?.protein_g ? `${myDiet.diet.protein_g}g` : '-', color: 'text-blue-400' },
+                        { label: 'Carbs', value: myDiet.diet?.carbs_g ? `${myDiet.diet.carbs_g}g` : '-', color: 'text-amber-400' },
+                        { label: 'Grasas', value: myDiet.diet?.fat_g ? `${myDiet.diet.fat_g}g` : '-', color: 'text-purple-400' },
+                      ].map(m => (
+                        <div key={m.label} className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 text-center">
+                          <p className={`text-lg sm:text-2xl font-black ${m.color}`}>{m.value}</p>
+                          <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter sm:tracking-normal">{m.label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Timeline */}
+                    <div className="bg-white/[0.01] rounded-[2.5rem] p-6 sm:p-8 border border-white/[0.03]">
+                      <DietDailyView content={myDiet.diet?.content} />
+                    </div>
+
+                    {/* Today's Recipe part is already inside MemberRecipePlan which we show below */}
+                    <MemberRecipePlan userId={user.id} />
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    <MemberRecipePlan userId={user.id} forceFullWeek={true} />
+                    
+                    <DietWeeklyView 
+                      content={myDiet.diet?.content}
+                      calories={myDiet.diet?.calories}
+                      protein={myDiet.diet?.protein_g}
+                      carbs={myDiet.diet?.carbs_g}
+                      fat={myDiet.diet?.fat_g}
+                    />
+                  </div>
+                )}
+              </div>
             ) : (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
                 <CardContent className="py-20 text-center">
@@ -789,11 +842,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               </Card>
             )}
 
-            {/* FOOD TRACKER - Contador de macros con fotos */}
-            <FoodTracker userId={user.id} />
-
-            {/* Plan de Recetas Semanal */}
-            <MemberRecipePlan userId={user.id} />
+            {/* FOOD TRACKER is always useful in daily context, but we keep it below the main diet logic */}
+            {dietViewMode === 'daily' && <FoodTracker userId={user.id} />}
           </TabsContent>
 
           {/* RECIPES TAB - Browse all recipes */}
