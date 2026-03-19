@@ -30,6 +30,7 @@ import FoodTracker from './FoodTracker'
 import { AvatarBubble, ProfileModal } from './UserProfile'
 import { CycleModule } from './CycleModule'
 import { LifeStageSelector, PregnancyMode, PostpartumMode, LactationTracker } from './LifeStageModules'
+import { DietOnboardingBanner } from './DietOnboardingForm'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
@@ -41,6 +42,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [notices, setNotices] = useState([])
   const [unreadNotices, setUnreadNotices] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [pendingOnboarding, setPendingOnboarding] = useState(null)
+  const [onboardingChecked, setOnboardingChecked] = useState(false)
   const [myTrainer, setMyTrainer] = useState(null)
   const [storeProducts, setStoreProducts] = useState([])
   const [feedImageUrls, setFeedImageUrls] = useState({})
@@ -101,10 +104,27 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       loadProgress(),
       loadProgressPhotos(),
       loadNotices(),
+      loadOnboarding(),
       loadMyTrainer(),
       loadStoreProducts(),
       loadChartData()
     ])
+  }
+
+  const loadOnboarding = async () => {
+    try {
+      const { data } = await supabase
+        .from('diet_onboarding_requests')
+        .select('id, status')
+        .eq('member_id', user.id)
+        .eq('status', 'pending')
+        .maybeSingle()
+      setPendingOnboarding(data || null)
+    } catch (e) {
+      console.warn('Error fetching onboarding:', e.message)
+    } finally {
+      setOnboardingChecked(true)
+    }
   }
 
   const loadChartData = async () => {
@@ -721,6 +741,17 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
           {/* DIET TAB */}
           <TabsContent value="diet" className="space-y-4">
+            {onboardingChecked && pendingOnboarding && (
+              <DietOnboardingBanner
+                requestId={pendingOnboarding.id}
+                memberId={user.id}
+                onCompleted={() => {
+                  setPendingOnboarding(null)
+                  loadData()
+                }}
+              />
+            )}
+
             {myDiet ? (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
                 <CardHeader>
