@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   User, Dumbbell, Apple, Heart, Activity, Calendar, Mail, Phone,
-  Loader2, ChevronRight, X, Edit, Flame, Target, Zap, Star, TrendingUp, ClipboardList
+  Loader2, ChevronRight, X, Edit, Flame, Target, Zap, Star, TrendingUp, ClipboardList,
+  MessageCircle
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { WorkoutViewer } from './WorkoutBuilder'

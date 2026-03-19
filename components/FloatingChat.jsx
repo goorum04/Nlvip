@@ -54,7 +54,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
-  const [unreadCounts, setUnreadCounts] = useState({ total: 0, byMember: {} })
+  const [unreadCounts, setUnreadCounts] = useState({ total: 0, byMember: {}, byUser: {} })
   const [searchQuery, setSearchQuery] = useState('')
   const [view, setView] = useState(userRole === 'admin' ? 'list' : 'chat')
   
@@ -587,7 +587,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                   }`}
                 >
                   Entrenador
-                  {conversations.trainer && unreadCounts.byMember[conversations.trainer.id] > 0 && (
+                  {conversations.trainer && unreadCounts.byMember?.[conversations.trainer.id] > 0 && (
                     <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-sm"></span>
                   )}
                 </button>
@@ -600,7 +600,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                   }`}
                 >
                   Administración
-                  {conversations.admin && unreadCounts.byMember[conversations.admin.id] > 0 && (
+                  {conversations.admin && unreadCounts.byMember?.[conversations.admin.id] > 0 && (
                     <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-sm"></span>
                   )}
                 </button>
@@ -645,7 +645,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                       <p className="text-sm font-bold text-white flex items-center justify-between">
                         {member.name}
                         {/* Indicador de mensaje nuevo por socio */}
-                        {unreadCounts.byUser[member.id] > 0 && (
+                        {unreadCounts.byUser?.[member.id] > 0 && (
                           <div className="flex items-center gap-1.5">
                             <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-black">
                               {unreadCounts.byUser[member.id]}
