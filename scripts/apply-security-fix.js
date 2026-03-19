@@ -1,23 +1,30 @@
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
-const dotenv = require('dotenv');
 
-// Cargar variables de entorno locales
-const envPath = path.resolve(process.cwd(), '.env.local');
-if (fs.existsSync(envPath)) {
-  const envConfig = dotenv.parse(fs.readFileSync(envPath));
-  for (const k in envConfig) {
-    process.env[k] = envConfig[k];
-  }
+// Función manual para cargar .env.local sin 'dotenv'
+function loadEnv() {
+  const envPath = path.resolve(process.cwd(), '.env.local');
+  if (!fs.existsSync(envPath)) return {};
+  const content = fs.readFileSync(envPath, 'utf8');
+  const env = {};
+  content.split('\n').forEach(line => {
+    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+    if (match) {
+      let value = match[2] || '';
+      if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+      env[match[1]] = value.replace(/\\n/g, '\n');
+    }
+  });
+  return env;
 }
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-// Usar SERVICE_ROLE para bypass RLS y crear funciones
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+const env = loadEnv();
+const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !serviceRoleKey) {
-  console.error('ERROR: Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY in .env.local');
+  console.error('ERROR: No se encontraron las variables de Supabase en .env.local');
   process.exit(1);
 }
 
@@ -64,66 +71,28 @@ const queries = [
        WHERE conversation_id = p_conversation_id AND user_id = auth.uid()
      );
    END;
-   $$ LANGUAGE plpgsql SECURITY DEFINER;`,
-
-  // 2. EVOLUCION DEL CHAT
-  `DO $$
-   BEGIN
-       IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid WHERE t.typname = 'message_type' AND e.enumlabel = 'image') THEN
-           ALTER TYPE public.message_type ADD VALUE 'image';
-       END IF;
-   EXCEPTION
-       WHEN duplicate_object THEN NULL;
-   END $$;`,
-
-  `ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS image_path TEXT;`,
-
-  // 3. POLÍTICAS DE RLS ACTUALIZADAS
-  `DROP POLICY IF EXISTS "Participants can insert messages" ON public.messages;
-   CREATE POLICY "Participants can insert messages" ON public.messages
-   FOR INSERT WITH CHECK (is_admin() OR is_participant(conversation_id));`,
-
-  // 4. ALMACENAMIENTO (BUCKETS) - Usaremos la API de Storage para crear buckets
+   $$ LANGUAGE plpgsql SECURITY DEFINER;`
 ];
 
-async function applySQL() {
-  console.log('--- NL VIP CLUB: SECURITY FIX SCRIPT ---');
+async function apply() {
+  console.log('Aplicando funciones de seguridad...');
   
-  // Como supabase-js no tiene un método .sql(), usaremos un hack común: 
-  // Crear una función RPC temporal para ejecutar SQL si es que podemos, 
-  // o simplemente usar la API de supabase para lo que se pueda.
+  // Como no podemos ejecutar SQL arbitrario sin una función RPC previa, 
+  // intentaremos crear el bucket al menos, que sí tiene API de JS.
   
-  // ¡ESPERA! Hay un método mejor si el MCP falla: usar fetch directo a la API de postgrest /rpc/exec_sql 
-  // si es que existe (común en setups de desarrollo).
-  
-  // Pero bueno, si no puedo ejecutar SQL arbitrario vía JS sin una función auxiliar, 
-  // el script no servirá de mucho para el DDL.
-  
-  console.log('Executing critical updates...');
-  
-  // Vamos a intentar crear un bucket de imágenes vía API
   const { data: bucketData, error: bucketError } = await supabase.storage.createBucket('chat_images', {
     public: true
   });
   
   if (bucketError && bucketError.message !== 'Bucket already exists') {
-    console.error('Error creating bucket:', bucketError.message);
+    console.error('Error al crear bucket:', bucketError.message);
   } else {
-    console.log('Bucket chat_images ready.');
+    console.log('Bucket chat_images configurado.');
   }
 
-  console.log('Attempting to apply RLS and Functions via SQL RPC (if exists)...');
-  // Nota: Si no hay una función RPC para SQL, esto fallará. 
-  // En ese caso, la única opción es que el servidor MCP se recupere.
-  
-  const { error: rpcError } = await supabase.rpc('exec_sql', { sql_query: queries.join('\n') });
-  
-  if (rpcError) {
-    console.warn('RPC exec_sql failed (normal if not defined). Please check Supabase Dashboard.');
-    console.error(rpcError.message);
-  } else {
-    console.log('All SQL applied successfully via RPC.');
-  }
+  console.log('\n--- ATENCIÓN ---');
+  console.log('La ejecución de SQL (DDL) requiere privilegios que no están expuestos vía API estándar.');
+  console.log('Por favor, ejecute el contenido de final_supabase_fix.sql en el Dashboard.');
 }
 
-applySQL();
+apply();

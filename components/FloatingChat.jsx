@@ -10,7 +10,8 @@ import {
   Bot, Volume2, Image as ImageIcon, Loader2
 } from 'lucide-react'
 
-const ADMIN_ID = '64145053-45fd-473c-b2c4-7523d181aad3' // ID de Nacho (Admin)
+// Se buscará el administrador dinámicamente por rol 'admin'
+let ADMIN_ID = null; 
 
 // Componente AudioPlayer (Fuera del principal para evitar re-renders innecesarios)
 const AudioPlayer = ({ path }) => {
@@ -119,7 +120,14 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     }
 
     // 2. Get or Create Admin Conversation
-    const adminConv = await getOrCreateConversation('admin_member', [userId, ADMIN_ID])
+    const { data: adminUser } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin')
+      .single()
+
+    const targetAdminId = adminUser?.id || '64145053-45fd-473c-b2c4-7523d181aad3'
+    const adminConv = await getOrCreateConversation('admin_member', [userId, targetAdminId])
 
     setConversations({ trainer: trainerConv, admin: adminConv })
     
@@ -178,6 +186,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       }
     } catch (err) {
       console.error('Error in getOrCreateConversation:', err)
+      alert('Error al iniciar conversación: ' + err.message)
     }
     return null
   }
@@ -289,6 +298,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       setRecordingDuration(0)
     } catch (error) {
       console.error('Error sending message:', error)
+      alert('Error al enviar el mensaje: ' + error.message)
     } finally {
       setLoading(false)
       setUploadingImage(false)

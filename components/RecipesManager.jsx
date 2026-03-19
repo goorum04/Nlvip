@@ -109,13 +109,15 @@ function RecipeCard({ recipe, onEdit, onDelete, canEdit = false }) {
 
       {/* Modal detalle */}
       <Dialog open={showDetail} onOpenChange={setShowDetail}>
-        <DialogContent className="bg-[#0a0a0a] border-white/10 max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="bg-[#0a0a0a] border-white/10 max-w-lg p-0 overflow-hidden flex flex-col max-h-[90vh]">
+          <DialogHeader className="p-6 border-b border-white/5">
             <DialogTitle className="text-white flex items-center gap-2">
               <ChefHat className="w-5 h-5 text-violet-400" />
               {recipe.name}
             </DialogTitle>
           </DialogHeader>
+
+          <div className="overflow-y-auto p-6 space-y-6 custom-scrollbar">
 
           {recipe.image_url && (
             <img 
@@ -156,11 +158,29 @@ function RecipeCard({ recipe, onEdit, onDelete, canEdit = false }) {
               </div>
             )}
 
+            {/* Ingredientes */}
+            {recipe.ingredients && (
+              <div>
+                <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-green-400" />
+                  Ingredientes
+                </h4>
+                <div className="text-gray-400 text-sm bg-white/5 rounded-xl p-4 border border-white/5">
+                  <p className="whitespace-pre-wrap leading-relaxed">{recipe.ingredients}</p>
+                </div>
+              </div>
+            )}
+
             {/* Instrucciones */}
             {recipe.instructions && (
               <div>
-                <h4 className="text-white font-semibold mb-2">Instrucciones</h4>
-                <p className="text-gray-400 text-sm whitespace-pre-wrap">{recipe.instructions}</p>
+                <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
+                  <ChefHat className="w-4 h-4 text-violet-400" />
+                  Instrucciones
+                </h4>
+                <div className="text-gray-400 text-sm leading-relaxed">
+                  <p className="whitespace-pre-wrap">{recipe.instructions}</p>
+                </div>
               </div>
             )}
 
