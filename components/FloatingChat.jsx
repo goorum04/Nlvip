@@ -177,19 +177,26 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       }
 
       console.log('Creando nueva conversación de tipo:', type)
-      const { data: newConv, error: createError } = await supabase
-        .from('conversations')
-        .insert([{ type, created_by: userId }])
-        .select()
-        .single()
-      
-      if (createError) throw createError
+      const { data: convId, error: rpcError } = await supabase.rpc('start_conversation', {
+        p_type: type,
+        p_participant_ids: validParticipants
+      })
 
-      if (newConv) {
-        await supabase.from('conversation_participants').insert(
-          validParticipants.map(pid => ({ conversation_id: newConv.id, user_id: pid }))
-        )
-        return newConv
+      if (rpcError) throw rpcError
+
+      if (convId) {
+        // Obtenemos los detalles de la conversación recién creada
+        const { data: newConv, error: fetchError } = await supabase
+          .from('conversations')
+          .select('id, type')
+          .eq('id', convId)
+          .single()
+        
+        if (fetchError) throw fetchError
+        return {
+          ...newConv,
+          conversation_participants: validParticipants.map(id => ({ user_id: id }))
+        }
       }
     } catch (err) {
       console.error('Error in getOrCreateConversation:', err)
