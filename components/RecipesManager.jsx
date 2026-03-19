@@ -830,7 +830,16 @@ export function RecipesGallery() {
         console.error('Error loading recipes:', error)
         setRecipes([])
       } else {
-        setRecipes(data || [])
+        // Mapear nombres de columnas de la DB a los nombres del frontend
+        const mappedRecipes = (data || []).map(r => ({
+          ...r,
+          name: r.title || r.name,
+          instructions: r.steps || r.instructions,
+          prep_time_minutes: r.prep_time_min || r.prep_time_minutes,
+          fat_g: r.fats_g || r.fat_g,
+          image_url: r.image_path || r.image_url
+        }))
+        setRecipes(mappedRecipes)
       }
     } catch (err) {
       console.error('Failed to load recipes:', err)

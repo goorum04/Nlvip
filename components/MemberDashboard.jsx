@@ -408,7 +408,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       <header className="sticky top-0 z-50 bg-[#030303]/80 backdrop-blur-xl border-b border-white/5">
         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-violet-500/5 header-gradient opacity-50" />
         
-        <div className="relative container mx-auto px-4 pt-20 pb-3">
+        <div className="relative container mx-auto px-4 pt-12 pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img 
@@ -436,7 +436,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       </header>
 
       {/* Hero / Welcome Section (Este sí hace scroll) */}
-      <div className="relative overflow-hidden pt-28 pb-4">
+      <div className="relative overflow-hidden pt-4 pb-4">
         <div className="absolute top-0 left-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
         <div className="container mx-auto px-4">
           <div className="flex items-end gap-4">

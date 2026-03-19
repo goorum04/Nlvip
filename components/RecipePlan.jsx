@@ -233,8 +233,18 @@ export function MemberRecipePlan({ userId }) {
           .from('recipes')
           .select('*')
         
+        // Mapear nombres de columnas de la DB a los nombres del frontend
+        const mappedRecipes = (recipesData || []).map(r => ({
+          ...r,
+          name: r.title || r.name,
+          instructions: r.steps || r.instructions,
+          prep_time_minutes: r.prep_time_min || r.prep_time_minutes,
+          fat_g: r.fats_g || r.fat_g,
+          image_url: r.image_path || r.image_url
+        }))
+        
         setItems(itemsData || [])
-        setRecipes(recipesData || [])
+        setRecipes(mappedRecipes)
       }
     } catch (error) {
       console.error('Error loading plan:', error)
@@ -387,7 +397,16 @@ export function TrainerRecipePlanEditor({ memberId, memberName, trainerId }) {
 
   const loadAllRecipes = async () => {
     const { data } = await supabase.from('recipes').select('*').order('category')
-    setRecipes(data || [])
+    // Mapear nombres de columnas de la DB a los nombres del frontend
+    const mappedRecipes = (data || []).map(r => ({
+      ...r,
+      name: r.title || r.name,
+      instructions: r.steps || r.instructions,
+      prep_time_minutes: r.prep_time_min || r.prep_time_minutes,
+      fat_g: r.fats_g || r.fat_g,
+      image_url: r.image_path || r.image_url
+    }))
+    setRecipes(mappedRecipes)
   }
 
   const generatePlan = async () => {

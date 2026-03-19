@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { 
   MessageCircle, Send, X, Minimize2, Mic, MicOff, 
   Trash2, Play, Pause, Shield, User, ChevronLeft,
-  Bot, Volume2
+  Bot, Volume2, Image as ImageIcon, Loader2
 } from 'lucide-react'
 
 const ADMIN_ID = '64145053-45fd-473c-b2c4-7523d181aad3' // ID de Nacho (Admin)
@@ -61,7 +61,14 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   const [isRecording, setIsRecording] = useState(false)
   const [audioBlob, setAudioBlob] = useState(null)
   const [recordingDuration, setRecordingDuration] = useState(0)
+  
+  // Image Upload States
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+
   const mediaRecorderRef = useRef(null)
+  const fileInputRef = useRef(null)
   const timerRef = useRef(null)
 
   // Speech Recognition States (For all)
@@ -215,18 +222,31 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     }, 100)
   }
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen es demasiado grande (máx 5MB)')
+        return
+      }
+      setImageFile(file)
+      setImagePreview(URL.createObjectURL(file))
+    }
+  }
+
   const handleSend = async (e) => {
     if (e) e.preventDefault()
-    if (!newMessage.trim() && !audioBlob) return
+    if (!newMessage.trim() && !audioBlob && !imageFile) return
     if (!activeConversation) return
 
     setLoading(true)
     try {
       let audioPath = null
+      let imagePath = null
       let messageType = 'text'
 
+      // 1. Manejar Audio
       if (audioBlob) {
-        // Upload audio
         const fileName = `${userId}_${Date.now()}.webm`
         const { data, error } = await supabase.storage
           .from('chat_audios')
@@ -237,23 +257,41 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
         messageType = 'audio'
       }
 
+      // 2. Manejar Imagen
+      if (imageFile) {
+        setUploadingImage(true)
+        const fileExt = imageFile.name.split('.').pop()
+        const fileName = `${userId}_${Date.now()}.${fileExt}`
+        const { data, error } = await supabase.storage
+          .from('chat_images')
+          .upload(fileName, imageFile)
+        
+        if (error) throw error
+        imagePath = data.path
+        messageType = 'image'
+      }
+
       const { error } = await supabase.from('messages').insert([{
         conversation_id: activeConversation.id,
         sender_id: userId,
         content: newMessage,
         type: messageType,
-        audio_path: audioPath
+        audio_path: audioPath,
+        image_path: imagePath
       }])
 
       if (error) throw error
       
       setNewMessage('')
       setAudioBlob(null)
+      setImageFile(null)
+      setImagePreview(null)
       setRecordingDuration(0)
     } catch (error) {
       console.error('Error sending message:', error)
     } finally {
       setLoading(false)
+      setUploadingImage(false)
     }
   }
 
@@ -401,6 +439,16 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                       }`}>
                         {msg.type === 'audio' ? (
                           <AudioPlayer path={msg.audio_path} />
+                        ) : msg.type === 'image' ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/chat_images/${msg.image_path}`} 
+                              alt="Imagen de chat"
+                              className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => window.open(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/chat_images/${msg.image_path}`, '_blank')}
+                            />
+                            {msg.content && <p className="text-sm leading-relaxed">{msg.content}</p>}
+                          </div>
                         ) : (
                           <p className="text-sm leading-relaxed">{msg.content}</p>
                         )}
@@ -435,8 +483,29 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                 </button>
                 <Button onClick={handleSend} className="bg-violet-500 text-black rounded-xl">Enviar</Button>
               </div>
+            ) : imagePreview ? (
+              <div className="flex items-center gap-4 bg-cyan-500/10 p-3 rounded-2xl border border-cyan-500/20">
+                <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10">
+                  <img src={imagePreview} className="w-full h-full object-cover" />
+                </div>
+                <span className="text-xs text-cyan-400 font-medium flex-1">Imagen lista para enviar</span>
+                <button onClick={() => { setImageFile(null); setImagePreview(null); }} className="text-zinc-500 hover:text-white">
+                  <Trash2 size={18} />
+                </button>
+                <Button onClick={handleSend} disabled={uploadingImage} className="bg-cyan-500 text-black rounded-xl">
+                  {uploadingImage ? <Loader2 size={16} className="animate-spin" /> : 'Enviar'}
+                </Button>
+              </div>
             ) : (
               <form onSubmit={handleSend} className="flex gap-2">
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleImageSelect} 
+                  accept="image/*" 
+                  className="hidden" 
+                />
+                
                 <div className="flex-1 relative">
                   <Input
                     value={newMessage}
@@ -455,6 +524,14 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                   )}
                 </div>
                 
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-all"
+                >
+                  <ImageIcon size={20} />
+                </button>
+
                 {userRole === 'admin' && (
                   <button
                     type="button"
@@ -468,7 +545,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                 <Button 
                   type="submit" 
                   size="icon"
-                  disabled={loading || (!newMessage.trim() && !audioBlob)}
+                  disabled={loading || (!newMessage.trim() && !audioBlob && !imageFile)}
                   className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 text-black shadow-lg shadow-violet-500/20"
                 >
                   <Send size={18} />
