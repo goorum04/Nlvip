@@ -245,13 +245,13 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
             className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold py-3 text-base"
           >
             {submitting
-              ? <><Loader2 className="w-5 h-5 animate-spin mr-2" />Generando tu plan nutricional...</>
-              : <><ChefHat className="w-5 h-5 mr-2" />¡Generar mi plan personalizado!</>
+              ? <><Loader2 className="w-5 h-5 animate-spin mr-2" />Creando tu plan nutricional...</>
+              : <><ChefHat className="w-5 h-5 mr-2" />¡Solicitar mi plan!</>
             }
           </Button>
           {submitting && (
-            <p className="text-center text-gray-500 text-xs">
-              Estamos diseñando tu programa con comidas específicas y cantidades exactas. Puede tardar 15-20 segundos...
+            <p className="text-center text-gray-500 text-xs text-balance px-4 leading-relaxed">
+              Estamos preparando tu programa con comidas específicas y cantidades exactas. Por favor, espera unos segundos...
             </p>
           )}
         </div>

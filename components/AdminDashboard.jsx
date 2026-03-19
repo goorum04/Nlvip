@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { RecipesManager } from './RecipesManager'
 import AdminAssistant from './AdminAssistant'
+import FloatingChat from './FloatingChat'
 import { ProgressPhotoGallery } from './ProgressPhotos'
 import { FeedSection } from './FeedSection'
 import { AvatarBubble, ProfileModal } from './UserProfile'
@@ -2117,6 +2118,12 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         }}
         trainers={trainers}
         onRefresh={loadMembers}
+      />
+
+      <FloatingChat 
+        userId={user.id}
+        userRole="admin"
+        members={members}
       />
 
       <Toaster />

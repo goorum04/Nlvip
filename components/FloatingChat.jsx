@@ -301,7 +301,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       const { error } = await supabase.from('messages').insert([{
         conversation_id: activeConversation.id,
         sender_id: userId,
-        content: newMessage,
+        text: newMessage,
         type: messageType,
         audio_path: audioPath,
         image_path: imagePath
@@ -397,7 +397,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
 
       {/* Ventana de Chat */}
       {isOpen && (
-        <div className="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:w-[400px] h-[600px] max-h-[85vh] bg-[#0A0A0A] rounded-[2rem] shadow-2xl shadow-black border border-white/10 flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 lg:left-auto lg:right-6 lg:translate-x-0 w-[92%] max-w-[400px] h-[600px] max-h-[85vh] bg-[#0A0A0A] rounded-[2rem] shadow-2xl shadow-black border border-white/10 flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-5 duration-300">
           
           {/* Header & Tabs */}
           <div className="bg-gradient-to-b from-zinc-900 to-black p-4 border-b border-white/5">
@@ -475,10 +475,10 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                               className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
                               onClick={() => window.open(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/chat_images/${msg.image_path}`, '_blank')}
                             />
-                            {msg.content && <p className="text-sm leading-relaxed">{msg.content}</p>}
+                            {msg.text && <p className="text-sm leading-relaxed">{msg.text}</p>}
                           </div>
                         ) : (
-                          <p className="text-sm leading-relaxed">{msg.content}</p>
+                          <p className="text-sm leading-relaxed">{msg.text}</p>
                         )}
                       </div>
                       <p className="text-[9px] text-zinc-600 px-1">

@@ -361,4 +361,4 @@ export function ChallengesSection({ userId }) {
 }
 
 // Exportar todo
-export default { BadgesGallery, ChallengesSection, ChallengeCard, BadgeCard }
+export { BadgesGallery, ChallengesSection, ChallengeCard, BadgeCard }
