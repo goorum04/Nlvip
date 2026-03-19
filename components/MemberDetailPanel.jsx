@@ -370,8 +370,8 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                   <p className="text-gray-500 text-sm">Sin dieta asignada</p>
                 )}
 
-                <div className="pt-2">
-                  <Select onValueChange={handleAssignDiet} disabled={assigning}>
+                <div className="pt-4 flex flex-col gap-3">
+                  <Select onValueChange={handleAssignDiet} disabled={assigning || sendingOnboarding}>
                     <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white">
                       <SelectValue placeholder="Asignar dieta..." />
                     </SelectTrigger>
@@ -383,6 +383,25 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                       ))}
                     </SelectContent>
                   </Select>
+
+                  <div className="relative flex items-center py-2">
+                    <div className="flex-grow border-t border-white/10"></div>
+                    <span className="flex-shrink-0 mx-4 text-gray-500 text-xs uppercase tracking-wider">O</span>
+                    <div className="flex-grow border-t border-white/10"></div>
+                  </div>
+
+                  <Button 
+                    onClick={handleSendOnboarding}
+                    disabled={sendingOnboarding || assigning}
+                    className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 text-white shadow-lg shadow-violet-500/20"
+                  >
+                    {sendingOnboarding ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <ClipboardList className="w-4 h-4 mr-2" />
+                    )}
+                    Solicitar cuestionario (IA)
+                  </Button>
                 </div>
               </CardContent>
             </Card>
