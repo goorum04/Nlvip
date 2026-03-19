@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -103,15 +103,29 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
   const handleDeleteWorkout = async (id) => {
     if (confirm('┬┐Eliminar rutina?')) {
-      await supabase.from('workout_templates').delete().eq('id', id)
-      loadData()
+      const { data, error } = await supabase.from('workout_templates').delete().eq('id', id).select()
+      if (error) {
+        toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      } else if (!data || data.length === 0) {
+        toast({ title: 'Error', description: 'No tienes permisos para borrar esta rutina (RLS)', variant: 'destructive' })
+      } else {
+        toast({ title: 'Rutina eliminada' })
+        loadData()
+      }
     }
   }
 
   const handleDeleteDiet = async (id) => {
     if (confirm('┬┐Eliminar dieta?')) {
-      await supabase.from('diet_templates').delete().eq('id', id)
-      loadData()
+      const { data, error } = await supabase.from('diet_templates').delete().eq('id', id).select()
+      if (error) {
+        toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      } else if (!data || data.length === 0) {
+        toast({ title: 'Error', description: 'No tienes permisos para borrar esta dieta (RLS)', variant: 'destructive' })
+      } else {
+        toast({ title: 'Dieta eliminada' })
+        loadData()
+      }
     }
   }
 

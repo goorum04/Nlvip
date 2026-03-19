@@ -280,8 +280,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       await supabase.from('progress_photos').delete().eq('member_id', memberId)
       await supabase.from('feed_posts').delete().eq('author_id', memberId)
       // Finalmente eliminar perfil
-      const { error } = await supabase.from('profiles').delete().eq('id', memberId)
+      const { data, error } = await supabase.from('profiles').delete().eq('id', memberId).select()
       if (error) throw error
+      if (!data || data.length === 0) throw new Error('No tienes permisos para borrar este socio (RLS)')
       toast({ title: 'Socio eliminado' })
       loadMembers()
     } catch (error) {
@@ -294,8 +295,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     if (!confirm('¿Eliminar este reto?')) return
     try {
       await supabase.from('challenge_participants').delete().eq('challenge_id', challengeId)
-      const { error } = await supabase.from('challenges').delete().eq('id', challengeId)
+      const { data, error } = await supabase.from('challenges').delete().eq('id', challengeId).select()
       if (error) throw error
+      if (!data || data.length === 0) throw new Error('No tienes permisos para borrar este reto (RLS)')
       toast({ title: 'Reto eliminado' })
       loadChallenges()
     } catch (error) {
