@@ -229,7 +229,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
 
     window.addEventListener('open-chat', handleOpenChat)
     return () => window.removeEventListener('open-chat', handleOpenChat)
-  }, [userId, isOpen])
+  }, [userId])
 
   const initializeMemberConversations = async () => {
     // 1. Get or Create Trainer Conversation
@@ -287,7 +287,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
 
       // Filtrar manualmente para encontrar la conversación que tiene EXACTAMENTE estos participantes
       const exactMatch = existing?.find(conv => {
-        const pIds = conv.conversation_participants.map(p => p.user_id)
+        const pIds = (conv.conversation_participants || []).map(p => p.user_id)
         return validParticipants.every(vId => pIds.includes(vId)) && pIds.length === validParticipants.length
       })
 
@@ -623,7 +623,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black/40">
             {view === 'list' && userRole === 'admin' ? (
               <div className="space-y-2">
-                {members?.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase())).map(member => (
+                {(members || []).filter(m => (m?.name || '').toLowerCase().includes(searchQuery.toLowerCase())).map(member => (
                   <button
                     key={member.id}
                     onClick={async () => {
@@ -639,11 +639,11 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                     className="w-full flex items-center gap-3 p-3 rounded-2xl bg-white/5 hover:bg-violet-500/10 border border-white/5 hover:border-violet-500/30 transition-all text-left relative"
                   >
                     <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center text-violet-400 font-bold">
-                      {member.name.charAt(0)}
+                      {(member?.name || '?').charAt(0)}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-bold text-white flex items-center justify-between">
-                        {member.name}
+                        {member?.name || 'Socio sin nombre'}
                         {/* Indicador de mensaje nuevo por socio */}
                         {unreadCounts.byUser?.[member.id] > 0 && (
                           <div className="flex items-center gap-1.5">
