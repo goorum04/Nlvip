@@ -164,9 +164,16 @@ export default function AdminAssistant({ userId, voiceTrigger }) {
     initRecognition()
   }, [])
 
+  const stopSpeaking = () => {
+    if (typeof window !== 'undefined' && ('speechSynthesis' in window)) {
+      window.speechSynthesis.cancel()
+      setIsSpeaking(false)
+    }
+  }
+
   const speak = (text) => {
     if (!ttsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return
-    window.speechSynthesis.cancel()
+    stopSpeaking()
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.lang = 'es-ES'
     utterance.rate = 1.0
@@ -330,20 +337,31 @@ export default function AdminAssistant({ userId, voiceTrigger }) {
                 </div>
               )}
               {isSpeaking && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/20 backdrop-blur-sm rounded-full border border-cyan-400/30">
-                  <Volume2 className="w-3 h-3 text-cyan-300 animate-pulse" />
+                <button
+                  onClick={stopSpeaking}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/20 backdrop-blur-sm rounded-full border border-cyan-400/30 hover:bg-cyan-500/40 transition-all group"
+                  title="Detener voz"
+                >
+                  <Volume2 className="w-3 h-3 text-cyan-300 animate-pulse group-hover:scale-110" />
                   <span className="text-xs font-medium text-cyan-200">Hablando</span>
-                </div>
+                  <div className="ml-1 w-4 h-4 rounded-full bg-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <XCircle className="w-2.5 h-2.5 text-white" />
+                  </div>
+                </button>
               )}
               
               {/* TTS Toggle */}
               <button
-                onClick={() => setTtsEnabled(!ttsEnabled)}
+                onClick={() => {
+                  if (ttsEnabled && isSpeaking) stopSpeaking()
+                  setTtsEnabled(!ttsEnabled)
+                }}
                 className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                   ttsEnabled 
                     ? 'bg-white/20 text-white hover:bg-white/30' 
                     : 'bg-black/20 text-white/50 hover:bg-black/30'
                 }`}
+                title={ttsEnabled ? 'Silenciar voz' : 'Activar voz'}
               >
                 {ttsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
               </button>
