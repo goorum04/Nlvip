@@ -397,7 +397,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
 
       {/* Ventana de Chat */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-[400px] h-[600px] bg-[#0A0A0A] rounded-[2rem] shadow-2xl shadow-black border border-white/10 flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:w-[400px] h-[600px] max-h-[85vh] bg-[#0A0A0A] rounded-[2rem] shadow-2xl shadow-black border border-white/10 flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-5 duration-300">
           
           {/* Header & Tabs */}
           <div className="bg-gradient-to-b from-zinc-900 to-black p-4 border-b border-white/5">
