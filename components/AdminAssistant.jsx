@@ -278,12 +278,12 @@ export default function AdminAssistant({ userId, voiceTrigger }) {
   }
 
   const quickCommands = [
-    { icon: '📊', text: 'Resumen del gym', command: 'Dime el resumen del gimnasio' },
-    { icon: '🔍', text: 'Buscar socio', command: 'Busca al socio Said' },
-    { icon: '📢', text: 'Crear aviso', command: 'Crea un aviso para todos' },
-    { icon: '👥', text: 'Ver socios', command: 'Lista todos los socios' },
-    { icon: '🥗', text: 'Generar dieta', command: 'Genera una dieta para Said con objetivo pérdida de grasa' },
-    { icon: '👟', text: 'Ver actividad', command: 'Ver actividad física del socio Said' }
+    { icon: '📊', text: 'Resumen del gym', command: 'Acción: Resumen del gimnasio. Pregúntame "¿Para quién?"' },
+    { icon: '🔍', text: 'Buscar socio', command: 'Acción: Buscar socio. Pregúntame "¿Para quién?"' },
+    { icon: '📢', text: 'Crear aviso', command: 'Acción: Crear aviso. Pregúntame "¿Para quién?"' },
+    { icon: '👥', text: 'Ver socios', command: 'Acción: Ver lista de socios. Pregúntame "¿Para quién?"' },
+    { icon: '🥗', text: 'Generar dieta', command: 'Acción: Generar dieta. Pregúntame "¿Para quién?"' },
+    { icon: '👟', text: 'Ver actividad', command: 'Acción: Ver actividad física. Pregúntame "¿Para quién?"' }
   ]
 
   return (

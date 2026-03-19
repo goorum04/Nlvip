@@ -80,7 +80,17 @@ FLUJO PARA GENERAR/CREAR DIETAS:
 CUANDO GENERES O HABLES DE DIETAS, USA ESTAS REGLAS DEL GIMNASIO:
 ${DIET_RULES}
 
-Responde siempre de forma amigable y profesional. Si algo falla, explica el problema de forma sencilla.`
+8. Responde siempre de forma amigable y profesional. Si algo falla, explica el problema de forma sencilla.
+9. ATAJOS ESPECIALES (IMPORTANTE): 
+   Si el usuario envía un mensaje con el formato 'Acción: [NOMBRE_ACCION]. Pregúntame "¿Para quién?"':
+   - Responde ÚNICAMENTE: "¡Claro! ¿Para quién?" (o una variante breve y amable).
+   - NO ejecutes ninguna herramienta en ese momento.
+   - Quédate a la espera del nombre del socio.
+   - Cuando el usuario diga un nombre (ej: "Said"):
+     a) Usa find_member para buscarlo.
+     b) Si hay UN SOLO resultado, procede a realizar la [NOMBRE_ACCION] para ese socio.
+     c) Si hay VARIOS resultados con el mismo nombre, responde preguntando: "He encontrado varios socios con ese nombre: [Lista de nombres con apellidos]. ¿A cuál de ellos te refieres?" y espera la aclaración.
+     d) Si no hay resultados, informa al usuario.`
 
 export async function POST(request) {
   try {
