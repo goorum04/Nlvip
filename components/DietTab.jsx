@@ -1,13 +1,52 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Apple, Flame, Star, Target, Zap } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import FoodTracker from './FoodTracker'
 import { MemberRecipePlan } from './RecipePlan'
+import { DietOnboardingBanner } from './DietOnboardingForm'
+import { supabase } from '@/lib/supabase'
 
 export function DietTab({ user, diet }) {
+    const [pendingOnboarding, setPendingOnboarding] = useState(null)
+    const [onboardingChecked, setOnboardingChecked] = useState(false)
+
+    useEffect(() => {
+        if (user?.id) checkPendingOnboarding()
+    }, [user?.id])
+
+    const checkPendingOnboarding = async () => {
+        try {
+            const { data } = await supabase
+                .from('diet_onboarding_requests')
+                .select('id, status')
+                .eq('member_id', user.id)
+                .eq('status', 'pending')
+                .maybeSingle()
+
+            setPendingOnboarding(data || null)
+        } catch (e) {
+            // Table may not exist yet — silently ignore
+        } finally {
+            setOnboardingChecked(true)
+        }
+    }
+
     return (
         <div className="space-y-4">
+            {/* Onboarding banner (if pending) */}
+            {onboardingChecked && pendingOnboarding && (
+                <DietOnboardingBanner
+                    requestId={pendingOnboarding.id}
+                    memberId={user.id}
+                    onCompleted={() => {
+                        setPendingOnboarding(null)
+                        window.location.reload()
+                    }}
+                />
+            )}
+
             {diet ? (
                 <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
                     <CardHeader>

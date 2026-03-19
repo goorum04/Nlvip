@@ -145,7 +145,11 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   const getOrCreateConversation = async (type, participants) => {
     // Validar participantes (UUIDs válidos)
     const validParticipants = participants.filter(id => id && id.length > 30)
-    if (validParticipants.length < 2) return null
+    if (validParticipants.length < 2) {
+      console.warn('Participantes inválidos para conversación:', participants)
+      alert('Error: Datos de usuario incompletos para el chat. Por favor, asegúrate de que tu perfil esté cargado correctamente.')
+      return null
+    }
 
     try {
       // Check if conversation exists
@@ -167,9 +171,12 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
         return validParticipants.every(vId => pIds.includes(vId)) && pIds.length === validParticipants.length
       })
 
-      if (exactMatch) return exactMatch
+      if (exactMatch) {
+        console.log('Conversación existente encontrada:', exactMatch.id)
+        return exactMatch
+      }
 
-      // Create new conversation
+      console.log('Creando nueva conversación de tipo:', type)
       const { data: newConv, error: createError } = await supabase
         .from('conversations')
         .insert([{ type, created_by: userId }])
@@ -246,7 +253,11 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   const handleSend = async (e) => {
     if (e) e.preventDefault()
     if (!newMessage.trim() && !audioBlob && !imageFile) return
-    if (!activeConversation) return
+    
+    if (!activeConversation) {
+      alert('Error: No hay una conversación activa. Por favor, espera a que el chat cargue o refresca la página.')
+      return
+    }
 
     setLoading(true)
     try {
@@ -445,7 +456,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                       <div className={`px-4 py-3 rounded-2xl shadow-lg ${
                         isMe 
                           ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-tr-sm' 
-                          : 'bg-zinc-900 text-zinc-200 border border-white/5 rounded-tl-sm'
+                          : 'bg-zinc-900 text-white border border-white/5 rounded-tl-sm'
                       }`}>
                         {msg.type === 'audio' ? (
                           <AudioPlayer path={msg.audio_path} />
@@ -521,7 +532,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Escribe un mensaje..."
-                    className="h-12 bg-white/5 border-white/5 rounded-2xl pl-4 pr-10 text-sm focus:border-violet-500/50"
+                    className="h-12 bg-white/5 border-white/5 rounded-2xl pl-4 pr-10 text-sm focus:border-violet-500/50 text-white placeholder:text-zinc-500"
                   />
                   {userRole === 'admin' && (
                     <button

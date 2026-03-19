@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   User, Dumbbell, Apple, Heart, Activity, Calendar, Mail, Phone,
-  Loader2, ChevronRight, X, Edit, Flame, Target, Zap, Star
+  Loader2, ChevronRight, X, Edit, Flame, Target, Zap, Star, TrendingUp, ClipboardList
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { WorkoutViewer } from './WorkoutBuilder'
@@ -23,8 +23,10 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
   const [workoutDays, setWorkoutDays] = useState([])
   const [availableWorkouts, setAvailableWorkouts] = useState([])
   const [availableDiets, setAvailableDiets] = useState([])
+  const [progressRecords, setProgressRecords] = useState([])
   const [showWorkoutDetail, setShowWorkoutDetail] = useState(false)
   const [assigning, setAssigning] = useState(false)
+  const [sendingOnboarding, setSendingOnboarding] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -97,6 +99,16 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
         .order('created_at', { ascending: false })
 
       setAvailableDiets(diets || [])
+      
+      // Cargar historial de progreso
+      const { data: progress } = await supabase
+        .from('progress_records')
+        .select('*')
+        .eq('member_id', member.id)
+        .order('date', { ascending: false })
+        .limit(10)
+
+      setProgressRecords(progress || [])
 
     } catch (error) {
       console.error('Error loading member data:', error)
@@ -129,21 +141,69 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
   const handleAssignDiet = async (dietId) => {
     setAssigning(true)
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
       const { error } = await supabase
         .from('member_diets')
         .upsert([{
           member_id: member.id,
           diet_template_id: dietId,
-          assigned_by: (await supabase.auth.getUser()).data.user?.id
+          assigned_by: user?.id
         }], { onConflict: 'member_id' })
 
       if (error) throw error
+      
+      // GENERAR PLAN DE RECETAS AUTOMÁTICO
+      toast({ title: 'Generando plan de recetas...', description: 'Buscando las mejores recetas para tu dieta.' })
+      
+      try {
+        const response = await fetch('/api/generate-recipe-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            memberId: member.id,
+            dietId: dietId,
+            trainerId: user?.id
+          })
+        })
+        
+        const result = await response.json()
+        if (result.success) {
+          toast({ title: '¡Plan de recetas actualizado!', description: `${result.itemsCount} recetas asignadas para tu semana.` })
+        }
+      } catch (genError) {
+        console.error('Error generating recipe plan:', genError)
+        // No bloqueamos el éxito de la asignación de dieta si falla el plan de recetas
+      }
+
       toast({ title: '¡Dieta asignada!' })
       loadMemberData()
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
       setAssigning(false)
+    }
+  }
+
+  const handleSendOnboarding = async () => {
+    setSendingOnboarding(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const res = await fetch('/api/diet-onboarding/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: member.id, requestedBy: user?.id })
+      })
+      const result = await res.json()
+      if (result.alreadyExists) {
+        toast({ title: 'Ya existe un cuestionario pendiente', description: 'El socio aún no ha respondido el formulario.' })
+      } else {
+        toast({ title: '✅ Cuestionario enviado', description: 'El socio verá el formulario la próxima vez que abra su app.' })
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setSendingOnboarding(false)
     }
   }
 
@@ -183,10 +243,10 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                   <div className="flex items-center justify-between p-3 bg-black/30 rounded-xl">
                     <span className="text-sm text-gray-400">Etapa actual:</span>
                     <span className="text-sm font-bold text-pink-300 uppercase">
-                      {memberData.life_stage === 'cycle' ? 'Ciclo Natural' :
-                        memberData.life_stage === 'pregnant' ? 'Embarazo' :
-                          memberData.life_stage === 'postpartum' ? 'Post-parto' :
-                            memberData.life_stage === 'lactating' ? 'Lactancia' : 'No configurado'}
+                      {memberData?.life_stage === 'cycle' ? 'Ciclo Natural' :
+                        memberData?.life_stage === 'pregnant' ? 'Embarazo' :
+                          memberData?.life_stage === 'postpartum' ? 'Post-parto' :
+                            memberData?.life_stage === 'lactating' ? 'Lactancia' : 'No configurado'}
                     </span>
                   </div>
 
@@ -232,7 +292,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                     </div>
                     {workoutDays.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-3">
-                        {workoutDays.sort((a, b) => a.day_number - b.day_number).map(day => (
+                        {[...workoutDays].sort((a, b) => (a.day_number || 0) - (b.day_number || 0)).map(day => (
                           <span key={day.id} className="px-2 py-1 bg-violet-500/20 rounded-lg text-xs text-violet-300">
                             Día {day.day_number}: {day.name}
                           </span>
@@ -324,6 +384,44 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                     </SelectContent>
                   </Select>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Historial de Medidas */}
+            <Card className="bg-black/30 border-violet-500/20 rounded-2xl">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-white text-base flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-violet-400" />
+                  Historial de Medidas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {progressRecords.length > 0 ? (
+                  progressRecords.map(r => (
+                    <div key={r.id} className="p-3 bg-white/5 rounded-xl border border-white/5">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-violet-400 text-xs font-bold">{new Date(r.date).toLocaleDateString()}</p>
+                        {r.weight_kg && <p className="text-sm font-black text-white">{r.weight_kg} kg</p>}
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-400">
+                        {r.chest_cm && <span>Pecho: {r.chest_cm}cm</span>}
+                        {r.waist_cm && <span>Cintura: {r.waist_cm}cm</span>}
+                        {r.hips_cm && <span>Cadera: {r.hips_cm}cm</span>}
+                        {r.arms_cm && <span>Brazos: {r.arms_cm}cm</span>}
+                        {r.legs_cm && <span>Piernas: {r.legs_cm}cm</span>}
+                        {r.glutes_cm && <span>Glúteo: {r.glutes_cm}cm</span>}
+                        {r.calves_cm && <span>Gemelo: {r.calves_cm}cm</span>}
+                      </div>
+                      {r.notes && (
+                        <p className="text-[10px] text-gray-500 mt-2 italic border-t border-white/5 pt-1">
+                          "{r.notes}"
+                        </p>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm py-4 text-center">Sin registros de progreso</p>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -117,17 +117,16 @@ function RecipeCard({ recipe, onEdit, onDelete, canEdit = false }) {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="overflow-y-auto p-6 space-y-6 custom-scrollbar">
+          <div className="overflow-y-auto p-6 space-y-5">
 
-          {recipe.image_url && (
-            <img 
-              src={recipe.image_url} 
-              alt={recipe.name}
-              className="w-full aspect-video object-cover rounded-xl"
-            />
-          )}
+            {recipe.image_url && (
+              <img 
+                src={recipe.image_url} 
+                alt={recipe.name}
+                className="w-full aspect-video object-cover rounded-xl"
+              />
+            )}
 
-          <div className="space-y-4">
             {/* Macros */}
             {recipe.calories && (
               <div className="grid grid-cols-4 gap-2">
@@ -154,12 +153,12 @@ function RecipeCard({ recipe, onEdit, onDelete, canEdit = false }) {
             {recipe.description && (
               <div>
                 <h4 className="text-white font-semibold mb-2">Descripción</h4>
-                <p className="text-gray-400 text-sm">{recipe.description}</p>
+                <p className="text-gray-400 text-sm leading-relaxed">{recipe.description}</p>
               </div>
             )}
 
-            {/* Ingredientes */}
-            {recipe.ingredients && (
+            {/* Ingredientes - checks both mapped and raw field names */}
+            {(recipe.ingredients || recipe.steps) && (
               <div>
                 <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
                   <Plus className="w-4 h-4 text-green-400" />
@@ -171,21 +170,21 @@ function RecipeCard({ recipe, onEdit, onDelete, canEdit = false }) {
               </div>
             )}
 
-            {/* Instrucciones */}
-            {recipe.instructions && (
+            {/* Instrucciones - checks both mapped and raw field names */}
+            {(recipe.instructions || recipe.steps) && (
               <div>
                 <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
                   <ChefHat className="w-4 h-4 text-violet-400" />
-                  Instrucciones
+                  Instrucciones paso a paso
                 </h4>
-                <div className="text-gray-400 text-sm leading-relaxed">
-                  <p className="whitespace-pre-wrap">{recipe.instructions}</p>
+                <div className="text-gray-400 text-sm leading-relaxed bg-white/5 rounded-xl p-4 border border-white/5">
+                  <p className="whitespace-pre-wrap">{recipe.instructions || recipe.steps}</p>
                 </div>
               </div>
             )}
 
             {/* Tiempos */}
-            <div className="flex gap-4 text-sm">
+            <div className="flex gap-4 text-sm pt-2 border-t border-white/5">
               {recipe.prep_time_minutes && (
                 <div className="flex items-center gap-2 text-gray-400">
                   <Clock className="w-4 h-4" />
@@ -199,7 +198,7 @@ function RecipeCard({ recipe, onEdit, onDelete, canEdit = false }) {
                 </div>
               )}
             </div>
-            </div>
+
           </div>
         </DialogContent>
       </Dialog>

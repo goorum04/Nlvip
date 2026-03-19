@@ -81,6 +81,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [newHips, setNewHips] = useState('')
   const [newArms, setNewArms] = useState('')
   const [newLegs, setNewLegs] = useState('')
+  const [newGlutes, setNewGlutes] = useState('')
+  const [newCalf, setNewCalf] = useState('')
   const [progressNotes, setProgressNotes] = useState('')
 
   // Macro calculator removed - only trainers/admins can calculate macros
@@ -363,11 +365,13 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         hips_cm: parseFloat(newHips) || null,
         arms_cm: parseFloat(newArms) || null,
         legs_cm: parseFloat(newLegs) || null,
+        glutes_cm: parseFloat(newGlutes) || null,
+        calves_cm: parseFloat(newCalf) || null,
         notes: progressNotes
       }])
       if (error) throw error
       toast({ title: '¡Progreso registrado!' })
-      setNewWeight(''); setNewChest(''); setNewWaist(''); setNewHips(''); setNewArms(''); setNewLegs(''); setProgressNotes('')
+      setNewWeight(''); setNewChest(''); setNewWaist(''); setNewHips(''); setNewArms(''); setNewLegs(''); setNewGlutes(''); setNewCalf(''); setProgressNotes('')
       loadProgress()
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -848,6 +852,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                       { label: 'Cadera (cm)', value: newHips, setter: setNewHips },
                       { label: 'Brazos (cm)', value: newArms, setter: setNewArms },
                       { label: 'Piernas (cm)', value: newLegs, setter: setNewLegs },
+                      { label: 'Glúteo (cm)', value: newGlutes, setter: setNewGlutes },
+                      { label: 'Gemelo (cm)', value: newCalf, setter: setNewCalf },
                     ].map(f => (
                       <div key={f.label}>
                         <Label className="text-gray-400 text-xs">{f.label}</Label>
@@ -882,6 +888,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                         {r.chest_cm && <span>Pecho: {r.chest_cm}cm</span>}
                         {r.waist_cm && <span>Cintura: {r.waist_cm}cm</span>}
                         {r.hips_cm && <span>Cadera: {r.hips_cm}cm</span>}
+                        {r.glutes_cm && <span>Glúteo: {r.glutes_cm}cm</span>}
+                        {r.calves_cm && <span>Gemelo: {r.calves_cm}cm</span>}
                       </div>
                     </div>
                   ))}
