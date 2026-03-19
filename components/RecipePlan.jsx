@@ -300,6 +300,7 @@ export function MemberRecipePlan({ userId }) {
   const [items, setItems] = useState([])
   const [recipes, setRecipes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showFullWeek, setShowFullWeek] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -379,6 +380,11 @@ export function MemberRecipePlan({ userId }) {
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekEnd.getDate() + 6)
 
+  // Determinar el día de hoy (1 = Lunes, 7 = Domingo)
+  const currentDay = new Date().getDay()
+  const todayIndex = currentDay === 0 ? 7 : currentDay
+  const todayItems = items.filter(i => i.day_index === todayIndex)
+
   return (
     <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-white/5 rounded-3xl overflow-hidden">
       <CardHeader className="border-b border-white/5">
@@ -421,26 +427,76 @@ export function MemberRecipePlan({ userId }) {
         )}
       </CardHeader>
 
-      <CardContent className="p-4">
-        <div className="flex gap-3 overflow-x-auto pb-4">
-          {[1, 2, 3, 4, 5, 6, 7].map(dayIndex => (
-            <DayColumn
-              key={dayIndex}
-              dayIndex={dayIndex}
-              items={items}
-              recipes={recipes}
-              canEdit={false}
-            />
-          ))}
+      <CardContent className="p-5">
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
+              <Sun className="w-5 h-5 text-amber-400" />
+              Tu menú para hoy ({DAYS[todayIndex - 1]})
+            </h3>
+            <div className="grid gap-3">
+              {Object.keys(MEAL_SLOTS).map(slot => {
+                const item = todayItems.find(i => i.meal_slot === slot)
+                if (!item) return null
+                
+                return (
+                  <RecipeCard
+                    key={`today-${slot}`}
+                    item={item}
+                    recipe={getRecipe(item.recipe_id)}
+                    canEdit={false}
+                  />
+                )
+              })}
+              {todayItems.length === 0 && (
+                <div className="p-6 bg-white/5 border border-white/10 rounded-2xl text-center">
+                  <p className="text-gray-400">Hoy tienes el día libre o no hay recetas asignadas.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <Dialog open={showFullWeek} onOpenChange={setShowFullWeek}>
+            <DialogTrigger asChild>
+              <Button className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 h-12 rounded-xl mt-2">
+                <Calendar className="w-5 h-5 mr-2 text-violet-400" />
+                Ver menú de toda la semana
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-[#0a0a0a] border-white/10 max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+              <DialogHeader className="p-6 border-b border-white/10 shrink-0">
+                <DialogTitle className="text-white flex items-center gap-2 text-xl">
+                  <ChefHat className="w-6 h-6 text-violet-400" />
+                  Plan Semanal Completo
+                </DialogTitle>
+                <div className="text-gray-400 mt-1">
+                  Semana del {weekStart.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                </div>
+              </DialogHeader>
+              <div className="p-6 overflow-y-auto custom-scrollbar">
+                <div className="flex gap-4 min-w-max pb-4">
+                  {[1, 2, 3, 4, 5, 6, 7].map(dayIndex => (
+                    <DayColumn
+                      key={dayIndex}
+                      dayIndex={dayIndex}
+                      items={items}
+                      recipes={recipes}
+                      canEdit={false}
+                    />
+                  ))}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Leyenda */}
-        <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-white/5">
+        <div className="flex flex-wrap justify-center gap-4 mt-6 pt-4 border-t border-white/5">
           {Object.entries(MEAL_SLOTS).map(([key, slot]) => {
             const SlotIcon = slot.icon
             return (
-              <div key={key} className="flex items-center gap-2 text-xs text-gray-400">
-                <SlotIcon className="w-3 h-3" />
+              <div key={key} className="flex items-center gap-1.5 text-xs text-gray-400">
+                <SlotIcon className="w-3.5 h-3.5" />
                 <span>{slot.label} ({slot.percent}%)</span>
               </div>
             )

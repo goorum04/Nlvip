@@ -231,8 +231,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       // Eliminar días
       await supabase.from('workout_days').delete().eq('workout_template_id', workoutId)
       // Eliminar rutina
-      const { error } = await supabase.from('workout_templates').delete().eq('id', workoutId)
+      const { data, error } = await supabase.from('workout_templates').delete().eq('id', workoutId).select()
       if (error) throw error
+      if (!data || data.length === 0) throw new Error('Operación bloqueada por los permisos del servidor (RLS).')
       toast({ title: 'Rutina eliminada' })
       loadWorkoutTemplates()
     } catch (error) {
@@ -244,8 +245,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const handleDeleteDiet = async (dietId) => {
     if (!confirm('¿Eliminar esta dieta?')) return
     try {
-      const { error } = await supabase.from('diet_templates').delete().eq('id', dietId)
+      const { data, error } = await supabase.from('diet_templates').delete().eq('id', dietId).select()
       if (error) throw error
+      if (!data || data.length === 0) throw new Error('Operación bloqueada por los permisos del servidor (RLS).')
       toast({ title: 'Dieta eliminada' })
       loadDietTemplates()
     } catch (error) {
