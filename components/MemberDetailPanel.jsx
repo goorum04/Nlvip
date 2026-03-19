@@ -189,17 +189,34 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
     setSendingOnboarding(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      const res = await fetch('/api/diet-onboarding/request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId: member.id, requestedBy: user?.id })
-      })
-      const result = await res.json()
-      if (result.alreadyExists) {
+      
+      // Check for existing pending request
+      const { data: existing, error: checkError } = await supabase
+        .from('diet_onboarding_requests')
+        .select('id, status')
+        .eq('member_id', member.id)
+        .eq('status', 'pending')
+        .maybeSingle()
+
+      if (checkError) console.error(checkError)
+
+      if (existing) {
         toast({ title: 'Ya existe un cuestionario pendiente', description: 'El socio aún no ha respondido el formulario.' })
-      } else {
-        toast({ title: '✅ Cuestionario enviado', description: 'El socio verá el formulario la próxima vez que abra su app.' })
+        return
       }
+
+      // Create new request
+      const { error: insertError } = await supabase
+        .from('diet_onboarding_requests')
+        .insert({
+          member_id: member.id,
+          requested_by: user?.id,
+          status: 'pending'
+        })
+
+      if (insertError) throw insertError
+
+      toast({ title: '✅ Cuestionario enviado', description: 'El socio verá el formulario la próxima vez que abra su app.' })
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
