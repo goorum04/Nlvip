@@ -10,8 +10,7 @@ import {
   Bot, Volume2, Image as ImageIcon, Loader2
 } from 'lucide-react'
 
-// Se buscará el administrador dinámicamente por rol 'admin'
-let ADMIN_ID = null; 
+// El administrador se busca dinámicamente en initializeMemberConversations
 
 // Componente AudioPlayer (Fuera del principal para evitar re-renders innecesarios)
 const AudioPlayer = ({ path }) => {
@@ -124,7 +123,8 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       .from('profiles')
       .select('id')
       .eq('role', 'admin')
-      .single()
+      .limit(1)
+      .maybeSingle()
 
     const targetAdminId = adminUser?.id || '64145053-45fd-473c-b2c4-7523d181aad3'
     const adminConv = await getOrCreateConversation('admin_member', [userId, targetAdminId])

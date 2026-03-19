@@ -1,4 +1,4 @@
-// Script para poblar masivamente el catálogo de recetas con IA y Fotos
+// Script para poblar masivamente el catálogo de raciones con AI y Fotos
 // Autor: Nacho Lostao (64145053-45fd-473c-b2c4-7523d181aad3)
 
 const { createClient } = require('@supabase/supabase-js');
@@ -34,14 +34,18 @@ const OPENAI_KEY = process.env.OPENAI_API_KEY;
 const ADMIN_ID = '64145053-45fd-473c-b2c4-7523d181aad3';
 
 const QUERIES = [
-  { q: 'healthy breakfast', cat: 'breakfast' },
-  { q: 'greek yogurt bowl', cat: 'breakfast' },
-  { q: 'mediterranean salad lunch', cat: 'lunch' },
-  { q: 'grilled chicken dinner', cat: 'dinner' },
-  { q: 'steak and asparagus', cat: 'dinner' },
-  { q: 'vegan power bowl', cat: 'lunch' },
-  { q: 'fruit and nuts snack', cat: 'snack' },
-  { q: 'protein shake smoothie', cat: 'snack' }
+  { q: 'vegan high protein bowl', cat: 'lunch' },
+  { q: 'keto dinner salmon asparagus', cat: 'dinner' },
+  { q: 'protein pancakes healthy', cat: 'breakfast' },
+  { q: 'healthy protein brownie', cat: 'snack' },
+  { q: 'sugar free cheesecake protein', cat: 'snack' },
+  { q: 'grilled turkey with roasted vegetables', cat: 'dinner' },
+  { q: 'quinoa avocado salad vegan', cat: 'lunch' },
+  { q: 'egg white omelette spinach', cat: 'breakfast' },
+  { q: 'low carb chicken curry', cat: 'dinner' },
+  { q: 'greek yogurt with berries and seeds', cat: 'breakfast' },
+  { q: 'zucchini noodles with pesto and shrimp', cat: 'lunch' },
+  { q: 'baked cod with lemon and herbs', cat: 'dinner' }
 ];
 
 async function translate(text, context) {
@@ -70,7 +74,7 @@ async function populate() {
     return;
   }
 
-  console.log('🚀 Iniciando carga masiva con IA...');
+  console.log('🚀 Iniciando segunda ráfaga de carga masiva (20+ recetas variadas)...');
   let total = 0;
 
   for (const item of QUERIES) {
@@ -124,7 +128,7 @@ async function populate() {
     }
   }
 
-  console.log(`\n🎉 ¡Carga completa! ${total} recetas añadidas en español perfecto.`);
+  console.log(`\n🎉 ¡Carga completa! ${total} recetas nuevas añadidas.`);
 }
 
 populate();

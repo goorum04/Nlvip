@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
-  User, Dumbbell, Apple, Activity, Calendar, Mail, Phone,
+  User, Dumbbell, Apple, Heart, Activity, Calendar, Mail, Phone,
   Loader2, ChevronRight, X, Edit, Flame, Target, Zap, Star
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'

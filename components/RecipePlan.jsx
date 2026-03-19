@@ -26,42 +26,142 @@ const MEAL_SLOTS = {
 
 // Componente de tarjeta de receta individual
 function RecipeCard({ item, recipe, onEdit, canEdit = false }) {
+  const [showDetail, setShowDetail] = useState(false)
   const slot = MEAL_SLOTS[item.meal_slot] || MEAL_SLOTS.snack
   const SlotIcon = slot.icon
 
   return (
-    <div className={`p-3 rounded-xl bg-gradient-to-br ${slot.color} border border-white/5 transition-all hover:border-white/10 group`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-            <SlotIcon className="w-4 h-4 text-white/70" />
+    <>
+      <div 
+        className={`p-3 rounded-xl bg-gradient-to-br ${slot.color} border border-white/5 transition-all hover:border-white/10 group cursor-pointer`}
+        onClick={() => setShowDetail(true)}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+              <SlotIcon className="w-4 h-4 text-white/70" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-white text-sm font-medium truncate">{recipe?.name || 'Sin receta'}</p>
+              {recipe?.calories && (
+                <p className="text-gray-400 text-xs flex items-center gap-1">
+                  <Flame className="w-3 h-3" />
+                  {recipe.calories} kcal
+                  {recipe.protein_g && <span className="ml-2">• {recipe.protein_g}g prot</span>}
+                </p>
+              )}
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-white text-sm font-medium truncate">{recipe?.name || 'Sin receta'}</p>
-            {recipe?.calories && (
-              <p className="text-gray-400 text-xs flex items-center gap-1">
-                <Flame className="w-3 h-3" />
-                {recipe.calories} kcal
-                {recipe.protein_g && <span className="ml-2">• {recipe.protein_g}g prot</span>}
-              </p>
-            )}
-          </div>
+          {canEdit && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="opacity-0 group-hover:opacity-100 h-7 w-7 text-gray-400 hover:text-white transition-all"
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            >
+              <Edit2 className="w-3 h-3" />
+            </Button>
+          )}
         </div>
-        {canEdit && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="opacity-0 group-hover:opacity-100 h-7 w-7 text-gray-400 hover:text-white transition-all"
-            onClick={onEdit}
-          >
-            <Edit2 className="w-3 h-3" />
-          </Button>
+        {item.notes && (
+          <p className="text-xs text-gray-500 mt-2 italic">📝 {item.notes}</p>
         )}
       </div>
-      {item.notes && (
-        <p className="text-xs text-gray-500 mt-2 italic">📝 {item.notes}</p>
-      )}
-    </div>
+
+      <Dialog open={showDetail} onOpenChange={setShowDetail}>
+        <DialogContent className="bg-[#0a0a0a] border-white/10 max-w-lg p-0 overflow-hidden flex flex-col max-h-[90vh]">
+          <DialogHeader className="p-6 border-b border-white/5">
+            <DialogTitle className="text-white flex items-center gap-2">
+              <ChefHat className="w-5 h-5 text-violet-400" />
+              {recipe?.name}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="overflow-y-auto p-6 space-y-6 custom-scrollbar">
+            {recipe?.image_url && (
+              <img 
+                src={recipe.image_url} 
+                alt={recipe.name}
+                className="w-full aspect-video object-cover rounded-xl"
+              />
+            )}
+
+            <div className="space-y-4">
+              {/* Macros */}
+              {recipe?.calories && (
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="bg-orange-500/10 rounded-xl p-3 text-center">
+                    <p className="text-orange-400 font-bold">{recipe.calories}</p>
+                    <p className="text-xs text-gray-500">kcal</p>
+                  </div>
+                  <div className="bg-blue-500/10 rounded-xl p-3 text-center">
+                    <p className="text-blue-400 font-bold">{recipe.protein_g || 0}g</p>
+                    <p className="text-xs text-gray-500">Prot</p>
+                  </div>
+                  <div className="bg-amber-500/10 rounded-xl p-3 text-center">
+                    <p className="text-amber-400 font-bold">{recipe.carbs_g || 0}g</p>
+                    <p className="text-xs text-gray-500">Carbs</p>
+                  </div>
+                  <div className="bg-purple-500/10 rounded-xl p-3 text-center">
+                    <p className="text-purple-400 font-bold">{recipe.fat_g || 0}g</p>
+                    <p className="text-xs text-gray-500">Grasas</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Descripción */}
+              {recipe?.description && (
+                <div>
+                  <h4 className="text-white font-semibold mb-2">Descripción</h4>
+                  <p className="text-gray-400 text-sm">{recipe.description}</p>
+                </div>
+              )}
+
+              {/* Ingredientes */}
+              {recipe?.ingredients && (
+                <div>
+                  <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-400" />
+                    Ingredientes
+                  </h4>
+                  <div className="text-gray-400 text-sm bg-white/5 rounded-xl p-4 border border-white/5">
+                    <p className="whitespace-pre-wrap leading-relaxed">{recipe.ingredients}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Instrucciones */}
+              {recipe?.instructions && (
+                <div>
+                  <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
+                    <ChefHat className="w-4 h-4 text-violet-400" />
+                    Instrucciones
+                  </h4>
+                  <div className="text-gray-400 text-sm leading-relaxed">
+                    <p className="whitespace-pre-wrap">{recipe.instructions}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-4 text-sm pt-2">
+                {recipe?.prep_time_minutes && (
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Clock className="w-4 h-4" />
+                    Prep: {recipe.prep_time_minutes} min
+                  </div>
+                )}
+                {item.notes && (
+                  <div className="flex items-center gap-2 text-violet-400 italic">
+                    <Target className="w-4 h-4" />
+                    Nota del coach: {item.notes}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

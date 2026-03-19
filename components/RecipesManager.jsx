@@ -199,6 +199,7 @@ function RecipeCard({ recipe, onEdit, onDelete, canEdit = false }) {
                 </div>
               )}
             </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
