@@ -767,4 +767,3 @@ export function TrainerRecipePlanEditor({ memberId, memberName, trainerId }) {
   )
 }
 
-export { MemberRecipePlan, TrainerRecipePlanEditor }

@@ -374,6 +374,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     toast({ title: 'Post reportado', description: 'El administrador lo revisará' })
   }
 
+  const isLikedByMe = (post) => post.feed_likes?.some(like => like.user_id === user.id)
+
   const handleAddProgress = async (e) => {
     e.preventDefault()
     setLoading(true)

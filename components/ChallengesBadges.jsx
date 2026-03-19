@@ -360,5 +360,3 @@ export function ChallengesSection({ userId }) {
   )
 }
 
-// Exportar todo
-export { BadgesGallery, ChallengesSection, ChallengeCard, BadgeCard }

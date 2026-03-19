@@ -1116,4 +1116,3 @@ export function RecipesManager({ userId }) {
   )
 }
 
-export { RecipesGallery, RecipesManager, RecipeCard }
