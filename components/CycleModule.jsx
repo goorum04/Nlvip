@@ -21,7 +21,7 @@ import {
   Activity,
   Settings,
   Moon,
-  Sun as SunIcon,
+  Sun,
   Zap,
   Droplets,
   TrendingUp,
@@ -47,7 +47,7 @@ const PHASE_CONFIG = {
     slogan: 'Tiempo de introspección y descanso.'
   },
   follicular: {
-    icon: SunIcon,
+    icon: Sun,
     gradient: 'from-teal-600/20 via-emerald-600/10 to-transparent',
     accent: 'bg-teal-500',
     text: 'text-teal-400',
@@ -456,7 +456,7 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
           {[
             { label: 'PROT', value: cycleData.macros.protein, icon: Droplets, color: 'text-violet-400' },
             { label: 'GRAS', value: cycleData.macros.fat, icon: Flame, color: 'text-rose-400' },
-            { label: 'CARB', value: cycleData.macros.carbs, icon: SunIcon, color: 'text-amber-400' }
+            { label: 'CARB', value: cycleData.macros.carbs, icon: Sun, color: 'text-amber-400' }
           ].map((macro, i) => (
             <div key={i} className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 flex flex-col items-center justify-center">
               <macro.icon className={`w-4 h-4 ${macro.color} mb-2`} />

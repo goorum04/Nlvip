@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle, 
   Flag, Sparkles, Flame, Target, Zap, Star, ShoppingBag,
-  Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift, Sun as SunIcon, Calendar
+  Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift, Sun, Calendar
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
@@ -797,7 +797,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                           : 'text-gray-500 hover:text-gray-300'
                       }`}
                     >
-                      <SunIcon className="w-3.5 h-3.5" />
+                      <Sun className="w-3.5 h-3.5" />
                       DIARIO
                     </button>
                     <button
