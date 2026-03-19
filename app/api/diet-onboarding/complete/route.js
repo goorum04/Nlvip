@@ -117,49 +117,32 @@ Etc.`
       .limit(1)
       .single()
 
-    // 6. Save as diet_template
+    // 6. Save as diet_template and assign to member using RPC (SECURITY DEFINER)
     const dietName = `Plan Personalizado - ${name} (IA)`
-    const { data: newDiet, error: dietError } = await supabase
-      .from('diet_templates')
-      .insert({
-        name: dietName,
-        calories: macros.calories,
-        protein_g: macros.protein_g,
-        carbs_g: macros.carbs_g,
-        fat_g: macros.fat_g,
-        content: fullDietContent,
-        created_by: adminProfile?.id
-      })
-      .select()
-      .single()
+    
+    const { data: generatedDietId, error: rpcError } = await supabase.rpc('complete_diet_onboarding', {
+      p_member_id: memberId,
+      p_request_id: requestId,
+      p_diet_name: dietName,
+      p_calories: macros.calories,
+      p_protein_g: macros.protein_g,
+      p_carbs_g: macros.carbs_g,
+      p_fat_g: macros.fat_g,
+      p_content: fullDietContent,
+      p_admin_id: adminProfile?.id,
+      p_responses: responses
+    })
 
-    if (dietError) throw new Error('Error guardando la dieta: ' + dietError.message)
+    if (rpcError) throw new Error('Error en el proceso de guardado: ' + rpcError.message)
 
-    // 7. Assign diet to member
-    const reqUser = await supabase
+    const newDietId = generatedDietId
+
+    // 7. Get requester info for generate-recipe-plan
+    const { data: reqData } = await supabase
       .from('diet_onboarding_requests')
       .select('requested_by')
       .eq('id', requestId)
       .single()
-
-    await supabase
-      .from('member_diets')
-      .upsert({
-        member_id: memberId,
-        diet_template_id: newDiet.id,
-        assigned_by: reqUser?.data?.requested_by || adminProfile?.id
-      }, { onConflict: 'member_id' })
-
-    // 8. Mark onboarding as completed
-    await supabase
-      .from('diet_onboarding_requests')
-      .update({
-        status: 'completed',
-        responses,
-        generated_diet_id: newDiet.id,
-        completed_at: new Date().toISOString()
-      })
-      .eq('id', requestId)
 
     // 9. Also generate recipe plan
     try {
@@ -168,8 +151,8 @@ Etc.`
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           memberId,
-          dietId: newDiet.id,
-          trainerId: reqUser?.data?.requested_by
+          dietId: newDietId,
+          trainerId: reqData?.requested_by
         })
       })
     } catch (e) {
