@@ -11,14 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { 
   UtensilsCrossed, Search, Flame, Clock, Users, Plus, Edit2, Trash2,
-  Coffee, Sun, Moon, Apple, ChefHat, Loader2, ImagePlus, X, Camera, Sparkles, Wand2
+  Coffee, Sun as SunIcon, Moon, Apple, ChefHat, Loader2, ImagePlus, X, Camera, Sparkles, Wand2
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 // Iconos por categoría
 const categoryIcons = {
   breakfast: { icon: Coffee, label: 'Desayuno', color: 'from-amber-500 to-orange-500' },
-  lunch: { icon: Sun, label: 'Comida', color: 'from-green-500 to-emerald-500' },
+  lunch: { icon: SunIcon, label: 'Comida', color: 'from-green-500 to-emerald-500' },
   dinner: { icon: Moon, label: 'Cena', color: 'from-blue-500 to-indigo-500' },
   snack: { icon: Apple, label: 'Snack', color: 'from-purple-500 to-pink-500' },
   any: { icon: UtensilsCrossed, label: 'Cualquiera', color: 'from-gray-500 to-gray-600' }

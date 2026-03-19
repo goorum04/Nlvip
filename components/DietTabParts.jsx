@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { 
-  Coffee, Sun, Moon, Apple, Clock, Flame, 
+  Coffee, Sun as SunIcon, Moon, Apple, Clock, Flame, 
   ChevronRight, Calendar, Info, ShieldCheck, Droplets
 } from 'lucide-react'
 import { useState } from 'react'
@@ -11,7 +11,7 @@ import ReactMarkdown from 'react-markdown'
 const MEAL_icons = {
   'DESAYUNO': Coffee,
   'MEDIA MAÑANA': Apple,
-  'COMIDA': Sun,
+  'COMIDA': SunIcon,
   'MERIENDA': Apple,
   'CENA': Moon,
   'POST-ENTRENO': Flame,

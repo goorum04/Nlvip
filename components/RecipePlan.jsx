@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { 
-  UtensilsCrossed, Coffee, Sun, Moon, Apple, ChefHat, Clock, Flame,
+  UtensilsCrossed, Coffee, Sun as SunIcon, Moon, Apple, ChefHat, Clock, Flame,
   RefreshCw, Edit2, X, Check, Search, Loader2, Calendar, Target
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
@@ -432,7 +432,7 @@ export function MemberRecipePlan({ userId, forceFullWeek = false }) {
           {!forceFullWeek ? (
             <div>
               <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-                <Sun className="w-5 h-5 text-amber-400" />
+                <SunIcon className="w-5 h-5 text-amber-400" />
                 Tu menú para hoy ({DAYS[todayIndex - 1]})
               </h3>
               <div className="grid gap-3">

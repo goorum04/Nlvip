@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle, 
   Flag, Sparkles, Flame, Target, Zap, Star, ShoppingBag,
-  Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift, Sun, Calendar
+  Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift, Sun as SunIcon, Calendar
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
@@ -211,12 +211,18 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   }
 
   const loadMyTrainer = async () => {
-    const { data } = await supabase
-      .from('trainer_members')
-      .select(`trainer:profiles!trainer_members_trainer_id_fkey(id, name, email)`)
-      .eq('member_id', user.id)
-      .single()
-    if (data) setMyTrainer(data.trainer)
+    try {
+      const { data, error } = await supabase
+        .from('trainer_members')
+        .select(`trainer:profiles!trainer_members_trainer_id_fkey(id, name, email)`)
+        .eq('member_id', user.id)
+        .maybeSingle()
+      
+      if (error) throw error
+      if (data) setMyTrainer(data.trainer)
+    } catch (error) {
+      console.error('Error loading trainer:', error)
+    }
   }
 
   const loadFeed = async () => {
@@ -290,9 +296,21 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
   const loadStoreProducts = async () => {
     try {
-      const { data } = await supabase.from('store_products').select('*').eq('is_active', true).order('category')
+      const { data, error } = await supabase
+        .from('store_products')
+        .select('*')
+        .eq('is_active', true)
+        .order('category')
+      
+      if (error) {
+        if (error.code === 'PGRST116' || error.code === '42P01') return
+        throw error
+      }
       if (data) setStoreProducts(data)
-    } catch (e) { /* Table may not exist */ }
+    } catch (error) {
+      console.warn('Store products not available:', error.message)
+      setStoreProducts([])
+    }
   }
 
   const loadNotices = async () => {
@@ -779,7 +797,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                           : 'text-gray-500 hover:text-gray-300'
                       }`}
                     >
-                      <Sun className="w-3.5 h-3.5" />
+                      <SunIcon className="w-3.5 h-3.5" />
                       DIARIO
                     </button>
                     <button
