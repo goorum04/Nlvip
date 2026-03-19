@@ -210,7 +210,7 @@ export default function WomensWellness({ profile, onUpdateProfile }) {
     const Icon = phase.icon
 
     return (
-        <div className="space-y-6 pb-6">
+        <div className="space-y-6 pb-32">
             <div className="flex items-center justify-between px-2 pt-2">
                 <div>
                     <h2 className="text-2xl font-light text-white tracking-tight">Bienestar Femenino</h2>

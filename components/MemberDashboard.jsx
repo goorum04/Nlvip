@@ -658,7 +658,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
             {/* Bienestar Femenino (Strictly female) */}
             {profile?.sex === 'female' && (
-            <TabsContent value="bienestar" className="space-y-4">
+            <TabsContent value="bienestar" className="space-y-4 pb-32">
               <LifeStageSelector userId={user.id} profile={profile} onUpdate={() => window.location.reload()} />
               {(!profile?.life_stage || profile.life_stage === 'cycle') && (
                 <CycleModule user={user} profile={profile} variant="full" onProfileUpdate={() => window.location.reload()} onThemeChange={setPageTheme} />

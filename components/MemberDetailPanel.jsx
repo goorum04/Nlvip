@@ -417,7 +417,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                     ) : (
                       <ClipboardList className="w-4 h-4 mr-2" />
                     )}
-                    Solicitar cuestionario (IA)
+                    Solicitar cuestionario
                   </Button>
                 </div>
               </CardContent>

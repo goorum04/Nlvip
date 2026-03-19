@@ -365,7 +365,7 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
 
   // Full variant - toda la información
   return (
-    <div className="space-y-6 relative">
+    <div className="space-y-6 relative pb-32">
       {/* Ambient Glow Background */}
       <div className={`absolute -top-24 left-1/2 -translate-x-1/2 w-[150%] h-[150%] bg-gradient-to-b ${cycleData.phaseConfig.gradient} opacity-40 blur-[120px] pointer-events-none -z-10`} />
 

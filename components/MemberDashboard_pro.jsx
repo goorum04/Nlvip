@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -357,7 +357,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           </TabsContent>
 
           {localProfile?.sex === 'female' && (
-            <TabsContent value="bienestar" className="space-y-4">
+            <TabsContent value="bienestar" className="space-y-4 pb-32">
               <LifeStageSelector userId={user.id} profile={localProfile} onUpdate={setLocalProfile} />
               {(!localProfile?.life_stage || localProfile.life_stage === 'cycle') && (
                 <CycleModule user={user} profile={localProfile} variant="full" onProfileUpdate={setLocalProfile} onThemeChange={setPageTheme} />

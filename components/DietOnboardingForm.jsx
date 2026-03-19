@@ -251,7 +251,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
           </Button>
           {submitting && (
             <p className="text-center text-gray-500 text-xs">
-              La IA está creando tu programa con comidas específicas y cantidades exactas. Puede tardar 15-20 segundos...
+              Estamos diseñando tu programa con comidas específicas y cantidades exactas. Puede tardar 15-20 segundos...
             </p>
           )}
         </div>
@@ -311,7 +311,7 @@ export function DietOnboardingBanner({ requestId, memberId, onCompleted }) {
               ¡Tu entrenador quiere crear tu plan de nutrición! 🎉
             </h3>
             <p className="text-gray-300 text-sm mb-4">
-              Responde un breve cuestionario (2 min) y la IA generará automáticamente un programa nutricional personalizado con comidas específicas y cantidades exactas.
+              Responde un breve cuestionario (2 min) y se generará automáticamente tu programa nutricional personalizado con comidas específicas y cantidades exactas.
             </p>
             <div className="flex flex-wrap gap-2 mb-4">
               {['Comidas específicas con gramos', 'Adaptado a tus objetivos', 'Según tus preferencias', 'Formato NL VIP Club'].map(tag => (
