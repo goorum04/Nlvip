@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { 
   Camera, X, Loader2, Upload, Calendar, ChevronLeft, ChevronRight,
   ZoomIn, Trash2, AlertCircle, Image as ImageIcon
@@ -12,18 +11,24 @@ import {
 import { useFileUpload, useSignedUrl, generateFileId, getFileExtension } from '@/hooks/useStorage'
 import { supabase } from '@/lib/supabase'
 
-// Componente para subir foto de progreso
+// Componente para subir fotos de progreso (3 fotos requeridas)
 export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
-  const [file, setFile] = useState(null)
-  const [preview, setPreview] = useState(null)
+  const [photos, setPhotos] = useState({
+    front: { file: null, preview: null },
+    side: { file: null, preview: null },
+    back: { file: null, preview: null }
+  })
   const [takenAt, setTakenAt] = useState(new Date().toISOString().split('T')[0])
   const [notes, setNotes] = useState('')
   const [error, setError] = useState(null)
-  const fileInputRef = useRef(null)
+  
+  const frontInputRef = useRef(null)
+  const sideInputRef = useRef(null)
+  const backInputRef = useRef(null)
 
   const { uploadFile, uploading, progress, error: uploadError } = useFileUpload()
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = (e, type) => {
     const selectedFile = e.target.files?.[0]
     if (!selectedFile) return
 
@@ -35,199 +40,229 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
       return
     }
 
-    // Validar tamaño (10MB)
-    if (selectedFile.size > 10 * 1024 * 1024) {
-      setError('La imagen es muy grande. Máximo 10MB')
+    // Validar tamaño (50MB - Acorde al nuevo límite auditado)
+    if (selectedFile.size > 50 * 1024 * 1024) {
+      setError('La imagen es muy grande. Máximo 50MB')
       return
     }
 
-    setFile(selectedFile)
-    setPreview(URL.createObjectURL(selectedFile))
+    setPhotos(prev => ({
+      ...prev,
+      [type]: {
+        file: selectedFile,
+        preview: URL.createObjectURL(selectedFile)
+      }
+    }))
   }
 
   const handleUpload = async () => {
-    if (!file) return
-
-    // Generar path único
-    const fileId = generateFileId()
-    const ext = getFileExtension(file.name)
-    const path = `progress/${memberId}/${fileId}.${ext}`
-
-    // Subir a storage
-    const result = await uploadFile('progress_photos', path, file, {
-      maxSize: 10 * 1024 * 1024,
-      allowedTypes: ['image/jpeg', 'image/png', 'image/webp']
-    })
-
-    if (!result.success) return
-
-    // Guardar en base de datos
-    const { error: dbError } = await supabase.from('progress_photos').insert({
-      member_id: memberId,
-      photo_url: path,
-      date: new Date(takenAt).toISOString(),
-      notes: notes.trim() || null
-    })
-
-    if (dbError) {
-      setError('Error guardando: ' + dbError.message)
+    if (!photos.front.file || !photos.side.file || !photos.back.file) {
+      setError('Debes subir las 3 fotos (frente, lado y espalda)')
       return
     }
 
-    onSuccess?.()
-  }
+    const groupId = crypto.randomUUID()
+    const dbEntries = []
 
-  const handleRemove = () => {
-    setFile(null)
-    setPreview(null)
-    setError(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+    try {
+      for (const type of ['front', 'side', 'back']) {
+        const file = photos[type].file
+        const fileId = generateFileId()
+        const ext = getFileExtension(file.name)
+        const path = `progress/${memberId}/${fileId}_${type}.${ext}`
+
+        // Subir a storage (usamos el nuevo límite de 50MB)
+        const result = await uploadFile('progress_photos', path, file, {
+          maxSize: 50 * 1024 * 1024,
+          allowedTypes: ['image/jpeg', 'image/png', 'image/webp']
+        })
+
+        if (!result.success) {
+          throw new Error(`Error al subir la foto ${type}: ${result.error}`)
+        }
+
+        dbEntries.push({
+          member_id: memberId,
+          photo_url: path,
+          photo_type: type,
+          group_id: groupId,
+          date: new Date(takenAt).toISOString(),
+          notes: notes.trim() || null
+        })
+      }
+
+      // Guardar en base de datos
+      const { error: dbError } = await supabase.from('progress_photos').insert(dbEntries)
+
+      if (dbError) throw dbError
+
+      onSuccess?.()
+    } catch (err) {
+      setError(err.message)
     }
   }
 
-  return (
-    <div className="space-y-4 p-4 bg-black/30 rounded-2xl border border-[#2a2a2a]">
-      <div className="flex items-center justify-between">
-        <h3 className="text-white font-semibold flex items-center gap-2">
-          <Camera className="w-5 h-5 text-violet-400" />
-          Nueva Foto de Progreso
-        </h3>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onCancel}
-          className="text-gray-400 hover:text-white"
-        >
-          <X className="w-5 h-5" />
-        </Button>
-      </div>
+  const handleRemove = (type) => {
+    setPhotos(prev => ({
+      ...prev,
+      [type]: { file: null, preview: null }
+    }))
+  }
 
+  const PhotoSlot = ({ type, label, inputRef }) => (
+    <div className="space-y-2">
+      <Label className="text-gray-400 text-[10px] uppercase font-bold text-center block">{label}</Label>
       <input
-        ref={fileInputRef}
+        ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
         capture="environment"
-        onChange={handleFileSelect}
+        onChange={(e) => handleFileSelect(e, type)}
         className="hidden"
         disabled={uploading}
       />
-
-      {!file ? (
+      
+      {!photos[type].file ? (
         <Button
           type="button"
           variant="outline"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="w-full border-dashed border-[#2a2a2a] bg-black/30 hover:bg-black/50 text-gray-400 hover:text-violet-400 rounded-xl py-12"
+          className="w-full aspect-square border-dashed border-[#2a2a2a] bg-black/30 hover:bg-black/50 text-gray-500 hover:text-violet-400 rounded-2xl flex flex-col gap-2 p-0"
         >
-          <div className="text-center">
-            <Camera className="w-10 h-10 mx-auto mb-2" />
-            <p>Tomar foto o seleccionar</p>
-            <p className="text-xs text-gray-500 mt-1">JPG, PNG, WebP · Máx 10MB</p>
-          </div>
+          <Camera className="w-6 h-6" />
+          <span className="text-[10px] px-1">Subir</span>
         </Button>
       ) : (
-        <div className="space-y-4">
-          {/* Preview */}
-          <div className="relative rounded-xl overflow-hidden border border-[#2a2a2a]">
-            <img
-              src={preview}
-              alt="Preview"
-              className="w-full max-h-64 object-contain bg-black"
-            />
+        <div className="relative aspect-square rounded-2xl overflow-hidden border border-violet-500/30 group">
+          <img
+            src={photos[type].preview}
+            alt={label}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <Button
               type="button"
               size="icon"
               variant="destructive"
-              onClick={handleRemove}
+              onClick={() => handleRemove(type)}
               disabled={uploading}
-              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 hover:bg-red-500"
+              className="w-7 h-7 rounded-full"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </Button>
           </div>
+        </div>
+      )}
+    </div>
+  )
 
-          {/* Form fields */}
+  return (
+    <div className="space-y-6 p-5 bg-[#121212] rounded-3xl border border-[#2a2a2a] shadow-xl">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-white font-bold text-lg flex items-center gap-2">
+            <Camera className="w-5 h-5 text-violet-400" />
+            Nuevo Reporte
+          </h3>
+          <p className="text-gray-500 text-[10px]">Las 3 perspectivas son obligatorias</p>
+        </div>
+        <Button variant="ghost" size="icon" onClick={onCancel} className="text-gray-400 hover:text-white rounded-full">
+          <X className="w-5 h-5" />
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <PhotoSlot type="front" label="Frente" inputRef={frontInputRef} />
+        <PhotoSlot type="side" label="Lado" inputRef={sideInputRef} />
+        <PhotoSlot type="back" label="Espalda" inputRef={backInputRef} />
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-3">
           <div>
-            <Label className="text-gray-400 text-sm flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              Fecha de la foto
-            </Label>
+            <Label className="text-gray-500 text-[10px] ml-1">Fecha</Label>
             <Input
               type="date"
               value={takenAt}
               onChange={(e) => setTakenAt(e.target.value)}
-              className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1"
+              className="bg-black/40 border-[#2a2a2a] rounded-xl text-white h-10"
               disabled={uploading}
             />
           </div>
-
           <div>
-            <Label className="text-gray-400 text-sm">Notas (opcional)</Label>
-            <Textarea
+            <Label className="text-gray-500 text-[10px] ml-1">Notas (opcional)</Label>
+            <Input
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ej: Semana 4, vista frontal..."
-              className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1 min-h-[80px]"
+              placeholder="Ej: Ayunas..."
+              className="bg-black/40 border-[#2a2a2a] rounded-xl text-white h-10"
               disabled={uploading}
             />
           </div>
-
-          {/* Upload progress */}
-          {uploading && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400">Subiendo...</span>
-                <span className="text-violet-400">{progress}%</span>
-              </div>
-              <div className="h-2 bg-[#2a2a2a] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-violet-500 to-cyan-500 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Upload button */}
-          <Button
-            onClick={handleUpload}
-            disabled={uploading}
-            className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-xl py-6"
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Subiendo...
-              </>
-            ) : (
-              <>
-                <Upload className="w-5 h-5 mr-2" />
-                Guardar Foto
-              </>
-            )}
-          </Button>
         </div>
-      )}
 
-      {/* Errors */}
+        {uploading && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="text-gray-400">Subiendo reporte...</span>
+              <span className="text-violet-400 font-bold">{progress}%</span>
+            </div>
+            <div className="h-1 bg-black/40 rounded-full overflow-hidden">
+              <div className="h-full bg-violet-500 transition-all duration-300" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        )}
+
+        <Button
+          onClick={handleUpload}
+          disabled={uploading || !photos.front.file || !photos.side.file || !photos.back.file}
+          className="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-xl py-6 shadow-lg shadow-violet-500/10 disabled:opacity-30 transition-all h-14"
+        >
+          {uploading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-5 h-5 animate-spin"/>
+              Subiendo...
+            </div>
+          ) : "Guardar Reporte Fotográfico"}
+        </Button>
+      </div>
+
       {(error || uploadError) && (
         <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
-          <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-          <p className="text-red-400 text-sm">{error || uploadError}</p>
+          <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+          <p className="text-red-500 text-xs font-medium">{error || uploadError}</p>
         </div>
       )}
     </div>
   )
 }
 
-// Componente de galería de fotos
+// Componente de galería de fotos (Agrupadas por sesión)
 export function ProgressPhotoGallery({ photos, canDelete = false, onDelete }) {
-  const [selectedIndex, setSelectedIndex] = useState(null)
+  const [selectedGroup, setSelectedGroup] = useState(null)
   const [imageUrls, setImageUrls] = useState({})
   const [loading, setLoading] = useState(true)
   const { getSignedUrl } = useSignedUrl()
+
+  // Agrupar fotos por group_id
+  const photoGroups = photos.reduce((acc, photo) => {
+    const groupId = photo.group_id || photo.date // Fallback para fotos antiguas sin group_id
+    if (!acc[groupId]) {
+      acc[groupId] = {
+        id: groupId,
+        date: photo.date,
+        notes: photo.notes,
+        photos: []
+      }
+    }
+    acc[groupId].photos.push(photo)
+    return acc;
+  }, {})
+
+  const sortedGroups = Object.values(photoGroups).sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  )
 
   useEffect(() => {
     loadImages()
@@ -237,6 +272,7 @@ export function ProgressPhotoGallery({ photos, canDelete = false, onDelete }) {
     setLoading(true)
     const urls = {}
     
+    // Solo cargar los firmados necesarios (optimización posible aquí para cargar solo lo visible)
     for (const photo of photos) {
       const url = await getSignedUrl('progress_photos', photo.photo_url, 3600)
       if (url) {
@@ -248,138 +284,121 @@ export function ProgressPhotoGallery({ photos, canDelete = false, onDelete }) {
     setLoading(false)
   }
 
-  const selectedPhoto = selectedIndex !== null ? photos[selectedIndex] : null
-
-  const goToPrev = () => {
-    setSelectedIndex(prev => (prev > 0 ? prev - 1 : photos.length - 1))
-  }
-
-  const goToNext = () => {
-    setSelectedIndex(prev => (prev < photos.length - 1 ? prev + 1 : 0))
-  }
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-10 h-10 text-violet-500 animate-spin" />
       </div>
     )
   }
 
-  if (photos.length === 0) {
+  if (sortedGroups.length === 0) {
     return (
-      <div className="text-center py-12">
-        <ImageIcon className="w-16 h-16 mx-auto text-violet-400/20 mb-4" />
-        <p className="text-gray-500">No hay fotos de progreso</p>
+      <div className="text-center py-20 bg-black/20 rounded-3xl border border-dashed border-[#2a2a2a]">
+        <ImageIcon className="w-16 h-16 mx-auto text-violet-500/20 mb-4" />
+        <p className="text-gray-500 font-medium">No hay registros visuales aún</p>
       </div>
     )
   }
 
   return (
-    <>
-      {/* Grid */}
-      <div className="grid grid-cols-3 gap-2">
-        {photos.map((photo, index) => (
-          <button
-            key={photo.id}
-            onClick={() => setSelectedIndex(index)}
-            className="aspect-square rounded-xl overflow-hidden bg-[#2a2a2a] hover:ring-2 hover:ring-[rgb(139, 92, 246)] transition-all"
-          >
-            {imageUrls[photo.id] ? (
-              <img
-                src={imageUrls[photo.id]}
-                alt={`Progreso ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <ImageIcon className="w-8 h-8 text-gray-600" />
-              </div>
-            )}
-          </button>
-        ))}
-      </div>
+    <div className="space-y-8">
+      {sortedGroups.map((group) => (
+        <div key={group.id} className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-violet-400" />
+              <span className="text-white font-bold text-sm">
+                {new Date(group.date).toLocaleDateString('es-ES', { 
+                  day: 'numeric', month: 'short', year: 'numeric' 
+                })}
+              </span>
+            </div>
+            {group.notes && <span className="text-[10px] text-gray-500 italic max-w-[150px] truncate">{group.notes}</span>}
+          </div>
 
-      {/* Lightbox */}
-      {selectedPhoto && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
-          {/* Close button */}
+          <div className="grid grid-cols-3 gap-2">
+            {['front', 'side', 'back'].map((type) => {
+              const photo = group.photos.find(p => p.photo_type === type) || group.photos[0] // Fallback
+              return (
+                <div key={type} className="space-y-1">
+                  <button
+                    onClick={() => setSelectedGroup(group)}
+                    className="aspect-[3/4] rounded-2xl overflow-hidden bg-[#1a1a1a] border border-[#2a2a2a] hover:border-violet-500/50 transition-colors w-full relative group"
+                  >
+                    {photo && imageUrls[photo.id] ? (
+                      <>
+                        <img src={imageUrls[photo.id]} alt={type} className="w-full h-full object-cover" />
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 py-1 text-[8px] text-white font-bold uppercase tracking-tighter">
+                          {type === 'front' ? 'Frente' : type === 'side' ? 'Lado' : 'Espalda'}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Camera className="w-6 h-6 text-gray-800" />
+                      </div>
+                    )}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+          
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                group.photos.forEach(p => onDelete?.(p.id))
+              }}
+              className="text-red-500/50 hover:text-red-500 hover:bg-red-500/10 text-[10px] h-6 px-2 rounded-full w-fit mx-auto"
+            >
+              <Trash2 className="w-3 h-3 mr-1" />
+              Eliminar sesión
+            </Button>
+          )}
+        </div>
+      ))}
+
+      {/* Lightbox para ver el grupo completo */}
+      {selectedGroup && (
+        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-4">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setSelectedIndex(null)}
-            className="absolute top-4 right-4 text-white hover:bg-white/10 z-10"
+            onClick={() => setSelectedGroup(null)}
+            className="absolute top-6 right-6 text-white bg-white/10 rounded-full hover:bg-white/20"
           >
             <X className="w-6 h-6" />
           </Button>
 
-          {/* Navigation */}
-          {photos.length > 1 && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={goToPrev}
-                className="absolute left-4 text-white hover:bg-white/10"
-              >
-                <ChevronLeft className="w-8 h-8" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={goToNext}
-                className="absolute right-4 text-white hover:bg-white/10"
-              >
-                <ChevronRight className="w-8 h-8" />
-              </Button>
-            </>
-          )}
-
-          {/* Image */}
-          <div className="max-w-4xl max-h-[80vh] px-16">
-            <img
-              src={imageUrls[selectedPhoto.id]}
-              alt="Progreso"
-              className="max-w-full max-h-[70vh] object-contain mx-auto"
-            />
-            
-            {/* Info */}
-            <div className="mt-4 text-center">
-              <p className="text-white font-semibold">
-                {new Date(selectedPhoto.date).toLocaleDateString('es-ES', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
+          <div className="w-full max-w-6xl space-y-6">
+            <div className="text-center">
+              <h2 className="text-white text-2xl font-bold">
+                {new Date(selectedGroup.date).toLocaleDateString('es-ES', { 
+                  day: 'numeric', month: 'long', year: 'numeric' 
                 })}
-              </p>
-              {selectedPhoto.notes && (
-                <p className="text-gray-400 text-sm mt-1">{selectedPhoto.notes}</p>
-              )}
-              
-              {/* Delete button */}
-              {canDelete && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    onDelete?.(selectedPhoto.id)
-                    setSelectedIndex(null)
-                  }}
-                  className="mt-4"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Eliminar
-                </Button>
-              )}
-              
-              {/* Counter */}
-              <p className="text-gray-600 text-sm mt-2">
-                {selectedIndex + 1} / {photos.length}
-              </p>
+              </h2>
+              {selectedGroup.notes && <p className="text-gray-400 mt-2">{selectedGroup.notes}</p>}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto max-h-[70vh] py-4">
+              {['front', 'side', 'back'].map(type => {
+                const photo = selectedGroup.photos.find(p => p.photo_type === type)
+                if (!photo) return null
+                return (
+                  <div key={type} className="space-y-3">
+                    <p className="text-violet-400 font-bold text-center uppercase tracking-widest text-sm">{type === 'front' ? 'Frente' : type === 'side' ? 'Lado' : 'Espalda'}</p>
+                    <div className="aspect-[3/4] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+                      <img src={imageUrls[photo.id]} className="w-full h-full object-cover" />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

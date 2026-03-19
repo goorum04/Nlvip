@@ -43,6 +43,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [challengeParticipants, setChallengeParticipants] = useState({})
   const [memberProgressPhotos, setMemberProgressPhotos] = useState([])
   const [selectedMemberForPhotos, setSelectedMemberForPhotos] = useState(null)
+  const [dietRequests, setDietRequests] = useState([])
+  const [selectedRequestAnswers, setSelectedRequestAnswers] = useState(null)
 
   // Profile modal state
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -115,7 +117,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       loadTrainingVideos(),
       loadWorkoutTemplates(),
       loadDietTemplates(),
-      loadChallenges()
+      loadChallenges(),
+      loadDietRequests()
     ])
   }
 
@@ -135,6 +138,16 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       .select('*, trainer:profiles!diet_templates_trainer_id_fkey(name)')
       .order('created_at', { ascending: false })
     if (data) setDietTemplates(data)
+  }
+  
+  // Load pending diet requests
+  const loadDietRequests = async () => {
+    const { data } = await supabase
+      .from('diet_onboarding_requests')
+      .select('*, member:profiles!diet_onboarding_requests_member_id_fkey(name, email)')
+      .eq('status', 'submitted')
+      .order('created_at', { ascending: false })
+    if (data) setDietRequests(data)
   }
 
   // Load challenges (all)
@@ -211,6 +224,31 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       toast({ title: '¡Dieta Pro creada!' })
       setNewDietName(''); setNewDietCalories(''); setNewDietProtein(''); setNewDietCarbs(''); setNewDietFat(''); setNewDietContent('')
       setNewDietMeals([{ name: 'Desayuno', time: '08:00', calories: '', protein: '', carbs: '', fat: '', note: '' }])
+      loadDietTemplates()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGenerateDietFromRequest = async (request) => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/diet-onboarding/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          requestId: request.id, 
+          memberId: request.member_id, 
+          responses: request.responses 
+        })
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Error al generar dieta')
+      
+      toast({ title: '¡Plan generado!', description: 'La dieta ha sido creada y asignada.' })
+      loadDietRequests()
       loadDietTemplates()
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -1428,6 +1466,68 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
           {/* DIETAS */}
           <TabsContent value="diets" className="space-y-4">
+            {/* Solicitudes Pendientes */}
+            {dietRequests.length > 0 && (
+              <Card className="bg-gradient-to-br from-violet-900/40 to-cyan-900/20 border-violet-500/40 shadow-xl shadow-violet-500/10">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <ChefHat className="w-5 h-5 text-violet-400" />
+                    Solicitudes de Dieta Pendientes ({dietRequests.length})
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Socios que han completado el cuestionario y esperan su plan.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {dietRequests.map(req => (
+                    <div key={req.id} className="p-4 bg-black/60 rounded-2xl border border-violet-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400 font-bold">
+                          {req.member?.name?.[0] || 'M'}
+                        </div>
+                        <div>
+                          <p className="text-white font-bold text-sm">{req.member?.name}</p>
+                          <p className="text-gray-500 text-xs">{req.member?.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="border-violet-500/30 text-violet-300 hover:bg-violet-500/10">
+                              <FileCheck className="w-4 h-4 mr-2" /> Ver Respuestas
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="bg-[#1a1a1a] border-violet-500/30 text-white max-w-md max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Cuestionario de {req.member?.name}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 mt-4">
+                              {Object.entries(req.responses || {}).map(([key, value]) => (
+                                <div key={key} className="border-b border-white/5 pb-2">
+                                  <p className="text-[10px] text-violet-400 uppercase font-bold">{key.replace(/_/g, ' ')}</p>
+                                  <p className="text-sm text-gray-200 mt-1">{String(value)}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                        
+                        <Button 
+                          size="sm"
+                          disabled={loading}
+                          onClick={() => handleGenerateDietFromRequest(req)}
+                          className="bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-lg shadow-cyan-500/20"
+                        >
+                          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Bot className="w-4 h-4 mr-1" />}
+                          Generar con IA
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="bg-[#1a1a1a] border-violet-500/20">
               <CardHeader>
                 <CardTitle className="text-violet-400 flex items-center gap-2">

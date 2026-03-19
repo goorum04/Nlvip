@@ -101,7 +101,14 @@ export function ProgressTab({ user, records, photos, chartData, loading, onAddPr
                 <CardContent className="space-y-4">
                     {showPhotoUploader && (
                         <div className="mb-6">
-                            <ProgressPhotoUploader userId={user.id} onUploadComplete={() => setShowPhotoUploader(false)} />
+                            <ProgressPhotoUploader 
+                                memberId={user.id} 
+                                onSuccess={() => {
+                                    setShowPhotoUploader(false)
+                                    // El componente padre debería refrescar las fotos si es necesario
+                                }} 
+                                onCancel={() => setShowPhotoUploader(false)}
+                            />
                         </div>
                     )}
                     <ProgressPhotoGallery photos={photos} onDelete={onDeletePhoto} />

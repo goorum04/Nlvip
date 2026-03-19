@@ -234,8 +234,24 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold text-lg">
               {member?.name?.charAt(0)}
             </div>
-            <div>
-              <span>{member?.name}</span>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <span>{member?.name}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('open-chat', { 
+                      detail: { memberId: member.id, name: member.name } 
+                    }))
+                    onClose() // Opcional: cerrar el panel al abrir el chat
+                  }}
+                  className="rounded-xl border-violet-500/30 text-violet-400 hover:bg-violet-500/10 gap-2 h-8"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Chatear
+                </Button>
+              </div>
               <p className="text-sm text-gray-400 font-normal">{member?.email}</p>
             </div>
           </DialogTitle>

@@ -129,7 +129,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
         ...extras
       }
 
-      const res = await fetch('/api/diet-onboarding/complete', {
+      const res = await fetch('/api/diet-onboarding/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requestId, memberId, responses: allAnswers })
@@ -139,8 +139,8 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
       if (!res.ok) throw new Error(result.error || 'Error al procesar')
 
       setDone(true)
-      toast({ title: '¡Plan creado!', description: result.message })
-      setTimeout(() => onComplete?.(), 3000)
+      toast({ title: '¡Cuestionario enviado!', description: 'Tus respuestas han sido enviadas al administrador para su revisión.' })
+      setTimeout(() => onComplete?.(), 5000)
     } catch (err) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
     } finally {
@@ -150,12 +150,16 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
 
   if (done) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
+      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4 text-balance">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
           <CheckCircle2 className="w-10 h-10 text-white" />
         </div>
-        <h3 className="text-white text-xl font-bold">¡Plan Nutricional Generado!</h3>
-        <p className="text-gray-400 max-w-sm">Tu programa nutricional personalizado ha sido creado y asignado. Puedes verlo en la pestaña de Dieta.</p>
+        <h3 className="text-white text-xl font-bold">¡Cuestionario Recibido!</h3>
+        <p className="text-gray-400 max-w-sm">
+          Tus respuestas han sido enviadas correctamente. Nuestro equipo las revisará y generará tu plan nutricional personalizado en breve. 
+          <br/><br/>
+          Te avisaremos en cuanto esté disponible en tu sección de Dieta.
+        </p>
       </div>
     )
   }

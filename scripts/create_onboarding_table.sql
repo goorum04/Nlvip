@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS public.diet_onboarding_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   member_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   requested_by UUID REFERENCES public.profiles(id),
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'skipped')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'submitted', 'completed', 'skipped')),
   responses JSONB,
   generated_diet_id UUID REFERENCES public.diet_templates(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
