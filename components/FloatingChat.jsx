@@ -57,6 +57,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   const [unreadCounts, setUnreadCounts] = useState({ total: 0, byMember: {}, byUser: {} })
   const [searchQuery, setSearchQuery] = useState('')
   const [view, setView] = useState(userRole === 'admin' ? 'list' : 'chat')
+  const [activeTab, setActiveTab] = useState('trainer')
   
   // Voice Recording States (Only for Admin)
   const [isRecording, setIsRecording] = useState(false)
