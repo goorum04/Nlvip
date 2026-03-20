@@ -103,7 +103,14 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [selectedTrainerForMacros, setSelectedTrainerForMacros] = useState('')
 
   useEffect(() => {
-    loadData()
+    loadData().catch(err => {
+      console.error('Error loading dashboard data:', err)
+      toast({ 
+        title: 'Error de carga', 
+        description: 'Hubo un problema recuperando algunos datos. La interfaz podría estar incompleta.',
+        variant: 'destructive'
+      })
+    })
   }, [])
 
   const loadData = async () => {
@@ -147,7 +154,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       .select('*, member:profiles!diet_onboarding_requests_member_id_fkey(name, email)')
       .eq('status', 'submitted')
       .order('created_at', { ascending: false })
-    if (data) setDietRequests(data)
+    if (data) setDietRequests(data || [])
   }
 
   // Load challenges (all)
@@ -1051,7 +1058,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {trainers.map((trainer) => (
+                  {(trainers || []).map((trainer) => (
                     <div key={trainer.id} className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-violet-500/10">
                       <div>
                         <p className="font-semibold text-white">{trainer.name}</p>
@@ -1100,7 +1107,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                           <SelectValue placeholder="Seleccionar..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {trainers.map((trainer) => (
+                          {(trainers || []).map((trainer) => (
                             <SelectItem key={trainer.id} value={trainer.id}>
                               {trainer.name}
                             </SelectItem>
@@ -1149,7 +1156,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {codes.map((code) => (
+                  {(codes || []).map((code) => (
                     <div key={code.id} className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-violet-500/10">
                       <div className="flex-1">
                         <p className="font-mono font-bold text-violet-400 text-lg">{code.code}</p>
@@ -1185,7 +1192,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {members.map((member) => (
+                  {(members || []).map((member) => (
                     <div 
                       key={member.id} 
                       className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-violet-500/10 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all"
@@ -1329,7 +1336,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {challenges.map(challenge => {
+                {(challenges || []).map(challenge => {
                   const participants = challengeParticipants[challenge.id] || []
                   const daysLeft = Math.max(0, Math.ceil((new Date(challenge.end_date) - new Date()) / 86400000))
                   
@@ -1429,7 +1436,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                     <CardTitle className="text-violet-400">Todas las Rutinas ({workoutTemplates.length})</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {workoutTemplates.map(workout => (
+                    {(workoutTemplates || []).map(workout => (
                       <div 
                         key={workout.id} 
                         className="p-4 bg-black/50 rounded-2xl border border-violet-500/10 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all"
@@ -1489,15 +1496,15 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {dietRequests.map(req => (
+                  {(dietRequests || []).map(req => (
                     <div key={req.id} className="p-4 bg-black/60 rounded-2xl border border-violet-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400 font-bold">
                           {req.member?.name?.[0] || 'M'}
                         </div>
                         <div>
-                          <p className="text-white font-bold text-sm">{req.member?.name}</p>
-                          <p className="text-gray-500 text-xs">{req.member?.email}</p>
+                          <p className="text-white font-bold text-sm">{req.member?.name || 'Usuario desconocido'}</p>
+                          <p className="text-gray-500 text-xs">{req.member?.email || 'Sin email'}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1680,7 +1687,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 <CardTitle className="text-violet-400">Todas las Dietas ({dietTemplates.length})</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {dietTemplates.map(diet => (
+                {(dietTemplates || []).map(diet => (
                   <div key={diet.id} className="p-4 bg-black/50 rounded-2xl border border-violet-500/10">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -1962,7 +1969,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {trainingVideos.map((video) => (
+                  {(trainingVideos || []).map((video) => (
                     <div key={video.id} className="p-4 bg-black/50 rounded-lg border border-violet-500/10">
                       <div className="flex items-start justify-between mb-2">
                         <div>

@@ -15,6 +15,7 @@ import { Toaster } from '@/components/ui/toaster'
 import AdminDashboard from '@/components/AdminDashboard'
 import TrainerDashboard from '@/components/TrainerDashboard'
 import MemberDashboard from '@/components/MemberDashboard'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function App() {
   const [user, setUser] = useState(null)
@@ -230,7 +231,13 @@ export default function App() {
 
   // Dashboard routing
   if (user && profile) {
-    if (profile.role === 'admin') return <AdminDashboard user={user} profile={profile} onLogout={handleLogout} />
+    if (profile.role === 'admin') {
+      return (
+        <ErrorBoundary>
+          <AdminDashboard user={user} profile={profile} onLogout={handleLogout} />
+        </ErrorBoundary>
+      )
+    }
     if (profile.role === 'trainer') return <TrainerDashboard user={user} profile={profile} onLogout={handleLogout} />
     if (profile.role === 'member') return <MemberDashboard user={user} profile={profile} onLogout={handleLogout} />
   }
