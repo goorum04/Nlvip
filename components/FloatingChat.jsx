@@ -48,6 +48,8 @@ const AudioPlayer = ({ path }) => {
 }
 
 export default function FloatingChat({ userId, userRole, trainerId, trainerName, members }) {
+  console.log(">>> FLOATING CHAT VERSION 2.0 LOADED <<<");
+  
   const [isOpen, setIsOpen] = useState(false)
   const [activeConversation, setActiveConversation] = useState(null)
   const [conversations, setConversations] = useState({ trainer: null, admin: null })
