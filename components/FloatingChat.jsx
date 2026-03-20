@@ -87,10 +87,16 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   }, [isOpen, userId, trainerId])
 
   useEffect(() => {
+    let cleanupFunc = null;
+
     if (activeConversation) {
       loadMessages(activeConversation.id)
-      setupSubscription(activeConversation.id)
+      cleanupFunc = setupSubscription(activeConversation.id)
       if (isOpen) markAsRead(activeConversation.id)
+    }
+
+    return () => {
+      if (cleanupFunc) cleanupFunc();
     }
   }, [activeConversation, isOpen])
 
@@ -263,37 +269,41 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   }
 
   const getOrCreateConversation = async (type, participants) => {
-    // Validar participantes (UUIDs válidos)
     const validParticipants = participants.filter(id => id && id.length > 30)
     if (validParticipants.length < 2) {
-      console.warn('Participantes inválidos para conversación:', participants)
-      alert('Error: Datos de usuario incompletos para el chat. Por favor, asegúrate de que tu perfil esté cargado correctamente.')
+      console.warn('Participantes inválidos:', participants)
       return null
     }
 
     try {
-      // Check if conversation exists
-      const { data: existing, error: checkError } = await supabase
-        .from('conversations')
-        .select(`
-          id, 
-          type,
-          conversation_participants!inner(user_id)
-        `)
-        .eq('type', type)
-        .filter('conversation_participants.user_id', 'in', `(${validParticipants.join(',')})`)
-      
-      if (checkError) throw checkError
+      // Find intersection manually for maximum reliability
+      const { data: myParts } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', validParticipants[0])
+        
+      const { data: theirParts } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', validParticipants[1])
 
-      // Filtrar manualmente para encontrar la conversación que tiene EXACTAMENTE estos participantes
-      const exactMatch = existing?.find(conv => {
-        const pIds = (conv.conversation_participants || []).map(p => p.user_id)
-        return validParticipants.every(vId => pIds.includes(vId)) && pIds.length === validParticipants.length
-      })
+      const myConvIds = (myParts || []).map(p => p.conversation_id)
+      const theirConvIds = (theirParts || []).map(p => p.conversation_id)
+      const commonConvId = myConvIds.find(id => theirConvIds.includes(id))
 
-      if (exactMatch) {
-        console.log('Conversación existente encontrada:', exactMatch.id)
-        return exactMatch
+      if (commonConvId) {
+        const { data: existingConv } = await supabase
+          .from('conversations')
+          .select('id, type')
+          .eq('id', commonConvId)
+          .single()
+          
+        if (existingConv && existingConv.type === type) {
+          return {
+            ...existingConv,
+            conversation_participants: validParticipants.map(id => ({ user_id: id }))
+          }
+        }
       }
 
       console.log('Creando nueva conversación de tipo:', type)
@@ -305,22 +315,19 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       if (rpcError) throw rpcError
 
       if (convId) {
-        // Obtenemos los detalles de la conversación recién creada
-        const { data: newConv, error: fetchError } = await supabase
+        const { data: newConv } = await supabase
           .from('conversations')
           .select('id, type')
           .eq('id', convId)
           .single()
         
-        if (fetchError) throw fetchError
         return {
-          ...newConv,
+          ...(newConv || { id: convId, type }),
           conversation_participants: validParticipants.map(id => ({ user_id: id }))
         }
       }
     } catch (err) {
       console.error('Error in getOrCreateConversation:', err)
-      alert('Error al iniciar conversación: ' + err.message)
     }
     return null
   }
@@ -666,33 +673,44 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
               </div>
             ) : (
               (messages || []).map((msg) => {
+                if (!msg || typeof msg !== 'object') return null; // Safe guard
                 const isMe = msg.sender_id === userId
+                let formattedTime = ''
+                try {
+                  formattedTime = msg.created_at 
+                    ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+                    : ''
+                } catch (e) {
+                  // Ignore invalid date crashes
+                }
+
                 return (
-                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2`}>
+                  <div key={msg.id || Math.random().toString()} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2`}>
                     <div className={`max-w-[85%] space-y-1 ${isMe ? 'items-end' : 'items-start'}`}>
                       <div className={`px-4 py-3 rounded-2xl shadow-lg ${
                         isMe 
                           ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-tr-sm' 
                           : 'bg-zinc-900 text-white border border-white/5 rounded-tl-sm'
                       }`}>
-                        {msg.type === 'audio' ? (
+                        {msg.type === 'audio' && msg.audio_path ? (
                           <AudioPlayer path={msg.audio_path} />
-                        ) : msg.type === 'image' ? (
+                        ) : msg.type === 'image' && msg.image_path ? (
                           <div className="space-y-2">
                             <img 
-                              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/chat_images/${msg.image_path}`} 
+                              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/storage/v1/object/public/chat_images/${msg.image_path}`} 
                               alt="Imagen de chat"
                               className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => window.open(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/chat_images/${msg.image_path}`, '_blank')}
+                              onError={(e) => { e.target.style.display = 'none' }} // Hide broken images safely
+                              onClick={() => window.open(`${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/storage/v1/object/public/chat_images/${msg.image_path}`, '_blank')}
                             />
-                            {msg.text && <p className="text-sm leading-relaxed">{msg.text}</p>}
+                            {msg.text && typeof msg.text === 'string' && <p className="text-sm leading-relaxed">{msg.text}</p>}
                           </div>
                         ) : (
-                          <p className="text-sm leading-relaxed">{msg.text}</p>
+                          <p className="text-sm leading-relaxed">{typeof msg.text === 'string' ? msg.text : ''}</p>
                         )}
                       </div>
                       <p className="text-[9px] text-zinc-600 px-1">
-                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {formattedTime}
                       </p>
                     </div>
                   </div>
