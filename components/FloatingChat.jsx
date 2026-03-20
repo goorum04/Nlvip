@@ -630,7 +630,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black/40">
             {view === 'list' && userRole === 'admin' ? (
               <div className="space-y-2">
-                {(members || []).filter(m => (m?.name || '').toLowerCase().includes(searchQuery.toLowerCase())).map(member => (
+                {(members || []).filter(Boolean).filter(m => (m?.name || '').toLowerCase().includes(searchQuery.toLowerCase())).map(member => (
                   <button
                     key={member.id}
                     onClick={async () => {
