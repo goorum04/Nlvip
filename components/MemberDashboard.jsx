@@ -517,7 +517,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         onLogout={onLogout}
       />
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6 pb-24">
         <Tabs 
           defaultValue="activity" 
           className="space-y-6"
@@ -671,7 +671,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
             {/* Bienestar Femenino (Strictly female) */}
             {profile?.sex === 'female' && (
-            <TabsContent value="bienestar" className="space-y-4 pb-32">
+            <TabsContent value="bienestar" className="space-y-4 pb-48">
               <LifeStageSelector userId={user.id} profile={profile} onUpdate={() => window.location.reload()} />
               {(!profile?.life_stage || profile.life_stage === 'cycle') && (
                 <CycleModule user={user} profile={profile} variant="full" onProfileUpdate={() => window.location.reload()} onThemeChange={setPageTheme} />

@@ -55,30 +55,32 @@ export function LifeStageSelector({ userId, profile, onUpdate }) {
                     Etapa Actual
                 </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 pt-2">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <CardContent className="p-4 pt-2">
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide no-wrap">
                     {stages.map(stage => (
                         <button
                             key={stage.value}
                             onClick={() => handleSelect(stage.value)}
                             disabled={saving}
-                            className={`group relative p-4 rounded-3xl border transition-all duration-500 overflow-hidden ${profile?.life_stage === stage.value
-                                ? 'bg-white/10 border-white/20 shadow-2xl'
+                            className={`group relative flex-shrink-0 flex items-center gap-3 p-3 px-5 rounded-2xl border transition-all duration-500 overflow-hidden ${profile?.life_stage === stage.value
+                                ? 'bg-white/10 border-white/20 shadow-lg'
                                 : 'bg-white/[0.02] border-white/5 hover:border-white/10'
                                 }`}
                         >
                             {profile?.life_stage === stage.value && (
                                 <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-pink-500/20 opacity-50 animate-pulse-gentle" />
                             )}
-                            <div className="relative z-10">
-                                <div className={`text-3xl mb-2 transition-transform duration-500 group-hover:scale-110 ${profile?.life_stage === stage.value ? 'scale-110' : ''}`}>
+                            <div className="relative z-10 flex items-center gap-2">
+                                <span className={`text-xl transition-transform duration-500 group-hover:scale-110 ${profile?.life_stage === stage.value ? 'scale-110' : ''}`}>
                                     {stage.emoji}
-                                </div>
-                                <div className={`text-xs font-black tracking-tight ${profile?.life_stage === stage.value ? 'text-white' : 'text-white/40'}`}>
-                                    {stage.label}
-                                </div>
-                                <div className="text-[9px] text-white/20 mt-1 font-bold uppercase tracking-tighter">
-                                    {stage.desc}
+                                </span>
+                                <div>
+                                    <div className={`text-[10px] font-black tracking-tight uppercase ${profile?.life_stage === stage.value ? 'text-white' : 'text-white/40'}`}>
+                                        {stage.label}
+                                    </div>
+                                    <div className="text-[8px] text-white/20 font-bold uppercase tracking-tighter hidden sm:block">
+                                        {stage.desc}
+                                    </div>
                                 </div>
                             </div>
                         </button>

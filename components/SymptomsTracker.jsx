@@ -50,7 +50,7 @@ export function SymptomsTracker({ userId, phase }) {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const { toast } = useToast()
 
   const today = new Date().toISOString().split('T')[0]
