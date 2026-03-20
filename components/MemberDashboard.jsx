@@ -294,25 +294,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     if (data) setProgressPhotos(data)
   }
 
-  const loadStoreProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('store_products')
-        .select('*')
-        .eq('is_active', true)
-        .order('category')
-      
-      if (error) {
-        if (error.code === 'PGRST116' || error.code === '42P01') return
-        throw error
-      }
-      if (data) setStoreProducts(data)
-    } catch (error) {
-      console.warn('Store products not available:', error.message)
-      setStoreProducts([])
-    }
-  }
-
   const loadNotices = async () => {
     const { data } = await supabase
       .from('trainer_notices')
