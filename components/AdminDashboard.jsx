@@ -310,22 +310,32 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
   // Delete member
   const handleDeleteMember = async (memberId) => {
-    if (!confirm('¿Eliminar este socio? Esta acción no se puede deshacer.')) return
+    if (!confirm('¿Eliminar este socio de forma permanente? Esta acción borrará su cuenta completa.')) return
+    setLoading(true)
     try {
-      // Eliminar datos relacionados
-      await supabase.from('workout_assignments').delete().eq('member_id', memberId)
-      await supabase.from('diet_assignments').delete().eq('member_id', memberId)
-      await supabase.from('food_logs').delete().eq('member_id', memberId)
-      await supabase.from('progress_photos').delete().eq('member_id', memberId)
-      await supabase.from('feed_posts').delete().eq('author_id', memberId)
-      // Finalmente eliminar perfil
-      const { data, error } = await supabase.from('profiles').delete().eq('id', memberId).select()
-      if (error) throw error
-      if (!data || data.length === 0) throw new Error('No tienes permisos para borrar este socio (RLS)')
-      toast({ title: 'Socio eliminado' })
+      const { data: { session } } = await supabase.auth.getSession()
+
+      const response = await fetch('/api/admin-delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: memberId,
+          adminToken: session?.access_token
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al eliminar el socio')
+      }
+
+      toast({ title: 'Socio eliminado exitosamente' })
       loadMembers()
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
     }
   }
 
