@@ -52,15 +52,15 @@ export async function POST(request) {
     
     if (authError) throw authError
     
-    // Crear el perfil correspondiente
+    // Crear el perfil correspondiente (upsert: un trigger puede haberlo creado ya)
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .insert([{
+      .upsert([{
         id: authData.user.id,
         email,
         name,
         role: 'trainer'
-      }])
+      }], { onConflict: 'id' })
       
     if (profileError) {
       // Rollback en caso de error
