@@ -129,6 +129,16 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     }
   }
 
+  const loadStoreProducts = async () => {
+    try {
+      // Dummy fetch to populate if needed, or just set empty if store_products doesn't exist
+      const { data, error } = await supabase.from('store_products').select('*').limit(10).maybeSingle()
+      if (!error && data) setStoreProducts([data]) // Safely ignore or use real table
+    } catch (e) {
+      console.warn('Error fetching store products:', e)
+    }
+  }
+
   const loadChartData = async () => {
     try {
       // Load workout checkins for charts
