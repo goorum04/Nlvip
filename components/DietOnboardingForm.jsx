@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-  Apple, ChefHat, Loader2, CheckCircle2, UtensilsCrossed, Clock, Target, AlertCircle, Heart
+  Apple, ChefHat, Loader2, CheckCircle2, UtensilsCrossed, Clock, Target, AlertCircle, Heart,
+  Briefcase, Scale, Ruler, RulerIcon, Scissors
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -25,28 +26,25 @@ const STEPS = [
     ]
   },
   {
-    id: 'num_comidas',
-    title: '¿Cuántas comidas al día prefieres?',
+    id: 'estilo_vida',
+    title: 'Estilo de Vida y Trabajo',
+    icon: Briefcase,
+    color: 'from-amber-500 to-orange-500',
+    type: 'lifestyle'
+  },
+  {
+    id: 'habito_comidas',
+    title: 'Hábitos y Horarios de Comida',
     icon: UtensilsCrossed,
     color: 'from-orange-500 to-amber-500',
-    options: [
-      { value: '3', label: '3 comidas', desc: 'Desayuno, comida y cena' },
-      { value: '4', label: '4 comidas', desc: 'Desayuno, comida, merienda y cena' },
-      { value: '5', label: '5 comidas', desc: 'Las 3 principales + 2 tentempiés' },
-      { value: '6', label: '6 comidas', desc: 'Alta frecuencia, cada 2-3h' },
-    ]
+    type: 'meals'
   },
   {
     id: 'horario_entreno',
     title: '¿Cuándo entrenas habitualmente?',
     icon: Clock,
     color: 'from-green-500 to-emerald-500',
-    options: [
-      { value: 'ayunas', label: '🌅 En ayunas', desc: 'Primera hora, antes del desayuno' },
-      { value: 'manana', label: '☀️ Mañana', desc: 'Entre 8:00 y 13:00' },
-      { value: 'tarde', label: '🌤️ Tarde', desc: 'Entre 13:00 y 18:00' },
-      { value: 'noche', label: '🌙 Noche', desc: 'Después de las 18:00' },
-    ]
+    type: 'training'
   },
   {
     id: 'preferencias',
@@ -57,7 +55,6 @@ const STEPS = [
       { value: 'omnivoro', label: '🍖 Omnívoro', desc: 'Como de todo' },
       { value: 'vegetariano', label: '🥗 Vegetariano', desc: 'Sin carne ni pescado' },
       { value: 'vegano', label: '🌱 Vegano', desc: 'Sin ningún producto animal' },
-      { value: 'keto', label: '🥑 Bajo en carbos', desc: 'Prefiero pocos carbohidratos' },
     ]
   },
   {
@@ -72,8 +69,16 @@ const STEPS = [
       { value: 'frutos_secos', label: '🥜 Frutos secos' },
       { value: 'mariscos', label: '🦐 Mariscos' },
       { value: 'huevos', label: '🥚 Huevos' },
+      { value: 'otra', label: '➕ Otra (especificar)' },
       { value: 'ninguna', label: '✅ Ninguna' },
     ]
+  },
+  {
+    id: 'medidas',
+    title: 'Medidas Iniciales',
+    icon: Scale,
+    color: 'from-cyan-500 to-blue-500',
+    type: 'measurements'
   },
   {
     id: 'extras',
@@ -88,6 +93,13 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState({})
   const [multiChecks, setMultiChecks] = useState([])
+  const [otraAlergia, setOtraAlergia] = useState('')
+  const [lifestyle, setLifestyle] = useState({ horario_trabajo: '', intensidad_trabajo: 'normal' })
+  const [meals, setMeals] = useState({ num_comidas: '5', horario_comidas: '' })
+  const [training, setTraining] = useState({ momento: 'tarde', horario_especifico: '' })
+  const [measurements, setMeasurements] = useState({ 
+    peso: '', altura: '', cintura: '', pecho: '', biceps: '', cadera: '', muslo: '' 
+  })
   const [extras, setExtras] = useState({ favoritos: '', no_me_gusta: '', condicion_medica: '' })
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
@@ -106,6 +118,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
   const toggleCheck = (value) => {
     if (value === 'ninguna') {
       setMultiChecks(['ninguna'])
+      setOtraAlergia('')
     } else {
       setMultiChecks(prev => {
         const without = prev.filter(v => v !== 'ninguna')
@@ -115,7 +128,10 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
   }
 
   const handleMultiNext = () => {
-    const val = multiChecks.length > 0 ? multiChecks.join(', ') : 'ninguna'
+    let val = multiChecks.length > 0 ? multiChecks.join(', ') : 'ninguna'
+    if (multiChecks.includes('otra') && otraAlergia) {
+      val = val.replace('otra', `Otra: ${otraAlergia}`)
+    }
     setAnswers(prev => ({ ...prev, [currentStep.id]: val }))
     setStep(s => s + 1)
   }
@@ -125,7 +141,22 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
     try {
       const allAnswers = {
         ...answers,
-        restricciones: multiChecks.join(', ') || 'ninguna',
+        'Trabajo - Horario': lifestyle.horario_trabajo,
+        'Trabajo - Intensidad': lifestyle.intensidad_trabajo,
+        'Comidas - Horario': meals.horario_comidas,
+        'Comidas - Número': meals.num_comidas,
+        'Entreno - Momento': training.momento,
+        'Entreno - Horario Detalle': training.horario_especifico,
+        'Medida - Peso': measurements.peso,
+        'Medida - Altura': measurements.altura,
+        'Medida - Cintura': measurements.cintura,
+        'Medida - Pecho': measurements.pecho,
+        'Medida - Bíceps': measurements.biceps,
+        'Medida - Cadera': measurements.cadera,
+        'Medida - Muslo': measurements.muslo,
+        restricciones: (multiChecks.includes('otra') && otraAlergia) 
+          ? (multiChecks.join(', ').replace('otra', `Otra: ${otraAlergia}`))
+          : (multiChecks.join(', ') || 'ninguna'),
         ...extras
       }
 
@@ -139,7 +170,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
       if (!res.ok) throw new Error(result.error || 'Error al procesar')
 
       setDone(true)
-      toast({ title: '¡Cuestionario enviado!', description: 'Tus respuestas han sido enviadas al administrador para su revisión.' })
+      toast({ title: '¡Recibido! Me pongo con ello', description: 'He recibido tus respuestas. Voy a revisarlas y a prepararte tu plan personalizado.' })
       setTimeout(() => onComplete?.(), 5000)
     } catch (err) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
@@ -154,11 +185,11 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
           <CheckCircle2 className="w-10 h-10 text-white" />
         </div>
-        <h3 className="text-white text-xl font-bold">¡Cuestionario Recibido!</h3>
+        <h3 className="text-white text-xl font-bold">¡Recibido! Me pongo con ello</h3>
         <p className="text-gray-400 max-w-sm">
-          Tus respuestas han sido enviadas correctamente. Nuestro equipo las revisará y generará tu plan nutricional personalizado en breve. 
+          Tus respuestas me han llegado correctamente. Voy a revisarlas personalmente y a prepararte tu plan nutricional a medida en breve. 
           <br/><br/>
-          Te avisaremos en cuanto esté disponible en tu sección de Dieta.
+          Te avisaré en cuanto esté disponible en tu sección de Dieta.
         </p>
       </div>
     )
@@ -187,6 +218,145 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
       </div>
 
       {/* Options */}
+      {currentStep.type === 'lifestyle' && (
+        <div className="space-y-4">
+          <div>
+            <Label className="text-gray-400 text-xs">⏰ Horario de trabajo</Label>
+            <Textarea
+              placeholder="Ej: Turno de mañana (7:00 a 15:00), partido..."
+              value={lifestyle.horario_trabajo}
+              onChange={e => setLifestyle(p => ({ ...p, horario_trabajo: e.target.value }))}
+              className="bg-white/5 border-white/10 text-white mt-1 text-sm"
+              rows={2}
+            />
+          </div>
+          <div>
+            <Label className="text-gray-400 text-xs text-balance">⚡ Intensidad o exigencia física del trabajo</Label>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {[
+                { v: 'sedentaria', l: 'Sedentaria', d: 'Oficina, sentado' },
+                { v: 'leve', l: 'Leve', d: 'De pie, poco movimiento' },
+                { v: 'normal', l: 'Normal', d: 'Movimiento constante' },
+                { v: 'moderada', l: 'Moderada', d: 'Esfuerzo físico alto' }
+              ].map(opt => (
+                <div
+                  key={opt.v}
+                  onClick={() => setLifestyle(p => ({ ...p, intensidad_trabajo: opt.v }))}
+                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                    lifestyle.intensidad_trabajo === opt.v
+                      ? 'bg-violet-600/30 border-violet-500/50 text-white'
+                      : 'bg-white/5 border-white/5 text-gray-300 hover:bg-white/10'
+                  }`}
+                >
+                  <p className="text-sm font-bold">{opt.l}</p>
+                  <p className="text-[10px] text-gray-400">{opt.d}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <Button onClick={() => setStep(s => s + 1)} className="w-full bg-violet-600 text-white">Continuar →</Button>
+        </div>
+      )}
+
+      {currentStep.type === 'meals' && (
+        <div className="space-y-4">
+          <div>
+            <Label className="text-gray-400 text-xs">🍽️ Número de comidas al día</Label>
+            <Select value={meals.num_comidas} onValueChange={v => setMeals(p => ({ ...p, num_comidas: v }))}>
+              <SelectTrigger className="bg-white/5 border-white/10 text-white mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="3">3 comidas</SelectItem>
+                <SelectItem value="4">4 comidas</SelectItem>
+                <SelectItem value="5">5 comidas</SelectItem>
+                <SelectItem value="6">6 comidas</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-gray-400 text-xs">⏰ Horario aproximado de tus comidas</Label>
+            <Textarea
+              placeholder="Ej: Desayuno 8h, Comida 14h, Cena 21h..."
+              value={meals.horario_comidas}
+              onChange={e => setMeals(p => ({ ...p, horario_comidas: e.target.value }))}
+              className="bg-white/5 border-white/10 text-white mt-1 text-sm"
+              rows={2}
+            />
+          </div>
+          <Button onClick={() => setStep(s => s + 1)} className="w-full bg-violet-600 text-white">Continuar →</Button>
+        </div>
+      )}
+
+      {currentStep.type === 'training' && (
+        <div className="space-y-4">
+          <Label className="text-gray-400 text-xs">⏰ ¿Cuándo sueles entrenar?</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { v: 'ayunas', l: 'En ayunas', i: '🌅' },
+              { v: 'manana', l: 'Mañana', i: '☀️' },
+              { v: 'tarde', l: 'Tarde', i: '🌤️' },
+              { v: 'noche', l: 'Noche', i: '🌙' }
+            ].map(opt => (
+              <div
+                key={opt.v}
+                onClick={() => setTraining(p => ({ ...p, momento: opt.v }))}
+                className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                  training.momento === opt.v
+                    ? 'bg-violet-600/30 border-violet-500/50 text-white'
+                    : 'bg-white/5 border-white/5 text-gray-300 hover:bg-white/10'
+                }`}
+              >
+                <p className="text-sm font-bold">{opt.i} {opt.l}</p>
+              </div>
+            ))}
+          </div>
+          <div>
+            <Label className="text-gray-400 text-[10px] uppercase font-bold px-1">Horario exacto (si lo tienes):</Label>
+            <input
+              type="text"
+              placeholder="Ej: 18:30 a 20:00"
+              value={training.horario_especifico}
+              onChange={e => setTraining(p => ({ ...p, horario_especifico: e.target.value }))}
+              className="w-full bg-white/5 border-white/10 rounded-xl px-4 py-2 text-white mt-1 text-sm focus:outline-none focus:border-violet-500/50 transition-colors"
+            />
+          </div>
+          <Button onClick={() => setStep(s => s + 1)} className="w-full bg-violet-600 text-white">Continuar →</Button>
+        </div>
+      )}
+
+      {currentStep.type === 'measurements' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { id: 'peso', label: 'Peso (kg)', icon: Scale },
+              { id: 'altura', label: 'Altura (cm)', icon: Ruler },
+              { id: 'cintura', label: 'Cintura (cm)', icon: Scissors },
+              { id: 'pecho', label: 'Pecho (cm)', icon: Heart },
+              { id: 'biceps', label: 'Bíceps contr. (cm)', icon: Zap },
+              { id: 'cadera', label: 'Cadera (cm)', icon: Star },
+              { id: 'muslo', label: 'Muslo (cm)', icon: RulerIcon },
+            ].map(m => (
+              <div key={m.id} className="space-y-1">
+                <Label className="text-gray-500 text-[10px] ml-1 uppercase">{m.label}</Label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={measurements[m.id]}
+                    onChange={e => setMeasurements(p => ({ ...p, [m.id]: e.target.value }))}
+                    className="w-full bg-white/5 border-white/10 rounded-xl pl-8 pr-4 py-2 text-white text-sm focus:outline-none focus:border-violet-500/50 transition-colors"
+                  />
+                  <m.icon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <Button onClick={() => setStep(s => s + 1)} className="w-full bg-violet-600 text-white">Continuar →</Button>
+        </div>
+      )}
+
       {currentStep.type === 'multicheck' && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
@@ -204,7 +374,20 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
               </div>
             ))}
           </div>
-          <Button onClick={handleMultiNext} className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white">
+          
+          {multiChecks.includes('otra') && (
+            <div className="mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <Label className="text-gray-400 text-[10px] uppercase font-bold px-1">Especifica tu otra alergia:</Label>
+              <Textarea
+                placeholder="Ej: Fresas, polen de pino, aditivos específicos..."
+                value={otraAlergia}
+                onChange={e => setOtraAlergia(e.target.value)}
+                className="bg-white/5 border-white/10 text-white mt-1 text-sm h-20"
+              />
+            </div>
+          )}
+          
+          <Button onClick={handleMultiNext} className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white mt-4">
             Continuar →
           </Button>
         </div>
@@ -249,13 +432,13 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
             className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold py-3 text-base"
           >
             {submitting
-              ? <><Loader2 className="w-5 h-5 animate-spin mr-2" />Creando tu plan nutricional...</>
+              ? <><Loader2 className="w-5 h-5 animate-spin mr-2" />Enviándome tus datos...</>
               : <><ChefHat className="w-5 h-5 mr-2" />¡Solicitar mi plan!</>
             }
           </Button>
           {submitting && (
             <p className="text-center text-gray-500 text-xs text-balance px-4 leading-relaxed">
-              Estamos preparando tu programa con comidas específicas y cantidades exactas. Por favor, espera unos segundos...
+              Estoy recibiendo tu información para prepararte tu programa personalizado con comidas específicas y cantidades exactas. Por favor, espera unos segundos...
             </p>
           )}
         </div>

@@ -365,9 +365,9 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
 
   // Full variant - toda la información
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       {/* Ambient Glow Background */}
-      <div className={`absolute -top-24 left-1/2 -translate-x-1/2 w-[150%] h-[150%] bg-gradient-to-b ${cycleData.phaseConfig.gradient} opacity-40 blur-[120px] pointer-events-none -z-10`} />
+      <div className={`absolute -top-24 left-1/2 -translate-x-1/2 w-[150%] h-full bg-gradient-to-b ${cycleData.phaseConfig.gradient} opacity-40 blur-[120px] pointer-events-none -z-10`} />
 
       <Card className="bg-[#0B0B0B]/40 backdrop-blur-2xl border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
         <div className="p-8 relative">

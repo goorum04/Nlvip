@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estrategia Premium x10 - NL VIP TEAM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6; /* Violet */
+            --secondary: #06b6d4; /* Cyan */
+            --bg: #0a0a0a;
+            --card-bg: #151515;
+            --text: #ffffff;
+            --text-dim: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .no-print {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .btn {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: black;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding-bottom: 40px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: -2px;
+            background: linear-gradient(to right, #fff, var(--text-dim));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: var(--primary);
+            margin: 40px 0 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 24px;
+            padding: 32px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--primary), var(--secondary));
+        }
+
+        .manif_text {
+            font-size: 18px;
+            font-style: italic;
+            color: var(--text-dim);
+            border-left: 2px solid var(--primary);
+            padding-left: 20px;
+            margin: 20px 0;
+        }
+
+        .script-box {
+            background: #000;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .script-label {
+            color: var(--secondary);
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            text-align: left;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        td {
+            padding: 12px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-dim);
+            padding: 40px;
+        }
+
+        @media print {
+            .no-print { display: none; }
+            body { background: white; color: black; padding: 0; margin: 0; }
+            .card { border: 1px solid #ddd !important; background: white !important; page-break-inside: avoid; }
+            h1 { -webkit-text-fill-color: black !important; color: black !important; }
+            .badge { border: 1px solid #ccc !important; color: #555 !important; }
+            .script-box { background: #f9f9f9 !important; border: 1px solid #ddd !important; color: black !important; }
+            td, th, .manif_text { color: black !important; border-color: #eee !important; }
+            .container { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="btn" onclick="window.print()">DESCARGAR PDF</button>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="badge">Estrategia de Lanzamiento</div>
+            <h1>NL VIP TEAM</h1>
+            <p style="color: var(--primary); font-weight: 700;">Gimnasios de Alto Rendimiento & Bio-Rítmica</p>
+        </header>
+
+        <section>
+            <h2>1. El Manifiesto</h2>
+            <div class="card">
+                <p class="manif_text">
+                    "Dile adiós a los entrenamientos lineales. Tu cuerpo, como mujer, es un sistema dinámico, sensible y poderoso. En [Nombre del Gimnasio] sabemos que no eres la misma el lunes que el jueves. Por eso, hemos creado NL VIP TEAM, la única tecnología que sincroniza tus macros, tu energía y tu entrenamiento con tu estado hormonal real."
+                </p>
+            </div>
+        </section>
+
+        <section>
+            <h2>2. Guiones Cinematográficos (Social Media)</h2>
+            <div class="card">
+                <div class="script-box">
+                    <span class="script-label">Reel #1: Bio-Hacking Femenino</span>
+                    <p style="font-size: 13px;"><strong>Visual:</strong> Clips rápidos en neón. Registro de síntomas → Entrenamiento → Nutrición.<br>
+                    <strong>Voz en off:</strong> "¿Por qué seguir un plan rígido cuando tu cuerpo cambia cada día? Descubre la sincronización de macros en tiempo real. Bienvenido a la era del Bio-hacking femenino."</p>
+                </div>
+
+                <div class="script-box">
+                    <span class="script-label">Reel #2: Tu Diario Inteligente</span>
+                    <p style="font-size: 13px;"><strong>Visual:</strong> Pantalla de la app mostrando el selector de etapas y síntomas.<br>
+                    <strong>Voz en off:</strong> "¿Sabías que tus hormonas dictan cómo quemas grasa? En NL VIP no adivinamos. Es personal, es VIP, es NL."</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>3. El Factor Diferencial x10</h2>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Funcionalidad</th>
+                            <th>Valor para el Socio</th>
+                            <th>Impacto en Negocio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Macros Dinámicos</strong></td>
+                            <td>Nutrición que se adapta a tu día.</td>
+                            <td>Fidelización extrema.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Etapas de Vida</strong></td>
+                            <td>Seguridad en Embarazo/Postparto.</td>
+                            <td>Nicho de mercado exclusivo.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sync de Ciclo</strong></td>
+                            <td>Entrena con tus hormonas.</td>
+                            <td>Resultados visibles más rápido.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section>
+            <h2>4. Guerrilla Marketing</h2>
+            <div class="card">
+                <ul style="list-style: none; font-size: 14px;">
+                    <li style="margin-bottom: 12px;">📍 <strong>Mirror Branding:</strong> Vinilos en vestuarios con mensajes dinámicos.</li>
+                    <li style="margin-bottom: 12px;">🎙️ <strong>Welcome Pack:</strong> PDF de bienvenida explicando el Bio-ritmo de la socia.</li>
+                    <li>💎 <strong>Testimonios VIP:</strong> Entrevistas a socias reales sobre su salud hormonal.</li>
+                </ul>
+            </div>
+        </section>
+
+        <div class="footer">
+            Propuesta exclusiva para colaboradores de NL VIP TEAM &copy; 2026
+        </div>
+    </div>
+</body>
+</html>

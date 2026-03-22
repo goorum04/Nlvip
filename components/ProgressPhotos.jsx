@@ -172,6 +172,16 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
         </Button>
       </div>
 
+      <div className="bg-violet-500/5 border border-violet-400/10 rounded-2xl p-4 space-y-2">
+        <p className="text-xs text-white/90 leading-relaxed">
+          <span className="font-bold text-violet-400">Fotos actuales (frente, lado y espalda)</span><br />
+          Hacer con la mejor calidad posible, ropa interior o en bañador corto en el caso de los hombres; las mujeres con bikini o brasileña/tanga.
+        </p>
+        <p className="text-[10px] text-gray-400 leading-relaxed italic">
+          Fotos de cuerpo completo para poder apreciar todos los avances o atrasos, mientras mejor se vea el cuerpo más podremos perfeccionar todo.
+        </p>
+      </div>
+
       <div className="grid grid-cols-3 gap-3">
         <PhotoSlot type="front" label="Frente" inputRef={frontInputRef} />
         <PhotoSlot type="side" label="Lado" inputRef={sideInputRef} />
