@@ -55,6 +55,9 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [page, setPage] = useState(0)
   const [unreadCounts, setUnreadCounts] = useState({ total: 0, byMember: {}, byUser: {} })
   const [searchQuery, setSearchQuery] = useState('')
   const [view, setView] = useState(userRole === 'admin' ? 'list' : 'chat')
@@ -92,7 +95,9 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     let cleanupFunc = null;
 
     if (activeConversation) {
-      loadMessages(activeConversation.id)
+      setPage(0)
+      setMessages([])
+      loadMessages(activeConversation.id, 0)
       cleanupFunc = setupSubscription(activeConversation.id)
       if (isOpen) markAsRead(activeConversation.id)
     }
@@ -334,18 +339,37 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     return null
   }
 
-  const loadMessages = async (convId) => {
-    const { data } = await supabase
+  const loadMessages = async (convId, pageNum = 0) => {
+    const pageSize = 20
+    const from = pageNum * pageSize
+    const to = from + pageSize - 1
+
+    const { data, error } = await supabase
       .from('messages')
       .select(`*, sender:profiles!messages_sender_id_fkey(name, role)`)
       .eq('conversation_id', convId)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
+      .range(from, to)
     
     if (data) {
-      setMessages(data)
-      scrollToBottom()
-      // Mark as read (simplified)
+      const reversed = [...data].reverse()
+      if (pageNum === 0) {
+        setMessages(reversed)
+        scrollToBottom()
+      } else {
+        setMessages(prev => [...reversed, ...prev])
+      }
+      setHasMore(data.length === pageSize)
     }
+  }
+
+  const handleLoadMore = async () => {
+    if (!activeConversation || loadingMore || !hasMore) return
+    setLoadingMore(true)
+    const nextPage = page + 1
+    await loadMessages(activeConversation.id, nextPage)
+    setPage(nextPage)
+    setLoadingMore(false)
   }
 
   const setupSubscription = (convId) => {
@@ -668,12 +692,61 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                   </button>
                 ))}
               </div>
-            ) : (messages || []).length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
-                <Bot size={48} className="text-zinc-800 mb-4" />
-                <p className="text-sm text-zinc-500">No hay mensajes aún.<br/>Inicia la conversación.</p>
-              </div>
             ) : (
+              <>
+                {hasMore && (
+                  <div className="flex justify-center pb-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                      className="text-[10px] text-zinc-500 hover:text-white uppercase tracking-widest font-bold"
+                    >
+                      {loadingMore ? <Loader2 size={12} className="animate-spin" /> : 'Cargar mensajes anteriores'}
+                    </Button>
+                  </div>
+                )}
+                
+                {(messages || []).length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+                    <Bot size={48} className="text-zinc-800 mb-4" />
+                    <p className="text-sm text-zinc-500">No hay mensajes aún.<br/>Inicia la conversación.</p>
+                  </div>
+                ) : (
+                  messages.map((msg, idx) => (
+                    <div key={msg.id || idx} className={`flex flex-col ${msg.sender_id === userId ? 'items-end' : 'items-start'}`}>
+                      <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${
+                        msg.sender_id === userId 
+                          ? 'bg-gradient-to-br from-violet-600 to-cyan-600 text-white rounded-tr-none shadow-lg' 
+                          : 'bg-zinc-800 text-zinc-200 rounded-tl-none border border-white/5'
+                      }`}>
+                        {msg.type === 'audio' ? (
+                          <AudioPlayer path={msg.audio_path} />
+                        ) : msg.type === 'image' ? (
+                           <div className="space-y-2">
+                             <img 
+                               src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/chat_images/${msg.image_path}`} 
+                               alt="Chat" 
+                               className="rounded-xl max-w-full h-auto cursor-pointer hover:opacity-90"
+                               onClick={() => window.open(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/chat_images/${msg.image_path}`, '_blank')}
+                             />
+                             {msg.text && <p>{msg.text}</p>}
+                           </div>
+                        ) : (
+                          <p className="whitespace-pre-wrap">{msg.text}</p>
+                        )}
+                      </div>
+                      <span className="text-[9px] text-zinc-600 mt-1 uppercase tracking-tighter">
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))
+                )}
+                <div ref={messagesEndRef} />
+              </>
+            )}
+          </div>
               (messages || []).map((msg) => {
                 if (!msg || typeof msg !== 'object') return null; // Safe guard
                 const isMe = msg.sender_id === userId

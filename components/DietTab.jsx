@@ -8,7 +8,7 @@ import { MemberRecipePlan } from './RecipePlan'
 import { DietOnboardingBanner } from './DietOnboardingForm'
 import { supabase } from '@/lib/supabase'
 
-export function DietTab({ user, diet }) {
+export function DietTab({ user, diet, memberName }) {
     const [pendingOnboarding, setPendingOnboarding] = useState(null)
     const [onboardingChecked, setOnboardingChecked] = useState(false)
 
@@ -40,6 +40,7 @@ export function DietTab({ user, diet }) {
                 <DietOnboardingBanner
                     requestId={pendingOnboarding.id}
                     memberId={user.id}
+                    memberName={memberName}
                     onCompleted={() => {
                         setPendingOnboarding(null)
                         window.location.reload()

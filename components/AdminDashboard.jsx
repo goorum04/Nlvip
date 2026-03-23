@@ -147,12 +147,11 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     if (data) setDietTemplates(data)
   }
   
-  // Load pending diet requests
+  // Load all diet requests (including processed)
   const loadDietRequests = async () => {
     const { data } = await supabase
       .from('diet_onboarding_requests')
       .select('*, member:profiles!diet_onboarding_requests_member_id_fkey(name, email)')
-      .eq('status', 'submitted')
       .order('created_at', { ascending: false })
     if (data) setDietRequests(data || [])
   }
@@ -254,7 +253,34 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || 'Error al generar dieta')
       
-      toast({ title: '¡Plan generado!', description: 'La dieta ha sido creada y asignada.' })
+      // AUTO-ASSIGN RECIPES from catalog after diet is created
+      if (result.dietId) {
+        try {
+          const { data: diet } = await supabase.from('diet_templates').select('*').eq('id', result.dietId).single()
+          if (diet) {
+            // Find recipes for about 1/3 of daily calories for main meals
+            const mealCalories = Math.round(diet.calories / 3)
+            const { data: recipes } = await supabase.from('recipes')
+              .select('id, category')
+              .gte('calories', mealCalories * 0.7)
+              .lte('calories', mealCalories * 1.3)
+              .limit(4)
+            
+            if (recipes && recipes.length > 0) {
+              const links = recipes.map(r => ({
+                diet_template_id: result.dietId,
+                recipe_id: r.id,
+                meal_slot: r.category || 'lunch'
+              }))
+              await supabase.from('diet_recipes').upsert(links, { onConflict: 'diet_template_id, recipe_id' })
+            }
+          }
+        } catch (recipeErr) {
+          console.error('Error linking recipes automatically:', recipeErr)
+        }
+      }
+
+      toast({ title: '¡Plan generado!', description: 'La dieta y recetas sugeridas han sido creadas y asignadas.' })
       loadDietRequests()
       loadDietTemplates()
     } catch (error) {
@@ -1489,10 +1515,10 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <ChefHat className="w-5 h-5 text-violet-400" />
-                    Solicitudes de Dieta Pendientes ({dietRequests.length})
+                    Solicitudes de Dieta ({dietRequests.length})
                   </CardTitle>
                   <CardDescription className="text-gray-400">
-                    Socios que han completado el cuestionario y esperan su plan.
+                    Cuestionarios rellenados por los socios para generar sus planes.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1505,6 +1531,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         <div>
                           <p className="text-white font-bold text-sm">{req.member?.name || 'Usuario desconocido'}</p>
                           <p className="text-gray-500 text-xs">{req.member?.email || 'Sin email'}</p>
+                          <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded ${req.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400 animate-pulse'}`}>
+                            {req.status === 'completed' ? 'Procesado' : 'Pendiente'}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">

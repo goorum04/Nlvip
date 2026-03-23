@@ -28,6 +28,8 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
   const [showWorkoutDetail, setShowWorkoutDetail] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [sendingOnboarding, setSendingOnboarding] = useState(false)
+  const [onboardingResponse, setOnboardingResponse] = useState(null)
+  const [showOnboardingDetail, setShowOnboardingDetail] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -110,6 +112,18 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
         .limit(10)
 
       setProgressRecords(progress || [])
+
+      // Cargar respuesta de onboarding si existe
+      const { data: onboarding } = await supabase
+        .from('diet_onboarding_requests')
+        .select('*')
+        .eq('member_id', member.id)
+        .eq('status', 'submitted')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      
+      setOnboardingResponse(onboarding)
 
     } catch (error) {
       console.error('Error loading member data:', error)
@@ -436,9 +450,43 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                     )}
                     Solicitar cuestionario
                   </Button>
+
+                  {onboardingResponse && (
+                    <Button 
+                      onClick={() => setShowOnboardingDetail(true)}
+                      variant="outline"
+                      className="w-full border-green-500/30 text-green-400 hover:bg-green-500/10 gap-2"
+                    >
+                      <ClipboardList className="w-4 h-4" />
+                      Ver respuestas cuestionario
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
+
+            {/* Modal de Respuestas de Cuestionario */}
+            <Dialog open={showOnboardingDetail} onOpenChange={setShowOnboardingDetail}>
+              <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-lg max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-white flex items-center gap-2">
+                    <ClipboardList className="w-5 h-5 text-violet-400" />
+                    Respuestas Cuestionario - {member.name}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  {onboardingResponse?.responses && Object.entries(onboardingResponse.responses).map(([key, value]) => (
+                    <div key={key} className="p-3 bg-white/5 rounded-xl border border-white/5">
+                      <p className="text-[10px] text-violet-400 uppercase font-bold mb-1">{key}</p>
+                      <p className="text-sm text-white/90 whitespace-pre-wrap">{String(value)}</p>
+                    </div>
+                  ))}
+                  {!onboardingResponse?.responses && (
+                    <p className="text-gray-500 text-center">No hay respuestas detalladas guardadas.</p>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Historial de Medidas */}
             <Card className="bg-black/30 border-violet-500/20 rounded-2xl">

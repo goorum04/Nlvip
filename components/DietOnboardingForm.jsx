@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Apple, ChefHat, Loader2, CheckCircle2, UtensilsCrossed, Clock, Target, AlertCircle, Heart,
-  Briefcase, Scale, Ruler, RulerIcon, Scissors
+  Briefcase, Scale, Ruler, RulerIcon, Scissors, Zap, Star
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 

@@ -195,13 +195,13 @@ export function AdminUsersTab({
                                 <div className="flex items-center gap-4">
                                     <div className="relative">
                                         <div className={`w-12 h-12 rounded-2xl bg-black/40 flex items-center justify-center border ${member.has_premium ? 'border-amber-500/50' : 'border-white/10'}`}>
-                                            <Users className={`w-5 h-5 ${member.has_premium ? 'text-amber-500' : 'text-gray-500'}`} />
-                                        </div>
-                                        {member.has_premium && (
-                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-[#1a1a1a]">
-                                                <Key className="w-2.5 h-2.5 text-black" />
-                                            </div>
-                                        )}
+    <Users className={`w-5 h-5 ${member.has_premium ? 'text-amber-500' : 'text-gray-500'}`} />
+</div>
+{member.has_premium && (
+    <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-[#1a1a1a]">
+        <Key className="w-2.5 h-2.5 text-black" />
+    </div>
+)}
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-white flex items-center gap-2">
