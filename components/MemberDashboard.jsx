@@ -32,6 +32,7 @@ import { CycleModule } from './CycleModule'
 import { LifeStageSelector, PregnancyMode, PostpartumMode, LactationTracker } from './LifeStageModules'
 import { DietOnboardingBanner } from './DietOnboardingForm'
 import { DietDailyView, DietWeeklyView } from './DietTabParts'
+import { SymptomsTracker } from './SymptomsTracker'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
@@ -684,6 +685,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                   <PostpartumMode userId={user.id} profile={profile} onUpdate={() => window.location.reload()} onThemeChange={setPageTheme} />
                 </>
               )}
+              <SymptomsTracker userId={user.id} phase={profile?.life_stage || 'cycle'} />
             </TabsContent>
           )}
 
@@ -758,6 +760,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               <DietOnboardingBanner
                 requestId={pendingOnboarding.id}
                 memberId={user.id}
+                memberName={profile.name}
                 onCompleted={() => {
                   setPendingOnboarding(null)
                   loadData()

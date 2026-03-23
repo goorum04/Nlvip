@@ -48,7 +48,7 @@ export function LifeStageSelector({ userId, profile, onUpdate }) {
     }
 
     return (
-        <Card className="bg-[#0B0B0B]/40 backdrop-blur-xl border-white/5 rounded-[2.5rem] overflow-hidden">
+        <Card className="bg-[#0B0B0B]/40 backdrop-blur-xl border-white/5 rounded-[2.5rem]">
             <CardHeader className="p-6 pb-2">
                 <CardTitle className="text-xs font-black text-white/40 flex items-center gap-2 uppercase tracking-[0.2em]">
                     <Sparkles className="w-3 h-3 text-amber-400" />
@@ -147,7 +147,7 @@ export function PregnancyMode({ userId, profile, onUpdate, onThemeChange }) {
     }
 
     return (
-        <Card className="bg-[#0B0B0B]/40 backdrop-blur-2xl border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <Card className="bg-[#0B0B0B]/40 backdrop-blur-2xl border-white/5 rounded-[2.5rem] shadow-2xl">
             <div className="relative p-8">
                 {/* Ambient Glow */}
                 <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 via-pink-500/10 to-transparent opacity-50 header-gradient" />
@@ -329,7 +329,7 @@ export function PostpartumMode({ userId, profile, onUpdate, onThemeChange }) {
     }
 
     return (
-        <Card className="bg-[#0B0B0B]/40 backdrop-blur-2xl border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <Card className="bg-[#0B0B0B]/40 backdrop-blur-2xl border-white/5 rounded-[2.5rem] shadow-2xl">
             <div className="relative p-8">
                 {/* Ambient Glow */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${phase?.color || 'from-violet-500/10 to-pink-500/5'} opacity-40 header-gradient`} />
@@ -511,7 +511,7 @@ export function LactationTracker({ userId, onThemeChange }) {
     const SIDE_LABELS = { left: '← Izquierdo', right: 'Derecho →', both: '↔ Ambos' }
 
     return (
-        <Card className="bg-[#0B0B0B]/40 backdrop-blur-2xl border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <Card className="bg-[#0B0B0B]/40 backdrop-blur-2xl border-white/5 rounded-[2.5rem] shadow-2xl">
             <CardHeader className="p-8 pb-4 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-50 header-gradient" />
                 <div className="relative flex items-center justify-between">

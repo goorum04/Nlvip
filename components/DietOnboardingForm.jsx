@@ -467,7 +467,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
 }
 
 // Banner component to show when member has a pending onboarding
-export function DietOnboardingBanner({ requestId, memberId, onCompleted }) {
+export function DietOnboardingBanner({ requestId, memberId, memberName, onCompleted }) {
   const [showForm, setShowForm] = useState(false)
 
   if (showForm) {
@@ -486,6 +486,8 @@ export function DietOnboardingBanner({ requestId, memberId, onCompleted }) {
     )
   }
 
+  const firstName = memberName?.split(' ')[0] || ''
+
   return (
     <Card className="bg-gradient-to-br from-violet-900/40 to-cyan-900/20 border-violet-500/40 rounded-3xl overflow-hidden">
       <CardContent className="p-6">
@@ -498,7 +500,7 @@ export function DietOnboardingBanner({ requestId, memberId, onCompleted }) {
               ¡Tu entrenador quiere crear tu plan de nutrición! 🎉
             </h3>
             <p className="text-gray-300 text-sm mb-4">
-              Responde un breve cuestionario (2 min) y se generará automáticamente tu programa nutricional personalizado con comidas específicas y cantidades exactas.
+              {firstName} relléname este formulario lo antes posible para que pueda crearte un programa nutricional adaptado a tus necesidades con comidas específicas y cantidades exactas.
             </p>
             <div className="flex flex-wrap gap-2 mb-4">
               {['Comidas específicas con gramos', 'Adaptado a tus objetivos', 'Según tus preferencias', 'Formato NL VIP Club'].map(tag => (
