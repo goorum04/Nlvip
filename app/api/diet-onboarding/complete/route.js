@@ -118,7 +118,7 @@ Etc.`
       .single()
 
     // 6. Save as diet_template and assign to member using RPC (SECURITY DEFINER)
-    const dietName = `Plan Personalizado - ${name} (IA)`
+    const dietName = `Dieta personalizada (${name})`
     
     const { data: generatedDietId, error: rpcError } = await supabase.rpc('complete_diet_onboarding', {
       p_member_id: memberId,
