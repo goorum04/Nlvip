@@ -1226,7 +1226,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                       className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-violet-500/10 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all"
                     >
                       <div 
-                        className="flex items-center gap-3 flex-1 cursor-pointer"
+                        className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
                         onClick={() => {
                           setSelectedMember(member)
                           setShowMemberDetail(true)
@@ -1235,15 +1235,15 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold">
                           {member.name?.charAt(0)}
                         </div>
-                        <div>
-                          <p className="font-semibold text-white hover:text-violet-400 transition-colors">{member.name}</p>
-                          <p className="text-sm text-gray-400">{member.email}</p>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-white hover:text-violet-400 transition-colors truncate">{member.name}</p>
+                          <p className="text-sm text-gray-400 truncate">{member.email}</p>
                           <p className="text-xs text-violet-400 mt-1">
                             Entrenador: {member.trainer_members?.[0]?.trainer?.name || 'No asignado'}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-shrink-0">
                         <div className="text-right">
                           <div className="text-sm text-gray-400">
                             {new Date(member.created_at).toLocaleDateString()}
