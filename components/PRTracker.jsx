@@ -50,6 +50,7 @@ export default function PRTracker({ memberId }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
+          memberId,
           weight_kg: parseFloat(form.weight_kg),
           reps: parseInt(form.reps)
         })
