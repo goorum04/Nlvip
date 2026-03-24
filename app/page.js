@@ -51,8 +51,39 @@ export default function App() {
   }
 
   const loadProfile = async (userId) => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
-    if (data) setProfile(data)
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
+      
+      if (data) {
+        setProfile(data)
+      } else if (error && (error.code === 'PGRST116' || error.message.includes('0 rows'))) {
+        // PERMANENT FIX: If profile is missing, create it on the fly
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const newProfile = {
+            id: user.id,
+            email: user.email,
+            name: user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0],
+            role: 'member',
+            has_premium: false
+          }
+          
+          const { data: createdProfile, error: createError } = await supabase
+            .from('profiles')
+            .upsert([newProfile], { onConflict: 'id' })
+            .select()
+            .single()
+          
+          if (createdProfile) {
+            setProfile(createdProfile)
+          } else if (createError) {
+            console.error('Error creating fallback profile:', createError)
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Profile loading error:', err)
+    }
   }
 
   const handleLogin = async (e) => {

@@ -607,16 +607,20 @@ function RecipeFormModal({ isOpen, onClose, recipe = null, onSave }) {
 
       const recipeData = {
         title: formData.name,
+        name: formData.name, // Write to both
         description: formData.description || null,
-        steps: formData.instructions || null,
-        ingredients: formData.ingredients || null,
+        steps: formData.instructions || null, 
+        instructions: formData.instructions || null, // Write to both
         category: formData.category,
         prep_time_min: formData.prep_time_minutes ? parseInt(formData.prep_time_minutes) : null,
+        prep_time_minutes: formData.prep_time_minutes ? parseInt(formData.prep_time_minutes) : null, // Write to both
         calories: formData.calories ? parseInt(formData.calories) : null,
         protein_g: formData.protein_g ? parseFloat(formData.protein_g) : null,
         carbs_g: formData.carbs_g ? parseFloat(formData.carbs_g) : null,
-        fats_g: formData.fat_g ? parseFloat(formData.fat_g) : null,
-        image_path: imageUrl || null
+        fat_g: formData.fat_g ? parseFloat(formData.fat_g) : null,
+        fats_g: formData.fat_g ? parseFloat(formData.fat_g) : null, // Write to both
+        image_path: imageUrl || null,
+        image_url: imageUrl || null // Write to both
       }
 
       await onSave(recipeData, recipe?.id)
@@ -949,14 +953,14 @@ export function RecipesManager({ userId }) {
       .select('*')
       .order('created_at', { ascending: false })
     
-    // Mapear nombres de columnas de la DB a los nombres del frontend
+    // Mapear nombres de columnas de la DB a los nombres del frontend con fallbacks
     const mappedRecipes = (data || []).map(r => ({
       ...r,
-      name: r.title,
-      instructions: r.steps,
-      prep_time_minutes: r.prep_time_min,
-      fat_g: r.fats_g,
-      image_url: r.image_path
+      name: r.title || r.name,
+      instructions: r.steps || r.instructions,
+      prep_time_minutes: r.prep_time_min || r.prep_time_minutes,
+      fat_g: r.fats_g || r.fat_g,
+      image_url: r.image_path || r.image_url
     }))
     setRecipes(mappedRecipes)
     setLoading(false)

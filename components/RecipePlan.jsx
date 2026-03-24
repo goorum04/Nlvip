@@ -341,17 +341,19 @@ export function MemberRecipePlan({ userId, forceFullWeek = false }) {
         // Mapear ambas fuentes al formato unificado del frontend
         const mappedCatalog = (catalogData || []).map(r => ({
           ...r,
-          name: r.title,
-          instructions: Array.isArray(r.instructions) ? r.instructions.join('\n') : r.instructions,
-          ingredients_text: Array.isArray(r.ingredients) ? r.ingredients.join('\n') : r.ingredients,
-          prep_time_minutes: r.prep_time_min,
-          image_url: r.image_url
+          name: r.title || r.name,
+          instructions: Array.isArray(r.instructions) ? r.instructions.join('\n') : (r.steps || r.instructions),
+          ingredients: Array.isArray(r.ingredients) ? r.ingredients.join('\n') : (r.ingredients),
+          prep_time_minutes: r.prep_time_min || r.prep_time_minutes,
+          fat_g: r.fat_g || r.fats_g,
+          image_url: r.image_url || r.image_path
         }))
         
         const mappedLegacy = (legacyData || []).map(r => ({
           ...r,
           name: r.title || r.name,
           instructions: r.steps || r.instructions,
+          ingredients: r.ingredients,
           prep_time_minutes: r.prep_time_min || r.prep_time_minutes,
           fat_g: r.fats_g || r.fat_g,
           image_url: r.image_path || r.image_url
@@ -397,6 +399,8 @@ export function MemberRecipePlan({ userId, forceFullWeek = false }) {
   const currentDay = new Date().getDay()
   const todayIndex = currentDay === 0 ? 7 : currentDay
   const todayItems = items.filter(i => (i.day_of_week || i.day_index) === todayIndex)
+  
+  const getRecipe = (recipeId) => recipes.find(r => r.id === recipeId)
 
   return (
     <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-white/5 rounded-3xl overflow-hidden">
@@ -590,15 +594,18 @@ export function TrainerRecipePlanEditor({ memberId, memberName, trainerId }) {
     
     const mappedCatalog = (catalogData || []).map(r => ({
       ...r,
-      name: r.title,
-      instructions: Array.isArray(r.instructions) ? r.instructions.join('\n') : r.instructions,
-      prep_time_minutes: r.prep_time_min,
-      image_url: r.image_url
+      name: r.title || r.name,
+      instructions: Array.isArray(r.instructions) ? r.instructions.join('\n') : (r.steps || r.instructions),
+      ingredients: Array.isArray(r.ingredients) ? r.ingredients.join('\n') : (r.ingredients),
+      prep_time_minutes: r.prep_time_min || r.prep_time_minutes,
+      fat_g: r.fat_g || r.fats_g,
+      image_url: r.image_url || r.image_path
     }))
     const mappedLegacy = (legacyData || []).map(r => ({
       ...r,
       name: r.title || r.name,
       instructions: r.steps || r.instructions,
+      ingredients: r.ingredients,
       prep_time_minutes: r.prep_time_min || r.prep_time_minutes,
       fat_g: r.fats_g || r.fat_g,
       image_url: r.image_path || r.image_url
