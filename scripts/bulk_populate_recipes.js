@@ -34,18 +34,18 @@ const OPENAI_KEY = process.env.OPENAI_API_KEY;
 const ADMIN_ID = '64145053-45fd-473c-b2c4-7523d181aad3';
 
 const QUERIES = [
-  { q: 'vegan high protein bowl', cat: 'lunch' },
-  { q: 'keto dinner salmon asparagus', cat: 'dinner' },
-  { q: 'protein pancakes healthy', cat: 'breakfast' },
-  { q: 'healthy protein brownie', cat: 'snack' },
-  { q: 'sugar free cheesecake protein', cat: 'snack' },
-  { q: 'grilled turkey with roasted vegetables', cat: 'dinner' },
-  { q: 'quinoa avocado salad vegan', cat: 'lunch' },
-  { q: 'egg white omelette spinach', cat: 'breakfast' },
-  { q: 'low carb chicken curry', cat: 'dinner' },
-  { q: 'greek yogurt with berries and seeds', cat: 'breakfast' },
-  { q: 'zucchini noodles with pesto and shrimp', cat: 'lunch' },
-  { q: 'baked cod with lemon and herbs', cat: 'dinner' }
+  { q: 'bowl vegano alto en proteína', cat: 'lunch' },
+  { q: 'cena keto salmón espárragos', cat: 'dinner' },
+  { q: 'tortitas de proteína saludables', cat: 'breakfast' },
+  { q: 'brownie de proteína saludable', cat: 'snack' },
+  { q: 'tarta de queso sin azúcar proteína', cat: 'snack' },
+  { q: 'pavo a la plancha con verduras asadas', cat: 'dinner' },
+  { q: 'ensalada quinoa aguacate vegana', cat: 'lunch' },
+  { q: 'tortilla de claras espinacas', cat: 'breakfast' },
+  { q: 'curry de pollo bajo en carbohidratos', cat: 'dinner' },
+  { q: 'yogur griego con bayas y semillas', cat: 'breakfast' },
+  { q: 'noodles de calabacín con pesto y gambas', cat: 'lunch' },
+  { q: 'bacalao al horno con limón y hierbas', cat: 'dinner' }
 ];
 
 async function translate(text, context) {
@@ -80,7 +80,7 @@ async function populate() {
   for (const item of QUERIES) {
     console.log(`🔍 Buscando ${item.q}...`);
     try {
-      const res = await axios.get(`https://api.spoonacular.com/recipes/complexSearch?apiKey=${SPOONACULAR_KEY}&query=${encodeURIComponent(item.q)}&addRecipeInformation=true&addRecipeNutrition=true&instructionsRequired=true&fillIngredients=true&number=3`);
+      const res = await axios.get(`https://api.spoonacular.com/recipes/complexSearch?apiKey=${SPOONACULAR_KEY}&query=${encodeURIComponent(item.q)}&addRecipeInformation=true&addRecipeNutrition=true&instructionsRequired=true&fillIngredients=true&language=es&number=3`);
       
       if (!res.data.results) continue;
 
