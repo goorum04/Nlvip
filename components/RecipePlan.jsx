@@ -168,7 +168,7 @@ function RecipeCard({ item, recipe, onEdit, canEdit = false }) {
 // Componente vista de día
 function DayColumn({ dayIndex, items, recipes, canEdit, onEditItem }) {
   const dayName = DAYS[dayIndex - 1]
-  const dayItems = items.filter(i => i.day_index === dayIndex)
+  const dayItems = items.filter(i => (i.day_of_week || i.day_index) === dayIndex)
   
   const getRecipe = (recipeId) => recipes.find(r => r.id === recipeId)
 
@@ -179,7 +179,7 @@ function DayColumn({ dayIndex, items, recipes, canEdit, onEditItem }) {
       </h4>
       <div className="space-y-2">
         {Object.keys(MEAL_SLOTS).map(slot => {
-          const item = dayItems.find(i => i.meal_slot === slot)
+          const item = dayItems.find(i => (i.meal_type || i.meal_slot) === slot)
           if (!item) return null
           
           return (
@@ -207,7 +207,7 @@ function EditRecipeModal({ isOpen, onClose, item, allRecipes, onSave }) {
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const slot = item ? MEAL_SLOTS[item.meal_slot] : null
+  const slot = item ? MEAL_SLOTS[item.meal_type || item.meal_slot] : null
   const filteredRecipes = allRecipes.filter(r => 
     r.name.toLowerCase().includes(search.toLowerCase()) ||
     r.category?.toLowerCase().includes(search.toLowerCase())
@@ -312,12 +312,11 @@ export function MemberRecipePlan({ userId, forceFullWeek = false }) {
       // Cargar plan activo
       const { data: planData } = await supabase
         .from('member_recipe_plans')
-        .select('*, diet:diet_templates(name)')
+        .select('*')
         .eq('member_id', userId)
-        .eq('status', 'active')
-        .order('week_start', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (planData) {
         setPlan(planData)
@@ -327,15 +326,29 @@ export function MemberRecipePlan({ userId, forceFullWeek = false }) {
           .from('member_recipe_plan_items')
           .select('*')
           .eq('plan_id', planData.id)
-          .order('day_index')
+          .order('day_of_week')
 
-        // Cargar recetas
-        const { data: recipesData } = await supabase
+        // Cargar recetas del catálogo (recipe_catalog)
+        const { data: catalogData } = await supabase
+          .from('recipe_catalog')
+          .select('*')
+        
+        // También cargar de recipes (legacy)
+        const { data: legacyData } = await supabase
           .from('recipes')
           .select('*')
         
-        // Mapear nombres de columnas de la DB a los nombres del frontend
-        const mappedRecipes = (recipesData || []).map(r => ({
+        // Mapear ambas fuentes al formato unificado del frontend
+        const mappedCatalog = (catalogData || []).map(r => ({
+          ...r,
+          name: r.title,
+          instructions: Array.isArray(r.instructions) ? r.instructions.join('\n') : r.instructions,
+          ingredients_text: Array.isArray(r.ingredients) ? r.ingredients.join('\n') : r.ingredients,
+          prep_time_minutes: r.prep_time_min,
+          image_url: r.image_url
+        }))
+        
+        const mappedLegacy = (legacyData || []).map(r => ({
           ...r,
           name: r.title || r.name,
           instructions: r.steps || r.instructions,
@@ -345,7 +358,7 @@ export function MemberRecipePlan({ userId, forceFullWeek = false }) {
         }))
         
         setItems(itemsData || [])
-        setRecipes(mappedRecipes)
+        setRecipes([...mappedCatalog, ...mappedLegacy])
       }
     } catch (error) {
       console.error('Error loading plan:', error)
@@ -376,14 +389,14 @@ export function MemberRecipePlan({ userId, forceFullWeek = false }) {
     )
   }
 
-  const weekStart = new Date(plan.week_start)
+  const weekStart = new Date(plan.week_start_date || plan.week_start)
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekEnd.getDate() + 6)
 
   // Determinar el día de hoy (1 = Lunes, 7 = Domingo)
   const currentDay = new Date().getDay()
   const todayIndex = currentDay === 0 ? 7 : currentDay
-  const todayItems = items.filter(i => i.day_index === todayIndex)
+  const todayItems = items.filter(i => (i.day_of_week || i.day_index) === todayIndex)
 
   return (
     <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-white/5 rounded-3xl overflow-hidden">
@@ -437,7 +450,7 @@ export function MemberRecipePlan({ userId, forceFullWeek = false }) {
               </h3>
               <div className="grid gap-3">
                 {Object.keys(MEAL_SLOTS).map(slot => {
-                  const item = todayItems.find(i => i.meal_slot === slot)
+                  const item = todayItems.find(i => (i.meal_type || i.meal_slot) === slot)
                   if (!item) return null
                   
                   return (
@@ -546,12 +559,11 @@ export function TrainerRecipePlanEditor({ memberId, memberName, trainerId }) {
     try {
       const { data: planData } = await supabase
         .from('member_recipe_plans')
-        .select('*, diet:diet_templates(name, calories, protein_g, carbs_g, fat_g)')
+        .select('*')
         .eq('member_id', memberId)
-        .eq('status', 'active')
-        .order('week_start', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (planData) {
         setPlan(planData)
@@ -560,7 +572,7 @@ export function TrainerRecipePlanEditor({ memberId, memberName, trainerId }) {
           .from('member_recipe_plan_items')
           .select('*')
           .eq('plan_id', planData.id)
-          .order('day_index')
+          .order('day_of_week')
         
         setItems(itemsData || [])
       }
@@ -572,9 +584,18 @@ export function TrainerRecipePlanEditor({ memberId, memberName, trainerId }) {
   }
 
   const loadAllRecipes = async () => {
-    const { data } = await supabase.from('recipes').select('*').order('category')
-    // Mapear nombres de columnas de la DB a los nombres del frontend
-    const mappedRecipes = (data || []).map(r => ({
+    // Cargar de ambas tablas
+    const { data: catalogData } = await supabase.from('recipe_catalog').select('*')
+    const { data: legacyData } = await supabase.from('recipes').select('*').order('category')
+    
+    const mappedCatalog = (catalogData || []).map(r => ({
+      ...r,
+      name: r.title,
+      instructions: Array.isArray(r.instructions) ? r.instructions.join('\n') : r.instructions,
+      prep_time_minutes: r.prep_time_min,
+      image_url: r.image_url
+    }))
+    const mappedLegacy = (legacyData || []).map(r => ({
       ...r,
       name: r.title || r.name,
       instructions: r.steps || r.instructions,
@@ -582,7 +603,7 @@ export function TrainerRecipePlanEditor({ memberId, memberName, trainerId }) {
       fat_g: r.fats_g || r.fat_g,
       image_url: r.image_path || r.image_url
     }))
-    setRecipes(mappedRecipes)
+    setRecipes([...mappedCatalog, ...mappedLegacy])
   }
 
   const generatePlan = async () => {
