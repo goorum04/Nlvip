@@ -747,53 +747,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
               </>
             )}
           </div>
-              (messages || []).map((msg) => {
-                if (!msg || typeof msg !== 'object') return null; // Safe guard
-                const isMe = msg.sender_id === userId
-                let formattedTime = ''
-                try {
-                  formattedTime = msg.created_at 
-                    ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-                    : ''
-                } catch (e) {
-                  // Ignore invalid date crashes
-                }
 
-                return (
-                  <div key={msg.id || Math.random().toString()} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2`}>
-                    <div className={`max-w-[85%] space-y-1 ${isMe ? 'items-end' : 'items-start'}`}>
-                      <div className={`px-4 py-3 rounded-2xl shadow-lg ${
-                        isMe 
-                          ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-tr-sm' 
-                          : 'bg-zinc-900 text-white border border-white/5 rounded-tl-sm'
-                      }`}>
-                        {msg.type === 'audio' && msg.audio_path ? (
-                          <AudioPlayer path={msg.audio_path} />
-                        ) : msg.type === 'image' && msg.image_path ? (
-                          <div className="space-y-2">
-                            <img 
-                              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/storage/v1/object/public/chat_images/${msg.image_path}`} 
-                              alt="Imagen de chat"
-                              className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-                              onError={(e) => { e.target.style.display = 'none' }} // Hide broken images safely
-                              onClick={() => window.open(`${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/storage/v1/object/public/chat_images/${msg.image_path}`, '_blank')}
-                            />
-                            {msg.text && typeof msg.text === 'string' && <p className="text-sm leading-relaxed">{msg.text}</p>}
-                          </div>
-                        ) : (
-                          <p className="text-sm leading-relaxed">{typeof msg.text === 'string' ? msg.text : ''}</p>
-                        )}
-                      </div>
-                      <p className="text-[9px] text-zinc-600 px-1">
-                        {formattedTime}
-                      </p>
-                    </div>
-                  </div>
-                )
-              })
-            )}
-            <div ref={messagesEndRef} />
-          </div>
 
           {/* Input con Funciones Especiales */}
           <div className="p-4 bg-zinc-950 border-t border-white/5">
@@ -892,7 +846,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
         </div>
       )}
 
-      <style jsx global>{`
+      <style>{`
         @keyframes progress {
           0% { width: 0%; }
           100% { width: 100%; }
