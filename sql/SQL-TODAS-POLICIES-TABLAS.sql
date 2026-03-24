@@ -59,8 +59,8 @@ ALTER TABLE IF EXISTS member_badges ENABLE ROW LEVEL SECURITY;
 -- ██ PROFILES (Perfiles de usuario)
 -- ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
--- Todos los autenticados pueden ver todos los perfiles (para ver nombres, fotos en feed, etc)
-CREATE POLICY "profiles_select_all"
+-- Todos los autenticados pueden ver información básica de perfiles (para el Feed)
+CREATE POLICY "profiles_select_public"
 ON profiles FOR SELECT TO authenticated
 USING (true);
 
@@ -595,7 +595,7 @@ USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'))
 -- Permitir actualizar uses_count al registrarse (para cualquier usuario)
 CREATE POLICY "invitation_codes_update_usage"
 ON invitation_codes FOR UPDATE TO authenticated
-USING (true)
+USING (is_active = true)
 WITH CHECK (true);
 
 
@@ -608,35 +608,22 @@ CREATE POLICY "recipes_select_all"
 ON recipes FOR SELECT TO authenticated
 USING (true);
 
--- Admins pueden crear recetas
-CREATE POLICY "recipes_admin_insert"
-ON recipes FOR INSERT TO authenticated
-WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
-
--- Trainers pueden crear recetas
-CREATE POLICY "recipes_trainer_insert"
-ON recipes FOR INSERT TO authenticated
-WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'trainer'));
-
--- Admins pueden actualizar cualquier receta
-CREATE POLICY "recipes_admin_update"
-ON recipes FOR UPDATE TO authenticated
+-- Admins pueden gestionar todo
+CREATE POLICY "recipes_admin_all"
+ON recipes FOR ALL TO authenticated
 USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
--- Trainers pueden actualizar sus recetas
-CREATE POLICY "recipes_trainer_update"
-ON recipes FOR UPDATE TO authenticated
-USING (created_by = auth.uid());
-
--- Admins pueden eliminar cualquier receta
-CREATE POLICY "recipes_admin_delete"
-ON recipes FOR DELETE TO authenticated
-USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
-
--- Trainers pueden eliminar sus recetas
-CREATE POLICY "recipes_trainer_delete"
-ON recipes FOR DELETE TO authenticated
-USING (created_by = auth.uid());
+-- Trainers pueden gestionar solo sus recetas
+CREATE POLICY "recipes_trainer_manage"
+ON recipes FOR ALL TO authenticated
+USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'trainer') AND 
+  created_by = auth.uid()
+)
+WITH CHECK (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'trainer') AND 
+  created_by = auth.uid()
+);
 
 
 -- ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
