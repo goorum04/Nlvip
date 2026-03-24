@@ -856,7 +856,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                           className="bg-gradient-to-r from-violet-600 to-cyan-600 text-white"
                         >
                           {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
-                          Generar con IA
+                          Generar con Asistente
                         </Button>
                       </div>
                     </div>

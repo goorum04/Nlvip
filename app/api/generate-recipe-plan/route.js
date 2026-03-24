@@ -109,7 +109,7 @@ export async function POST(req) {
             day_index: dayIndex,
             meal_slot: slot,
             recipe_id: selected.id,
-            notes: 'Asignado automáticamente por la IA basándose en tus macros.'
+            notes: 'Asignado automáticamente por el club basándose en tus macros.'
           })
         }
       }

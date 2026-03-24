@@ -307,7 +307,7 @@ function AIRecipeGeneratorModal({ isOpen, onClose, onRecipeGenerated }) {
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
             <Wand2 className="w-5 h-5 text-violet-400" />
-            Crear Receta con IA
+            Crear Receta con Asistente
           </DialogTitle>
         </DialogHeader>
 
@@ -316,7 +316,7 @@ function AIRecipeGeneratorModal({ isOpen, onClose, onRecipeGenerated }) {
           {!generatedRecipe && (
             <div className="space-y-4">
               <p className="text-gray-400 text-sm">
-                📸 Sube una foto de un producto o ingrediente y la IA creará una receta saludable completa.
+                📸 Sube una foto de un producto o ingrediente y el asistente creará una receta saludable completa.
               </p>
 
               {/* Área de imagen */}
@@ -368,7 +368,7 @@ function AIRecipeGeneratorModal({ isOpen, onClose, onRecipeGenerated }) {
                   ) : (
                     <>
                       <Sparkles className="w-5 h-5 mr-2" />
-                      Generar Receta con IA
+                      Generar Receta con Asistente
                     </>
                   )}
                 </Button>

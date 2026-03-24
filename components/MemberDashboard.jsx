@@ -33,6 +33,8 @@ import { LifeStageSelector, PregnancyMode, PostpartumMode, LactationTracker } fr
 import { DietOnboardingBanner } from './DietOnboardingForm'
 import { DietDailyView, DietWeeklyView } from './DietTabParts'
 import { SymptomsTracker } from './SymptomsTracker'
+import PRTracker from './PRTracker'
+import { WorkoutViewer } from './WorkoutBuilder'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
@@ -43,6 +45,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [progressPhotos, setProgressPhotos] = useState([])
   const [notices, setNotices] = useState([])
   const [unreadNotices, setUnreadNotices] = useState(0)
+  const [myPrs, setMyPrs] = useState([])
   const [loading, setLoading] = useState(false)
   const [pendingOnboarding, setPendingOnboarding] = useState(null)
   const [onboardingChecked, setOnboardingChecked] = useState(false)
@@ -110,8 +113,21 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       loadOnboarding(),
       loadMyTrainer(),
       loadStoreProducts(),
-      loadChartData()
+      loadChartData(),
+      loadMyPrs()
     ])
+  }
+
+  const loadMyPrs = async () => {
+    try {
+      const res = await fetch(`/api/member-prs?memberId=${user.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setMyPrs(data)
+      }
+    } catch (e) {
+      console.warn('Error loading PRs:', e)
+    }
   }
 
   const loadOnboarding = async () => {
@@ -703,23 +719,10 @@ export default function MemberDashboard({ user, profile, onLogout }) {
           <TabsContent value="workout" className="space-y-4">
             {myWorkout ? (
               <>
-                <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
-                  <div className="h-32 bg-gradient-to-br from-violet-500/30 to-violet-500/5 flex items-center justify-center">
-                    <Dumbbell className="w-20 h-20 text-violet-500/30" />
-                  </div>
-                  <CardHeader>
-                    <CardTitle className="text-2xl text-white flex items-center gap-3">
-                      <Flame className="w-6 h-6 text-violet-500" />
-                      {myWorkout.workout?.name}
-                    </CardTitle>
-                    <CardDescription className="text-gray-500">Asignada el {new Date(myWorkout.assigned_at).toLocaleDateString()}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-black/30 rounded-2xl p-5 border border-[#2a2a2a]">
-                      <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{myWorkout.workout?.description}</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                <WorkoutViewer 
+                  workoutId={myWorkout.workout?.id} 
+                  memberPrs={myPrs} 
+                />
 
                 {/* Workout Videos */}
                 {workoutVideos.length > 0 && (
@@ -743,6 +746,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                     </CardContent>
                   </Card>
                 )}
+
+                <PRTracker memberId={user.id} />
               </>
             ) : (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import {
   User, Dumbbell, Apple, Heart, Activity, Calendar, Mail, Phone,
   Loader2, ChevronRight, X, Edit, Flame, Target, Zap, Star, TrendingUp, ClipboardList,
-  MessageCircle
+  MessageCircle, Trophy
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { WorkoutViewer } from './WorkoutBuilder'
@@ -30,6 +30,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
   const [sendingOnboarding, setSendingOnboarding] = useState(false)
   const [onboardingResponse, setOnboardingResponse] = useState(null)
   const [showOnboardingDetail, setShowOnboardingDetail] = useState(false)
+  const [memberPrs, setMemberPrs] = useState([])
   const { toast } = useToast()
 
   useEffect(() => {
@@ -124,6 +125,13 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
         .maybeSingle()
       
       setOnboardingResponse(onboarding)
+
+      // Cargar PRs del miembro
+      const prRes = await fetch(`/api/member-prs?memberId=${member.id}`)
+      if (prRes.ok) {
+        const prData = await prRes.json()
+        setMemberPrs(prData)
+      }
 
     } catch (error) {
       console.error('Error loading member data:', error)
@@ -525,6 +533,41 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                 )}
               </CardContent>
             </Card>
+
+            {/* Récords Personales (PR) */}
+            <Card className="bg-black/30 border-violet-500/20 rounded-2xl">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-white text-base flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-yellow-500" />
+                  Récords Personales (PR)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {memberPrs.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2">
+                    {Object.values(memberPrs.reduce((acc, pr) => {
+                      if (!acc[pr.exercise_name] || parseFloat(pr.estimated_1rm) > parseFloat(acc[pr.exercise_name].estimated_1rm)) {
+                        acc[pr.exercise_name] = pr
+                      }
+                      return acc
+                    }, {})).map((pr, idx) => (
+                      <div key={idx} className="p-3 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center">
+                        <div>
+                          <p className="text-white font-bold text-sm uppercase">{pr.exercise_name}</p>
+                          <p className="text-xs text-gray-500">{new Date(pr.date).toLocaleDateString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-black text-white">{pr.weight_kg} kg <span className="text-[10px] text-gray-500">x{pr.reps}</span></p>
+                          <p className="text-[10px] text-violet-400 font-bold uppercase">1RM: {pr.estimated_1rm} kg</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm py-4 text-center">Sin récords registrados</p>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -538,7 +581,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                   Rutina: {assignedWorkout.name}
                 </DialogTitle>
               </DialogHeader>
-              <WorkoutViewer workoutId={assignedWorkout.id} />
+              <WorkoutViewer workoutId={assignedWorkout.id} memberPrs={memberPrs} />
             </DialogContent>
           </Dialog>
         )}

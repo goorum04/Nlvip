@@ -112,7 +112,7 @@ function ExerciseVideoUploader({ onVideoUploaded, existingVideo, trainerId }) {
 }
 
 // Componente para un ejercicio individual
-function ExerciseItem({ exercise, onUpdate, onDelete, trainerId, isEditing }) {
+function ExerciseItem({ exercise, onUpdate, onDelete, trainerId, isEditing, prs = [], onPlay }) {
   const [localExercise, setLocalExercise] = useState(exercise)
 
   useEffect(() => {
@@ -126,18 +126,46 @@ function ExerciseItem({ exercise, onUpdate, onDelete, trainerId, isEditing }) {
   }
 
   if (!isEditing) {
+    // Buscar si hay un PR para este ejercicio
+    const pr = prs?.find(p => p.exercise_name.toLowerCase() === exercise.name.toLowerCase())
+    const suggestedWeight = pr ? (parseFloat(pr.estimated_1rm) * 0.75).toFixed(1) : null
+
     return (
-      <div className="flex items-center gap-3 p-3 bg-black/30 rounded-xl border border-[#2a2a2a]">
-        <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center text-violet-400 text-sm font-bold">
-          {exercise.order_index + 1}
+      <div className="flex flex-col gap-2 p-4 bg-black/30 rounded-2xl border border-white/5 hover:border-violet-500/20 transition-all">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-400 text-sm font-bold">
+            {exercise.order_index + 1}
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-bold">{exercise.name}</p>
+            <p className="text-xs text-gray-500">{exercise.sets}x{exercise.reps} • {exercise.rest_seconds}s descanso</p>
+          </div>
+          {exercise.video_url && onPlay && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onPlay}
+              className="w-8 h-8 rounded-full bg-violet-600/20 text-violet-400 hover:bg-violet-600 hover:text-white"
+            >
+              <Play className="w-4 h-4 fill-current" />
+            </Button>
+          )}
         </div>
-        <div className="flex-1">
-          <p className="text-white font-medium">{exercise.name}</p>
-          <p className="text-xs text-gray-500">{exercise.sets}x{exercise.reps} • {exercise.rest_seconds}s descanso</p>
-        </div>
-        {exercise.video_url && (
-          <div className="w-6 h-6 rounded bg-green-500/20 flex items-center justify-center">
-            <Video className="w-3 h-3 text-green-500" />
+
+        {(pr || suggestedWeight) && (
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {pr && (
+              <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Tu mejor marca</p>
+                <p className="text-sm font-black text-white">{pr.weight_kg} kg <span className="text-[10px] text-gray-500">x{pr.reps}</span></p>
+              </div>
+            )}
+            {suggestedWeight && (
+              <div className="bg-cyan-500/10 rounded-xl p-2 border border-cyan-500/20">
+                <p className="text-[10px] text-cyan-500 uppercase font-bold tracking-tighter">Carga sugerida</p>
+                <p className="text-sm font-black text-cyan-400">~{suggestedWeight} kg</p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -217,7 +245,10 @@ function ExerciseItem({ exercise, onUpdate, onDelete, trainerId, isEditing }) {
 }
 
 // Componente para un día de entrenamiento
-function WorkoutDayCard({ day, exercises, onUpdateDay, onDeleteDay, onAddExercise, onUpdateExercise, onDeleteExercise, trainerId, isEditing }) {
+function WorkoutDayCard({ 
+  day, exercises, onUpdateDay, onDeleteDay, onAddExercise, 
+  onUpdateExercise, onDeleteExercise, trainerId, isEditing, prs = [] 
+}) {
   const [expanded, setExpanded] = useState(true)
   const [dayName, setDayName] = useState(day.name)
 
@@ -271,6 +302,8 @@ function WorkoutDayCard({ day, exercises, onUpdateDay, onDeleteDay, onAddExercis
               exercise={{ ...exercise, order_index: idx }}
               onUpdate={(updated) => onUpdateExercise(idx, updated)}
               onDelete={() => onDeleteExercise(idx)}
+              onPlay={exercise.onPlay}
+              prs={prs}
               trainerId={trainerId}
               isEditing={isEditing}
             />
@@ -603,7 +636,7 @@ export function WorkoutBuilder({ trainerId, existingWorkout = null, onSave, onCa
 }
 
 // Componente para ver una rutina (modo lectura)
-export function WorkoutViewer({ workoutId }) {
+export function WorkoutViewer({ workoutId, memberPrs = [] }) {
   const [workout, setWorkout] = useState(null)
   const [days, setDays] = useState([])
   const [exercisesByDay, setExercisesByDay] = useState({})
@@ -706,6 +739,7 @@ export function WorkoutViewer({ workoutId }) {
             order_index: idx,
             onPlay: ex.video_url ? () => playVideo(ex) : null
           }))}
+          prs={memberPrs}
           onUpdateDay={() => {}}
           onDeleteDay={() => {}}
           onAddExercise={() => {}}
