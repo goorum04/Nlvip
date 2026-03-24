@@ -427,10 +427,30 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('role', 'trainer')
-      .order('created_at', { ascending: false })
+      .in('role', ['trainer', 'admin'])
+      .order('name', { ascending: true })
     
     if (data) setTrainers(data)
+  }
+
+  const handleAssignTrainerToMember = async (memberId, trainerId) => {
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from('trainer_members')
+        .upsert([{
+          trainer_id: trainerId,
+          member_id: memberId
+        }], { onConflict: 'member_id' })
+
+      if (error) throw error
+      toast({ title: '¡Entrenador asignado!', description: 'El socio ahora está vinculado al nuevo entrenador.' })
+      loadMembers()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const loadCodes = async () => {
@@ -448,7 +468,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       .select(`
         *,
         trainer_members!trainer_members_member_id_fkey(
-          trainer:profiles!trainer_members_trainer_id_fkey(name)
+          trainer_id,
+          trainer:profiles!trainer_members_trainer_id_fkey(id, name)
         )
       `)
       .eq('role', 'member')
@@ -1239,10 +1260,24 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         </div>
                         <div className="min-w-0">
                           <p className="font-semibold text-white hover:text-violet-400 transition-colors truncate">{member.name}</p>
-                          <p className="text-sm text-gray-400 truncate">{member.email}</p>
-                          <p className="text-xs text-violet-400 mt-1">
-                            Entrenador: {member.trainer_members?.[0]?.trainer?.name || 'No asignado'}
-                          </p>
+                          <p className="text-sm text-gray-400 truncate mb-2">{member.email}</p>
+                          
+                          <div className="flex items-center gap-2">
+                             <Select 
+                              value={member.trainer_members?.[0]?.trainer_id || member.trainer_members?.[0]?.trainer?.id || ""} 
+                              onValueChange={(val) => handleAssignTrainerToMember(member.id, val)}
+                              disabled={loading}
+                            >
+                              <SelectTrigger className="h-7 bg-violet-500/10 border-violet-500/20 text-[10px] text-violet-300 w-[180px] rounded-lg">
+                                <SelectValue placeholder="Sin entrenador" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {trainers.map(t => (
+                                  <SelectItem key={t.id} value={t.id} className="text-xs">{t.name} ({t.role === 'admin' ? 'Admin' : 'Coach'})</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
