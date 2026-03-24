@@ -145,7 +145,7 @@ export function DietWeeklyView({ content, calories, protein, carbs, fat }) {
 
       {/* Full Content */}
       <div className="prose prose-invert max-w-none bg-white/[0.02] rounded-3xl p-6 sm:p-8 border border-white/5 shadow-2xl">
-        <style jsx global>{`
+        <style>{`
           .prose h1, .prose h2, .prose h3 { color: white; font-weight: 800; text-transform: uppercase; letter-spacing: -0.025em; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 2.5rem; }
           .prose h2 { font-size: 1.25rem; background: linear-gradient(to right, #8b5cf6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; border-bottom: none; }
           .prose p { color: #d1d5db; line-height: 1.8; }
