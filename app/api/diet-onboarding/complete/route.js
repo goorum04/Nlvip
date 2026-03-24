@@ -30,7 +30,9 @@ export async function POST(req) {
       .single()
 
     const weight = profile?.weight_kg || 75
-    const name = profile?.name || 'Socio'
+    const rawName = profile?.name || 'Socio'
+    // Capitalizar nombre para que quede profesional
+    const name = rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase()
 
     // 2. Calculate base macros from NL VIP formula
     const protein_g = Math.round(weight * 2)

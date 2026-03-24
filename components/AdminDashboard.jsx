@@ -735,7 +735,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     setLoading(true)
     try {
       const member = members.find(m => m.id === selectedMemberForMacros)
-      const dietName = `Dieta personalizada (${member?.name || 'Socio'})`
+      const rawName = member?.name || 'Socio'
+      const formattedName = rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase()
+      const dietName = `Dieta personalizada (${formattedName})`
       
       // Create the diet template
       const { data: diet, error: dietError } = await supabase.from('diet_templates').insert([{
