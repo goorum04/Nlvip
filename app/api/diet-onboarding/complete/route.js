@@ -25,13 +25,16 @@ export async function POST(req) {
     // 1. Get member profile for macros calculation
     const { data: profile } = await supabase
       .from('profiles')
-      .select('name, weight_kg, height_cm, age, sex, goal, activity_level')
+      .select('name, email, weight_kg, height_cm, age, sex, goal, activity_level')
       .eq('id', memberId)
       .single()
 
     const weight = profile?.weight_kg || 75
-    const rawName = profile?.name || 'Socio'
-    // Capitalizar nombre para que quede profesional
+    // Si no hay nombre, usar el prefijo del email como fallback
+    const rawName = (profile?.name && profile.name.trim() !== '') 
+      ? profile.name.trim()
+      : (profile?.email ? profile.email.split('@')[0] : 'Socio')
+    // Capitalizar nombre
     const name = rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase()
 
     // 2. Calculate base macros from NL VIP formula

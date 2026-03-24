@@ -735,7 +735,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     setLoading(true)
     try {
       const member = members.find(m => m.id === selectedMemberForMacros)
-      const rawName = member?.name || 'Socio'
+      const rawName = (member?.name && member.name.trim() !== '') 
+        ? member.name.trim()
+        : (member?.email ? member.email.split('@')[0] : 'Socio')
       const formattedName = rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase()
       const dietName = `Dieta personalizada (${formattedName})`
       
