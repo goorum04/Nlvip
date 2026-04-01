@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
-import { Users, Key, Shield, LogOut, UserPlus, Code, Plus, Calculator, Send, Loader2, UtensilsCrossed, Bot, Dumbbell, Apple, Target, Trophy, Camera, Eye, TrendingUp, Settings, ChevronDown, Link, FileCheck, MessageSquare, Trash2, Search, Flame, Clock, Edit2, Mic, ChefHat } from 'lucide-react'
+import { Users, Key, Shield, LogOut, UserPlus, Code, Plus, Calculator, Send, Loader2, UtensilsCrossed, Bot, Dumbbell, Apple, Target, Trophy, Camera, Eye, TrendingUp, Settings, ChevronDown, Link, FileCheck, MessageSquare, Trash2, Search, Flame, Clock, Edit2, Mic, ChefHat, Sparkles } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { RecipesManager } from './RecipesManager'
@@ -22,6 +22,7 @@ import { FeedSection } from './FeedSection'
 import { AvatarBubble, ProfileModal } from './UserProfile'
 import { WorkoutBuilder } from './WorkoutBuilder'
 import { MemberDetailPanel } from './MemberDetailPanel'
+import AIRoutineGenerator from './AIRoutineGenerator'
 
 export default function AdminDashboard({ user, profile, onLogout }) {
   const [trainers, setTrainers] = useState([])
@@ -57,6 +58,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   // Workout builder state
   const [showWorkoutBuilder, setShowWorkoutBuilder] = useState(false)
   const [editingWorkout, setEditingWorkout] = useState(null)
+  const [showAIGenerator, setShowAIGenerator] = useState(false)
 
   // Form states
   const [newTrainerEmail, setNewTrainerEmail] = useState('')
@@ -1510,18 +1512,35 @@ export default function AdminDashboard({ user, profile, onLogout }) {
             ) : (
               <>
                 <Card className="bg-[#1a1a1a] border-violet-500/20">
-                  <CardContent className="pt-6">
-                    <Button 
+                  <CardContent className="pt-6 space-y-3">
+                    <Button
                       onClick={() => setShowWorkoutBuilder(true)}
                       className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-2xl py-6"
                     >
                       <Plus className="w-5 h-5 mr-2" /> Crear Nueva Rutina (con días y ejercicios)
                     </Button>
-                    <p className="text-xs text-gray-500 text-center mt-2">
-                      Crea rutinas divididas por días con videos explicativos para cada ejercicio
+                    <Button
+                      onClick={() => setShowAIGenerator(true)}
+                      variant="outline"
+                      className="w-full border-violet-500/40 text-violet-300 hover:bg-violet-500/10 font-bold rounded-2xl py-6"
+                    >
+                      <Sparkles className="w-5 h-5 mr-2" /> Generar Rutina con IA
+                    </Button>
+                    <p className="text-xs text-gray-500 text-center">
+                      Crea rutinas manualmente o déjale a la IA que las diseñe por ti
                     </p>
                   </CardContent>
                 </Card>
+
+                <AIRoutineGenerator
+                  open={showAIGenerator}
+                  onClose={() => setShowAIGenerator(false)}
+                  trainerId={user.id}
+                  onRoutineSaved={() => {
+                    setShowAIGenerator(false)
+                    loadWorkoutTemplates()
+                  }}
+                />
 
                 <Card className="bg-[#1a1a1a] border-violet-500/20">
                   <CardHeader>
