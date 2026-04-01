@@ -412,27 +412,43 @@ export default function FoodTracker({ userId }) {
           
           {showHistory && (
             <CardContent className="pt-0 space-y-2">
-              {foodLogs.map((log) => (
-                <div key={log.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+              {foodLogs.map((log) => {
+                const isPending = log.visible_at && new Date(log.visible_at) > new Date();
+
+                return (
+                <div key={log.id} className={`flex items-center justify-between p-3 rounded-xl mb-2 ${isPending ? 'bg-amber-500/5 border border-amber-500/20' : 'bg-white/5'}`}>
                   <div className="flex-1">
-                    <p className="text-white font-medium text-sm">{log.food_name}</p>
-                    <div className="flex gap-3 text-xs text-gray-500 mt-0.5">
-                      <span>{log.calories} kcal</span>
-                      <span>{log.protein_g}g P</span>
-                      <span>{log.carbs_g}g C</span>
-                      <span>{log.fat_g}g G</span>
+                    <div className="flex items-center gap-2">
+                      <p className={`font-medium text-sm ${isPending ? 'text-amber-400/80' : 'text-white'}`}>
+                        {log.food_name}
+                      </p>
+                      {isPending && (
+                        <span className="text-[10px] uppercase tracking-wider bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full inline-flex items-center">
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Evaluando
+                        </span>
+                      )}
                     </div>
+                    {isPending ? (
+                      <p className="text-xs text-amber-500/70 italic mt-1">El entrenador está procesando este plato...</p>
+                    ) : (
+                      <div className="flex gap-3 text-xs text-gray-500 mt-0.5">
+                        <span>{log.calories} kcal</span>
+                        <span>{log.protein_g}g P</span>
+                        <span>{log.carbs_g}g C</span>
+                        <span>{log.fat_g}g G</span>
+                      </div>
+                    )}
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => handleDeleteFood(log.id)}
-                    className="text-red-400 hover:bg-red-500/10 rounded-lg h-8 w-8"
+                    className="text-red-400 hover:bg-red-500/10 rounded-lg h-8 w-8 ml-2 flex-shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
-              ))}
+              )})}
             </CardContent>
           )}
         </Card>

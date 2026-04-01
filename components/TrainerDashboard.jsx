@@ -38,6 +38,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const [activeTab, setActiveTab] = useState('members')
   const [dietRequests, setDietRequests] = useState([])
   const [selectedRequestAnswers, setSelectedRequestAnswers] = useState(null)
+  const [dietDraft, setDietDraft] = useState(null)
   const { toast } = useToast()
 
   const [newWorkoutName, setNewWorkoutName] = useState('')
@@ -245,7 +246,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const handleGenerateDietFromRequest = async (request) => {
     setLoading(true)
     try {
-      const res = await fetch('/api/diet-onboarding/complete', {
+      const res = await fetch('/api/diet-onboarding/generate-draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -255,9 +256,35 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
         })
       })
       const result = await res.json()
-      if (!res.ok) throw new Error(result.error || 'Error al generar dieta')
+      if (!res.ok) throw new Error(result.error || 'Error al generar borrador')
       
-      toast({ title: '¡Plan generado!', description: 'La dieta ha sido creada y asignada.' })
+      setDietDraft({
+        requestId: request.id,
+        memberId: request.member_id,
+        responses: request.responses,
+        macros: result.macros,
+        fullDietContent: result.fullDietContent
+      })
+    } catch (error) {
+      toast({ title: 'Error calculando borrador IA', description: error.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAssignDraftDiet = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/diet-onboarding/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dietDraft)
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Error al completar la dieta')
+      
+      toast({ title: '¡Plan Asignado!', description: 'La dieta revisada ha sido asignada al socio.' })
+      setDietDraft(null)
       loadDietRequests()
       loadDietTemplates()
     } catch (error) {
@@ -1198,6 +1225,87 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Diet Validation Modal */}
+      <Dialog open={dietDraft !== null} onOpenChange={(val) => !val && setDietDraft(null)}>
+        <DialogContent className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Bot className="w-6 h-6 text-violet-400" />
+              Revisar Propuesta de Inteligencia Artificial
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Edita las macros y las comidas sugeridas por el sistema antes de enviarlas al socio.
+            </DialogDescription>
+          </DialogHeader>
+
+          {dietDraft && (
+            <div className="space-y-6 py-4">
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-gray-400">Calorías (kcal)</Label>
+                  <Input 
+                    type="number"
+                    className="bg-black/50 border-[#2a2a2a] text-white"
+                    value={dietDraft.macros.calories}
+                    onChange={(e) => setDietDraft({ ...dietDraft, macros: { ...dietDraft.macros, calories: parseInt(e.target.value) || 0 } })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-400">Proteínas (g)</Label>
+                  <Input 
+                    type="number"
+                    className="bg-black/50 border-[#2a2a2a] text-white"
+                    value={dietDraft.macros.protein_g}
+                    onChange={(e) => setDietDraft({ ...dietDraft, macros: { ...dietDraft.macros, protein_g: parseInt(e.target.value) || 0 } })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-400">Carbohidratos (g)</Label>
+                  <Input 
+                    type="number"
+                    className="bg-black/50 border-[#2a2a2a] text-white"
+                    value={dietDraft.macros.carbs_g}
+                    onChange={(e) => setDietDraft({ ...dietDraft, macros: { ...dietDraft.macros, carbs_g: parseInt(e.target.value) || 0 } })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-400">Grasas (g)</Label>
+                  <Input 
+                    type="number"
+                    className="bg-black/50 border-[#2a2a2a] text-white"
+                    value={dietDraft.macros.fat_g}
+                    onChange={(e) => setDietDraft({ ...dietDraft, macros: { ...dietDraft.macros, fat_g: parseInt(e.target.value) || 0 } })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-gray-400 mb-2 block">Menú Diario Propuesto</Label>
+                <Textarea 
+                  className="w-full bg-black/50 border-[#2a2a2a] text-gray-200 h-[400px] font-mono text-sm leading-relaxed"
+                  value={dietDraft.fullDietContent}
+                  onChange={(e) => setDietDraft({ ...dietDraft, fullDietContent: e.target.value })}
+                />
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <Button variant="outline" className="w-1/3 border-[#2a2a2a] text-white" onClick={() => setDietDraft(null)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  disabled={loading}
+                  className="w-2/3 bg-gradient-to-r from-violet-600 to-cyan-600 text-black font-bold"
+                  onClick={handleAssignDraftDiet}
+                >
+                  {loading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Send className="w-5 h-5 mr-2" />}
+                  Confirmar y Asignar Dieta
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Floating Chat */}
       <FloatingChat

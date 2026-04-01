@@ -269,8 +269,16 @@ export default function App() {
         </ErrorBoundary>
       )
     }
-    if (profile.role === 'trainer') return <TrainerDashboard user={user} profile={profile} onLogout={handleLogout} />
-    if (profile.role === 'member') return <MemberDashboard user={user} profile={profile} onLogout={handleLogout} />
+    if (profile.role === 'trainer') return (
+      <ErrorBoundary>
+        <TrainerDashboard user={user} profile={profile} onLogout={handleLogout} />
+      </ErrorBoundary>
+    )
+    if (profile.role === 'member') return (
+      <ErrorBoundary>
+        <MemberDashboard user={user} profile={profile} onLogout={handleLogout} />
+      </ErrorBoundary>
+    )
   }
 
   // Login/Register screen
