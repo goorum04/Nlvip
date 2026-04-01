@@ -8,6 +8,15 @@ const exercises = require('./exercises-data')
 const SUPABASE_URL = 'https://qnuzcmdjpafbqnofpzfp.supabase.co'
 const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFudXpjbWRqcGFmYnFub2ZwemZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzMzMzY4OSwiZXhwIjoyMDgyOTA5Njg5fQ.TfT4ibHQKUue-C2QssakD-IHmkHFKThiq3avc_nZj6k'
 
+// Usar proxy si está disponible (entorno de desarrollo)
+let agent = undefined
+try {
+  const { HttpsProxyAgent } = require('https-proxy-agent')
+  if (process.env.HTTPS_PROXY) {
+    agent = new HttpsProxyAgent(process.env.HTTPS_PROXY)
+  }
+} catch (_) {}
+
 function upsertBatch(batch) {
   const url = new URL('/rest/v1/exercises', SUPABASE_URL)
   const jsonData = JSON.stringify(batch)
@@ -17,6 +26,7 @@ function upsertBatch(batch) {
       hostname: url.hostname,
       path: url.pathname,
       method: 'POST',
+      agent: agent,
       headers: {
         'Content-Type': 'application/json',
         'apikey': SERVICE_KEY,
