@@ -16,7 +16,7 @@ function getOpenAI() {
 // Llama a OpenAI y genera el borrador de la dieta, pero no lo guarda en BBDD.
 export async function POST(req) {
   try {
-    const { requestId, memberId, responses } = await req.json()
+    const { requestId, memberId, responses, adminNotes } = await req.json()
 
     if (!requestId || !memberId || !responses) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 })
@@ -57,9 +57,12 @@ export async function POST(req) {
     const favorites = responses.favoritos || ''
     const trainTime = responses.horario_entreno || 'tarde'
     const medConditions = responses.condicion_medica || 'ninguna'
+    const adminNotesSection = adminNotes
+      ? `\nINSTRUCCIONES ADICIONALES DEL ADMINISTRADOR (alta prioridad):\n${adminNotes}\n`
+      : ''
 
     // 3. Build AI prompt for specific daily meal plan
-    const prompt = `Eres un nutricionista deportivo experto del club NL VIP. 
+    const prompt = `Eres un nutricionista deportivo experto del club NL VIP.
 Genera un programa nutricional COMPLETO Y DETALLADO para ${name}.
 
 DATOS DEL SOCIO:
@@ -73,7 +76,7 @@ DATOS DEL SOCIO:
 - No le gustan: ${dislikes || 'nada especificado'}
 - Favoritos: ${favorites || 'nada especificado'}
 - Condición médica: ${medConditions}
-
+${adminNotesSection}
 INSTRUCCIONES PARA GENERAR EL PLAN:
 1. Distribuye las ${numMeals} comidas a lo largo del día con nombres en español (DESAYUNO, MEDIA MAÑANA, COMIDA, MERIENDA, CENA, etc.)
 2. Para CADA COMIDA indica ALIMENTOS ESPECÍFICOS CON GRAMOS EXACTOS. Ejemplo:

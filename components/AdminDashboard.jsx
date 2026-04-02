@@ -47,6 +47,9 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [dietRequests, setDietRequests] = useState([])
   const [selectedRequestAnswers, setSelectedRequestAnswers] = useState(null)
   const [dietDraft, setDietDraft] = useState(null)
+  const [showAdminNotesDialog, setShowAdminNotesDialog] = useState(false)
+  const [adminNotes, setAdminNotes] = useState('')
+  const [pendingGenerateRequest, setPendingGenerateRequest] = useState(null)
 
   // Profile modal state
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -249,25 +252,33 @@ export default function AdminDashboard({ user, profile, onLogout }) {
     }
   }
 
-  const handleGenerateDietFromRequest = async (request) => {
+  const handleGenerateDietClick = (request) => {
+    setAdminNotes('')
+    setPendingGenerateRequest(request)
+    setShowAdminNotesDialog(true)
+  }
+
+  const handleConfirmGenerateDiet = async () => {
+    if (!pendingGenerateRequest) return
+    setShowAdminNotesDialog(false)
     setLoading(true)
     try {
       const res = await fetch('/api/diet-onboarding/generate-draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          requestId: request.id, 
-          memberId: request.member_id, 
-          responses: request.responses 
+        body: JSON.stringify({
+          requestId: pendingGenerateRequest.id,
+          memberId: pendingGenerateRequest.member_id,
+          responses: pendingGenerateRequest.responses,
+          adminNotes: adminNotes.trim() || null
         })
       })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || 'Error al generar borrador')
-      
       setDietDraft({
-        requestId: request.id,
-        memberId: request.member_id,
-        responses: request.responses,
+        requestId: pendingGenerateRequest.id,
+        memberId: pendingGenerateRequest.member_id,
+        responses: pendingGenerateRequest.responses,
         macros: result.macros,
         fullDietContent: result.fullDietContent
       })
@@ -275,6 +286,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       toast({ title: 'Error calculando borrador IA', description: error.message, variant: 'destructive' })
     } finally {
       setLoading(false)
+      setPendingGenerateRequest(null)
     }
   }
 
@@ -1654,7 +1666,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                         <Button 
                           size="sm"
                           disabled={loading}
-                          onClick={() => handleGenerateDietFromRequest(req)}
+                          onClick={() => handleGenerateDietClick(req)}
                           className="bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-lg shadow-cyan-500/20"
                         >
                           {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Bot className="w-4 h-4 mr-1" />}
@@ -2346,6 +2358,59 @@ export default function AdminDashboard({ user, profile, onLogout }) {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Diálogo de indicaciones del admin antes de generar dieta */}
+      <Dialog open={showAdminNotesDialog} onOpenChange={(val) => { if (!val) setShowAdminNotesDialog(false) }}>
+        <DialogContent className="bg-[#1a1a1a] border-violet-500/20 text-white max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-violet-400" />
+              Indicaciones adicionales para la IA
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Opcional. Añade indicaciones que no estén en el cuestionario del socio.
+              La IA las tendrá en cuenta al generar el plan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label className="text-gray-300 text-sm">
+              Notas del administrador
+              {pendingGenerateRequest && (
+                <span className="ml-2 text-violet-400 font-normal">
+                  — {pendingGenerateRequest.member?.name || 'Socio'}
+                </span>
+              )}
+            </Label>
+            <Textarea
+              placeholder="Ej: Evitar carbohidratos procesados. Incluir día de recarga el sábado. Preferencia por comida mediterránea..."
+              className="bg-black/50 border-[#2a2a2a] text-gray-200 h-36 text-sm leading-relaxed resize-none"
+              value={adminNotes}
+              onChange={(e) => setAdminNotes(e.target.value)}
+              autoFocus
+            />
+            <p className="text-[11px] text-gray-500">
+              Deja en blanco para generar solo con las respuestas del cuestionario.
+            </p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1 border-[#2a2a2a] text-gray-300"
+              onClick={() => setShowAdminNotesDialog(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="flex-1 bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-semibold"
+              onClick={handleConfirmGenerateDiet}
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Bot className="w-4 h-4 mr-2" />}
+              Confirmar y Generar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Diet Validation Modal */}
       <Dialog open={dietDraft !== null} onOpenChange={(val) => !val && setDietDraft(null)}>
