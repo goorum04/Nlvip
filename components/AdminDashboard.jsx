@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -122,15 +122,27 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       loadCodes(),
       loadMembers(),
       loadFeedPosts(),
-      loadAllProgress(),
-      loadAllAssignments(),
-      loadTrainingVideos(),
       loadWorkoutTemplates(),
       loadDietTemplates(),
       loadChallenges(),
       loadDietRequests()
     ])
   }
+
+  // Lazy-load heavy tabs on first visit
+  const loadedTabs = useRef(new Set())
+  useEffect(() => {
+    if (activeTab === 'progress' && !loadedTabs.current.has('progress')) {
+      loadedTabs.current.add('progress')
+      loadAllProgress()
+    } else if (activeTab === 'assignments' && !loadedTabs.current.has('assignments')) {
+      loadedTabs.current.add('assignments')
+      loadAllAssignments()
+    } else if (activeTab === 'videos' && !loadedTabs.current.has('videos')) {
+      loadedTabs.current.add('videos')
+      loadTrainingVideos()
+    }
+  }, [activeTab])
 
   // Load workout templates (all trainers)
   const loadWorkoutTemplates = async () => {
@@ -163,20 +175,16 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const loadChallenges = async () => {
     const { data } = await supabase
       .from('challenges')
-      .select('*, creator:profiles!challenges_created_by_fkey(name)')
+      .select('*, creator:profiles!challenges_created_by_fkey(name), challenge_participants(*, member:profiles!challenge_participants_member_id_fkey(name))')
       .order('created_at', { ascending: false })
-    
+
     if (data) {
       setChallenges(data)
+      const participantsMap = {}
       for (const challenge of data) {
-        const { data: parts } = await supabase
-          .from('challenge_participants')
-          .select('*, member:profiles!challenge_participants_member_id_fkey(name)')
-          .eq('challenge_id', challenge.id)
-        if (parts) {
-          setChallengeParticipants(prev => ({ ...prev, [challenge.id]: parts }))
-        }
+        participantsMap[challenge.id] = challenge.challenge_participants || []
       }
+      setChallengeParticipants(participantsMap)
     }
   }
 

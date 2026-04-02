@@ -94,22 +94,17 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const loadChallenges = async () => {
     const { data } = await supabase
       .from('challenges')
-      .select('*')
+      .select('*, challenge_participants(*, member:profiles!challenge_participants_member_id_fkey(name))')
       .eq('created_by', user.id)
       .order('created_at', { ascending: false })
 
     if (data) {
       setChallenges(data)
-      // Load participants for each challenge
+      const participantsMap = {}
       for (const challenge of data) {
-        const { data: parts } = await supabase
-          .from('challenge_participants')
-          .select('*, member:profiles!challenge_participants_member_id_fkey(name)')
-          .eq('challenge_id', challenge.id)
-        if (parts) {
-          setChallengeParticipants(prev => ({ ...prev, [challenge.id]: parts }))
-        }
+        participantsMap[challenge.id] = challenge.challenge_participants || []
       }
+      setChallengeParticipants(participantsMap)
     }
   }
 
@@ -157,18 +152,16 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   }
 
   const loadWorkoutTemplates = async () => {
-    const { data } = await supabase.from('workout_templates').select('*').eq('trainer_id', user.id).order('created_at', { ascending: false })
+    const { data } = await supabase
+      .from('workout_templates')
+      .select('*, workout_videos(*)')
+      .eq('trainer_id', user.id)
+      .order('created_at', { ascending: false })
     if (data) {
       setWorkoutTemplates(data)
-      // Load videos for each workout
       const videos = {}
       for (const workout of data) {
-        const { data: workoutVids } = await supabase
-          .from('workout_videos')
-          .select('*')
-          .eq('workout_template_id', workout.id)
-          .order('created_at')
-        if (workoutVids) videos[workout.id] = workoutVids
+        videos[workout.id] = workout.workout_videos || []
       }
       setWorkoutVideos(videos)
     }
