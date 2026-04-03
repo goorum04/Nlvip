@@ -3,7 +3,7 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
-    // Remove if not using Server Components
+    instrumentationHook: true,
     serverComponentsExternalPackages: ['mongodb'],
   },
   webpack(config, { dev }) {
