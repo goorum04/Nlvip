@@ -32,6 +32,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
   const [allProgress, setAllProgress] = useState([])
   const [activeTab, setActiveTab] = useState('members')
+  const [tabHistory, setTabHistory] = useState([])
   const [voiceTrigger, setVoiceTrigger] = useState(0)
   const [allAssignments, setAllAssignments] = useState([])
   const [trainingVideos, setTrainingVideos] = useState([])
@@ -851,6 +852,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
                 size="icon"
                 variant="outline"
                 onClick={() => {
+                  setTabHistory(prev => [...prev, activeTab])
                   setActiveTab('assistant')
                   setVoiceTrigger(Date.now())
                 }}
@@ -911,9 +913,24 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       />
 
       <main className="container mx-auto px-4 py-8 overflow-x-hidden">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={(tab) => { setTabHistory(prev => [...prev, activeTab]); setActiveTab(tab) }} className="space-y-6">
           <div className="flex items-center gap-2 pb-2 flex-wrap">
-            
+
+            {/* Botón Atrás */}
+            {tabHistory.length > 0 && (
+              <button
+                onClick={() => {
+                  const prev = tabHistory[tabHistory.length - 1]
+                  setTabHistory(h => h.slice(0, -1))
+                  setActiveTab(prev)
+                }}
+                className="flex items-center gap-1.5 h-10 px-3 rounded-xl border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all text-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                Atrás
+              </button>
+            )}
+
             {/* Tabs principales - Solo 2 */}
             <TabsList className="bg-[#1a1a1a] border border-violet-500/20 inline-flex">
               <TabsTrigger value="assistant" className="data-[state=active]:bg-gradient-to-r from-violet-600 to-cyan-600 data-[state=active]:text-black whitespace-nowrap px-4">
