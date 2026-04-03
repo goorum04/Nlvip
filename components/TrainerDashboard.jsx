@@ -81,6 +81,34 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
 
   useEffect(() => {
     loadData()
+
+    // Realtime: alert trainer when a member submits the diet questionnaire
+    const dietRequestsChannel = supabase
+      .channel(`trainer_diet_requests_${user.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'diet_onboarding_requests'
+      }, (payload) => {
+        if (payload.new?.status === 'submitted' && payload.new?.requested_by === user.id) {
+          loadDietRequests()
+          toast({
+            title: '📋 Cuestionario recibido',
+            description: 'Un socio ha rellenado el cuestionario nutricional. Puedes generar su dieta.'
+          })
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification('NL VIP Club', {
+              body: 'Un socio ha rellenado el cuestionario nutricional',
+              icon: '/icons/icon-192x192.png'
+            })
+          }
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(dietRequestsChannel)
+    }
   }, [])
 
   const loadData = async () => {

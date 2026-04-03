@@ -1,4 +1,5 @@
 import './globals.css'
+import ServiceWorkerInit from '@/components/ServiceWorkerInit'
 
 export const metadata = {
   title: 'NL VIP Club',
@@ -35,6 +36,7 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
       </head>
       <body className="overscroll-none">
+        <ServiceWorkerInit />
         {children}
       </body>
     </html>

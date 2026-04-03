@@ -4,11 +4,12 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { 
-  MessageCircle, Send, X, Minimize2, Mic, MicOff, 
+import {
+  MessageCircle, Send, X, Minimize2, Mic, MicOff,
   Trash2, Play, Pause, Shield, User, ChevronLeft,
   Bot, Volume2, Image as ImageIcon, Loader2
 } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 // El administrador se busca dinámicamente en initializeMemberConversations
 
@@ -48,7 +49,7 @@ const AudioPlayer = ({ path }) => {
 }
 
 export default function FloatingChat({ userId, userRole, trainerId, trainerName, members }) {
-  
+  const { toast } = useToast()
   const [isOpen, setIsOpen] = useState(false)
   const [activeConversation, setActiveConversation] = useState(null)
   const [conversations, setConversations] = useState({ trainer: null, admin: null })
@@ -135,7 +136,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     // Initial fetch of unread counts
     fetchUnreadCounts()
     
-    // Global subscription for new messages (unread count)
+    // Global subscription for new messages (unread count + notification)
     const channel = supabase
       .channel('chat_notifications')
       .on('postgres_changes', {
@@ -145,13 +146,24 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       }, (payload) => {
         if (payload.new.sender_id !== userId) {
           fetchUnreadCounts()
+          // Show toast and browser notification when chat is closed or focused on another conversation
+          const isThisConvOpen = isOpen && activeConversation?.id === payload.new.conversation_id
+          if (!isThisConvOpen) {
+            toast({ title: '💬 Nuevo mensaje', description: 'Has recibido un mensaje nuevo' })
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+              new Notification('NL VIP Club - Nuevo mensaje', {
+                body: payload.new.text || 'Has recibido un mensaje',
+                icon: '/icons/icon-192x192.png'
+              })
+            }
+          }
         }
       })
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'messages'
-      }, (payload) => {
+      }, () => {
         fetchUnreadCounts()
       })
       .subscribe()
