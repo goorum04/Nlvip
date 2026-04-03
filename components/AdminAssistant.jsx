@@ -3,9 +3,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { 
+import {
   Mic, MicOff, Send, Bot, User, Loader2, CheckCircle2, XCircle,
-  Volume2, VolumeX, Sparkles, AlertTriangle, Zap, Crown, Wand2
+  Volume2, VolumeX, Sparkles, AlertTriangle, Zap, Crown, Wand2, X
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -104,7 +104,7 @@ function ExecutionPlan({ plan, onConfirm, onCancel, isExecuting }) {
   )
 }
 
-export default function AdminAssistant({ userId, voiceTrigger }) {
+export default function AdminAssistant({ userId, voiceTrigger, onClose }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -294,7 +294,7 @@ export default function AdminAssistant({ userId, voiceTrigger }) {
   ]
 
   return (
-    <div className="h-[calc(100vh-180px)] flex flex-col">
+    <div className={`flex flex-col ${onClose ? 'h-full' : 'h-[calc(100vh-180px)]'}`}>
       {/* PREMIUM HEADER */}
       <div className="relative overflow-hidden rounded-t-3xl">
         {/* Animated gradient background */}
@@ -357,14 +357,25 @@ export default function AdminAssistant({ userId, voiceTrigger }) {
                   setTtsEnabled(!ttsEnabled)
                 }}
                 className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                  ttsEnabled 
-                    ? 'bg-white/20 text-white hover:bg-white/30' 
+                  ttsEnabled
+                    ? 'bg-white/20 text-white hover:bg-white/30'
                     : 'bg-black/20 text-white/50 hover:bg-black/30'
                 }`}
                 title={ttsEnabled ? 'Silenciar voz' : 'Activar voz'}
               >
                 {ttsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
               </button>
+
+              {/* Close button (only in floating mode) */}
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center bg-black/20 text-white/70 hover:bg-black/40 hover:text-white transition-all"
+                  title="Cerrar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
             </div>
           </div>
         </div>
