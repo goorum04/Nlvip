@@ -31,9 +31,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
-  
+
   // Skip API calls and external resources
-  if (event.request.url.includes('/api/') || 
+  if (event.request.url.includes('/api/') ||
       event.request.url.includes('supabase') ||
       !event.request.url.startsWith(self.location.origin)) {
     return;
@@ -42,45 +42,51 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone the response
         const responseClone = response.clone();
-        
-        // Cache the fetched response
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, responseClone);
         });
-        
         return response;
       })
       .catch(() => {
-        // If network fails, try cache
         return caches.match(event.request);
       })
   );
 });
 
-// Push notification event
+// Push notification event - accepts JSON payload { title, body, url, icon }
 self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+
+  const title = data.title || 'NL VIP Club';
   const options = {
-    body: event.data ? event.data.text() : 'Nueva notificación de NL VIP Club',
-    icon: '/icons/icon-192x192.png',
+    body: data.body || 'Nueva notificación de NL VIP Club',
+    icon: data.icon || '/icons/icon-192x192.png',
     badge: '/icons/icon-72x72.png',
     vibrate: [100, 50, 100],
-    data: {
-      dateOfArrival: Date.now(),
-      primaryKey: 1
-    }
+    data: { url: data.url || '/' },
   };
-  
+
   event.waitUntil(
-    self.registration.showNotification('NL VIP Club', options)
+    self.registration.showNotification(title, options)
   );
 });
 
-// Notification click event
+// Open the relevant page when notification is tapped
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const url = event.notification.data?.url || '/';
   event.waitUntil(
-    clients.openWindow('/')
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url === url && 'focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(url);
+    })
   );
 });

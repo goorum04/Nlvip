@@ -39,6 +39,9 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const [dietRequests, setDietRequests] = useState([])
   const [selectedRequestAnswers, setSelectedRequestAnswers] = useState(null)
   const [dietDraft, setDietDraft] = useState(null)
+  const [draftCorrection, setDraftCorrection] = useState('')
+  const [draftCorrectionHistory, setDraftCorrectionHistory] = useState([])
+  const [refining, setRefining] = useState(false)
   const { toast } = useToast()
 
   const [newWorkoutName, setNewWorkoutName] = useState('')
@@ -78,6 +81,34 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
 
   useEffect(() => {
     loadData()
+
+    // Realtime: alert trainer when a member submits the diet questionnaire
+    const dietRequestsChannel = supabase
+      .channel(`trainer_diet_requests_${user.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'diet_onboarding_requests'
+      }, (payload) => {
+        if (payload.new?.status === 'submitted' && payload.new?.requested_by === user.id) {
+          loadDietRequests()
+          toast({
+            title: '📋 Cuestionario recibido',
+            description: 'Un socio ha rellenado el cuestionario nutricional. Puedes generar su dieta.'
+          })
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification('NL VIP Club', {
+              body: 'Un socio ha rellenado el cuestionario nutricional',
+              icon: '/icons/icon-192x192.png'
+            })
+          }
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(dietRequestsChannel)
+    }
   }, [])
 
   const loadData = async () => {
@@ -269,6 +300,39 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
       toast({ title: 'Error calculando borrador IA', description: error.message, variant: 'destructive' })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleRefineDraft = async () => {
+    if (!draftCorrection.trim() || !dietDraft) return
+    setRefining(true)
+    const correctionText = draftCorrection.trim()
+    try {
+      const res = await fetch('/api/diet-onboarding/refine-draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          originalDraft: dietDraft.fullDietContent,
+          correction: correctionText,
+          macros: dietDraft.macros,
+          memberContext: {
+            weight: dietDraft.responses?.['Medida - Peso'],
+            goal: dietDraft.responses?.objetivo,
+            restrictions: dietDraft.responses?.restricciones,
+            numMeals: dietDraft.responses?.num_comidas || dietDraft.responses?.['Comidas - Número']
+          }
+        })
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Error al refinar')
+      setDietDraft(prev => ({ ...prev, fullDietContent: result.updatedDietContent }))
+      setDraftCorrectionHistory(prev => [...prev, correctionText])
+      setDraftCorrection('')
+      toast({ title: 'Corrección aplicada', description: 'El borrador ha sido actualizado por la IA.' })
+    } catch (error) {
+      toast({ title: 'Error al corregir', description: error.message, variant: 'destructive' })
+    } finally {
+      setRefining(false)
     }
   }
 
@@ -1227,7 +1291,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
       </main>
 
       {/* Diet Validation Modal */}
-      <Dialog open={dietDraft !== null} onOpenChange={(val) => !val && setDietDraft(null)}>
+      <Dialog open={dietDraft !== null} onOpenChange={(val) => { if (!val) { setDietDraft(null); setDraftCorrectionHistory([]) } }}>
         <DialogContent className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] text-white max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
@@ -1282,18 +1346,54 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
 
               <div>
                 <Label className="text-gray-400 mb-2 block">Menú Diario Propuesto</Label>
-                <Textarea 
+                <Textarea
                   className="w-full bg-black/50 border-[#2a2a2a] text-gray-200 h-[400px] font-mono text-sm leading-relaxed"
                   value={dietDraft.fullDietContent}
                   onChange={(e) => setDietDraft({ ...dietDraft, fullDietContent: e.target.value })}
                 />
               </div>
 
+              {/* AI Correction Chat */}
+              <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="w-4 h-4 text-violet-400" />
+                  <Label className="text-violet-300 text-sm font-semibold">Corregir con IA</Label>
+                </div>
+                {draftCorrectionHistory.length > 0 && (
+                  <div className="space-y-1.5 max-h-28 overflow-y-auto">
+                    {draftCorrectionHistory.map((msg, i) => (
+                      <div key={i} className="text-xs text-gray-400 bg-white/5 rounded-lg px-3 py-1.5 flex items-start gap-2">
+                        <span className="text-violet-400 shrink-0">✓</span>
+                        <span>{msg}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder='Ej: "cambia el pollo por merluza en la comida" o "sube la proteína del desayuno"'
+                    className="bg-black/50 border-[#2a2a2a] text-white text-sm flex-1"
+                    value={draftCorrection}
+                    onChange={(e) => setDraftCorrection(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleRefineDraft()}
+                    disabled={refining}
+                  />
+                  <Button
+                    onClick={handleRefineDraft}
+                    disabled={refining || !draftCorrection.trim()}
+                    className="bg-violet-600 hover:bg-violet-500 text-white shrink-0"
+                  >
+                    {refining ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">Escribe una instrucción y pulsa Enter o el botón. La IA actualizará el menú manteniendo los macros.</p>
+              </div>
+
               <div className="flex gap-4 pt-4">
-                <Button variant="outline" className="w-1/3 border-[#2a2a2a] text-white" onClick={() => setDietDraft(null)}>
+                <Button variant="outline" className="w-1/3 border-[#2a2a2a] text-white" onClick={() => { setDietDraft(null); setDraftCorrectionHistory([]) }}>
                   Cancelar
                 </Button>
-                <Button 
+                <Button
                   disabled={loading}
                   className="w-2/3 bg-gradient-to-r from-violet-600 to-cyan-600 text-black font-bold"
                   onClick={handleAssignDraftDiet}

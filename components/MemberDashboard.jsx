@@ -100,6 +100,63 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
   useEffect(() => {
     loadData()
+
+    // Realtime: notify member when a new questionnaire is sent or completed
+    const onboardingChannel = supabase
+      .channel(`onboarding_${user.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'diet_onboarding_requests',
+        filter: `member_id=eq.${user.id}`
+      }, () => {
+        loadOnboarding()
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'diet_onboarding_requests',
+        filter: `member_id=eq.${user.id}`
+      }, (payload) => {
+        if (payload.new?.status === 'completed') {
+          toast({ title: '¡Tu plan nutricional está listo!', description: 'Tu entrenador ha completado tu dieta personalizada. Ya puedes verla en la sección Dieta.' })
+          loadMyDiet()
+          setPendingOnboarding(null)
+        }
+      })
+      .subscribe()
+
+    // Realtime: notify member when trainer sends a new notice
+    const noticesChannel = supabase
+      .channel(`notices_${user.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'trainer_notices'
+      }, (payload) => {
+        // Only if notice is for this member or for all (member_id null)
+        const targetId = payload.new?.member_id
+        if (!targetId || targetId === user.id) {
+          loadNotices()
+          toast({
+            title: '📢 Nuevo aviso de tu entrenador',
+            description: payload.new?.title || 'Tienes un nuevo mensaje'
+          })
+          // Browser notification if app is in background
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification('NL VIP Club', {
+              body: payload.new?.title || 'Nuevo aviso de tu entrenador',
+              icon: '/icons/icon-192x192.png'
+            })
+          }
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(onboardingChannel)
+      supabase.removeChannel(noticesChannel)
+    }
   }, [])
 
   const loadData = async () => {

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -22,7 +23,9 @@ import {
   RulerIcon,
   Scissors,
   Zap,
-  Star
+  Star,
+  Camera,
+  X
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -115,9 +118,24 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
     peso: '', altura: '', cintura: '', pecho: '', biceps: '', cadera: '', muslo: '' 
   })
   const [extras, setExtras] = useState({ favoritos: '', no_me_gusta: '', condicion_medica: '' })
+  const [photos, setPhotos] = useState({ front: null, side: null, back: null })
+  const [photoPreviews, setPhotoPreviews] = useState({ front: null, side: null, back: null })
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
   const { toast } = useToast()
+
+  const handlePhotoSelect = (type, file) => {
+    if (!file) return
+    setPhotos(prev => ({ ...prev, [type]: file }))
+    const url = URL.createObjectURL(file)
+    setPhotoPreviews(prev => ({ ...prev, [type]: url }))
+  }
+
+  const removePhoto = (type) => {
+    if (photoPreviews[type]) URL.revokeObjectURL(photoPreviews[type])
+    setPhotos(prev => ({ ...prev, [type]: null }))
+    setPhotoPreviews(prev => ({ ...prev, [type]: null }))
+  }
 
   const currentStep = STEPS[step]
   const isLastStep = step === STEPS.length - 1
@@ -153,6 +171,29 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
   const handleSubmit = async () => {
     setSubmitting(true)
     try {
+      // Upload photos to Supabase storage if provided
+      const groupId = crypto.randomUUID()
+      const photoTypes = ['front', 'side', 'back']
+      for (const type of photoTypes) {
+        const file = photos[type]
+        if (!file) continue
+        const ext = file.name.split('.').pop() || 'jpg'
+        const path = `${memberId}/onboarding/${groupId}_${type}.${ext}`
+        const { error: uploadError } = await supabase.storage
+          .from('progress_photos')
+          .upload(path, file, { upsert: true })
+        if (!uploadError) {
+          await supabase.from('progress_photos').insert({
+            member_id: memberId,
+            photo_url: path,
+            photo_type: type,
+            group_id: groupId,
+            date: new Date().toISOString().split('T')[0],
+            notes: 'Foto inicial cuestionario nutricional'
+          })
+        }
+      }
+
       const allAnswers = {
         ...answers,
         'Trabajo - Horario': lifestyle.horario_trabajo,
@@ -168,7 +209,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
         'Medida - Bíceps': measurements.biceps,
         'Medida - Cadera': measurements.cadera,
         'Medida - Muslo': measurements.muslo,
-        restricciones: (multiChecks.includes('otra') && otraAlergia) 
+        restricciones: (multiChecks.includes('otra') && otraAlergia)
           ? (multiChecks.join(', ').replace('otra', `Otra: ${otraAlergia}`))
           : (multiChecks.join(', ') || 'ninguna'),
         ...extras
@@ -438,6 +479,51 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
               className="bg-white/5 border-white/10 text-white mt-1 text-sm"
               rows={2}
             />
+          </div>
+
+          {/* Optional body photos */}
+          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Camera className="w-4 h-4 text-cyan-400" />
+              <Label className="text-cyan-300 text-sm font-semibold">Fotos corporales <span className="text-gray-500 font-normal">(opcional)</span></Label>
+            </div>
+            <p className="text-gray-500 text-[11px] leading-relaxed">
+              Subir fotos ayuda a personalizar mejor tu plan. Son privadas y solo las verá tu entrenador. Si no quieres, déjalo en blanco y pulsa solicitar.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { key: 'front', label: 'Frente' },
+                { key: 'side', label: 'Lateral' },
+                { key: 'back', label: 'Espalda' }
+              ].map(({ key, label }) => (
+                <div key={key} className="relative">
+                  {photoPreviews[key] ? (
+                    <div className="relative rounded-xl overflow-hidden aspect-[3/4] bg-black/30">
+                      <img src={photoPreviews[key]} alt={label} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(key)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center"
+                      >
+                        <X className="w-3 h-3 text-white" />
+                      </button>
+                      <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] text-white/80 font-medium">{label}</span>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center aspect-[3/4] rounded-xl border border-dashed border-white/10 bg-white/[0.02] cursor-pointer hover:bg-white/[0.05] transition-colors gap-1">
+                      <Camera className="w-5 h-5 text-gray-500" />
+                      <span className="text-[10px] text-gray-500">{label}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handlePhotoSelect(key, e.target.files?.[0])}
+                      />
+                    </label>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           <Button
