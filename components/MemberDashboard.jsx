@@ -100,6 +100,35 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
   useEffect(() => {
     loadData()
+
+    // Realtime subscription: notify member when a new questionnaire is sent
+    const onboardingChannel = supabase
+      .channel(`onboarding_${user.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'diet_onboarding_requests',
+        filter: `member_id=eq.${user.id}`
+      }, () => {
+        loadOnboarding()
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'diet_onboarding_requests',
+        filter: `member_id=eq.${user.id}`
+      }, (payload) => {
+        if (payload.new?.status === 'completed') {
+          toast({ title: '¡Tu plan nutricional está listo!', description: 'Tu entrenador ha completado tu dieta personalizada. Ya puedes verla en la sección Dieta.' })
+          loadMyDiet()
+          setPendingOnboarding(null)
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(onboardingChannel)
+    }
   }, [])
 
   const loadData = async () => {
