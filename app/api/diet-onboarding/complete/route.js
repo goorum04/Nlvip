@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { sendPushToUser } from '@/lib/webpush'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -66,7 +67,19 @@ export async function POST(req) {
       .eq('id', requestId)
       .single()
 
-    // 6. Also generate recipe plan
+    // 6. Notify the member that their diet plan is ready
+    try {
+      await sendPushToUser(supabase, memberId, {
+        title: '¡Tu plan nutricional está listo!',
+        body: `${dietName} ha sido asignado a tu cuenta. ¡Échale un vistazo!`,
+        url: '/nutrition',
+        icon: '/icons/icon-192x192.png',
+      })
+    } catch (e) {
+      console.warn('Could not send push notification:', e.message)
+    }
+
+    // 7. Also generate recipe plan
     try {
       await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/generate-recipe-plan`, {
         method: 'POST',
