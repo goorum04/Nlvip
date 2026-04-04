@@ -48,6 +48,6 @@ export async function POST(req) {
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('notifications/send error:', err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ error: 'Error al enviar la notificación' }, { status: 500 })
   }
 }

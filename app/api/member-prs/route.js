@@ -7,6 +7,8 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 // GET /api/member-prs?memberId=xxx
 export async function GET(request) {
   try {
@@ -15,6 +17,10 @@ export async function GET(request) {
 
     if (!memberId) {
       return NextResponse.json({ error: 'Falta el ID del miembro' }, { status: 400 })
+    }
+
+    if (!UUID_REGEX.test(memberId)) {
+      return NextResponse.json({ error: 'ID de miembro inválido' }, { status: 400 })
     }
 
     const { data, error } = await supabase
@@ -28,23 +34,33 @@ export async function GET(request) {
     return NextResponse.json(data)
   } catch (error) {
     console.error('Error fetching member PRs:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Error al obtener los récords' }, { status: 500 })
   }
 }
 
 // POST /api/member-prs
 export async function POST(request) {
   try {
+    // Verificar el token del usuario autenticado
+    const authHeader = request.headers.get('authorization') || ''
+    const token = authHeader.replace('Bearer ', '').trim()
+    if (!token) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+    }
+
     const body = await request.json()
-    const { exercise_name, weight_kg, reps, date, memberId: passedMemberId } = body
+    const { exercise_name, weight_kg, reps, date } = body
 
-    // En un entorno real, aquí verificaríamos el token de la sesión 
-    // Pero siguiendo el patrón del proyecto, usaremos el ID proporcionado o el del usuario si pudiéramos obtenerlo
-    // Para simplificar y mantener compatibilidad, permitimos pasar el memberId
-    const memberId = passedMemberId || body.member_id
+    // El memberId siempre viene del token verificado, no del body
+    const memberId = user.id
 
-    if (!memberId || !exercise_name || !weight_kg) {
-      return NextResponse.json({ error: 'Faltan datos requeridos (memberId, exercise_name, weight_kg)' }, { status: 400 })
+    if (!exercise_name || !weight_kg) {
+      return NextResponse.json({ error: 'Faltan datos requeridos (exercise_name, weight_kg)' }, { status: 400 })
     }
 
     // Calcular el 1RM estimado usando la fórmula de Brzycki
@@ -71,6 +87,6 @@ export async function POST(request) {
     return NextResponse.json({ success: true, data })
   } catch (error) {
     console.error('Error creating member PR:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Error al guardar el récord' }, { status: 500 })
   }
 }

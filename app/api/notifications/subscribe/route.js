@@ -41,6 +41,6 @@ export async function POST(req) {
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('notifications/subscribe error:', err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ error: 'Error al registrar la suscripción' }, { status: 500 })
   }
 }

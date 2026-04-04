@@ -2,10 +2,13 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_build'
+  apiKey: process.env.OPENAI_API_KEY || 'not_set'
 })
 
 export async function POST(request) {
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json({ error: 'Servicio de IA no disponible' }, { status: 503 })
+  }
   try {
     const { imageBase64, imageUrl } = await request.json()
 
@@ -90,7 +93,7 @@ Formato de respuesta (JSON):
   } catch (error) {
     console.error('Food analysis error:', error)
     return NextResponse.json(
-      { error: error.message || 'Error al analizar la imagen' },
+      { error: 'Error al analizar la imagen' },
       { status: 500 }
     )
   }

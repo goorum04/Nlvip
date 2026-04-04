@@ -3,7 +3,7 @@ import OpenAI from 'openai'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_build'
+  apiKey: process.env.OPENAI_API_KEY || 'not_set'
 })
 
 const DIET_RULES = `
@@ -93,6 +93,9 @@ ${DIET_RULES}
      d) Si no hay resultados, informa al usuario.`
 
 export async function POST(request) {
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json({ error: 'Servicio de IA no disponible' }, { status: 503 })
+  }
   try {
     const { messages, executeTools = false, toolCallsToExecute = [] } = await request.json()
 
