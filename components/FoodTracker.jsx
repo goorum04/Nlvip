@@ -10,7 +10,6 @@ import {
   Camera, Upload, Loader2, Check, X, Flame, Beef, Wheat, Droplets,
   Plus, Trash2, UtensilsCrossed, AlertCircle, ChevronDown, ChevronUp
 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 
 // Componente de barra de progreso de macros
