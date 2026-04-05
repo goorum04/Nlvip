@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { requireAuth } from '@/lib/authUtils'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || 'not_set'
 })
 
 export async function POST(request) {
+  const { error: authError } = await requireAuth(request)
+  if (authError) return authError
+
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json({ error: 'Servicio de IA no disponible' }, { status: 503 })
   }

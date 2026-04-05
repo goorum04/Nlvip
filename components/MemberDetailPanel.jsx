@@ -127,7 +127,10 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
       setOnboardingResponse(onboarding)
 
       // Cargar PRs del miembro
-      const prRes = await fetch(`/api/member-prs?memberId=${member.id}`)
+      const { data: { session: prSession } } = await supabase.auth.getSession()
+      const prRes = await fetch(`/api/member-prs?memberId=${member.id}`, {
+        headers: prSession?.access_token ? { 'Authorization': `Bearer ${prSession.access_token}` } : {}
+      })
       if (prRes.ok) {
         const prData = await prRes.json()
         setMemberPrs(prData)
@@ -180,9 +183,13 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
       toast({ title: 'Generando plan de recetas...', description: 'Buscando las mejores recetas para tu dieta.' })
       
       try {
+        const { data: { session: recipePlanSession } } = await supabase.auth.getSession()
         const response = await fetch('/api/generate-recipe-plan', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(recipePlanSession?.access_token ? { 'Authorization': `Bearer ${recipePlanSession.access_token}` } : {})
+          },
           body: JSON.stringify({
             memberId: member.id,
             dietId: dietId,

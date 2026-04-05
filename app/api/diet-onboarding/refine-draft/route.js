@@ -1,13 +1,17 @@
 import OpenAI from 'openai'
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/authUtils'
 
 function getOpenAI() {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 }
 
 // POST /api/diet-onboarding/refine-draft
-// Allows trainer to ask the AI to correct/refine the diet draft via chat
+// Allows trainer/admin to ask the AI to correct/refine the diet draft via chat
 export async function POST(req) {
+  const { error: authError } = await requireAuth(req, ['admin', 'trainer'])
+  if (authError) return authError
+
   try {
     const { originalDraft, correction, macros, memberContext } = await req.json()
 
@@ -56,6 +60,6 @@ INSTRUCCIONES:
 
   } catch (error) {
     console.error('diet-onboarding/refine-draft error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Error al refinar el borrador' }, { status: 500 })
   }
 }

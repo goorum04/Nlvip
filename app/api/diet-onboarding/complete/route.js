@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { sendPushToUser } from '@/lib/webpush'
+import { requireAuth } from '@/lib/authUtils'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -10,6 +11,9 @@ const supabase = createClient(
 // POST /api/diet-onboarding/complete
 // Called when admin/trainer CONFIRMS and assigns the reviewed draft
 export async function POST(req) {
+  const { error: authError } = await requireAuth(req, ['admin', 'trainer'])
+  if (authError) return authError
+
   try {
     const { requestId, memberId, responses, macros, fullDietContent } = await req.json()
 
@@ -103,6 +107,6 @@ export async function POST(req) {
 
   } catch (error) {
     console.error('diet-onboarding/complete error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Error al completar el onboarding de dieta' }, { status: 500 })
   }
 }

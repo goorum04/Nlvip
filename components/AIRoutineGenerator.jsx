@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -100,9 +101,13 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
 
     setStep('loading')
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/generate-routine', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
         body: JSON.stringify({
           trainer_id: trainerId,
           criteria: {

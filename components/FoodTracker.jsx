@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -101,9 +102,13 @@ export default function FoodTracker({ userId }) {
     setShowCamera(false)
     
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const response = await fetch('/api/analyze-food', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
         body: JSON.stringify({ imageBase64 })
       })
 

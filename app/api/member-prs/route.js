@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/authUtils'
 
 // Configuración de Supabase usando variables de entorno
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -11,6 +12,9 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 // GET /api/member-prs?memberId=xxx
 export async function GET(request) {
+  const { user, role, error: authError } = await requireAuth(request)
+  if (authError) return authError
+
   try {
     const { searchParams } = new URL(request.url)
     const memberId = searchParams.get('memberId')
@@ -21,6 +25,14 @@ export async function GET(request) {
 
     if (!UUID_REGEX.test(memberId)) {
       return NextResponse.json({ error: 'ID de miembro inválido' }, { status: 400 })
+    }
+
+    // Verificar propiedad: solo el propio miembro, trainers o admins pueden leer
+    if (user.id !== memberId) {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+      if (!profile || !['admin', 'trainer'].includes(profile.role)) {
+        return NextResponse.json({ error: 'Sin permisos para ver estos récords' }, { status: 403 })
+      }
     }
 
     const { data, error } = await supabase

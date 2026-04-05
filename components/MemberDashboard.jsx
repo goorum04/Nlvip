@@ -177,7 +177,10 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
   const loadMyPrs = async () => {
     try {
-      const res = await fetch(`/api/member-prs?memberId=${user.id}`)
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`/api/member-prs?memberId=${user.id}`, {
+        headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}
+      })
       if (res.ok) {
         const data = await res.json()
         setMyPrs(data)

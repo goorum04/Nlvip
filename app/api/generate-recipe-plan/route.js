@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/authUtils'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -123,6 +124,9 @@ async function saveRecipeToDB(recipe) {
 }
 
 export async function POST(req) {
+  const { error: authError } = await requireAuth(req, ['admin', 'trainer'])
+  if (authError) return authError
+
   try {
     const { memberId, dietId, trainerId } = await req.json()
 
@@ -271,6 +275,6 @@ export async function POST(req) {
 
   } catch (error) {
     console.error('Error in generate-recipe-plan:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Error al generar el plan de recetas' }, { status: 500 })
   }
 }

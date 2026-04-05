@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { requireAuth } from '@/lib/authUtils'
 
 function getOpenAIClient() {
   // Leer la API key en cada request para asegurar que esté disponible
@@ -40,6 +41,9 @@ async function searchRecipeImage(recipeName) {
 }
 
 export async function POST(request) {
+  const { error: authError } = await requireAuth(request, ['admin', 'trainer'])
+  if (authError) return authError
+
   try {
     // Obtener la API key en el momento de la request
     const apiKey = process.env.OPENAI_API_KEY

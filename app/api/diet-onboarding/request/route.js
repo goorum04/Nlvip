@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/authUtils'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -7,8 +8,11 @@ const supabase = createClient(
 )
 
 // POST /api/diet-onboarding/request
-// Called by admin to send the questionnaire to a member
+// Called by admin or trainer to send the questionnaire to a member
 export async function POST(req) {
+  const { error: authError } = await requireAuth(req, ['admin', 'trainer'])
+  if (authError) return authError
+
   try {
     const { memberId, requestedBy } = await req.json()
 
@@ -48,6 +52,6 @@ export async function POST(req) {
     })
   } catch (error) {
     console.error('diet-onboarding/request error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Error al enviar el cuestionario' }, { status: 500 })
   }
 }

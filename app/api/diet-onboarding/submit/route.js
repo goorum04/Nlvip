@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/authUtils'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -7,13 +8,21 @@ const supabase = createClient(
 )
 
 // POST /api/diet-onboarding/submit
-// Called when member submits the questionnaire (approvance pending)
+// Called when the member submits the questionnaire
 export async function POST(req) {
+  const { user, error: authError } = await requireAuth(req)
+  if (authError) return authError
+
   try {
     const { requestId, memberId, responses } = await req.json()
 
     if (!requestId || !memberId || !responses) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 })
+    }
+
+    // Verificar que el miembro solo puede enviar su propio cuestionario
+    if (user.id !== memberId) {
+      return NextResponse.json({ error: 'Sin permisos para este recurso' }, { status: 403 })
     }
 
     // Update the request with answers and set status to 'submitted'
@@ -52,6 +61,6 @@ export async function POST(req) {
 
   } catch (error) {
     console.error('diet-onboarding/submit error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Error al enviar el cuestionario' }, { status: 500 })
   }
 }

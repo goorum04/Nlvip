@@ -277,13 +277,17 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const handleGenerateDietFromRequest = async (request) => {
     setLoading(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/diet-onboarding/generate-draft', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          requestId: request.id, 
-          memberId: request.member_id, 
-          responses: request.responses 
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
+        body: JSON.stringify({
+          requestId: request.id,
+          memberId: request.member_id,
+          responses: request.responses
         })
       })
       const result = await res.json()
@@ -308,9 +312,13 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
     setRefining(true)
     const correctionText = draftCorrection.trim()
     try {
+      const { data: { session: refineSession } } = await supabase.auth.getSession()
       const res = await fetch('/api/diet-onboarding/refine-draft', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(refineSession?.access_token ? { 'Authorization': `Bearer ${refineSession.access_token}` } : {})
+        },
         body: JSON.stringify({
           originalDraft: dietDraft.fullDietContent,
           correction: correctionText,
@@ -339,9 +347,13 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const handleAssignDraftDiet = async () => {
     setLoading(true)
     try {
+      const { data: { session: completeSession } } = await supabase.auth.getSession()
       const res = await fetch('/api/diet-onboarding/complete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(completeSession?.access_token ? { 'Authorization': `Bearer ${completeSession.access_token}` } : {})
+        },
         body: JSON.stringify(dietDraft)
       })
       const result = await res.json()

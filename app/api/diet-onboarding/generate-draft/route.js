@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { NextResponse } from 'next/server'
 import { DIET_TEMPLATE } from '@/lib/dietTemplate'
+import { requireAuth } from '@/lib/authUtils'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -15,6 +16,9 @@ function getOpenAI() {
 // POST /api/diet-onboarding/generate-draft
 // Llama a OpenAI y genera el borrador de la dieta, pero no lo guarda en BBDD.
 export async function POST(req) {
+  const { error: authError } = await requireAuth(req, ['admin', 'trainer'])
+  if (authError) return authError
+
   try {
     const { requestId, memberId, responses } = await req.json()
 
@@ -165,6 +169,6 @@ Etc.`
 
   } catch (error) {
     console.error('diet-onboarding/generate-draft error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Error al generar el borrador de dieta' }, { status: 500 })
   }
 }

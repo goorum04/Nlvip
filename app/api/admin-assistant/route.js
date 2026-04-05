@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
+import { requireAuth } from '@/lib/authUtils'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || 'not_set'
@@ -93,6 +94,9 @@ ${DIET_RULES}
      d) Si no hay resultados, informa al usuario.`
 
 export async function POST(request) {
+  const { error: authError } = await requireAuth(request, ['admin'])
+  if (authError) return authError
+
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json({ error: 'Servicio de IA no disponible' }, { status: 503 })
   }
@@ -277,7 +281,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Admin Assistant Error:', error)
     return NextResponse.json(
-      { error: error.message || 'Error del asistente' },
+      { error: 'Error del asistente' },
       { status: 500 }
     )
   }

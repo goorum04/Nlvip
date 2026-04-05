@@ -248,9 +248,13 @@ function AIRecipeGeneratorModal({ isOpen, onClose, onRecipeGenerated }) {
     setError(null)
 
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const response = await fetch('/api/generate-recipe', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
         body: JSON.stringify({ imageBase64 })
       })
 

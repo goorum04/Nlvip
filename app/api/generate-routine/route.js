@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
+import { requireAuth } from '@/lib/authUtils'
 
 const SYSTEM_PROMPT = `Eres un entrenador personal experto en diseño de rutinas de hipertrofia y fuerza.
 Tu tarea es generar una rutina de entrenamiento estructurada en formato JSON.
@@ -36,6 +37,9 @@ FORMATO JSON DE RESPUESTA:
 }`
 
 export async function POST(request) {
+  const { error: authError } = await requireAuth(request, ['admin', 'trainer'])
+  if (authError) return authError
+
   try {
     const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
@@ -176,8 +180,8 @@ Genera exactamente ${days_per_week} días. Responde solo con el JSON.`
     } else if (error.status === 429) {
       errorMessage = 'Límite de uso de OpenAI alcanzado. Inténtalo más tarde.'
       statusCode = 429
-    } else if (error.message) {
-      errorMessage = error.message
+    } else {
+      errorMessage = 'Error al generar la rutina'
     }
 
     return NextResponse.json({ error: errorMessage }, { status: statusCode })
