@@ -284,15 +284,6 @@ export default function AdminAssistant({ userId, voiceTrigger, onClose }) {
     speak('Acción cancelada')
   }
 
-  const quickCommands = [
-    { icon: '📊', text: 'Resumen del gym', command: 'Acción: Resumen del gimnasio. Pregúntame "¿Para quién?"' },
-    { icon: '🔍', text: 'Buscar socio', command: 'Acción: Buscar socio. Pregúntame "¿Para quién?"' },
-    { icon: '📢', text: 'Crear aviso', command: 'Acción: Crear aviso. Pregúntame "¿Para quién?"' },
-    { icon: '👥', text: 'Ver socios', command: 'Acción: Ver lista de socios. Pregúntame "¿Para quién?"' },
-    { icon: '🥗', text: 'Generar dieta', command: 'Acción: Generar dieta. Pregúntame "¿Para quién?"' },
-    { icon: '👟', text: 'Ver actividad', command: 'Acción: Ver actividad física. Pregúntame "¿Para quién?"' }
-  ]
-
   return (
     <div className={`flex flex-col ${onClose ? 'h-full' : 'h-[calc(100vh-180px)]'}`}>
       {/* PREMIUM HEADER */}
@@ -398,24 +389,6 @@ export default function AdminAssistant({ userId, voiceTrigger, onClose }) {
               <p className="text-gray-500 mb-8 max-w-sm">
                 Gestiona socios, crea avisos, genera dietas y más usando comandos de voz o texto.
               </p>
-              
-              {/* Quick commands grid */}
-              <div className="grid grid-cols-3 gap-3 w-full max-w-2xl">
-                {quickCommands.map((cmd, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => { setInput(cmd.command); handleSend(cmd.command) }}
-                    className="group relative overflow-hidden rounded-2xl p-4 text-left transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/0 group-hover:from-violet-500/10 group-hover:to-cyan-500/10 transition-all"></div>
-                    <div className="absolute inset-0 border border-white/10 group-hover:border-violet-500/30 rounded-2xl transition-all"></div>
-                    <div className="relative">
-                      <span className="text-2xl mb-2 block">{cmd.icon}</span>
-                      <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">{cmd.text}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
             </div>
           ) : (
             <>

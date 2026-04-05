@@ -31,7 +31,7 @@ export default function FloatingAdminAssistant({ userId }) {
         {/* Floating panel */}
         {isOpen && (
           <div
-            className="absolute bottom-0 left-0 w-[420px] h-[640px] rounded-3xl shadow-2xl shadow-violet-500/30 flex flex-col overflow-hidden border border-violet-500/20"
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 lg:left-6 lg:translate-x-0 w-[92%] max-w-[400px] h-[600px] max-h-[85vh] rounded-[2rem] shadow-2xl shadow-violet-500/30 flex flex-col overflow-hidden border border-violet-500/20 z-50"
             style={{ animation: 'slideUpFade 0.2s ease-out' }}
           >
             <AdminAssistant
