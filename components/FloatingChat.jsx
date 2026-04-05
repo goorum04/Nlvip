@@ -466,16 +466,25 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
         messageType = 'image'
       }
 
-      const { error } = await supabase.from('messages').insert([{
-        conversation_id: activeConversation.id,
-        sender_id: userId,
-        text: newMessage,
-        type: messageType,
-        audio_path: audioPath,
-        image_path: imagePath
-      }])
-
-      if (error) throw error
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
+        body: JSON.stringify({
+          conversationId: activeConversation.id,
+          text: newMessage,
+          type: messageType,
+          audioPath,
+          imagePath
+        })
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Error al enviar')
+      }
       
       setNewMessage('')
       setAudioBlob(null)

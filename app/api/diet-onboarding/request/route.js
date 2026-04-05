@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/authUtils'
+import { sendPushToUser } from '@/lib/webpush'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -45,10 +46,18 @@ export async function POST(req) {
 
     if (error) throw new Error(error.message)
 
-    return NextResponse.json({ 
-      success: true, 
+    // Notify the member via Web Push (fire-and-forget)
+    sendPushToUser(supabase, memberId, {
+      title: '¡Tienes un cuestionario de nutrición!',
+      body: 'Tu entrenador te ha enviado un formulario. Rellénalo para recibir tu plan de dieta personalizado.',
+      url: '/nutrition',
+      icon: '/icons/icon-192x192.png'
+    })
+
+    return NextResponse.json({
+      success: true,
       requestId: data.id,
-      message: 'Cuestionario enviado al socio correctamente.' 
+      message: 'Cuestionario enviado al socio correctamente.'
     })
   } catch (error) {
     console.error('diet-onboarding/request error:', error)
