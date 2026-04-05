@@ -286,94 +286,70 @@ export default function AdminAssistant({ userId, voiceTrigger, onClose }) {
 
   return (
     <div className={`flex flex-col ${onClose ? 'h-full' : 'h-[calc(100vh-180px)]'}`}>
-      {/* PREMIUM HEADER */}
-      <div className="relative overflow-hidden rounded-t-3xl">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 opacity-90"></div>
-        
-        {/* Glow effects */}
-        <div className="absolute top-0 left-1/4 w-32 h-32 bg-white/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-24 h-24 bg-cyan-400/30 rounded-full blur-2xl"></div>
-        
-        <div className="relative px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* Premium AI Icon */}
-              <div className="relative">
-                <div className="absolute inset-0 bg-white/30 rounded-2xl blur-lg"></div>
-                <div className="relative w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center shadow-xl">
-                  <Wand2 className="w-7 h-7 text-white" />
-                </div>
-                {/* Online indicator */}
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white shadow-lg shadow-emerald-400/50"></div>
-              </div>
-              
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-white tracking-tight">NL VIP Assistant</h2>
-                  <div className="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full">
-                    <span className="text-[10px] font-semibold text-white/90 uppercase tracking-wider">Pro</span>
-                  </div>
-                </div>
-                <p className="text-sm text-white/70 mt-0.5">Tu asistente de gestión con IA</p>
-              </div>
+      {/* HEADER */}
+      <div className="bg-gradient-to-b from-zinc-900 to-black p-4 border-b border-white/5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <Wand2 className="w-5 h-5 text-black" />
             </div>
+            <div>
+              <h3 className="font-bold text-white text-sm">NL VIP Assistant</h3>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Asistente IA</p>
+            </div>
+          </div>
 
-            <div className="flex items-center gap-2">
-              {/* Status badges */}
-              {isListening && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 backdrop-blur-sm rounded-full border border-red-400/30 animate-pulse">
-                  <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                  <span className="text-xs font-medium text-red-200">Escuchando</span>
-                </div>
-              )}
-              {isSpeaking && (
-                <button
-                  onClick={stopSpeaking}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/20 backdrop-blur-sm rounded-full border border-cyan-400/30 hover:bg-cyan-500/40 transition-all group"
-                  title="Detener voz"
-                >
-                  <Volume2 className="w-3 h-3 text-cyan-300 animate-pulse group-hover:scale-110" />
-                  <span className="text-xs font-medium text-cyan-200">Hablando</span>
-                  <div className="ml-1 w-4 h-4 rounded-full bg-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <XCircle className="w-2.5 h-2.5 text-white" />
-                  </div>
-                </button>
-              )}
-              
-              {/* TTS Toggle */}
+          <div className="flex items-center gap-1">
+            {/* Status badges */}
+            {isListening && (
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-red-500/20 rounded-full border border-red-400/30 animate-pulse mr-1">
+                <div className="w-1.5 h-1.5 bg-red-400 rounded-full"></div>
+                <span className="text-[10px] font-medium text-red-300">Escuchando</span>
+              </div>
+            )}
+            {isSpeaking && (
               <button
-                onClick={() => {
-                  if (ttsEnabled && isSpeaking) stopSpeaking()
-                  setTtsEnabled(!ttsEnabled)
-                }}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                  ttsEnabled
-                    ? 'bg-white/20 text-white hover:bg-white/30'
-                    : 'bg-black/20 text-white/50 hover:bg-black/30'
-                }`}
-                title={ttsEnabled ? 'Silenciar voz' : 'Activar voz'}
+                onClick={stopSpeaking}
+                className="flex items-center gap-1.5 px-2 py-1 bg-cyan-500/20 rounded-full border border-cyan-400/30 hover:bg-cyan-500/30 transition-all mr-1"
+                title="Detener voz"
               >
-                {ttsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                <Volume2 className="w-3 h-3 text-cyan-400 animate-pulse" />
+                <span className="text-[10px] font-medium text-cyan-300">Hablando</span>
               </button>
+            )}
 
-              {/* Close button (only in floating mode) */}
-              {onClose && (
-                <button
-                  onClick={onClose}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center bg-black/20 text-white/70 hover:bg-black/40 hover:text-white transition-all"
-                  title="Cerrar"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              )}
-            </div>
+            {/* TTS Toggle */}
+            <button
+              onClick={() => {
+                if (ttsEnabled && isSpeaking) stopSpeaking()
+                setTtsEnabled(!ttsEnabled)
+              }}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                ttsEnabled
+                  ? 'text-zinc-300 hover:text-white'
+                  : 'text-zinc-600 hover:text-zinc-400'
+              }`}
+              title={ttsEnabled ? 'Silenciar voz' : 'Activar voz'}
+            >
+              {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
+
+            {/* Close button */}
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-500 hover:text-white transition-all"
+                title="Cerrar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* CHAT AREA */}
-      <div className="flex-1 bg-gradient-to-b from-[#0a0a0a] to-[#111] border-x border-violet-500/10 overflow-hidden flex flex-col">
+      <div className="flex-1 bg-black/40 overflow-hidden flex flex-col">
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
@@ -409,8 +385,8 @@ export default function AdminAssistant({ userId, voiceTrigger, onClose }) {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* INPUT AREA - Premium */}
-        <div className="p-4 border-t border-white/5 bg-black/50 backdrop-blur-xl">
+        {/* INPUT AREA */}
+        <div className="p-4 border-t border-white/5 bg-zinc-950">
           <div className="flex gap-3">
             {/* Voice button */}
             <button
@@ -456,8 +432,6 @@ export default function AdminAssistant({ userId, voiceTrigger, onClose }) {
         </div>
       </div>
 
-      {/* Bottom rounded border */}
-      <div className="h-2 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 rounded-b-3xl"></div>
     </div>
   )
 }
