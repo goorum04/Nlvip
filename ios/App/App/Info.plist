@@ -45,5 +45,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>NL VIP necesita acceso al micrófono para grabar y enviar mensajes de audio en el chat.</string>
 </dict>
 </plist>
