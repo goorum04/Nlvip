@@ -5,35 +5,25 @@ import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  Mic, MicOff, Send, Bot, User, Loader2, CheckCircle2, XCircle,
-  Volume2, VolumeX, Sparkles, AlertTriangle, Zap, Crown, Wand2, X
+  Mic, MicOff, Send, Loader2, CheckCircle2, XCircle,
+  Volume2, VolumeX, AlertTriangle, X
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 // Componente de mensaje individual
 function ChatMessage({ message, isUser, isLoading }) {
   return (
-    <div className={`flex gap-2 ${isUser ? 'flex-row-reverse' : ''} animate-in slide-in-from-bottom-2 duration-300`}>
-      <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ${
-        isUser
-          ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-violet-500/25'
-          : 'bg-gradient-to-br from-cyan-500/20 to-violet-500/20 border border-white/10 shadow-cyan-500/10'
-      }`}>
-        {isUser ? <User className="w-3.5 h-3.5 text-white" /> : <Wand2 className="w-3.5 h-3.5 text-cyan-400" />}
-      </div>
-      <div className={`max-w-[80%] rounded-xl px-3 py-2 ${
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}>
+      <div className={`max-w-[82%] rounded-xl px-3 py-2 ${
         isUser
           ? 'bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-md shadow-violet-500/20'
           : 'bg-white/5 backdrop-blur-sm border border-white/10 text-gray-200'
       }`}>
         {isLoading ? (
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1">
-              <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></span>
-              <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></span>
-              <span className="w-1.5 h-1.5 bg-fuchsia-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></span>
-            </div>
-            <span className="text-xs text-gray-400">Procesando...</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></span>
+            <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></span>
+            <span className="w-1.5 h-1.5 bg-fuchsia-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></span>
           </div>
         ) : (
           <p className="text-sm whitespace-pre-wrap leading-relaxed">{message}</p>
@@ -293,15 +283,6 @@ export default function AdminAssistant({ userId, voiceTrigger, onClose }) {
     speak('Acción cancelada')
   }
 
-  const quickCommands = [
-    { icon: '📊', text: 'Resumen del gym', command: 'Acción: Resumen del gimnasio. Pregúntame "¿Para quién?"' },
-    { icon: '🔍', text: 'Buscar socio', command: 'Acción: Buscar socio. Pregúntame "¿Para quién?"' },
-    { icon: '📢', text: 'Crear aviso', command: 'Acción: Crear aviso. Pregúntame "¿Para quién?"' },
-    { icon: '👥', text: 'Ver socios', command: 'Acción: Ver lista de socios. Pregúntame "¿Para quién?"' },
-    { icon: '🥗', text: 'Generar dieta', command: 'Acción: Generar dieta. Pregúntame "¿Para quién?"' },
-    { icon: '👟', text: 'Ver actividad', command: 'Acción: Ver actividad física. Pregúntame "¿Para quién?"' }
-  ]
-
   return (
     <div className={`flex flex-col ${onClose ? 'h-full' : 'h-[calc(100vh-180px)]'}`}>
       {/* HEADER */}
@@ -315,26 +296,9 @@ export default function AdminAssistant({ userId, voiceTrigger, onClose }) {
 
         <div className="relative px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* AI Icon */}
-              <div className="relative flex-shrink-0">
-                <div className="absolute inset-0 bg-white/20 rounded-xl blur-md"></div>
-                <div className="relative w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center shadow-lg">
-                  <Wand2 className="w-5 h-5 text-white" />
-                </div>
-                {/* Online indicator */}
-                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white shadow-md shadow-emerald-400/50"></div>
-              </div>
-
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h2 className="text-sm font-semibold text-white tracking-tight">NL VIP Assistant</h2>
-                  <div className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded-full">
-                    <span className="text-[9px] font-bold text-white/90 uppercase tracking-wider">Pro</span>
-                  </div>
-                </div>
-                <p className="text-[11px] text-white/65 mt-0.5 leading-none">Asistente de gestión con IA</p>
-              </div>
+            <div>
+              <h2 className="text-sm font-semibold text-white tracking-tight">NL VIP Assistant</h2>
+              <p className="text-[11px] text-white/65 leading-none mt-0.5">Asistente de gestión con IA</p>
             </div>
 
             <div className="flex items-center gap-1.5">
@@ -391,37 +355,9 @@ export default function AdminAssistant({ userId, voiceTrigger, onClose }) {
       <div className="flex-1 bg-gradient-to-b from-[#0a0a0a] to-[#111] border-x border-violet-500/10 overflow-hidden flex flex-col">
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-3">
-              {/* Empty state */}
-              <div className="relative mb-4">
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-full blur-2xl opacity-20"></div>
-                <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-violet-500/10 to-cyan-500/10 border border-white/10 flex items-center justify-center">
-                  <Sparkles className="w-7 h-7 text-violet-400/50" />
-                </div>
-              </div>
-
-              <h3 className="text-base font-semibold text-white mb-1.5">¿En qué puedo ayudarte?</h3>
-              <p className="text-xs text-gray-500 mb-5 max-w-xs">
-                Gestiona socios, crea avisos, genera dietas y más.
-              </p>
-
-              {/* Quick commands grid */}
-              <div className="grid grid-cols-3 gap-2 w-full">
-                {quickCommands.map((cmd, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => { setInput(cmd.command); handleSend(cmd.command) }}
-                    className="group relative overflow-hidden rounded-xl p-2.5 text-left transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/0 group-hover:from-violet-500/10 group-hover:to-cyan-500/10 transition-all"></div>
-                    <div className="absolute inset-0 border border-white/10 group-hover:border-violet-500/30 rounded-xl transition-all"></div>
-                    <div className="relative">
-                      <span className="text-xl mb-1 block">{cmd.icon}</span>
-                      <span className="text-[11px] font-medium text-gray-300 group-hover:text-white transition-colors leading-tight">{cmd.text}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+            <div className="h-full flex flex-col items-center justify-center text-center px-4">
+              <p className="text-sm font-medium text-white/80 mb-1">¿En qué puedo ayudarte?</p>
+              <p className="text-xs text-gray-500">Gestiona socios, crea avisos, genera dietas y más.</p>
             </div>
           ) : (
             <>
