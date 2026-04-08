@@ -108,8 +108,9 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     }
   }, [activeConversation, isOpen])
 
-  // Initialize Speech Recognition
+  // Initialize Speech Recognition — solo para admin
   useEffect(() => {
+    if (userRole !== 'admin') return
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
       const recognition = new SpeechRecognition()
@@ -124,11 +125,8 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       }
 
       recognition.onend = () => setIsListening(false)
-      
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error)
-        setIsListening(false)
-      }
+
+      recognition.onerror = () => setIsListening(false)
 
       recognitionRef.current = recognition
     }
