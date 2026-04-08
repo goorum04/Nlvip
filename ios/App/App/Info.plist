@@ -46,7 +46,7 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>NL VIP necesita acceso al micrófono para grabar y enviar mensajes de audio en el chat.</string>
+	<string>NL VIP necesita acceso al micrófono para grabar mensajes de audio en el chat y para el reconocimiento de voz del asistente IA.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>NL VIP lee tus pasos diarios de Apple Health para mostrar tu actividad y ayudarte a cumplir tus objetivos de fitness.</string>
 </dict>

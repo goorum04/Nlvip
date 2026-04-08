@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+  <!-- La app NO rastrea al usuario para publicidad -->
+  <key>NSPrivacyTracking</key>
+  <false/>
+
+  <!-- Sin dominios de tracking -->
+  <key>NSPrivacyTrackingDomains</key>
+  <array/>
+
+  <!-- APIs de "razón requerida" usadas por la app y sus SDKs -->
+  <key>NSPrivacyAccessedAPITypes</key>
+  <array>
+
+    <!-- UserDefaults — usado por Capacitor para guardar configuración local -->
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key>
+      <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key>
+      <array>
+        <string>CA92.1</string>
+      </array>
+    </dict>
+
+    <!-- Timestamps de archivos — usado internamente por WebKit/Capacitor -->
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key>
+      <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key>
+      <array>
+        <string>C617.1</string>
+      </array>
+    </dict>
+
+    <!-- Espacio en disco — usado por el caché del Service Worker -->
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key>
+      <string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key>
+      <array>
+        <string>E174.1</string>
+      </array>
+    </dict>
+
+  </array>
+
+  <!-- Tipos de datos recopilados -->
+  <key>NSPrivacyCollectedDataTypes</key>
+  <array>
+
+    <!-- Datos de salud: pasos leídos de Apple Health -->
+    <dict>
+      <key>NSPrivacyCollectedDataType</key>
+      <string>NSPrivacyCollectedDataTypeHealthAndFitness</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key>
+      <true/>
+      <key>NSPrivacyCollectedDataTypeTracking</key>
+      <false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array>
+        <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+      </array>
+    </dict>
+
+    <!-- Mensajes de chat entre usuarios -->
+    <dict>
+      <key>NSPrivacyCollectedDataType</key>
+      <string>NSPrivacyCollectedDataTypeUserContent</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key>
+      <true/>
+      <key>NSPrivacyCollectedDataTypeTracking</key>
+      <false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array>
+        <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+      </array>
+    </dict>
+
+    <!-- Token de dispositivo para notificaciones push -->
+    <dict>
+      <key>NSPrivacyCollectedDataType</key>
+      <string>NSPrivacyCollectedDataTypeDeviceID</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key>
+      <true/>
+      <key>NSPrivacyCollectedDataTypeTracking</key>
+      <false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array>
+        <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+      </array>
+    </dict>
+
+  </array>
+
+</dict>
+</plist>
