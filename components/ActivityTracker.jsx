@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { 
-  Footprints, Flame, MapPin, Target, Plus, Minus, AlertCircle, 
-  TrendingUp, Calendar, Loader2, ChevronRight
+import {
+  Footprints, Flame, MapPin, Target, Plus, Minus, AlertCircle,
+  TrendingUp, Calendar, Loader2, ChevronRight, RefreshCw, Heart
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
@@ -19,12 +19,60 @@ export default function ActivityTracker({ userId, compact = false }) {
   const [updating, setUpdating] = useState(false)
   const [showAddSteps, setShowAddSteps] = useState(false)
   const [stepsToAdd, setStepsToAdd] = useState('')
+  const [healthKitAvailable, setHealthKitAvailable] = useState(false)
+  const [healthKitSyncing, setHealthKitSyncing] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
     loadActivity()
     loadHistory()
+    syncFromHealthKit()
   }, [userId])
+
+  const syncFromHealthKit = async (showToast = false) => {
+    try {
+      const { Capacitor } = await import('@capacitor/core')
+      if (Capacitor.getPlatform() !== 'ios') return
+
+      const { HealthKit } = await import('@perfood/capacitor-healthkit')
+
+      const available = await HealthKit.isAvailable()
+      if (!available) return
+
+      setHealthKitAvailable(true)
+      setHealthKitSyncing(true)
+
+      await HealthKit.requestAuthorization({
+        all: [],
+        read: ['stepCount', 'activeEnergyBurned'],
+        write: []
+      })
+
+      const todayStart = new Date()
+      todayStart.setHours(0, 0, 0, 0)
+      const now = new Date()
+
+      // Leer pasos de hoy
+      const stepsResult = await HealthKit.queryHKitSampleType({
+        startDate: todayStart.toISOString(),
+        endDate: now.toISOString(),
+        sampleName: 'stepCount',
+        limit: 0,
+        ascending: false
+      })
+
+      const totalSteps = (stepsResult.resultData || []).reduce((sum, s) => sum + (s.value || 0), 0)
+
+      if (totalSteps > 0) {
+        await updateSteps(Math.round(totalSteps), false)
+        if (showToast) toast({ title: 'Apple Health sincronizado', description: `${Math.round(totalSteps).toLocaleString()} pasos` })
+      }
+    } catch {
+      // HealthKit no disponible — sin error visible
+    } finally {
+      setHealthKitSyncing(false)
+    }
+  }
 
   const loadActivity = async () => {
     try {
@@ -57,7 +105,7 @@ export default function ActivityTracker({ userId, compact = false }) {
     }
   }
 
-  const updateSteps = async (newSteps) => {
+  const updateSteps = async (newSteps, showToast = true) => {
     if (newSteps < 0) return
     setUpdating(true)
     try {
@@ -70,7 +118,7 @@ export default function ActivityTracker({ userId, compact = false }) {
         calories_kcal: data.calories_kcal,
         progress_percent: data.progress_percent
       }))
-      toast({ title: '¡Pasos actualizados!' })
+      if (showToast) toast({ title: '¡Pasos actualizados!' })
     } catch (err) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
     } finally {
@@ -147,9 +195,24 @@ export default function ActivityTracker({ userId, compact = false }) {
               <Footprints className="w-5 h-5 text-emerald-400" />
               Actividad de Hoy
             </CardTitle>
-            <span className="text-xs text-gray-400">
-              {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}
-            </span>
+            <div className="flex items-center gap-2">
+              {healthKitAvailable && (
+                <button
+                  onClick={() => syncFromHealthKit(true)}
+                  disabled={healthKitSyncing}
+                  className="flex items-center gap-1 text-[10px] text-pink-400 bg-pink-500/10 border border-pink-500/20 rounded-full px-2 py-1 hover:bg-pink-500/20 transition-all"
+                  title="Sincronizar con Apple Health"
+                >
+                  {healthKitSyncing
+                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                    : <Heart className="w-3 h-3" />}
+                  <span>Apple Health</span>
+                </button>
+              )}
+              <span className="text-xs text-gray-400">
+                {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}
+              </span>
+            </div>
           </div>
         </CardHeader>
       </div>

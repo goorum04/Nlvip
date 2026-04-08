@@ -1,5 +1,6 @@
 import './globals.css'
 import ServiceWorkerInit from '@/components/ServiceWorkerInit'
+import CapacitorPushInit from '@/components/CapacitorPushInit'
 
 export const metadata = {
   title: 'NL VIP Club',
@@ -37,6 +38,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="overscroll-none">
         <ServiceWorkerInit />
+        <CapacitorPushInit />
         {children}
       </body>
     </html>
