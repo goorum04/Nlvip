@@ -48,8 +48,6 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>NL VIP necesita acceso al micrófono para grabar y enviar mensajes de audio en el chat.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>NL VIP lee tus pasos y calorías de Apple Health para mostrar tu actividad diaria y ayudarte a cumplir tus objetivos.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>NL VIP puede registrar datos de actividad en Apple Health para mantener un historial completo de tu progreso.</string>
+	<string>NL VIP lee tus pasos diarios de Apple Health para mostrar tu actividad y ayudarte a cumplir tus objetivos de fitness.</string>
 </dict>
 </plist>
