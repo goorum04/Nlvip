@@ -45,9 +45,22 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+
+	<!-- Micrófono: mensajes de audio y asistente IA de voz -->
 	<key>NSMicrophoneUsageDescription</key>
-	<string>NL VIP necesita acceso al micrófono para que el administrador del gimnasio pueda grabar mensajes de audio en el chat y usar el reconocimiento de voz del asistente IA de gestión.</string>
+	<string>NL VIP necesita acceso al micrófono para que el administrador pueda grabar mensajes de audio en el chat y usar el asistente IA por voz.</string>
+
+	<!-- HealthKit - Leer pasos y actividad -->
 	<key>NSHealthShareUsageDescription</key>
 	<string>NL VIP lee tus pasos diarios de Apple Health para mostrar tu actividad y ayudarte a cumplir tus objetivos de fitness.</string>
+
+	<!-- HealthKit - Escribir datos de actividad -->
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>NL VIP puede registrar tu actividad física en Apple Health para llevar un seguimiento completo de tu progreso.</string>
+
+	<!-- Motion/Podómetro - Cuenta pasos en tiempo real -->
+	<key>NSMotionUsageDescription</key>
+	<string>NL VIP usa el sensor de movimiento del iPhone para contar tus pasos en tiempo real y mostrar tu progreso de actividad diaria.</string>
+
 </dict>
 </plist>
