@@ -4,15 +4,13 @@ import * as Sentry from '@sentry/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
 
-const supabaseAdmin = createClient(
+const getSupabaseAdmin = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { autoRefreshToken: false, persistSession: false } }
 )
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-})
+const getOpenAI = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 const DIET_RULES = `
 REGLAS DEL PROGRAMA NUTRICIONAL NL VIP:
@@ -101,6 +99,8 @@ ${DIET_RULES}
      d) Si no hay resultados, informa al usuario.`
 
 export async function POST(request) {
+  const supabaseAdmin = getSupabaseAdmin()
+  const openai = getOpenAI()
   try {
     // Verificar autenticación y rol admin
     const authHeader = request.headers.get('Authorization')
