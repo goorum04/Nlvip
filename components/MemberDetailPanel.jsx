@@ -127,7 +127,10 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
       setOnboardingResponse(onboarding)
 
       // Cargar PRs del miembro
-      const prRes = await fetch(`/api/member-prs?memberId=${member.id}`)
+      const { data: { session } } = await supabase.auth.getSession()
+      const prRes = await fetch(`/api/member-prs?memberId=${member.id}`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      })
       if (prRes.ok) {
         const prData = await prRes.json()
         setMemberPrs(prData)

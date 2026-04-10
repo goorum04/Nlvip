@@ -1,15 +1,21 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-// Configuración de Supabase usando variables de entorno
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+)
 
 // GET /api/member-prs?memberId=xxx
 export async function GET(request) {
   try {
+    // Verificar autenticación
+    const token = request.headers.get('Authorization')?.slice(7) || null
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    if (authError || !user) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+
     const { searchParams } = new URL(request.url)
     const memberId = searchParams.get('memberId')
 
@@ -17,7 +23,15 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Falta el ID del miembro' }, { status: 400 })
     }
 
-    const { data, error } = await supabase
+    // Verificar que el usuario es el propio miembro o admin/trainer
+    if (user.id !== memberId) {
+      const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single()
+      if (profile?.role !== 'admin' && profile?.role !== 'trainer') {
+        return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      }
+    }
+
+    const { data, error } = await supabaseAdmin
       .from('member_prs')
       .select('*')
       .eq('member_id', memberId)
@@ -35,23 +49,29 @@ export async function GET(request) {
 // POST /api/member-prs
 export async function POST(request) {
   try {
+    // Verificar autenticación
+    const token = request.headers.get('Authorization')?.slice(7) || null
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    if (authError || !user) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+
     const body = await request.json()
     const { exercise_name, weight_kg, reps, date, memberId: passedMemberId } = body
-
-    // En un entorno real, aquí verificaríamos el token de la sesión 
-    // Pero siguiendo el patrón del proyecto, usaremos el ID proporcionado o el del usuario si pudiéramos obtenerlo
-    // Para simplificar y mantener compatibilidad, permitimos pasar el memberId
     const memberId = passedMemberId || body.member_id
 
     if (!memberId || !exercise_name || !weight_kg) {
       return NextResponse.json({ error: 'Faltan datos requeridos (memberId, exercise_name, weight_kg)' }, { status: 400 })
     }
 
+    // Solo el propio miembro puede registrar sus PRs
+    if (user.id !== memberId) {
+      return NextResponse.json({ error: 'Solo puedes registrar tus propios PRs' }, { status: 403 })
+    }
+
     // Calcular el 1RM estimado usando la fórmula de Brzycki
-    // 1RM = Peso / (1.0278 - (0.0278 * reps))
     const estimated_1rm = (parseFloat(weight_kg) / (1.0278 - (0.0278 * parseInt(reps || 1)))).toFixed(1)
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('member_prs')
       .insert([
         {

@@ -1,24 +1,39 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-const supabase = createClient(
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  { auth: { autoRefreshToken: false, persistSession: false } }
 )
 
 // POST /api/diet-onboarding/submit
 // Called when member submits the questionnaire (approvance pending)
 export async function POST(req) {
   try {
+    // Verificar autenticación
+    const token = req.headers.get('Authorization')?.slice(7) || null
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    if (authError || !user) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+
     const { requestId, memberId, responses } = await req.json()
 
     if (!requestId || !memberId || !responses) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 })
     }
 
+    // Verificar que el usuario es el propio miembro o admin/trainer
+    if (user.id !== memberId) {
+      const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single()
+      if (profile?.role !== 'admin' && profile?.role !== 'trainer') {
+        return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      }
+    }
+
     // Update the request with answers and set status to 'submitted'
     // Status 'submitted' means it's waiting for Admin review
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('diet_onboarding_requests')
       .update({
         responses,
@@ -42,7 +57,7 @@ export async function POST(req) {
     if (medicalConditions && medicalConditions !== 'ninguna') profileUpdate.medical_conditions = medicalConditions
 
     if (Object.keys(profileUpdate).length > 0) {
-      await supabase.from('profiles').update(profileUpdate).eq('id', memberId)
+      await supabaseAdmin.from('profiles').update(profileUpdate).eq('id', memberId)
     }
 
     return NextResponse.json({

@@ -188,7 +188,10 @@ export default function App() {
           try {
             const onbRes = await fetch('/api/diet-onboarding/request', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${data.session?.access_token}`
+              },
               body: JSON.stringify({ memberId: data.user.id, requestedBy: data.user.id })
             })
             const onbResult = await onbRes.json()

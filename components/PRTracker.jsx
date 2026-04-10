@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,7 +31,10 @@ export default function PRTracker({ memberId }) {
   const loadPRs = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/member-prs?memberId=${memberId}`)
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`/api/member-prs?memberId=${memberId}`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setPrs(data)
@@ -45,9 +49,13 @@ export default function PRTracker({ memberId }) {
     e.preventDefault()
     setAdding(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/member-prs', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({
           ...form,
           memberId,
