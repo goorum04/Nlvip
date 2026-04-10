@@ -3,7 +3,7 @@ import OpenAI from 'openai'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_build'
+  apiKey: process.env.OPENAI_API_KEY
 })
 
 const DIET_RULES = `
