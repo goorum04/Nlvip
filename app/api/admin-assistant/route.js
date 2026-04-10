@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { createClient } from '@supabase/supabase-js'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+)
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -94,6 +101,21 @@ ${DIET_RULES}
 
 export async function POST(request) {
   try {
+    // Verificar autenticación y rol admin
+    const authHeader = request.headers.get('Authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+    if (!token) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+    }
+    const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') {
+      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+    }
+
     const { messages, executeTools = false, toolCallsToExecute = [] } = await request.json()
 
     // Si es una petición de ejecución de tools ya confirmados

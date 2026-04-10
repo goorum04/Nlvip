@@ -381,11 +381,11 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
       const response = await fetch('/api/admin-delete-user', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: memberId,
-          adminToken: session?.access_token
-        })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ userId: memberId })
       })
 
       const result = await response.json()
