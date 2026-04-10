@@ -53,6 +53,10 @@ export function DietTab({ user, diet }) {
 
             {/* Plan de Recetas Semanal */}
             <MemberRecipePlan userId={user.id} />
+
+            <p className="text-center text-xs text-gray-600 pt-2">
+                Las recomendaciones nutricionales tienen carácter orientativo y no sustituyen el consejo de un profesional de la salud o nutrición.
+            </p>
         </div>
     )
 }
