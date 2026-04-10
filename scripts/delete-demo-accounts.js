@@ -92,6 +92,19 @@ async function main() {
     await supabase.from('invitation_codes').delete().in('code', DEMO_INVITE_CODES)
     console.log('  ✅ invitation_codes')
 
+    // Desvincular recetas: se conservan pero sin autor asignado
+    const { error: recipesError } = await supabase
+      .from('recipes')
+      .update({ created_by: null })
+      .in('created_by', demoIds)
+    if (recipesError) console.warn(`  ⚠️  recipes (desvinculación): ${recipesError.message}`)
+    else console.log('  ✅ recipes (created_by → null, recetas conservadas)')
+
+    // Desvincular conversaciones
+    await supabase.from('messages').update({ sender_id: null }).in('sender_id', demoIds)
+    await supabase.from('conversations').update({ created_by: null }).in('created_by', demoIds)
+    console.log('  ✅ conversations / messages (desvinculados)')
+
     // Borrar perfiles
     await supabase.from('profiles').delete().in('id', demoIds)
     console.log('  ✅ profiles')
