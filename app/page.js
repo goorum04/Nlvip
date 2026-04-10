@@ -3,7 +3,6 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { DEMO_ACCOUNTS } from '@/lib/demo-credentials'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -95,27 +94,6 @@ export default function App() {
       setUser(data.user)
       await loadProfile(data.user.id)
       toast({ title: '¡Bienvenido!' })
-    } catch (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Demo login - available for testing
-  const handleDemoLogin = async (role) => {
-    const account = DEMO_ACCOUNTS[role]
-    if (!account) return
-    setLoading(true)
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: account.email,
-        password: account.password
-      })
-      if (error) throw error
-      setUser(data.user)
-      await loadProfile(data.user.id)
-      toast({ title: `¡Bienvenido ${account.name}!` })
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
