@@ -16,6 +16,14 @@ import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { RecipesManager } from './RecipesManager'
 import AdminAssistant from './AdminAssistant'
+import { AdminUsersTab } from './AdminUsersTab'
+import { AdminContentTab } from './AdminContentTab'
+import { AdminCodesTab } from './AdminCodesTab'
+import { AdminFeedTab } from './AdminFeedTab'
+import { MemberDetailPanel } from './MemberDetailPanel'
+import { WorkoutBuilder } from './WorkoutBuilder'
+import { DietBuilder } from './DietBuilder'
+import { ProfileModal } from './UserProfile'
 import FloatingChat from './FloatingChat'
 import FloatingAdminAssistant from './FloatingAdminAssistant'
 import { ProgressPhotoGallery } from './ProgressPhotos'
@@ -37,6 +45,13 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [allAssignments, setAllAssignments] = useState([])
   const [trainingVideos, setTrainingVideos] = useState([])
   const [loading, setLoading] = useState(false)
+  const [selectedMember, setSelectedMember] = useState(null)
+  const [showMemberDetail, setShowMemberDetail] = useState(false)
+  const [showWorkoutBuilder, setShowWorkoutBuilder] = useState(false)
+  const [showDietBuilder, setShowDietBuilder] = useState(false)
+  const [editingWorkout, setEditingWorkout] = useState(null)
+  const [editingDiet, setEditingDiet] = useState(null)
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const { toast } = useToast()
 
   // New states for trainer-like features
@@ -2462,6 +2477,24 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       />
 
       <FloatingAdminAssistant userId={user.id} />
+      {showDietBuilder && (
+        <Dialog open={showDietBuilder} onOpenChange={setShowDietBuilder}>
+          <DialogContent className="max-w-4xl bg-[#1a1a1a] border-white/5 rounded-[40px] p-0 overflow-hidden">
+            <DietBuilder
+              trainerId={user.id} existingDiet={editingDiet}
+              onSave={() => { setShowDietBuilder(false); loadData(); }}
+              onCancel={() => setShowDietBuilder(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {showProfileModal && (
+        <ProfileModal
+          user={user} profile={profile}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
 
       <Toaster />
       <FloatingChat

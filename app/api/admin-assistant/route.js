@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import * as Sentry from '@sentry/nextjs'
-import { createClient } from '@supabase/supabase-js'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
-
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_build'
 })
 
 const DIET_RULES = `
@@ -53,70 +45,47 @@ CÁLCULO DE MACROS:
 const SYSTEM_PROMPT = `Eres el Asistente IA del gimnasio NL VIP CLUB. Tu trabajo es ayudar al administrador a gestionar el gimnasio mediante comandos de voz o texto.
 
 IMPORTANTE:
-1. SIEMPRE usa las herramientas disponibles para obtener información o realizar acciones.
-2. NUNCA menciones IDs o UUIDs (cadenas largas de letras y números) en tus respuestas al usuario. Si necesitas referirte a un socio, usa SIEMPRE su nombre.
-3. Si hay varios socios con el mismo nombre, usa el apellido para diferenciarlos.
-4. Cuando el admin mencione un nombre de socio, PRIMERO usa find_member para buscarlo.
-5. Nunca inventes datos - siempre consulta la información real.
-6. RECETAS, CATÁLOGO Y RECOMENDACIONES:
-   a. Si el usuario pide "cargar recetas" o el catálogo está vacío, usa bulk_import_recipes con varias queries (ej: 'dieta mediterránea', 'gym breakfast', 'high protein dinner').
-   b. Al asignar una dieta, DEBES:
-      i. Calcular los macros por comida (aprox. Desayuno 25%, Comida 35%, Cena 30%, Snack 10%).
-      ii. Buscar recetas en el CATÁLOGO LOCAL que encajen con esos macros usando find_recipes_for_macros para cada slot.
-      iii. Si no hay suficientes en el catálogo, usa search_recipe_ideas para buscar nuevas y guárdalas.
-      iv. Recomienda las recetas encontradas y ofrece VINCULARLAS (link_recipe_to_diet) para completar el plan del socio.
-   c. El objetivo es que el socio tenga un plan de comidas real y variado.
-7. Responde en español de forma clara y concisa.
-8. Para acciones que modifiquen datos, explica qué vas a hacer ANTES de ejecutar.
+1. SIEMPRE usa las herramientas disponibles para obtener información o realizar acciones
+2. Cuando el admin mencione un nombre de socio, PRIMERO usa find_member para buscarlo
+3. Nunca inventes datos - siempre consulta la información real
+4. Responde en español de forma clara y concisa
+5. Para acciones que modifiquen datos, explica qué vas a hacer ANTES de ejecutar
 
 Objetivos que el admin puede pedir:
 - "pérdida de grasa" o "definición" → goal: fat_loss
 - "mantener" o "mantenimiento" → goal: maintain  
 - "ganar músculo" o "volumen" → goal: muscle_gain
 
-FLUJO PARA GENERAR/CREAR DIETAS:
-1. Cuando el admin pida "genera una dieta", "crea una dieta", "hazme una dieta" para un socio:
-   a. PRIMERO busca al socio con find_member para obtener su ID.
-   b. DESPUÉS usa generate_diet_plan con el member_id y el goal (objetivo). Si no hay objetivo, asume 'maintain'.
-   c. LUEGO usa search_recipe_ideas una o varias veces para encontrar recetas reales que encajen con los macros calculados (especialmente para almuerzo y cena).
-   d. Muestra el plan completo al admin, incluyendo los macros calculados Y las sugerencias de recetas de Spoonacular con sus ingredientes y pasos.
+FLUJO PARA GENERAR/CREAR DIETAS PERSONALIZADAS CON IA:
+1. Cuando el admin diga cosas como:
+   - "ponle una dieta baja en calorías a [nombre]"
+   - "crea una dieta alta en proteínas para [nombre], que no come pescado"
+   - "genérale una dieta para perder grasa a [nombre], que le gusta el pollo"
+   a. PRIMERO usa find_member para obtener el UUID del socio
+   b. DESPUÉS usa generate_ai_diet_from_recipes con:
+      - member_id: el UUID encontrado
+      - prompt: descripción de la dieta tal como lo dijo el admin
+      - goal: fat_loss / maintain / muscle_gain según el objetivo
+      - exclude_ingredients: alimentos que NO puede comer
+      - preferences: preferencias del socio
+   c. Muestra el plan de dieta generado de forma clara y amigable
 
-2. Cuando el admin pida "aplicar un plan completo" a un socio:
+2. Cuando el admin pida "genera una dieta" genérica (sin recetas especiales):
+   a. PRIMERO busca al socio con find_member para obtener su ID
+   b. DESPUÉS usa generate_diet_plan con el member_id y el goal (objetivo)
+   c. Muestra el plan de dieta completo al admin
+
+3. Cuando el admin pida "aplicar un plan completo" a un socio:
    a. Busca al socio con find_member
    b. Usa apply_full_member_plan (esto asigna dieta + rutina + macros)
 
 CUANDO GENERES O HABLES DE DIETAS, USA ESTAS REGLAS DEL GIMNASIO:
 ${DIET_RULES}
 
-8. Responde siempre de forma amigable y profesional. Si algo falla, explica el problema de forma sencilla.
-9. ATAJOS ESPECIALES (IMPORTANTE): 
-   Si el usuario envía un mensaje con el formato 'Acción: [NOMBRE_ACCION]. Pregúntame "¿Para quién?"':
-   - Responde ÚNICAMENTE: "¡Claro! ¿Para quién?" (o una variante breve y amable).
-   - NO ejecutes ninguna herramienta en ese momento.
-   - Quédate a la espera del nombre del socio.
-   - Cuando el usuario diga un nombre (ej: "Said"):
-     a) Usa find_member para buscarlo.
-     b) Si hay UN SOLO resultado, procede a realizar la [NOMBRE_ACCION] para ese socio.
-     c) Si hay VARIOS resultados con el mismo nombre, responde preguntando: "He encontrado varios socios con ese nombre: [Lista de nombres con apellidos]. ¿A cuál de ellos te refieres?" y espera la aclaración.
-     d) Si no hay resultados, informa al usuario.`
+Responde siempre de forma amigable y profesional. Si algo falla, explica el problema de forma sencilla.`
 
 export async function POST(request) {
   try {
-    // Verificar autenticación y rol admin
-    const authHeader = request.headers.get('Authorization')
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
-    if (!token) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
-    }
-    const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single()
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
-    }
-
     const { messages, executeTools = false, toolCallsToExecute = [] } = await request.json()
 
     // Si es una petición de ejecución de tools ya confirmados
@@ -152,7 +121,7 @@ export async function POST(request) {
       tools: TOOLS_DEFINITIONS,
       tool_choice: 'auto',
       temperature: 0.7,
-      max_tokens: 3000
+      max_tokens: 1000
     })
 
     const assistantMessage = response.choices[0].message
@@ -160,7 +129,11 @@ export async function POST(request) {
 
     // Si hay tool calls, ejecutar las de solo lectura automáticamente
     if (toolCalls.length > 0) {
-      const readOnlyTools = ['find_member', 'get_member_summary', 'get_gym_dashboard', 'list_trainers', 'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity', 'list_members', 'search_recipe_ideas']
+      const readOnlyTools = [
+        'find_member', 'get_member_summary', 'get_gym_dashboard', 'list_trainers',
+        'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity',
+        'list_members', 'generate_ai_diet_from_recipes'
+      ]
       const autoExecute = []
       const needsConfirmation = []
 
@@ -202,7 +175,7 @@ export async function POST(request) {
           tools: TOOLS_DEFINITIONS,
           tool_choice: 'auto',
           temperature: 0.7,
-          max_tokens: 3000
+          max_tokens: 2000
         })
 
         const followUpMessage = followUpResponse.choices[0].message
@@ -295,7 +268,6 @@ export async function POST(request) {
     })
 
   } catch (error) {
-    Sentry.captureException(error, { tags: { endpoint: 'admin-assistant' } })
     console.error('Admin Assistant Error:', error)
     return NextResponse.json(
       { error: error.message || 'Error del asistente' },

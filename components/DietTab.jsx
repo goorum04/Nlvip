@@ -1,86 +1,49 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Apple, Flame, Star, Target, Zap } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import FoodTracker from './FoodTracker'
 import { MemberRecipePlan } from './RecipePlan'
-import { DietOnboardingBanner } from './DietOnboardingForm'
-import { supabase } from '@/lib/supabase'
+import { DietViewer } from './DietBuilder'
 
-export function DietTab({ user, diet, memberName }) {
-    const [pendingOnboarding, setPendingOnboarding] = useState(null)
-    const [onboardingChecked, setOnboardingChecked] = useState(false)
-
-    useEffect(() => {
-        if (user?.id) checkPendingOnboarding()
-    }, [user?.id])
-
-    const checkPendingOnboarding = async () => {
-        try {
-            const { data } = await supabase
-                .from('diet_onboarding_requests')
-                .select('id, status')
-                .eq('member_id', user.id)
-                .eq('status', 'pending')
-                .maybeSingle()
-
-            setPendingOnboarding(data || null)
-        } catch (e) {
-            // Table may not exist yet — silently ignore
-        } finally {
-            setOnboardingChecked(true)
-        }
-    }
-
+export function DietTab({ user, diet }) {
     return (
-        <div className="space-y-4">
-            {/* Onboarding banner (if pending) */}
-            {onboardingChecked && pendingOnboarding && (
-                <DietOnboardingBanner
-                    requestId={pendingOnboarding.id}
-                    memberId={user.id}
-                    memberName={memberName}
-                    onCompleted={() => {
-                        setPendingOnboarding(null)
-                        window.location.reload()
-                    }}
-                />
-            )}
-
+        <div className="space-y-6">
             {diet ? (
-                <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
-                    <CardHeader>
-                        <CardTitle className="text-2xl text-white flex items-center gap-3">
-                            <Apple className="w-6 h-6 text-violet-500" />
-                            {diet.diet?.name}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-4 gap-3">
-                            {[
-                                { label: 'Calorías', value: diet.diet?.calories || '-', icon: Flame, color: 'from-orange-500/20 to-orange-500/5' },
-                                { label: 'Proteína', value: diet.diet?.protein_g ? `${diet.diet.protein_g}g` : '-', icon: Target, color: 'from-blue-500/20 to-blue-500/5' },
-                                { label: 'Carbos', value: diet.diet?.carbs_g ? `${diet.diet.carbs_g}g` : '-', icon: Zap, color: 'from-yellow-500/20 to-yellow-500/5' },
-                                { label: 'Grasas', value: diet.diet?.fat_g ? `${diet.diet.fat_g}g` : '-', icon: Star, color: 'from-purple-500/20 to-purple-500/5' },
-                            ].map(m => (
-                                <div key={m.label} className={`bg-gradient-to-br ${m.color} rounded-2xl p-4 border border-white/5`}>
-                                    <m.icon className="w-5 h-5 text-violet-500 mb-2" />
-                                    <p className="text-2xl font-black text-white">{m.value}</p>
-                                    <p className="text-xs text-gray-500">{m.label}</p>
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-bold text-white tracking-tight">Tu Nutrición</h2>
+                        <div className="bg-green-500/20 px-4 py-1.5 rounded-full border border-green-500/30">
+                            <span className="text-green-400 text-xs font-black uppercase tracking-widest">Activa</span>
+                        </div>
+                    </div>
+
+                    <Card className="bg-[#1a1a1b] border-white/5 rounded-[40px] overflow-hidden shadow-2xl">
+                        <CardHeader className="border-b border-white/5 bg-black/20 p-8">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center border border-green-500/20">
+                                    <Apple className="w-6 h-6 text-green-400" />
                                 </div>
-                            ))}
-                        </div>
-                        <div className="bg-black/30 rounded-2xl p-5 border border-[#2a2a2a]">
-                            <p className="text-gray-300 whitespace-pre-wrap">{diet.diet?.content || 'Sin detalles de dieta'}</p>
-                        </div>
-                    </CardContent>
-                </Card>
+                                <div>
+                                    <CardTitle className="text-2xl font-black text-white">{diet.diet?.name}</CardTitle>
+                                    <p className="text-xs text-gray-500 uppercase font-bold tracking-widest">Plan Nutricional Personalizado</p>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-8">
+                            <DietViewer dietId={diet.diet?.id} />
+                        </CardContent>
+                    </Card>
+                </div>
             ) : (
-                <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
-                    <CardContent className="py-20 text-center">
-                        <Apple className="w-20 h-20 mx-auto text-violet-500/20 mb-4" />
-                        <p className="text-gray-500">Tu entrenador aún no te ha asignado una dieta</p>
+                <Card className="bg-white/2 border-white/5 border-dashed rounded-[40px]">
+                    <CardContent className="py-24 text-center">
+                        <Apple className="w-20 h-20 mx-auto text-white/10 mb-6" />
+                        <h3 className="text-lg font-bold text-gray-400">Sin Dieta Asignada</h3>
+                        <p className="text-gray-600 max-w-xs mx-auto text-sm mt-2 italic">
+                            Tu entrenador personal aún no ha publicado tu plan de nutrición.
+                            Te avisaremos cuando esté disponible.
+                        </p>
                     </CardContent>
                 </Card>
             )}
