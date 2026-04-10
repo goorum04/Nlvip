@@ -23,14 +23,11 @@ import { AdminFeedTab } from './AdminFeedTab'
 import { MemberDetailPanel } from './MemberDetailPanel'
 import { WorkoutBuilder } from './WorkoutBuilder'
 import { DietBuilder } from './DietBuilder'
-import { ProfileModal } from './UserProfile'
+import { AvatarBubble, ProfileModal } from './UserProfile'
 import FloatingChat from './FloatingChat'
 import FloatingAdminAssistant from './FloatingAdminAssistant'
 import { ProgressPhotoGallery } from './ProgressPhotos'
 import { FeedSection } from './FeedSection'
-import { AvatarBubble, ProfileModal } from './UserProfile'
-import { WorkoutBuilder } from './WorkoutBuilder'
-import { MemberDetailPanel } from './MemberDetailPanel'
 import AIRoutineGenerator from './AIRoutineGenerator'
 
 export default function AdminDashboard({ user, profile, onLogout }) {
@@ -65,16 +62,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [selectedRequestAnswers, setSelectedRequestAnswers] = useState(null)
   const [dietDraft, setDietDraft] = useState(null)
 
-  // Profile modal state
-  const [showProfileModal, setShowProfileModal] = useState(false)
-
-  // Member detail panel state
-  const [selectedMember, setSelectedMember] = useState(null)
-  const [showMemberDetail, setShowMemberDetail] = useState(false)
-
-  // Workout builder state
-  const [showWorkoutBuilder, setShowWorkoutBuilder] = useState(false)
-  const [editingWorkout, setEditingWorkout] = useState(null)
+  // Workout builder assistant state
   const [showAIGenerator, setShowAIGenerator] = useState(false)
 
   // Form states
