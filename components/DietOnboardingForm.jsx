@@ -25,7 +25,8 @@ import {
   Zap,
   Star,
   Camera,
-  X
+  X,
+  Footprints
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
