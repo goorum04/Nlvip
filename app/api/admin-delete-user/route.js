@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -75,6 +76,7 @@ export async function POST(request) {
     return NextResponse.json({ success: true, message: 'Socio eliminado permanentemente' })
 
   } catch (error) {
+    Sentry.captureException(error, { tags: { endpoint: 'admin-delete-user' } })
     console.error('Error al intentar eliminar socio:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

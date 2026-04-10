@@ -1,16 +1,22 @@
 /**
  * Next.js Instrumentation Hook (runs once on server startup)
- * Ensures the Supabase Realtime configuration is applied automatically
- * every time the server starts, without any manual steps.
- *
- * Requires `experimental.instrumentationHook: true` in next.config.js
+ * - Inicializa Sentry para captura de errores en servidor
+ * - Configura Supabase Realtime automáticamente
  */
 export async function register() {
-  // Only run in the Node.js server runtime, not in the Edge runtime
+  // Inicializar Sentry según el runtime
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    await import('./sentry.server.config')
+  }
+  if (process.env.NEXT_RUNTIME === 'edge') {
+    await import('./sentry.edge.config')
+  }
+
+  // Solo ejecutar setup de Supabase en Node.js
   if (process.env.NEXT_RUNTIME !== 'nodejs') return
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !serviceRoleKey) return
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import * as Sentry from '@sentry/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
 
@@ -294,6 +295,7 @@ export async function POST(request) {
     })
 
   } catch (error) {
+    Sentry.captureException(error, { tags: { endpoint: 'admin-assistant' } })
     console.error('Admin Assistant Error:', error)
     return NextResponse.json(
       { error: error.message || 'Error del asistente' },

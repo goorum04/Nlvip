@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import * as Sentry from '@sentry/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
@@ -188,6 +189,7 @@ Genera exactamente ${days_per_week} días. Responde solo con el JSON.`
     })
 
   } catch (error) {
+    Sentry.captureException(error, { tags: { endpoint: 'generate-routine' } })
     console.error('Generate routine error:', error)
     let errorMessage = 'Error al generar la rutina'
     let statusCode = 500

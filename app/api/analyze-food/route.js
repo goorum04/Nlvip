@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import * as Sentry from '@sentry/nextjs'
 import { z } from 'zod'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 
@@ -104,6 +105,7 @@ Formato de respuesta (JSON):
     })
 
   } catch (error) {
+    Sentry.captureException(error, { tags: { endpoint: 'analyze-food' } })
     console.error('Food analysis error:', error)
     return NextResponse.json(
       { error: error.message || 'Error al analizar la imagen' },

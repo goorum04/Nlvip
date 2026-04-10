@@ -1,3 +1,5 @@
+const { withSentryConfig } = require('@sentry/nextjs')
+
 const nextConfig = {
   images: {
     unoptimized: true,
@@ -39,4 +41,22 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+  // URL de la organización y proyecto en Sentry (opcional, para source maps)
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+
+  // Subir source maps solo en producción
+  silent: true,
+
+  // Deshabilitar tunnel route (no necesario para este proyecto)
+  tunnelRoute: undefined,
+
+  // No añadir el banner de Sentry a los bundles del cliente
+  disableLogger: true,
+
+  // Evitar que Sentry bloquee el build si no hay DSN configurado
+  errorHandler: (err) => {
+    console.warn('[Sentry] Build warning:', err.message)
+  },
+})
