@@ -453,6 +453,10 @@ export default function FoodTracker({ userId }) {
           )}
         </Card>
       )}
+
+      <p className="text-center text-xs text-gray-600 pt-2">
+        Los valores nutricionales son aproximados y tienen carácter orientativo. No sustituyen el consejo de un profesional de la salud o nutrición.
+      </p>
     </div>
   )
 }

@@ -284,6 +284,10 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
                   <Save className="w-4 h-4 mr-2" /> Usar esta Rutina
                 </Button>
               </div>
+
+              <p className="text-center text-xs text-gray-600 pt-1">
+                Las rutinas generadas tienen carácter orientativo. Consulta con un profesional antes de iniciar cualquier programa de entrenamiento.
+              </p>
             </div>
           )}
         </div>
