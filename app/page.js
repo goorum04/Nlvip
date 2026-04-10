@@ -138,17 +138,9 @@ export default function App() {
         hasPremium = true
       }
 
-      // Create auth user with redirect URL
-      const redirectUrl = typeof window !== 'undefined' 
-        ? `${window.location.origin}/auth/callback`
-        : `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`
-      
-      const { data, error } = await supabase.auth.signUp({ 
-        email: regEmail, 
-        password: regPassword,
-        options: {
-          emailRedirectTo: redirectUrl
-        }
+      const { data, error } = await supabase.auth.signUp({
+        email: regEmail,
+        password: regPassword
       })
       if (error) throw error
 
@@ -311,10 +303,10 @@ export default function App() {
                 <DietOnboardingForm
                   requestId={onboardingData.requestId}
                   memberId={onboardingData.memberId}
-                  onComplete={() => {
+                  onComplete={async () => {
                     setOnboardingData(null)
-                    toast({ title: '¡Formulario enviado!', description: 'Tu entrenador preparará tu plan. Ya puedes iniciar sesión.' })
-                    setAuthMode('login')
+                    toast({ title: '¡Formulario enviado!', description: 'Tu entrenador preparará tu plan. Cargando tu panel...' })
+                    await checkUser()
                   }}
                 />
               </CardContent>
@@ -322,7 +314,7 @@ export default function App() {
 
             <p className="text-center mt-4">
               <button
-                onClick={() => { setOnboardingData(null); setAuthMode('login') }}
+                onClick={async () => { setOnboardingData(null); await checkUser() }}
                 className="text-gray-600 text-xs underline hover:text-gray-400 transition-colors"
               >
                 Completar más tarde
