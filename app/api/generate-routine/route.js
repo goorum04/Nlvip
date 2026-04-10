@@ -1,6 +1,23 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import * as Sentry from '@sentry/nextjs'
 import { createClient } from '@supabase/supabase-js'
+import { z } from 'zod'
+import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
+
+const criteriaSchema = z.object({
+  days_per_week: z.number().int().min(1).max(7),
+  goal: z.string().min(1),
+  level: z.enum(['principiante', 'intermedio', 'avanzado']),
+  equipment: z.array(z.string()).optional(),
+  session_duration_min: z.number().int().min(15).max(180).optional(),
+  notes: z.string().max(500).optional()
+})
+
+const bodySchema = z.object({
+  trainer_id: z.string().uuid().optional().nullable(),
+  criteria: criteriaSchema
+})
 
 const SYSTEM_PROMPT = `Eres un entrenador personal experto en diseño de rutinas de hipertrofia y fuerza.
 Tu tarea es generar una rutina de entrenamiento estructurada en formato JSON.
@@ -37,18 +54,24 @@ FORMATO JSON DE RESPUESTA:
 
 export async function POST(request) {
   try {
+    const limit = checkRateLimit(getIdentifier(request), 10, 60_000)
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: `Demasiadas peticiones. Inténtalo en ${Math.ceil(limit.resetInMs / 1000)}s` },
+        { status: 429 }
+      )
+    }
+
     const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
       return NextResponse.json({ error: 'OPENAI_API_KEY no configurada' }, { status: 500 })
     }
 
-    const body = await request.json()
-    const { trainer_id, criteria } = body
-
-    if (!criteria) {
-      return NextResponse.json({ error: 'Se requieren criterios para generar la rutina' }, { status: 400 })
+    const parsed = bodySchema.safeParse(await request.json())
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
     }
-
+    const { trainer_id, criteria } = parsed.data
     const { days_per_week, goal, level, equipment = [], session_duration_min = 60, notes = '' } = criteria
 
     // Cargar catálogo de ejercicios desde Supabase
@@ -166,6 +189,7 @@ Genera exactamente ${days_per_week} días. Responde solo con el JSON.`
     })
 
   } catch (error) {
+    Sentry.captureException(error, { tags: { endpoint: 'generate-routine' } })
     console.error('Generate routine error:', error)
     let errorMessage = 'Error al generar la rutina'
     let statusCode = 500

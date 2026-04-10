@@ -1,19 +1,46 @@
 import OpenAI from 'openai'
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
+import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 
 function getOpenAI() {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 }
 
+const schema = z.object({
+  originalDraft: z.string().min(1),
+  correction: z.string().min(1).max(1000),
+  macros: z.object({
+    calories: z.number().optional(),
+    protein_g: z.number().optional(),
+    carbs_g: z.number().optional(),
+    fat_g: z.number().optional()
+  }).optional(),
+  memberContext: z.object({
+    weight: z.number().optional(),
+    goal: z.string().optional(),
+    restrictions: z.string().optional(),
+    numMeals: z.number().optional()
+  }).optional()
+})
+
 // POST /api/diet-onboarding/refine-draft
 // Allows trainer to ask the AI to correct/refine the diet draft via chat
 export async function POST(req) {
   try {
-    const { originalDraft, correction, macros, memberContext } = await req.json()
-
-    if (!originalDraft || !correction) {
-      return NextResponse.json({ error: 'Faltan datos' }, { status: 400 })
+    const limit = checkRateLimit(getIdentifier(req), 20, 60_000)
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: `Demasiadas peticiones. Inténtalo en ${Math.ceil(limit.resetInMs / 1000)}s` },
+        { status: 429 }
+      )
     }
+
+    const parsed = schema.safeParse(await req.json())
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
+    }
+    const { originalDraft, correction, macros, memberContext } = parsed.data
 
     const { weight, goal, restrictions, numMeals } = memberContext || {}
 

@@ -3,7 +3,6 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { DEMO_ACCOUNTS } from '@/lib/demo-credentials'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,6 +15,7 @@ import AdminDashboard from '@/components/AdminDashboard'
 import TrainerDashboard from '@/components/TrainerDashboard'
 import MemberDashboard from '@/components/MemberDashboard'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { DietOnboardingForm } from '@/components/DietOnboardingForm'
 
 export default function App() {
   const [user, setUser] = useState(null)
@@ -31,6 +31,7 @@ export default function App() {
   const [regName, setRegName] = useState('')
   const [regSex, setRegSex] = useState('female')
   const [invitationCode, setInvitationCode] = useState('')
+  const [onboardingData, setOnboardingData] = useState(null)
 
   useEffect(() => {
     checkUser()
@@ -102,27 +103,6 @@ export default function App() {
     }
   }
 
-  // Demo login - available for testing
-  const handleDemoLogin = async (role) => {
-    const account = DEMO_ACCOUNTS[role]
-    if (!account) return
-    setLoading(true)
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: account.email,
-        password: account.password
-      })
-      if (error) throw error
-      setUser(data.user)
-      await loadProfile(data.user.id)
-      toast({ title: `¡Bienvenido ${account.name}!` })
-    } catch (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleRegister = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -158,17 +138,9 @@ export default function App() {
         hasPremium = true
       }
 
-      // Create auth user with redirect URL
-      const redirectUrl = typeof window !== 'undefined' 
-        ? `${window.location.origin}/auth/callback`
-        : `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`
-      
-      const { data, error } = await supabase.auth.signUp({ 
-        email: regEmail, 
-        password: regPassword,
-        options: {
-          emailRedirectTo: redirectUrl
-        }
+      const { data, error } = await supabase.auth.signUp({
+        email: regEmail,
+        password: regPassword
       })
       if (error) throw error
 
@@ -211,13 +183,34 @@ export default function App() {
               member_id: data.user.id
             }])
           }
+
+          // Create onboarding request and show the form immediately
+          try {
+            const onbRes = await fetch('/api/diet-onboarding/request', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ memberId: data.user.id, requestedBy: data.user.id })
+            })
+            const onbResult = await onbRes.json()
+            if (onbResult.requestId) {
+              setOnboardingData({ requestId: onbResult.requestId, memberId: data.user.id })
+              setRegEmail('')
+              setRegPassword('')
+              setRegName('')
+              setInvitationCode('')
+              setAuthMode('onboarding')
+              return
+            }
+          } catch {
+            // If request creation fails, fall through to normal login flow
+          }
         }
       }
 
-      toast({ 
-        title: '¡Cuenta creada!', 
-        description: hasPremium 
-          ? 'Tienes acceso completo. Ya puedes iniciar sesión.' 
+      toast({
+        title: '¡Cuenta creada!',
+        description: hasPremium
+          ? 'Tienes acceso completo. Ya puedes iniciar sesión.'
           : 'Cuenta básica creada. Usa un código para acceso premium.'
       })
       setAuthMode('login')
@@ -278,6 +271,63 @@ export default function App() {
       <ErrorBoundary>
         <MemberDashboard user={user} profile={profile} onLogout={handleLogout} />
       </ErrorBoundary>
+    )
+  }
+
+  // Post-registration onboarding screen
+  if (authMode === 'onboarding' && onboardingData) {
+    return (
+      <div className="min-h-screen bg-[#030303] relative overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[120px] animate-pulse" style={{animationDelay: '1s'}} />
+        </div>
+        <div className="relative z-10 min-h-screen py-8 px-4">
+          <div className="w-full max-w-md mx-auto">
+            <div className="text-center mb-6">
+              <img
+                src="/logo-nl-vip.jpg"
+                alt="NL VIP TEAM"
+                className="w-16 h-16 object-contain rounded-xl shadow-lg shadow-violet-500/30 mx-auto"
+              />
+            </div>
+
+            <Card className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 shadow-2xl rounded-3xl overflow-hidden">
+              <CardContent className="p-6">
+                <div className="mb-5">
+                  <h2 className="text-white text-lg font-bold">¡Ya eres parte del club! 🎉</h2>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Rellena tu perfil nutricional para que tu entrenador pueda prepararte un plan a medida. Solo tarda unos minutos.
+                  </p>
+                </div>
+                <DietOnboardingForm
+                  requestId={onboardingData.requestId}
+                  memberId={onboardingData.memberId}
+                  onComplete={async () => {
+                    setOnboardingData(null)
+                    toast({ title: '¡Formulario enviado!', description: 'Tu entrenador preparará tu plan. Cargando tu panel...' })
+                    await checkUser()
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            <p className="text-center mt-4">
+              <button
+                onClick={async () => { setOnboardingData(null); await checkUser() }}
+                className="text-gray-600 text-xs underline hover:text-gray-400 transition-colors"
+              >
+                Completar más tarde
+              </button>
+            </p>
+
+            <p className="text-center text-gray-600 text-xs mt-3">
+              © 2025 NL VIP Club. Premium Fitness Experience.
+            </p>
+          </div>
+        </div>
+        <Toaster />
+      </div>
     )
   }
 

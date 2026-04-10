@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
@@ -13,7 +14,10 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 
 export async function POST(request) {
   try {
-    const { userId, adminToken } = await request.json()
+    const authHeader = request.headers.get('Authorization')
+    const adminToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+
+    const { userId } = await request.json()
 
     if (!userId || !adminToken) {
       return NextResponse.json({ error: 'Faltan parámetros requeridos' }, { status: 400 })
@@ -72,6 +76,7 @@ export async function POST(request) {
     return NextResponse.json({ success: true, message: 'Socio eliminado permanentemente' })
 
   } catch (error) {
+    Sentry.captureException(error, { tags: { endpoint: 'admin-delete-user' } })
     console.error('Error al intentar eliminar socio:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

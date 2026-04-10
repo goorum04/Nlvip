@@ -215,19 +215,19 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
   const loadChartData = async () => {
     try {
-      // Load workout checkins for charts
-      const { data: checkins } = await supabase
-        .from('workout_checkins')
-        .select('*')
-        .eq('member_id', user.id)
-        .order('checked_in_at', { ascending: true })
-
-      // Load progress records for weight chart
-      const { data: progressData } = await supabase
-        .from('progress_records')
-        .select('*')
-        .eq('member_id', user.id)
-        .order('date', { ascending: true })
+      // Ambas queries son independientes — se lanzan en paralelo
+      const [{ data: checkins }, { data: progressData }] = await Promise.all([
+        supabase
+          .from('workout_checkins')
+          .select('*')
+          .eq('member_id', user.id)
+          .order('checked_in_at', { ascending: true }),
+        supabase
+          .from('progress_records')
+          .select('*')
+          .eq('member_id', user.id)
+          .order('date', { ascending: true })
+      ])
 
       // Transform weight data
       const weightData = (progressData || []).map(p => ({
@@ -334,19 +334,18 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const loadMyWorkout = async () => {
     const { data } = await supabase
       .from('member_workouts')
-      .select(`*, workout:workout_templates!member_workouts_workout_template_id_fkey(id, name, description)`)
+      .select(`*, workout:workout_templates!member_workouts_workout_template_id_fkey(id, name, description, workout_videos(*))`)
       .eq('member_id', user.id)
       .single()
-    
+
     if (data) {
       setMyWorkout(data)
-      // Load videos for this workout
-      const { data: videos } = await supabase
-        .from('workout_videos')
-        .select('*')
-        .eq('workout_template_id', data.workout.id)
-        .order('created_at')
-      if (videos) setWorkoutVideos(videos)
+      if (data.workout?.workout_videos) {
+        const sorted = [...data.workout.workout_videos].sort(
+          (a, b) => new Date(a.created_at) - new Date(b.created_at)
+        )
+        setWorkoutVideos(sorted)
+      }
     }
   }
 

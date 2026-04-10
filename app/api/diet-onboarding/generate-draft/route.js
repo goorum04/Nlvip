@@ -1,7 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
+import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 import { DIET_TEMPLATE } from '@/lib/dietTemplate'
+
+const schema = z.object({
+  requestId: z.string().uuid(),
+  memberId: z.string().uuid(),
+  responses: z.record(z.string(), z.unknown())
+})
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -16,11 +24,19 @@ function getOpenAI() {
 // Llama a OpenAI y genera el borrador de la dieta, pero no lo guarda en BBDD.
 export async function POST(req) {
   try {
-    const { requestId, memberId, responses } = await req.json()
-
-    if (!requestId || !memberId || !responses) {
-      return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 })
+    const limit = checkRateLimit(getIdentifier(req), 10, 60_000)
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: `Demasiadas peticiones. Inténtalo en ${Math.ceil(limit.resetInMs / 1000)}s` },
+        { status: 429 }
+      )
     }
+
+    const parsed = schema.safeParse(await req.json())
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
+    }
+    const { requestId, memberId, responses } = parsed.data
 
     // 1. Get member profile for macros calculation
     const { data: profile } = await supabase

@@ -1,17 +1,34 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import * as Sentry from '@sentry/nextjs'
+import { z } from 'zod'
+import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_build'
+  apiKey: process.env.OPENAI_API_KEY
 })
+
+const schema = z.object({
+  imageBase64: z.string().max(5_000_000, 'Imagen demasiado grande (máx 5MB en base64)').optional().nullable(),
+  imageUrl: z.string().url('URL de imagen inválida').optional().nullable()
+}).refine(d => d.imageBase64 || d.imageUrl, { message: 'Se requiere imageBase64 o imageUrl' })
 
 export async function POST(request) {
   try {
-    const { imageBase64, imageUrl } = await request.json()
-
-    if (!imageBase64 && !imageUrl) {
-      return NextResponse.json({ error: 'Se requiere una imagen' }, { status: 400 })
+    const limit = checkRateLimit(getIdentifier(request), 15, 60_000)
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: `Demasiadas peticiones. Inténtalo en ${Math.ceil(limit.resetInMs / 1000)}s` },
+        { status: 429 }
+      )
     }
+
+    const body = await request.json()
+    const parsed = schema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
+    }
+    const { imageBase64, imageUrl } = parsed.data
 
     // Prepare the image for the API
     const imageContent = imageBase64
@@ -88,6 +105,7 @@ Formato de respuesta (JSON):
     })
 
   } catch (error) {
+    Sentry.captureException(error, { tags: { endpoint: 'analyze-food' } })
     console.error('Food analysis error:', error)
     return NextResponse.json(
       { error: error.message || 'Error al analizar la imagen' },

@@ -1,3 +1,5 @@
+const { withSentryConfig } = require('@sentry/nextjs')
+
 const nextConfig = {
   images: {
     unoptimized: true,
@@ -26,15 +28,35 @@ const nextConfig = {
       {
         source: "/(.*)",
         headers: [
-          { key: "X-Frame-Options", value: "ALLOWALL" },
-          { key: "Content-Security-Policy", value: "frame-ancestors *;" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self';" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Access-Control-Allow-Origin", value: process.env.CORS_ORIGINS || "*" },
           { key: "Access-Control-Allow-Methods", value: "GET, POST, PUT, DELETE, OPTIONS" },
-          { key: "Access-Control-Allow-Headers", value: "*" },
+          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
         ],
       },
     ];
   },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+  // URL de la organización y proyecto en Sentry (opcional, para source maps)
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+
+  // Subir source maps solo en producción
+  silent: true,
+
+  // Deshabilitar tunnel route (no necesario para este proyecto)
+  tunnelRoute: undefined,
+
+  // No añadir el banner de Sentry a los bundles del cliente
+  disableLogger: true,
+
+  // Evitar que Sentry bloquee el build si no hay DSN configurado
+  errorHandler: (err) => {
+    console.warn('[Sentry] Build warning:', err.message)
+  },
+})
