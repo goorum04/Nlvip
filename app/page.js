@@ -101,10 +101,16 @@ export default function App() {
         // Auto-fix for missing fields if they exist in auth metadata
         const { data: { user: actualUser } } = await supabase.auth.getUser()
         const metadata = actualUser?.user_metadata || {}
-        if (!result.data.sex && metadata.sex) {
-          console.log('Sincronizando sexo desde metadatos...')
-          const sex = metadata.sex
-          const updates = { sex, cycle_enabled: sex === 'female', life_stage: sex === 'female' ? 'cycle' : null }
+        if ((!result.data.sex && metadata.sex) || (result.data.has_premium === false && metadata.has_premium === true)) {
+          console.log('Sincronizando campos desde metadatos (sex/premium)...')
+          const sex = metadata.sex || result.data.sex
+          const hasPremium = metadata.has_premium === true || result.data.has_premium === true
+          const updates = { 
+            sex, 
+            has_premium: hasPremium,
+            cycle_enabled: sex === 'female', 
+            life_stage: (sex === 'female' && !result.data.life_stage) ? 'cycle' : result.data.life_stage 
+          }
           fetch('/api/profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -121,6 +127,7 @@ export default function App() {
       if (authUser) {
         const metadata = authUser.user_metadata || {}
         const currentEmail = (authUser.email || '').toLowerCase()
+        const metaPremium = metadata.has_premium === true
         
         const baseProfile = {
           id: authUser.id,
@@ -128,7 +135,7 @@ export default function App() {
           name: metadata.full_name || metadata.name || currentEmail.split('@')[0],
           role: metadata.role || 'member',
           sex: metadata.sex || (currentEmail.includes('maria') ? 'female' : (regSex || null)),
-          has_premium: false
+          has_premium: metaPremium
         }
 
         // Check if it's a demo account to assign correct role
@@ -230,7 +237,8 @@ export default function App() {
           data: {
             name: regName,
             sex: regSex || null,
-            role: 'member'
+            role: 'member',
+            has_premium: hasPremium
           }
         }
       })
@@ -265,18 +273,26 @@ export default function App() {
             .single()
           
           if (currentCode) {
+            console.log(`[handleRegister] Consuming code ${invitationCode} for user ${data.user.id}`)
             await supabase
               .from('invitation_codes')
-              .update({ uses_count: (currentCode.uses_count || 0) + 1 })
+              .update({ 
+                uses_count: (currentCode.uses_count || 0) + 1,
+                used_by: data.user.id
+              })
               .eq('code', invitationCode.toUpperCase())
           }
 
           if (trainerId) {
+            console.log(`[handleRegister] Assigning trainer ${trainerId}`)
             await supabase.from('trainer_members').insert([{
               trainer_id: trainerId,
               member_id: data.user.id
             }])
           }
+
+          // CRITICAL: Refresh profile state now that DB is updated
+          await loadProfile(data.user.id)
 
           // Create onboarding request and show the form immediately
           try {
@@ -352,27 +368,6 @@ export default function App() {
     )
   }
 
-  // Dashboard routing
-  if (user && profile) {
-    if (profile.role === 'admin') {
-      return (
-        <ErrorBoundary>
-          <AdminDashboard user={user} profile={profile} onLogout={handleLogout} />
-        </ErrorBoundary>
-      )
-    }
-    if (profile.role === 'trainer') return (
-      <ErrorBoundary>
-        <TrainerDashboard user={user} profile={profile} onLogout={handleLogout} />
-      </ErrorBoundary>
-    )
-    if (profile.role === 'member') return (
-      <ErrorBoundary>
-        <MemberDashboard user={user} profile={profile} onLogout={handleLogout} />
-      </ErrorBoundary>
-    )
-  }
-
   // Post-registration onboarding screen
   if (authMode === 'onboarding' && onboardingData) {
     return (
@@ -404,6 +399,7 @@ export default function App() {
                   memberId={onboardingData.memberId}
                   onComplete={async () => {
                     setOnboardingData(null)
+                    setAuthMode('login')
                     toast({ title: '¡Formulario enviado!', description: 'Tu entrenador preparará tu plan. Cargando tu panel...' })
                     await checkUser()
                   }}
@@ -413,10 +409,15 @@ export default function App() {
 
             <p className="text-center mt-4">
               <button
-                onClick={async () => { setOnboardingData(null); await checkUser() }}
+                onClick={async () => { 
+                  setOnboardingData(null)
+                  setAuthMode('login')
+                  await checkUser() 
+                }}
                 className="text-gray-600 text-xs underline hover:text-gray-400 transition-colors"
+                id="skip-onboarding-btn"
               >
-                Completar más tarde
+                Rellenar más tarde
               </button>
             </p>
 
@@ -427,6 +428,27 @@ export default function App() {
         </div>
         <Toaster />
       </div>
+    )
+  }
+
+  // Dashboard routing
+  if (user && profile) {
+    if (profile.role === 'admin') {
+      return (
+        <ErrorBoundary>
+          <AdminDashboard user={user} profile={profile} onLogout={handleLogout} />
+        </ErrorBoundary>
+      )
+    }
+    if (profile.role === 'trainer') return (
+      <ErrorBoundary>
+        <TrainerDashboard user={user} profile={profile} onLogout={handleLogout} />
+      </ErrorBoundary>
+    )
+    if (profile.role === 'member') return (
+      <ErrorBoundary>
+        <MemberDashboard user={user} profile={profile} onLogout={handleLogout} />
+      </ErrorBoundary>
     )
   }
 

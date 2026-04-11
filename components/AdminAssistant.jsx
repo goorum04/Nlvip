@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { 
@@ -422,9 +423,13 @@ export default function AdminAssistant({ userId }) {
     setPendingToolCalls([])
 
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const response = await fetch('/api/admin-assistant', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({
           messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content }))
         })
@@ -473,9 +478,13 @@ export default function AdminAssistant({ userId }) {
         args: tc.function.arguments
       }))
 
+      const { data: { session } } = await supabase.auth.getSession()
       const response = await fetch('/api/admin-assistant', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({ executeTools: true, toolCallsToExecute: toolsToExecute })
       })
 

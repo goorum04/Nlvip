@@ -539,12 +539,14 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       // Llamar al endpoint seguro
       const response = await fetch('/api/create-trainer', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({
           email: newTrainerEmail,
           password: newTrainerPassword,
-          name: newTrainerName,
-          adminToken: session?.access_token
+          name: newTrainerName
         })
       })
 

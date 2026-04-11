@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { createClient } from '@supabase/supabase-js'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
+import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_build'
@@ -86,7 +88,42 @@ Responde siempre de forma amigable y profesional. Si algo falla, explica el prob
 
 export async function POST(request) {
   try {
+    // 1. Rate Limiting
+    const identifier = getIdentifier(request)
+    const { success: limitOk } = await checkRateLimit(identifier, 30, 60000) // 30 reqs/min
+    if (!limitOk) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
     const { messages, executeTools = false, toolCallsToExecute = [] } = await request.json()
+
+    // 2. Authorization Check
+    const authHeader = request.headers.get('Authorization')
+    const adminToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+
+    if (!adminToken) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(adminToken)
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+    }
+
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['admin', 'trainer'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Permisos insuficientes' }, { status: 403 })
+    }
 
     // Si es una petición de ejecución de tools ya confirmados
     if (executeTools && toolCallsToExecute.length > 0) {

@@ -160,9 +160,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     }
   }, [])
 
-  useEffect(() => {
-    if (profile) setLocalProfile(profile)
-  }, [profile])
 
   const loadData = async () => {
     try {
@@ -357,7 +354,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .from('member_workouts')
       .select(`*, workout:workout_templates!member_workouts_workout_template_id_fkey(id, name, description, workout_videos(*))`)
       .eq('member_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (data) {
       setMyWorkout(data)
@@ -375,7 +372,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .from('member_diets')
       .select(`*, diet:diet_templates!member_diets_diet_template_id_fkey(id, name, calories, protein_g, carbs_g, fat_g, content)`)
       .eq('member_id', user.id)
-      .single()
+      .maybeSingle()
     if (data) setMyDiet(data)
   }
 
