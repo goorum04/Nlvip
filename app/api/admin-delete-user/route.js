@@ -74,7 +74,9 @@ export async function POST(request) {
       supabaseAdmin.from('progress_records').delete().eq('member_id', userId),
       supabaseAdmin.from('feed_posts').delete().eq('author_id', userId),
       supabaseAdmin.from('challenge_participants').delete().eq('member_id', userId),
+      supabaseAdmin.from('challenges').delete().eq('created_by', userId),
       supabaseAdmin.from('diet_onboarding_requests').delete().eq('member_id', userId),
+      supabaseAdmin.from('diet_onboarding_requests').delete().eq('requested_by', userId),
       supabaseAdmin.from('daily_activity').delete().eq('member_id', userId),
       supabaseAdmin.from('macro_goals').delete().eq('member_id', userId),
       supabaseAdmin.from('macro_goal_history').delete().eq('member_id', userId),
@@ -91,24 +93,50 @@ export async function POST(request) {
     ])
 
     // Fase 3: Conversaciones y mensajes (el bloqueador principal del bug)
-    const { data: userConversations } = await supabaseAdmin
+    // Primero recopilar IDs de cualquier conversación donde el usuario participe o haya creado
+    const { data: partConvs } = await supabaseAdmin
       .from('conversation_participants')
       .select('conversation_id')
       .eq('user_id', userId)
-    
-    if (userConversations?.length > 0) {
-      const convIds = userConversations.map(c => c.conversation_id)
+
+    const { data: createdConvs } = await supabaseAdmin
+      .from('conversations')
+      .select('id')
+      .eq('created_by', userId)
+
+    const uniqueConvIds = new Set([
+      ...(partConvs?.map(c => c.conversation_id) || []),
+      ...(createdConvs?.map(c => c.id) || [])
+    ])
+
+    if (uniqueConvIds.size > 0) {
+      const convIds = Array.from(uniqueConvIds)
+      
+      // Limpiar IA Asistente
+      await supabaseAdmin.from('admin_assistant_action_logs').delete().in('conversation_id', convIds)
+      await supabaseAdmin.from('admin_assistant_messages').delete().in('conversation_id', convIds)
+
+      // Borrar mensajes hijos
       await supabaseAdmin.from('messages').delete().in('conversation_id', convIds)
+      
+      // Borrar participantes hijos
       await supabaseAdmin.from('conversation_participants').delete().in('conversation_id', convIds)
+
+      // Borrar la conversación en sí
       await supabaseAdmin.from('conversations').delete().in('id', convIds)
     }
-    // También limpiar conversaciones creadas por el usuario (si no se cubrieron arriba)
-    await supabaseAdmin.from('conversations').delete().eq('created_by', userId)
 
-    // Fase 4: Relaciones trainer_members y invitation_codes
+    // Limpieza agresiva adicional de cualquier mensaje enviado o IA vinculada
+    await supabaseAdmin.from('messages').delete().eq('sender_id', userId)
+    await supabaseAdmin.from('admin_assistant_action_logs').delete().eq('admin_id', userId)
+    await supabaseAdmin.from('admin_assistant_conversations').delete().eq('admin_id', userId)
+
+    // Fase 4: Relaciones trainer_members e invitation_codes
     await Promise.all([
       supabaseAdmin.from('trainer_members').delete().eq('member_id', userId),
+      supabaseAdmin.from('trainer_members').delete().eq('trainer_id', userId),
       supabaseAdmin.from('invitation_codes').update({ used_by: null }).eq('used_by', userId),
+      supabaseAdmin.from('profiles').update({ trainer_id: null }).eq('trainer_id', userId),
     ])
 
     // 5. Eliminar el usuario de Supabase Auth (esto eliminará automáticamente Profiles si existe el CASCADE trigger)
