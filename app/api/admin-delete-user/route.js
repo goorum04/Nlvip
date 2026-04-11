@@ -57,14 +57,58 @@ export async function POST(request) {
     }
 
     // 4. Limpiar datos relacionados de la API (para evitar romper constraints)
+    // Fase 1: Tablas que dependen de otras tablas dependientes (hijos de hijos)
+    await Promise.all([
+      supabaseAdmin.from('feed_comments').delete().eq('commenter_id', userId),
+      supabaseAdmin.from('feed_likes').delete().eq('user_id', userId),
+      supabaseAdmin.from('feed_reports').delete().eq('reporter_id', userId),
+      supabaseAdmin.from('notice_reads').delete().eq('member_id', userId),
+    ])
+
+    // Fase 2: Tablas principales que referencian profiles
     await Promise.all([
       supabaseAdmin.from('member_workouts').delete().eq('member_id', userId),
       supabaseAdmin.from('member_diets').delete().eq('member_id', userId),
       supabaseAdmin.from('food_logs').delete().eq('member_id', userId),
       supabaseAdmin.from('progress_photos').delete().eq('member_id', userId),
+      supabaseAdmin.from('progress_records').delete().eq('member_id', userId),
       supabaseAdmin.from('feed_posts').delete().eq('author_id', userId),
       supabaseAdmin.from('challenge_participants').delete().eq('member_id', userId),
-      supabaseAdmin.from('diet_onboarding_requests').delete().eq('member_id', userId)
+      supabaseAdmin.from('diet_onboarding_requests').delete().eq('member_id', userId),
+      supabaseAdmin.from('daily_activity').delete().eq('member_id', userId),
+      supabaseAdmin.from('macro_goals').delete().eq('member_id', userId),
+      supabaseAdmin.from('macro_goal_history').delete().eq('member_id', userId),
+      supabaseAdmin.from('member_goals').delete().eq('member_id', userId),
+      supabaseAdmin.from('member_prs').delete().eq('member_id', userId),
+      supabaseAdmin.from('member_badges').delete().eq('member_id', userId),
+      supabaseAdmin.from('user_badges').delete().eq('member_id', userId),
+      supabaseAdmin.from('member_recipe_plans').delete().eq('member_id', userId),
+      supabaseAdmin.from('workout_logs').delete().eq('member_id', userId),
+      supabaseAdmin.from('workout_checkins').delete().eq('member_id', userId),
+      supabaseAdmin.from('cycle_symptoms').delete().eq('user_id', userId),
+      supabaseAdmin.from('lactation_sessions').delete().eq('user_id', userId),
+      supabaseAdmin.from('trainer_notices').delete().eq('member_id', userId),
+    ])
+
+    // Fase 3: Conversaciones y mensajes (el bloqueador principal del bug)
+    const { data: userConversations } = await supabaseAdmin
+      .from('conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', userId)
+    
+    if (userConversations?.length > 0) {
+      const convIds = userConversations.map(c => c.conversation_id)
+      await supabaseAdmin.from('messages').delete().in('conversation_id', convIds)
+      await supabaseAdmin.from('conversation_participants').delete().in('conversation_id', convIds)
+      await supabaseAdmin.from('conversations').delete().in('id', convIds)
+    }
+    // También limpiar conversaciones creadas por el usuario (si no se cubrieron arriba)
+    await supabaseAdmin.from('conversations').delete().eq('created_by', userId)
+
+    // Fase 4: Relaciones trainer_members y invitation_codes
+    await Promise.all([
+      supabaseAdmin.from('trainer_members').delete().eq('member_id', userId),
+      supabaseAdmin.from('invitation_codes').update({ used_by: null }).eq('used_by', userId),
     ])
 
     // 5. Eliminar el usuario de Supabase Auth (esto eliminará automáticamente Profiles si existe el CASCADE trigger)
