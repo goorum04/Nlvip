@@ -21,6 +21,7 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(false) // New state to track profile fetch
   const [authMode, setAuthMode] = useState('login')
   const { toast } = useToast()
 
@@ -34,7 +35,24 @@ export default function App() {
   const [onboardingData, setOnboardingData] = useState(null)
 
   useEffect(() => {
+    console.log('App Mounted - Checking session...')
     checkUser()
+
+    // Listen for auth changes - crucial for mobile session persistence
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth State Changed:', event, session?.user?.id)
+      if (session?.user) {
+        setUser(session.user)
+        if (!profile) {
+          await loadProfile(session.user.id)
+        }
+      } else {
+        setUser(null)
+        setProfile(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const checkUser = async () => {
@@ -52,7 +70,10 @@ export default function App() {
   }
 
   const loadProfile = async (userId) => {
+    console.log(`[loadProfile] Starting for ID: ${userId}`)
+    setProfileLoading(true)
     try {
+<<<<<<< HEAD
       console.log('Intentando cargar perfil para:', userId)
 
       // Timeout de 3 segundos para evitar bloqueos por recursión RLS
@@ -106,6 +127,32 @@ export default function App() {
 
         if (result.error && (result.error.code === 'PGRST116' || result.error.message?.includes('0 rows'))) {
           // Si no existe, crear en DB
+=======
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
+      
+      if (error) {
+        console.error('[loadProfile] Database error:', error.message, 'Code:', error.code)
+        
+        if (error.code === 'PGRST116' || error.message.includes('0 rows')) {
+          console.log('[loadProfile] Profile missing, triggering creation fallback...')
+          // Use provided userId instead of fetching again from auth
+          const newProfile = {
+            id: userId,
+            email: (await supabase.auth.getUser()).data.user?.email || '',
+            name: 'Usuario Nuevo',
+            role: 'member',
+            has_premium: false
+          }
+          
+          // Check if it's a demo account to assign correct role
+          const demoAccount = Object.values(DEMO_ACCOUNTS).find(acc => acc.email === newProfile.email)
+          if (demoAccount) {
+            newProfile.name = demoAccount.name
+            newProfile.role = demoAccount.role
+            console.log(`[loadProfile] Identified Demo Account: ${demoAccount.role}`)
+          }
+
+>>>>>>> 2dcf9be (fix: resolve login redirection lag and add robust auth state management for mobile)
           const { data: createdProfile, error: createError } = await supabase
             .from('profiles')
             .upsert([baseProfile], { onConflict: 'id' })
@@ -113,7 +160,9 @@ export default function App() {
             .single()
           
           if (createdProfile) {
+            console.log('[loadProfile] Fallback profile created successfully')
             setProfile(createdProfile)
+<<<<<<< HEAD
             return createdProfile
           }
         }
@@ -126,9 +175,20 @@ export default function App() {
           cycle_enabled: baseProfile.sex === 'female' || currentEmail.includes('maria'),
           is_fallback: true
         })
+=======
+          } else {
+            console.error('[loadProfile] Fallback creation failed:', createError)
+          }
+        }
+      } else if (data) {
+        console.log(`[loadProfile] Profile found. Role: ${data.role}`)
+        setProfile(data)
+>>>>>>> 2dcf9be (fix: resolve login redirection lag and add robust auth state management for mobile)
       }
     } catch (err) {
-      console.error('Profile loading error:', err)
+      console.error('[loadProfile] Unexpected error:', err)
+    } finally {
+      setProfileLoading(false)
     }
   }
 
@@ -287,21 +347,26 @@ export default function App() {
   }
 
   // Loading screen
-  if (loading) {
+  if (loading || profileLoading) {
     return (
-      <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6">
-        <div className="text-center max-w-sm">
-          <div className="flex justify-center mb-6">
+      <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6 text-center">
+        <div className="max-w-sm space-y-6">
+          <div className="flex justify-center relative">
+            <div className="absolute inset-0 bg-violet-500/20 blur-3xl rounded-full" />
             <img 
               src="/logo-nl-vip.jpg" 
               alt="NL VIP TEAM" 
-              className="w-32 h-32 object-contain rounded-2xl shadow-2xl shadow-violet-500/30 animate-pulse"
+              className="w-32 h-32 object-contain rounded-2xl shadow-2xl shadow-violet-500/30 animate-pulse relative z-10"
             />
           </div>
-          <p className="text-gray-300 text-lg font-medium leading-relaxed">
-            No más empezar de cero.<br/>
-            <span className="text-violet-400">Esta vez hay estrategia, guía y resultados reales.</span>
-          </p>
+          <div className="space-y-2">
+            <p className="text-gray-300 text-lg font-medium">
+              {profileLoading ? 'Preparando tu experiencia...' : 'Cargando sesión...'}
+            </p>
+            <p className="text-violet-400 text-sm animate-pulse">
+              No más empezar de cero.
+            </p>
+          </div>
         </div>
       </div>
     )
