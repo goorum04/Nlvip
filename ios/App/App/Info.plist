@@ -49,5 +49,7 @@
 	<string>NL VIP necesita acceso al micrófono para que el administrador del gimnasio pueda grabar mensajes de audio en el chat y usar el reconocimiento de voz del asistente IA de gestión.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>NL VIP lee tus pasos diarios de Apple Health para mostrar tu actividad y ayudarte a cumplir tus objetivos de fitness.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>NL VIP puede registrar tus entrenamientos en Apple Health para llevar un seguimiento completo de tu actividad física.</string>
 </dict>
 </plist>
