@@ -28,10 +28,10 @@ const schema = z.object({
 // Allows trainer to ask the AI to correct/refine the diet draft via chat
 export async function POST(req) {
   try {
-    const limit = checkRateLimit(getIdentifier(req), 20, 60_000)
-    if (!limit.allowed) {
+    const limit = await checkRateLimit(getIdentifier(req), 20, 60_000)
+    if (!limit.success) {
       return NextResponse.json(
-        { error: `Demasiadas peticiones. Inténtalo en ${Math.ceil(limit.resetInMs / 1000)}s` },
+        { error: `Demasiadas peticiones. Inténtalo de nuevo más tarde.` },
         { status: 429 }
       )
     }

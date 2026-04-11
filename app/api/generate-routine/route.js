@@ -54,10 +54,10 @@ FORMATO JSON DE RESPUESTA:
 
 export async function POST(request) {
   try {
-    const limit = checkRateLimit(getIdentifier(request), 10, 60_000)
-    if (!limit.allowed) {
+    const limit = await checkRateLimit(getIdentifier(request), 10, 60_000)
+    if (!limit.success) {
       return NextResponse.json(
-        { error: `Demasiadas peticiones. Inténtalo en ${Math.ceil(limit.resetInMs / 1000)}s` },
+        { error: `Demasiadas peticiones. Inténtalo de nuevo más tarde.` },
         { status: 429 }
       )
     }

@@ -24,10 +24,10 @@ function getOpenAI() {
 // Llama a OpenAI y genera el borrador de la dieta, pero no lo guarda en BBDD.
 export async function POST(req) {
   try {
-    const limit = checkRateLimit(getIdentifier(req), 10, 60_000)
-    if (!limit.allowed) {
+    const limit = await checkRateLimit(getIdentifier(req), 10, 60_000)
+    if (!limit.success) {
       return NextResponse.json(
-        { error: `Demasiadas peticiones. Inténtalo en ${Math.ceil(limit.resetInMs / 1000)}s` },
+        { error: `Demasiadas peticiones. Inténtalo de nuevo más tarde.` },
         { status: 429 }
       )
     }
