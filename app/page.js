@@ -17,6 +17,13 @@ import MemberDashboard from '@/components/MemberDashboard'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { DietOnboardingForm } from '@/components/DietOnboardingForm'
 
+const DEMO_ACCOUNTS = {
+  ADMIN: { email: 'admin@demo.com', role: 'admin', name: 'Administrador Demo' },
+  TRAINER: { email: 'entrenador@demo.com', role: 'trainer', name: 'Entrenador Demo' },
+  MEMBER: { email: 'socio@demo.com', role: 'member', name: 'Socio Demo' },
+  MARIA: { email: 'maria@demo.com', role: 'member', name: 'Maria Demo' }
+}
+
 export default function App() {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -73,7 +80,6 @@ export default function App() {
     console.log(`[loadProfile] Starting for ID: ${userId}`)
     setProfileLoading(true)
     try {
-<<<<<<< HEAD
       console.log('Intentando cargar perfil para:', userId)
 
       // Timeout de 3 segundos para evitar bloqueos por recursión RLS
@@ -91,9 +97,9 @@ export default function App() {
       }
 
       if (result.data) {
-        console.log('Perfil cargado desde DB')
+        console.log('Perfil cargado desde DB. Role:', result.data.role)
         // Auto-fix for missing fields if they exist in auth metadata
-        const actualUser = authUser || (await supabase.auth.getUser()).data.user
+        const { data: { user: actualUser } } = await supabase.auth.getUser()
         const metadata = actualUser?.user_metadata || {}
         if (!result.data.sex && metadata.sex) {
           console.log('Sincronizando sexo desde metadatos...')
@@ -111,48 +117,30 @@ export default function App() {
       }
 
       // PERMANENT FIX: Si el perfil falta o dio error, asegurar fallback robusto con upsert.
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const metadata = user.user_metadata || {}
-        const currentEmail = (user.email || '').toLowerCase()
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (authUser) {
+        const metadata = authUser.user_metadata || {}
+        const currentEmail = (authUser.email || '').toLowerCase()
         
         const baseProfile = {
-          id: user.id,
+          id: authUser.id,
           email: currentEmail,
           name: metadata.full_name || metadata.name || currentEmail.split('@')[0],
           role: metadata.role || 'member',
-          sex: metadata.sex || (currentEmail.includes('maria') ? 'female' : null),
+          sex: metadata.sex || (currentEmail.includes('maria') ? 'female' : (regSex || null)),
           has_premium: false
         }
 
-        if (result.error && (result.error.code === 'PGRST116' || result.error.message?.includes('0 rows'))) {
-          // Si no existe, crear en DB
-=======
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
-      
-      if (error) {
-        console.error('[loadProfile] Database error:', error.message, 'Code:', error.code)
-        
-        if (error.code === 'PGRST116' || error.message.includes('0 rows')) {
-          console.log('[loadProfile] Profile missing, triggering creation fallback...')
-          // Use provided userId instead of fetching again from auth
-          const newProfile = {
-            id: userId,
-            email: (await supabase.auth.getUser()).data.user?.email || '',
-            name: 'Usuario Nuevo',
-            role: 'member',
-            has_premium: false
-          }
-          
-          // Check if it's a demo account to assign correct role
-          const demoAccount = Object.values(DEMO_ACCOUNTS).find(acc => acc.email === newProfile.email)
-          if (demoAccount) {
-            newProfile.name = demoAccount.name
-            newProfile.role = demoAccount.role
-            console.log(`[loadProfile] Identified Demo Account: ${demoAccount.role}`)
-          }
+        // Check if it's a demo account to assign correct role
+        const demoAccount = Object.values(DEMO_ACCOUNTS).find(acc => acc.email === baseProfile.email)
+        if (demoAccount) {
+          baseProfile.name = demoAccount.name
+          baseProfile.role = demoAccount.role
+          console.log(`[loadProfile] Identified Demo Account: ${demoAccount.role}`)
+        }
 
->>>>>>> 2dcf9be (fix: resolve login redirection lag and add robust auth state management for mobile)
+        if (result.error && (result.error.code === 'PGRST116' || result.error.message?.includes('0 rows'))) {
+          console.log('[loadProfile] Profile missing, creating in DB...')
           const { data: createdProfile, error: createError } = await supabase
             .from('profiles')
             .upsert([baseProfile], { onConflict: 'id' })
@@ -162,12 +150,13 @@ export default function App() {
           if (createdProfile) {
             console.log('[loadProfile] Fallback profile created successfully')
             setProfile(createdProfile)
-<<<<<<< HEAD
             return createdProfile
+          } else {
+            console.error('[loadProfile] Fallback creation failed:', createError)
           }
         }
         
-        // RAM Fallback si falla DB
+        // RAM Fallback si falla DB o error persistente
         console.warn('Usando perfil fallback en RAM')
         setProfile({
           ...baseProfile,
@@ -175,15 +164,6 @@ export default function App() {
           cycle_enabled: baseProfile.sex === 'female' || currentEmail.includes('maria'),
           is_fallback: true
         })
-=======
-          } else {
-            console.error('[loadProfile] Fallback creation failed:', createError)
-          }
-        }
-      } else if (data) {
-        console.log(`[loadProfile] Profile found. Role: ${data.role}`)
-        setProfile(data)
->>>>>>> 2dcf9be (fix: resolve login redirection lag and add robust auth state management for mobile)
       }
     } catch (err) {
       console.error('[loadProfile] Unexpected error:', err)
