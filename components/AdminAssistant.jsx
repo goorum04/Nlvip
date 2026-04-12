@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input'
 import { 
   Mic, MicOff, Send, Bot, User, Loader2, CheckCircle2, XCircle, X,
   Volume2, VolumeX, Sparkles, AlertTriangle, Zap, Crown, Wand2,
-  ChefHat, Flame, Beef, Wheat, Droplets, Clock, BarChart3, Info
+  ChefHat, Flame, Beef, Wheat, Droplets, Clock, BarChart3, Info,
+  Play, Pause
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -363,6 +364,32 @@ export default function AdminAssistant({ userId, onClose }) {
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
   const [audioBlob, setAudioBlob] = useState(null)
+  const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [messages, setMessages] = useState([])
+  const [pendingPlan, setPendingPlan] = useState(null)
+  const [pendingToolCalls, setPendingToolCalls] = useState([])
+  const [isExecuting, setIsExecuting] = useState(false)
+  const [ttsEnabled, setTtsEnabled] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const synthRef = useRef(null)
+
+  // Función TTS para leer respuestas del asistente
+  const speak = (text) => {
+    if (!ttsEnabled || !text || typeof window === 'undefined' || !window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text.slice(0, 300))
+    utterance.lang = 'es-ES'
+    utterance.rate = 1.1
+    utterance.onstart = () => setIsSpeaking(true)
+    utterance.onend = () => setIsSpeaking(false)
+    utterance.onerror = () => setIsSpeaking(false)
+    synthRef.current = utterance
+    window.speechSynthesis.speak(utterance)
+  }
+
+  // Flag de compatibilidad para setLoading (alias de setIsLoading)
+  const setLoading = setIsLoading
   
   const messagesEndRef = useRef(null)
   const recognitionRef = useRef(null)

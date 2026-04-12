@@ -251,16 +251,20 @@ export default function App() {
       let trainerId = null
       let hasPremium = false
       
-      // If invitation code provided, validate it
+    // If invitation code provided, validate it
       if (invitationCode.trim()) {
         const { data: codeData, error: codeError } = await supabase
           .from('invitation_codes')
           .select('*')
-          .eq('code', invitationCode.toUpperCase())
+          .eq('code', invitationCode.toUpperCase().trim())
           .eq('is_active', true)
-          .single()
+          .maybeSingle()
 
-        if (codeError || !codeData) {
+        if (codeError) {
+          throw new Error('Error al validar el código. Inténtalo de nuevo.')
+        }
+
+        if (!codeData) {
           throw new Error('Código de invitación inválido o expirado')
         }
 

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request) {
   try {
-    const { email, password, name, adminToken } = await request.json()
+    const { email, password, name } = await request.json()
     
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
@@ -19,7 +19,9 @@ export async function POST(request) {
       }
     })
     
-    // Verificar que quien llama es administrador
+    // Verificar que quien llama es administrador (token en header Authorization)
+    const authHeader = request.headers.get('Authorization')
+    const adminToken = authHeader?.replace('Bearer ', '')
     if (!adminToken) {
       return NextResponse.json({ error: 'Unauthorized: missing token' }, { status: 401 })
     }
