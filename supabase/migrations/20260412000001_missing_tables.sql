@@ -588,39 +588,72 @@ CREATE POLICY "diet_recipes_insert_admin_trainer" ON diet_recipes FOR INSERT WIT
 -- PART 10: SCHEMA FIXES
 -- =========================================================================
 
--- cycle_symptoms: code uses user_id, master-schema created member_id
-ALTER TABLE cycle_symptoms ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES profiles(id) ON DELETE CASCADE;
-UPDATE cycle_symptoms SET user_id = member_id WHERE user_id IS NULL AND member_id IS NOT NULL;
+-- cycle_symptoms: ensure user_id exists and migrate from member_id if needed
+DO $$
+BEGIN
+  BEGIN ALTER TABLE cycle_symptoms ADD COLUMN user_id uuid REFERENCES profiles(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_column THEN NULL; END;
+  -- Only copy member_id → user_id if member_id column actually exists
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'cycle_symptoms' AND column_name = 'member_id') THEN
+    UPDATE cycle_symptoms SET user_id = member_id WHERE user_id IS NULL AND member_id IS NOT NULL;
+  END IF;
+END $$;
 
--- Add unique index on (user_id, date) if it doesn't exist
 CREATE UNIQUE INDEX IF NOT EXISTS idx_cycle_symptoms_user_date ON cycle_symptoms(user_id, date);
 
--- Update RLS to allow user_id
-DROP POLICY IF EXISTS "Premium users manage cycle symptoms"    ON cycle_symptoms;
-DROP POLICY IF EXISTS "Users can manage own symptoms"          ON cycle_symptoms;
-CREATE POLICY "Users manage own cycle symptoms" ON cycle_symptoms FOR ALL USING (
-  user_id = (SELECT auth.uid()) OR member_id = (SELECT auth.uid())
-) WITH CHECK (
-  user_id = (SELECT auth.uid()) OR member_id = (SELECT auth.uid())
-);
+DROP POLICY IF EXISTS "Premium users manage cycle symptoms" ON cycle_symptoms;
+DROP POLICY IF EXISTS "Users can manage own symptoms"       ON cycle_symptoms;
+DROP POLICY IF EXISTS "Users manage own cycle symptoms"     ON cycle_symptoms;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'cycle_symptoms' AND column_name = 'member_id') THEN
+    EXECUTE $p$
+      CREATE POLICY "Users manage own cycle symptoms" ON cycle_symptoms FOR ALL
+      USING  (user_id = (SELECT auth.uid()) OR member_id = (SELECT auth.uid()))
+      WITH CHECK (user_id = (SELECT auth.uid()) OR member_id = (SELECT auth.uid()))
+    $p$;
+  ELSE
+    EXECUTE $p$
+      CREATE POLICY "Users manage own cycle symptoms" ON cycle_symptoms FOR ALL
+      USING  (user_id = (SELECT auth.uid()))
+      WITH CHECK (user_id = (SELECT auth.uid()))
+    $p$;
+  END IF;
+END $$;
 
 -- lactation_sessions: add user_id + detailed columns
-ALTER TABLE lactation_sessions ADD COLUMN IF NOT EXISTS user_id        uuid  REFERENCES profiles(id) ON DELETE CASCADE;
-ALTER TABLE lactation_sessions ADD COLUMN IF NOT EXISTS session_type   text  DEFAULT 'breastfeed';
-ALTER TABLE lactation_sessions ADD COLUMN IF NOT EXISTS breast_side    text;
-ALTER TABLE lactation_sessions ADD COLUMN IF NOT EXISTS start_time     timestamptz DEFAULT now();
-ALTER TABLE lactation_sessions ADD COLUMN IF NOT EXISTS end_time       timestamptz;
-ALTER TABLE lactation_sessions ADD COLUMN IF NOT EXISTS amount_ml      integer;
-UPDATE lactation_sessions SET user_id = member_id WHERE user_id IS NULL AND member_id IS NOT NULL;
+DO $$
+BEGIN
+  BEGIN ALTER TABLE lactation_sessions ADD COLUMN user_id      uuid REFERENCES profiles(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE lactation_sessions ADD COLUMN session_type text DEFAULT 'breastfeed'; EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE lactation_sessions ADD COLUMN breast_side  text;                      EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE lactation_sessions ADD COLUMN start_time   timestamptz DEFAULT now(); EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE lactation_sessions ADD COLUMN end_time     timestamptz;               EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE lactation_sessions ADD COLUMN amount_ml    integer;                   EXCEPTION WHEN duplicate_column THEN NULL; END;
 
--- Update RLS
-DROP POLICY IF EXISTS "Premium users manage lactation"      ON lactation_sessions;
-DROP POLICY IF EXISTS "Users can manage own lactation sessions" ON lactation_sessions;
-CREATE POLICY "Users manage own lactation sessions" ON lactation_sessions FOR ALL USING (
-  user_id = (SELECT auth.uid()) OR member_id = (SELECT auth.uid())
-) WITH CHECK (
-  user_id = (SELECT auth.uid()) OR member_id = (SELECT auth.uid())
-);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'lactation_sessions' AND column_name = 'member_id') THEN
+    UPDATE lactation_sessions SET user_id = member_id WHERE user_id IS NULL AND member_id IS NOT NULL;
+  END IF;
+END $$;
+
+DROP POLICY IF EXISTS "Premium users manage lactation"           ON lactation_sessions;
+DROP POLICY IF EXISTS "Users can manage own lactation sessions"  ON lactation_sessions;
+DROP POLICY IF EXISTS "Users manage own lactation sessions"      ON lactation_sessions;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'lactation_sessions' AND column_name = 'member_id') THEN
+    EXECUTE $p$
+      CREATE POLICY "Users manage own lactation sessions" ON lactation_sessions FOR ALL
+      USING  (user_id = (SELECT auth.uid()) OR member_id = (SELECT auth.uid()))
+      WITH CHECK (user_id = (SELECT auth.uid()) OR member_id = (SELECT auth.uid()))
+    $p$;
+  ELSE
+    EXECUTE $p$
+      CREATE POLICY "Users manage own lactation sessions" ON lactation_sessions FOR ALL
+      USING  (user_id = (SELECT auth.uid()))
+      WITH CHECK (user_id = (SELECT auth.uid()))
+    $p$;
+  END IF;
+END $$;
 
 -- =========================================================================
 -- PART 11: STORAGE BUCKETS
