@@ -30,6 +30,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [profileLoading, setProfileLoading] = useState(false) // New state to track profile fetch
   const profileLoadingRef = useRef(false) // Prevent concurrent loading
+  const loadedUserIdRef = useRef(null) // Prevent loading screen on resume
   const [authMode, setAuthMode] = useState('login')
   const { toast } = useToast()
 
@@ -57,6 +58,7 @@ export default function App() {
       } else {
         setUser(null)
         setProfile(null)
+        loadedUserIdRef.current = null
       }
     })
 
@@ -82,10 +84,14 @@ export default function App() {
     if (profileLoadingRef.current) return;
     
     const userId = authUser.id;
-    console.log(`[loadProfile] Starting for ID: ${userId}`)
+    const isBackgroundLoad = (loadedUserIdRef.current === userId && profile !== null);
+    
+    console.log(`[loadProfile] Starting for ID: ${userId} (Background Load: ${isBackgroundLoad})`)
     
     profileLoadingRef.current = true;
-    setProfileLoading(true)
+    if (!isBackgroundLoad) {
+      setProfileLoading(true)
+    }
     let timeoutId;
     try {
       console.log('Intentando cargar perfil para:', userId)
@@ -124,6 +130,7 @@ export default function App() {
           }).catch(e => console.warn('Sync profile error:', e))
           result.data = { ...result.data, ...updates }
         }
+        loadedUserIdRef.current = userId
         setProfile(result.data)
         return result.data
       }
@@ -160,6 +167,7 @@ export default function App() {
           
           if (createdProfile) {
             console.log('[loadProfile] Fallback profile created successfully')
+            loadedUserIdRef.current = userId
             setProfile(createdProfile)
             return createdProfile
           } else {
@@ -169,6 +177,7 @@ export default function App() {
         
       // RAM Fallback si falla DB o error persistente
       console.warn('Usando perfil fallback en RAM')
+      loadedUserIdRef.current = userId
       setProfile({
         ...baseProfile,
         has_premium: true, // premium in demo
@@ -180,7 +189,9 @@ export default function App() {
     } finally {
       if (timeoutId) clearTimeout(timeoutId)
       profileLoadingRef.current = false
-      setProfileLoading(false)
+      if (!isBackgroundLoad) {
+        setProfileLoading(false)
+      }
     }
   }
 
@@ -344,6 +355,7 @@ export default function App() {
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
+    loadedUserIdRef.current = null
     toast({ title: 'Sesión cerrada' })
   }
 
