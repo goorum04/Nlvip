@@ -594,7 +594,7 @@ BEGIN
   BEGIN ALTER TABLE cycle_symptoms ADD COLUMN user_id uuid REFERENCES profiles(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_column THEN NULL; END;
   -- Only copy member_id → user_id if member_id column actually exists
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'cycle_symptoms' AND column_name = 'member_id') THEN
-    UPDATE cycle_symptoms SET user_id = member_id WHERE user_id IS NULL AND member_id IS NOT NULL;
+    EXECUTE 'UPDATE cycle_symptoms SET user_id = member_id WHERE user_id IS NULL AND member_id IS NOT NULL';
   END IF;
 END $$;
 
@@ -631,7 +631,7 @@ BEGIN
   BEGIN ALTER TABLE lactation_sessions ADD COLUMN amount_ml    integer;                   EXCEPTION WHEN duplicate_column THEN NULL; END;
 
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'lactation_sessions' AND column_name = 'member_id') THEN
-    UPDATE lactation_sessions SET user_id = member_id WHERE user_id IS NULL AND member_id IS NOT NULL;
+    EXECUTE 'UPDATE lactation_sessions SET user_id = member_id WHERE user_id IS NULL AND member_id IS NOT NULL';
   END IF;
 END $$;
 
