@@ -68,19 +68,11 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   const [isRecording, setIsRecording] = useState(false)
   const [audioBlob, setAudioBlob] = useState(null)
   const [recordingDuration, setRecordingDuration] = useState(0)
-  
-  // Image Upload States
-  const [imageFile, setImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
-  const [uploadingImage, setUploadingImage] = useState(false)
 
   const mediaRecorderRef = useRef(null)
   const fileInputRef = useRef(null)
   const timerRef = useRef(null)
-
-  // Speech Recognition States (For all)
-  const [isListening, setIsListening] = useState(false)
-  const recognitionRef = useRef(null)
+  const messagesEndRef = useRef(null)
 
   const messagesEndRef = useRef(null)
 
@@ -108,29 +100,6 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     }
   }, [activeConversation, isOpen])
 
-  // Initialize Speech Recognition — solo para admin
-  useEffect(() => {
-    if (userRole !== 'admin') return
-    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-      const recognition = new SpeechRecognition()
-      recognition.continuous = false
-      recognition.interimResults = false
-      recognition.lang = 'es-ES'
-
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript
-        setNewMessage(prev => prev + (prev ? ' ' : '') + transcript)
-        setIsListening(false)
-      }
-
-      recognition.onend = () => setIsListening(false)
-
-      recognition.onerror = () => setIsListening(false)
-
-      recognitionRef.current = recognition
-    }
-    
     // Initial fetch of unread counts
     fetchUnreadCounts()
     
@@ -515,10 +484,10 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   }
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current) {
+    if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop()
       setIsRecording(false)
-      clearInterval(timerRef.current)
+      if (timerRef.current) clearInterval(timerRef.current)
     }
   }
 
@@ -528,22 +497,6 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const toggleListening = () => {
-    if (!recognitionRef.current) return
-    
-    try {
-      if (isListening) {
-        recognitionRef.current.stop()
-        setIsListening(false)
-      } else {
-        recognitionRef.current.start()
-        setIsListening(true)
-      }
-    } catch (err) {
-      console.error('Recognition error:', err)
-      setIsListening(false)
-    }
-  }
 
 
   const handleTabSwitch = (tab) => {
@@ -764,12 +717,10 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
             {view === 'list' ? (
               <p className="text-xs text-zinc-500 text-center py-2">Selecciona un socio para comenzar a chatear</p>
             ) : isRecording ? (
-              <div className="flex items-center gap-4 bg-red-500/10 p-3 rounded-2xl border border-red-500/20 animate-pulse">
-                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                <span className="text-xs text-red-500 font-bold flex-1">GRABANDO AUDIO... {formatDuration(recordingDuration)}</span>
-                <button onClick={stopRecording} className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white">
-                  <X size={18} />
-                </button>
+              <div className="flex items-center gap-4 bg-red-500/10 p-2 rounded-2xl border border-red-500/20 w-full animate-pulse">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <div className="flex-1 text-red-500 font-medium text-sm">Grabando audio... {formatDuration(recordingDuration)}</div>
+                <div className="text-xs text-red-400/60 font-medium uppercase tracking-widest">Suelto para enviar</div>
               </div>
             ) : audioBlob ? (
               <div className="flex items-center gap-4 bg-violet-500/10 p-3 rounded-2xl border border-violet-500/20">
@@ -808,17 +759,8 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Escribe un mensaje..."
-                    className="h-12 bg-white/5 border-white/5 rounded-2xl pl-4 pr-10 text-sm focus:border-violet-500/50 text-white placeholder:text-zinc-500"
+                    className="h-12 bg-white/5 border-white/5 rounded-2xl px-4 text-sm focus:border-violet-500/50 text-white placeholder:text-zinc-500"
                   />
-                  {userRole === 'admin' && (
-                    <button
-                      type="button"
-                      onClick={toggleListening}
-                      className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening ? 'text-violet-500' : 'text-zinc-600'}`}
-                    >
-                      <Mic size={18} />
-                    </button>
-                  )}
                 </div>
                 
                 <button
@@ -832,10 +774,18 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                 {userRole === 'admin' && (
                   <button
                     type="button"
-                    onClick={startRecording}
-                    className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-all"
+                    onMouseDown={startRecording}
+                    onMouseUp={stopRecording}
+                    onMouseLeave={stopRecording}
+                    onTouchStart={startRecording}
+                    onTouchEnd={stopRecording}
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
+                      isRecording 
+                        ? 'bg-red-500 text-white shadow-lg shadow-red-500/40 scale-110' 
+                        : 'bg-zinc-900 border border-white/5 text-zinc-400 hover:text-white'
+                    }`}
                   >
-                    <Volume2 size={20} />
+                    <Mic size={20} />
                   </button>
                 )}
 

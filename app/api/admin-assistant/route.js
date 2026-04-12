@@ -39,7 +39,7 @@ CÁLCULO DE MACROS:
 • Pérdida grasa: TDEE - 15%
 • Mantenimiento: TDEE
 • Volumen: TDEE + 15%
-• Proteína: 2g por kg de peso
+• Proteína: 2.2-2.4g por kg de peso (dependiendo de la masa muscular)
 • Grasa: 0.8-1g por kg
 • Carbos: el resto de calorías
 `;

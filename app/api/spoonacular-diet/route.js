@@ -179,7 +179,8 @@ export async function POST(request) {
     const tdee = Math.round(bmr * 1.55)
     const multiplier = goal === 'fat_loss' ? 0.85 : goal === 'muscle_gain' ? 1.15 : 1.0
     const totalCalories = Math.round(tdee * multiplier)
-    const protein_g = Math.round(weight_kg * 2)
+    const proteinFactor = (goal === 'muscle_gain') ? 2.4 : 2.2
+    const protein_g = Math.round(weight_kg * proteinFactor)
     const fat_g = Math.round(weight_kg * 0.9)
     const carbs_g = Math.round((totalCalories - protein_g * 4 - fat_g * 9) / 4)
 

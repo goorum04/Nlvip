@@ -11,10 +11,45 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
+// Componente AudioPlayer para el asistente
+const AudioPlayer = ({ path }) => {
+  const [playing, setPlaying] = useState(false)
+  const audioRef = useRef(null)
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/storage/v1/object/public/chat_audios/${path}`
+
+  if (!path) return null
+
+  return (
+    <div className="flex items-center gap-3 bg-black/20 rounded-xl p-2 min-w-[220px] mt-2 mb-1">
+      <button 
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          if (playing) audioRef.current.pause()
+          else audioRef.current.play()
+          setPlaying(!playing)
+        }}
+        className="w-10 h-10 rounded-full bg-cyan-400 flex items-center justify-center text-black shadow-lg shadow-cyan-400/20"
+      >
+        {playing ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
+      </button>
+      <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+        <div className={`h-full bg-cyan-400 ${playing ? 'animate-progress' : ''}`} style={{ width: playing ? '100%' : '0%', transition: playing ? 'width 30s linear' : 'none' }}></div>
+      </div>
+      <audio 
+        ref={audioRef} 
+        src={url} 
+        onEnded={() => setPlaying(false)} 
+        className="hidden" 
+      />
+    </div>
+  )
+}
+
 // Componente de mensaje individual
-function ChatMessage({ message, isUser, isLoading }) {
+function ChatMessage({ message, isUser, isLoading, audioPath }) {
   // Detectar si el mensaje contiene recomendaciones de salud/ejercicios/dieta
-  const hasHealthContent = /dieta|ejercicio|peso|calor|proteína|grasa|muscular|entrenamiento|salud|macros/i.test(message);
+  const hasHealthContent = message && /dieta|ejercicio|peso|calor|proteína|grasa|muscular|entrenamiento|salud|macros/i.test(message);
   
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} animate-in slide-in-from-bottom-2 duration-300`}>
@@ -41,7 +76,8 @@ function ChatMessage({ message, isUser, isLoading }) {
           </div>
         ) : (
           <>
-            <p className="whitespace-pre-wrap leading-relaxed">{message}</p>
+            {audioPath && <AudioPlayer path={audioPath} />}
+            {message && <p className="whitespace-pre-wrap leading-relaxed">{message}</p>}
             {hasHealthContent && (
               <div className="mt-3 pt-3 border-t border-white/10">
                 <p className="text-xs text-amber-400/80">
@@ -324,106 +360,134 @@ function ExecutionPlan({ plan, onConfirm, onCancel, isExecuting }) {
 }
 
 export default function AdminAssistant({ userId, onClose }) {
-  const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [isListening, setIsListening] = useState(false)
-  const [isSpeaking, setIsSpeaking] = useState(false)
-  const [ttsEnabled, setTtsEnabled] = useState(true)
-  const [pendingPlan, setPendingPlan] = useState(null)
-  const [pendingToolCalls, setPendingToolCalls] = useState([])
-  const [isExecuting, setIsExecuting] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingDuration, setRecordingDuration] = useState(0)
+  const [audioBlob, setAudioBlob] = useState(null)
   
   const messagesEndRef = useRef(null)
   const recognitionRef = useRef(null)
+  const mediaRecorderRef = useRef(null)
+  const timerRef = useRef(null)
   const { toast } = useToast()
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  const isSpeechSupported = typeof window !== 'undefined' && (
-    'SpeechRecognition' in window || 'webkitSpeechRecognition' in window
-  )
-  const isIOS = typeof navigator !== 'undefined' && (
-    /iPhone|iPad|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  )
-
-  useEffect(() => {
-    if (
-    typeof window !== 'undefined' &&
-    (isSpeechSupported && !isIOS)) {
-      try {
+    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-      recognitionRef.current = new SpeechRecognition()
-      recognitionRef.current.continuous = false
-      recognitionRef.current.interimResults = false
-      recognitionRef.current.lang = 'es-ES'
+      const recognition = new SpeechRecognition()
+      recognition.continuous = true
+      recognition.interimResults = true
+      recognition.lang = 'es-ES'
 
-      recognitionRef.current.onresult = (event) => {
-        const transcript = event.results[0][0].transcript
-        setInput(transcript)
-        setIsListening(false)
-        handleSend(transcript)
+      recognition.onresult = (event) => {
+        let fullTranscript = ''
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          fullTranscript += event.results[i][0].transcript
+        }
+        setInput(fullTranscript)
       }
 
-      recognitionRef.current.onerror = (e) => {
-       setIsListening(false)
-       if (e.error === 'not-allowed') {
-      toast({ title: 'Permiso denegado', description: 'Activa el micrófono en Ajustes > Safari > Micrófono', variant: 'destructive' })
-       } else if (e.error === 'no-speech') {
-       toast({ title: 'No se detectó voz', description: 'Inténtalo de nuevo', variant: 'destructive' })
-       } else {
-       toast({ title: 'Error de voz', description: 'No se pudo reconocer tu voz', variant: 'destructive' })
+      recognition.onerror = (e) => {
+        if (e.error !== 'no-speech') {
+          console.error('Speech recognition error:', e.error)
+        }
       }
-    }
 
-      recognitionRef.current.onend = () => setIsListening(false)
-      } catch (e) {
-        console.log('Speech recognition not available')
-      }
+      recognitionRef.current = recognition
     }
   }, [])
 
-  const speak = (text) => {
-    if (!ttsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'es-ES'
-    utterance.rate = 1.0
-    utterance.onstart = () => setIsSpeaking(true)
-    utterance.onend = () => setIsSpeaking(false)
-    window.speechSynthesis.speak(utterance)
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      
+      // 1. Audio Recording logic
+      mediaRecorderRef.current = new MediaRecorder(stream)
+      const chunks = []
+      mediaRecorderRef.current.ondataavailable = (e) => chunks.push(e.data)
+      mediaRecorderRef.current.onstop = async () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' })
+        setAudioBlob(blob)
+        stream.getTracks().forEach(track => track.stop())
+        // Auto-send when released
+        handleSend(null, blob)
+      }
+
+      mediaRecorderRef.current.start()
+      setIsRecording(true)
+      setRecordingDuration(0)
+      timerRef.current = setInterval(() => setRecordingDuration(p => p + 1), 1000)
+
+      // 2. Transcription logic (while holding)
+      if (recognitionRef.current) {
+        setInput('')
+        try {
+          recognitionRef.current.start()
+        } catch (e) {
+          console.warn('Recognition already started')
+        }
+      }
+    } catch (err) {
+      console.error('Error starting recording:', err)
+      toast({ title: 'Error', description: 'No se pudo acceder al micrófono', variant: 'destructive' })
+    }
   }
 
-  const toggleListening = () => {
-    if (!recognitionRef.current) {
-      toast({ title: 'No disponible', description: 'Tu navegador no soporta reconocimiento de voz', variant: 'destructive' })
-      return
-    }
-    if (isListening) {
-      recognitionRef.current.stop()
-      setIsListening(false)
-    } else {
-      recognitionRef.current.start()
-      setIsListening(true)
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      if (timerRef.current) clearInterval(timerRef.current)
+      
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop()
+        } catch (e) {}
+      }
     }
   }
 
-  const handleSend = async (textOverride) => {
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const handleSend = async (textOverride, audioBlobOverride) => {
     const text = textOverride || input
-    if (!text.trim() || isLoading) return
+    const audioToUpload = audioBlobOverride || audioBlob
+    
+    if (!text.trim() && !audioToUpload) return
+    if (isLoading) return
 
-    const userMessage = { role: 'user', content: text }
-    setMessages(prev => [...prev, userMessage])
-    setInput('')
+    setLoading(true)
     setIsLoading(true)
     setPendingPlan(null)
     setPendingToolCalls([])
 
     try {
+      let audioPath = null
       const { data: { session } } = await supabase.auth.getSession()
+
+      // 1. Upload audio if exists
+      if (audioToUpload) {
+        const fileName = `${userId}_assistant_${Date.now()}.webm`
+        const { data, error } = await supabase.storage
+          .from('chat_audios')
+          .upload(fileName, audioToUpload)
+        if (error) throw error
+        audioPath = data.path
+      }
+
+      const userMessage = { 
+        role: 'user', 
+        content: text,
+        audio_path: audioPath 
+      }
+      
+      setMessages(prev => [...prev, userMessage])
+      setInput('')
+      setAudioBlob(null)
+
       const response = await fetch('/api/admin-assistant', {
         method: 'POST',
         headers: { 
@@ -551,10 +615,10 @@ export default function AdminAssistant({ userId, onClose }) {
             </div>
 
             <div className="flex items-center gap-2">
-              {isListening && (
+              {isRecording && (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 backdrop-blur-sm rounded-full border border-red-400/30 animate-pulse">
                   <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                  <span className="text-xs font-medium text-red-200">Escuchando</span>
+                  <span className="text-xs font-medium text-red-200">Grabando {formatDuration(recordingDuration)}</span>
                 </div>
               )}
               {isSpeaking && (
@@ -607,7 +671,11 @@ export default function AdminAssistant({ userId, onClose }) {
             <>
               {messages.map((msg, idx) => (
                 <div key={idx}>
-                  <ChatMessage message={msg.content} isUser={msg.role === 'user'} />
+                  <ChatMessage 
+                    message={msg.content} 
+                    isUser={msg.role === 'user'} 
+                    audioPath={msg.audio_path} 
+                  />
                   {msg.role === 'assistant' && msg.diet_data && (
                     <DietCard dietData={msg.diet_data} />
                   )}
@@ -639,29 +707,31 @@ export default function AdminAssistant({ userId, onClose }) {
         {/* INPUT AREA */}
         <div className="p-4 border-t border-white/5 bg-black/50 backdrop-blur-xl">
           <div className="flex gap-3">
-            {isSpeechSupported && !isIOS && (
-              <button
-                onClick={toggleListening}
-                disabled={isLoading}
-                className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
-                  isListening
-                    ? 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30'
-                    : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10'
-                }`}
-              >
-                {isListening && (
-                  <div className="absolute inset-0 rounded-2xl bg-red-500 animate-ping opacity-30"></div>
-                )}
-                {isListening ? <MicOff className="w-6 h-6 relative" /> : <Mic className="w-6 h-6" />}
-              </button>
-            )}
+            <button
+              onMouseDown={startRecording}
+              onMouseUp={stopRecording}
+              onMouseLeave={stopRecording}
+              onTouchStart={startRecording}
+              onTouchEnd={stopRecording}
+              disabled={isLoading}
+              className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
+                isRecording
+                  ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-110'
+                  : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10'
+              }`}
+            >
+              {isRecording && (
+                <div className="absolute inset-0 rounded-2xl bg-red-500 animate-ping opacity-30"></div>
+              )}
+              <Mic className="w-6 h-6" />
+            </button>
             <div className="flex-1 relative">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder="Escribe o habla un comando..."
-                disabled={isLoading || isListening}
+                placeholder={isRecording ? "Suelta para enviar..." : "Escribe o mantén pulsado el micro..."}
+                disabled={isLoading}
                 className="w-full h-14 bg-white/5 border-white/10 rounded-2xl pl-5 pr-14 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20"
               />
               <Button
@@ -673,8 +743,8 @@ export default function AdminAssistant({ userId, onClose }) {
               </Button>
             </div>
           </div>
-          <p className="text-center text-xs text-gray-600 mt-3">
-            Pulsa el micrófono para hablar o escribe tu mensaje
+          <p className="text-center text-[10px] text-gray-600 mt-3 font-medium uppercase tracking-widest">
+            Mantén pulsado el icono del micro para enviar un audio
           </p>
         </div>
       </div>

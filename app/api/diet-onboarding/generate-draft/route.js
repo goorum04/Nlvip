@@ -78,9 +78,9 @@ export async function POST(req) {
     const isFatLoss = goal === 'perder_grasa' || goal === 'cut'
     const isBulk = goal === 'ganar_masa' || goal === 'bulk'
 
-    // Protein: 2.2g/kg lean mass for fat loss, 2.0g/kg otherwise (based on NL VIP methodology)
-    const proteinPerKg = isFatLoss ? 2.2 : 2.0
-    const protein_g = Math.round(leanMass * proteinPerKg)
+    // Protein: 2.4g/kg total weight for muscle gain, 2.2g/kg otherwise
+    const proteinFactor = isBulk ? 2.4 : 2.2
+    const protein_g = Math.round(weight * proteinFactor)
 
     // Fat: 0.9g/kg total weight
     const fat_g = Math.round(weight * 0.9)
