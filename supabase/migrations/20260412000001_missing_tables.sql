@@ -332,28 +332,41 @@ CREATE POLICY "user_badges_insert" ON user_badges FOR INSERT WITH CHECK (
 -- PART 6: WORKOUT STRUCTURE (days & exercises)
 -- =========================================================================
 
-CREATE TABLE IF NOT EXISTS workout_days (
-  id                   uuid    DEFAULT gen_random_uuid() PRIMARY KEY,
-  workout_template_id  uuid    REFERENCES workout_templates(id) ON DELETE CASCADE,
-  day_number           integer NOT NULL,
-  name                 varchar(100) NOT NULL,
-  description          text,
-  created_at           timestamptz DEFAULT now()
-);
+DO $$
+BEGIN
+  CREATE TABLE IF NOT EXISTS workout_days (
+    id                  uuid         DEFAULT gen_random_uuid() PRIMARY KEY,
+    workout_template_id uuid         REFERENCES workout_templates(id) ON DELETE CASCADE,
+    day_number          integer      NOT NULL,
+    name                varchar(100) NOT NULL,
+    description         text,
+    created_at          timestamptz  DEFAULT now()
+  );
+  -- workout_days has no extra columns to worry about
+END $$;
 
-CREATE TABLE IF NOT EXISTS workout_exercises (
-  id              uuid         DEFAULT gen_random_uuid() PRIMARY KEY,
-  workout_day_id  uuid         REFERENCES workout_days(id) ON DELETE CASCADE,
-  name            varchar(100) NOT NULL,
-  description     text,
-  sets            integer      DEFAULT 3,
-  reps            varchar(20)  DEFAULT '10',
-  rest_seconds    integer      DEFAULT 90,
-  video_url       text,
-  video_thumbnail text,
-  order_index     integer      DEFAULT 0,
-  created_at      timestamptz  DEFAULT now()
-);
+DO $$
+BEGIN
+  CREATE TABLE IF NOT EXISTS workout_exercises (
+    id              uuid         DEFAULT gen_random_uuid() PRIMARY KEY,
+    workout_day_id  uuid         REFERENCES workout_days(id) ON DELETE CASCADE,
+    name            varchar(100) NOT NULL,
+    description     text,
+    sets            integer      DEFAULT 3,
+    reps            varchar(20)  DEFAULT '10',
+    rest_seconds    integer      DEFAULT 90,
+    video_url       text,
+    video_thumbnail text,
+    order_index     integer      DEFAULT 0,
+    created_at      timestamptz  DEFAULT now()
+  );
+  BEGIN ALTER TABLE workout_exercises ADD COLUMN sets            integer DEFAULT 3;   EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE workout_exercises ADD COLUMN reps            varchar(20) DEFAULT '10'; EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE workout_exercises ADD COLUMN rest_seconds    integer DEFAULT 90;  EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE workout_exercises ADD COLUMN video_url       text;                EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE workout_exercises ADD COLUMN video_thumbnail text;                EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE workout_exercises ADD COLUMN order_index     integer DEFAULT 0;   EXCEPTION WHEN duplicate_column THEN NULL; END;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_workout_days_template  ON workout_days(workout_template_id);
 CREATE INDEX IF NOT EXISTS idx_workout_exercises_day  ON workout_exercises(workout_day_id);
@@ -495,24 +508,40 @@ CREATE POLICY "admin_action_logs_policy" ON admin_assistant_action_logs FOR ALL 
 -- (RecipesManager.jsx uses 'recipes', separate from 'recipe_catalog')
 -- =========================================================================
 
-CREATE TABLE IF NOT EXISTS recipes (
-  id               uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
-  name             text        NOT NULL,
-  description      text,
-  instructions     text,
-  prep_time_minutes integer,
-  cook_time_minutes integer,
-  servings         integer     DEFAULT 1,
-  calories         integer,
-  protein_g        numeric(6,2),
-  carbs_g          numeric(6,2),
-  fat_g            numeric(6,2),
-  image_url        text,
-  category         text,
-  is_global        boolean     DEFAULT true,
-  created_by       uuid        REFERENCES profiles(id) ON DELETE SET NULL,
-  created_at       timestamptz DEFAULT now()
-);
+DO $$
+BEGIN
+  CREATE TABLE IF NOT EXISTS recipes (
+    id                uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
+    name              text        NOT NULL,
+    description       text,
+    instructions      text,
+    prep_time_minutes integer,
+    cook_time_minutes integer,
+    servings          integer     DEFAULT 1,
+    calories          integer,
+    protein_g         numeric(6,2),
+    carbs_g           numeric(6,2),
+    fat_g             numeric(6,2),
+    image_url         text,
+    category          text,
+    is_global         boolean     DEFAULT true,
+    created_by        uuid        REFERENCES profiles(id) ON DELETE SET NULL,
+    created_at        timestamptz DEFAULT now()
+  );
+
+  -- Add columns that might be missing from a pre-existing recipes table
+  BEGIN ALTER TABLE recipes ADD COLUMN is_global        boolean DEFAULT true; EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE recipes ADD COLUMN instructions     text;                 EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE recipes ADD COLUMN prep_time_minutes integer;             EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE recipes ADD COLUMN cook_time_minutes integer;             EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE recipes ADD COLUMN servings         integer DEFAULT 1;    EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE recipes ADD COLUMN protein_g        numeric(6,2);        EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE recipes ADD COLUMN carbs_g          numeric(6,2);        EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE recipes ADD COLUMN fat_g            numeric(6,2);        EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE recipes ADD COLUMN image_url        text;                 EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE recipes ADD COLUMN category         text;                 EXCEPTION WHEN duplicate_column THEN NULL; END;
+  BEGIN ALTER TABLE recipes ADD COLUMN created_by       uuid REFERENCES profiles(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_column THEN NULL; END;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_recipes_category   ON recipes(category);
 CREATE INDEX IF NOT EXISTS idx_recipes_created_by ON recipes(created_by);
