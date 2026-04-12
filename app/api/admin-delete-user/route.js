@@ -57,13 +57,39 @@ export async function POST(request) {
     }
 
     // 4. Limpiar datos relacionados de la API (para evitar romper constraints)
+    
+    // Primero, recopilar IDs de posts y retos creados por este usuario
+    const { data: userPosts } = await supabaseAdmin.from('feed_posts').select('id').eq('author_id', userId)
+    const { data: userChallenges } = await supabaseAdmin.from('challenges').select('id').eq('created_by', userId)
+    
+    const postIds = userPosts?.map(p => p.id) || []
+    const challengeIds = userChallenges?.map(c => c.id) || []
+
     // Fase 1: Tablas que dependen de otras tablas dependientes (hijos de hijos)
-    await Promise.all([
+    const phase1Promises = [
       supabaseAdmin.from('feed_comments').delete().eq('commenter_id', userId),
       supabaseAdmin.from('feed_likes').delete().eq('user_id', userId),
       supabaseAdmin.from('feed_reports').delete().eq('reporter_id', userId),
       supabaseAdmin.from('notice_reads').delete().eq('member_id', userId),
-    ])
+    ]
+
+    // Limpiar dependencias DE los posts de este usuario (likes, comentarios, reportes sobre el post)
+    if (postIds.length > 0) {
+      phase1Promises.push(
+        supabaseAdmin.from('feed_comments').delete().in('post_id', postIds),
+        supabaseAdmin.from('feed_likes').delete().in('post_id', postIds),
+        supabaseAdmin.from('feed_reports').delete().in('item_id', postIds)
+      )
+    }
+
+    // Limpiar dependencias DE los retos de este usuario (participantes)
+    if (challengeIds.length > 0) {
+      phase1Promises.push(
+        supabaseAdmin.from('challenge_participants').delete().in('challenge_id', challengeIds)
+      )
+    }
+
+    await Promise.all(phase1Promises)
 
     // Fase 2: Tablas principales que referencian profiles
     await Promise.all([
