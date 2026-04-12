@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,6 +35,7 @@ import { DietDailyView, DietWeeklyView } from './DietTabParts'
 import { SymptomsTracker } from './SymptomsTracker'
 import PRTracker from './PRTracker'
 import { WorkoutViewer } from './WorkoutBuilder'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
@@ -56,7 +57,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [pageTheme, setPageTheme] = useState('default')
   const [showProfileModal, setShowProfileModal] = useState(false)
   const { toast } = useToast()
-  const { getSignedUrl } = useSignedUrl()
+  const { getSignedUrl, getSignedUrls } = useSignedUrl()
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   // Check if user has premium access (registered with invitation code)
   const hasPremium = profile?.has_premium === true
@@ -179,6 +181,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       console.error('Fatal error loading dashboard data:', err)
     } finally {
       setOnboardingChecked(true)
+      setDataLoaded(true)
     }
   }
 
@@ -326,15 +329,18 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     
     if (data) {
       setFeedPosts(data)
-      // Load signed URLs for images
-      const urls = {}
-      for (const post of data) {
-        if (post.image_url) {
-          const url = await getSignedUrl('feed_images', post.image_url, 3600)
-          if (url) urls[post.id] = url
+      // Batch-load all signed URLs in a single request instead of one per image
+      const postsWithImages = data.filter(p => p.image_url)
+      if (postsWithImages.length > 0) {
+        const paths = postsWithImages.map(p => p.image_url)
+        const signed = await getSignedUrls('feed_images', paths, 3600)
+        const urls = {}
+        for (const { path, url } of signed) {
+          const post = postsWithImages.find(p => p.image_url === path)
+          if (post && url) urls[post.id] = url
         }
+        setFeedImageUrls(urls)
       }
-      setFeedImageUrls(urls)
     }
   }
 
@@ -679,6 +685,25 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               </CardContent>
             </Card>
 
+            {!dataLoaded && feedPosts.length === 0 && (
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <Card key={i} className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
+                    <CardContent className="p-5 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="w-12 h-12 rounded-2xl bg-white/5" />
+                        <div className="space-y-2 flex-1">
+                          <Skeleton className="h-4 w-1/3 bg-white/5" />
+                          <Skeleton className="h-3 w-1/4 bg-white/5" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-4 w-full bg-white/5" />
+                      <Skeleton className="h-4 w-3/4 bg-white/5" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
             {feedPosts.map((post) => (
               <Card key={post.id} className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden hover:border-violet-500/30 transition-all duration-300">
                 <CardContent className="p-5">
@@ -780,6 +805,18 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
           {/* WORKOUT TAB */}
           <TabsContent value="workout" className="space-y-4">
+            {!dataLoaded && !myWorkout && (
+              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
+                <CardContent className="p-5 space-y-4">
+                  <Skeleton className="h-6 w-1/2 bg-white/5" />
+                  <Skeleton className="h-4 w-full bg-white/5" />
+                  <Skeleton className="h-4 w-5/6 bg-white/5" />
+                  <div className="space-y-2 pt-2">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full rounded-xl bg-white/5" />)}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             {myWorkout ? (
               <>
                 <WorkoutViewer 
@@ -824,6 +861,17 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
           {/* DIET TAB */}
           <TabsContent value="diet" className="space-y-6">
+            {!dataLoaded && !myDiet && (
+              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
+                <CardContent className="p-5 space-y-4">
+                  <Skeleton className="h-6 w-1/3 bg-white/5" />
+                  <div className="grid grid-cols-4 gap-3">
+                    {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-16 rounded-2xl bg-white/5" />)}
+                  </div>
+                  <Skeleton className="h-32 w-full rounded-2xl bg-white/5" />
+                </CardContent>
+              </Card>
+            )}
             {onboardingChecked && pendingOnboarding && (
               <DietOnboardingBanner
                 requestId={pendingOnboarding.id}
