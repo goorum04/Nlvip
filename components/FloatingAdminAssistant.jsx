@@ -10,19 +10,19 @@ export default function FloatingAdminAssistant({ userId }) {
 
   return (
     <>
-      {/* Floating trigger button - bottom left, only when closed */}
+      {/* Floating trigger button - bottom right, only when closed */}
       {!isOpen && (
-        <div className="fixed bottom-6 left-6 z-50">
+        <div className="fixed bottom-6 right-6 z-50">
           <button
             onClick={() => setIsOpen(true)}
-            className="group relative w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center shadow-xl shadow-violet-500/40 hover:scale-110 hover:shadow-violet-500/60 transition-all duration-200"
+            className="group relative w-16 h-16 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center shadow-xl shadow-violet-500/40 hover:scale-110 hover:shadow-violet-500/60 transition-all duration-200"
             title="Abrir Asistente IA"
           >
             {/* Glow pulse */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 animate-pulse opacity-50 blur-md -z-10"></div>
-            <Wand2 className="w-6 h-6 text-white" />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-600 animate-pulse opacity-50 blur-md -z-10"></div>
+            <Wand2 className="w-7 h-7 text-white" />
             {/* IA badge */}
-            <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-cyan-400 flex items-center justify-center text-[9px] font-bold text-black shadow-lg shadow-cyan-400/50">
+            <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-cyan-400 flex items-center justify-center text-[10px] font-bold text-black shadow-lg shadow-cyan-400/50">
               IA
             </span>
           </button>
@@ -32,7 +32,7 @@ export default function FloatingAdminAssistant({ userId }) {
       {/* Floating panel - independent fixed element */}
       {isOpen && (
         <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 lg:left-6 lg:translate-x-0 w-[92%] max-w-[400px] h-[600px] max-h-[85vh] bg-[#0A0A0A] rounded-[2rem] shadow-2xl shadow-black border border-white/10 flex flex-col overflow-hidden z-50"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 lg:left-auto lg:right-6 lg:translate-x-0 w-[92%] max-w-[400px] h-[600px] max-h-[85vh] bg-[#0A0A0A] rounded-[2rem] shadow-2xl shadow-black border border-white/10 flex flex-col overflow-hidden z-50"
           style={{ animation: 'slideUpFade 0.2s ease-out' }}
         >
           <AdminAssistant

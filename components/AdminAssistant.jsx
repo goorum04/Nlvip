@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { 
-  Mic, MicOff, Send, Bot, User, Loader2, CheckCircle2, XCircle,
+  Mic, MicOff, Send, Bot, User, Loader2, CheckCircle2, XCircle, X,
   Volume2, VolumeX, Sparkles, AlertTriangle, Zap, Crown, Wand2,
   ChefHat, Flame, Beef, Wheat, Droplets, Clock, BarChart3, Info
 } from 'lucide-react'
@@ -323,7 +323,7 @@ function ExecutionPlan({ plan, onConfirm, onCancel, isExecuting }) {
   )
 }
 
-export default function AdminAssistant({ userId }) {
+export default function AdminAssistant({ userId, onClose }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -523,7 +523,7 @@ export default function AdminAssistant({ userId }) {
   ]
 
   return (
-    <div className="h-[calc(100vh-180px)] flex flex-col">
+    <div className="h-full flex flex-col">
       {/* PREMIUM HEADER */}
       <div className="relative overflow-hidden rounded-t-3xl">
         <div className="absolute inset-0 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 opacity-90"></div>
@@ -573,6 +573,15 @@ export default function AdminAssistant({ userId }) {
               >
                 {ttsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
               </button>
+
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-xl bg-white/20 text-white hover:bg-white/30 flex items-center justify-center transition-all ml-1"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -593,22 +602,6 @@ export default function AdminAssistant({ userId }) {
               <p className="text-gray-500 mb-8 max-w-sm">
                 Gestiona socios, crea avisos, genera dietas y más usando comandos de voz o texto.
               </p>
-              <div className="grid grid-cols-3 gap-3 w-full max-w-2xl">
-                {quickCommands.map((cmd, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => { setInput(cmd.command); handleSend(cmd.command) }}
-                    className="group relative overflow-hidden rounded-2xl p-4 text-left transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/0 group-hover:from-violet-500/10 group-hover:to-cyan-500/10 transition-all"></div>
-                    <div className="absolute inset-0 border border-white/10 group-hover:border-violet-500/30 rounded-2xl transition-all"></div>
-                    <div className="relative">
-                      <span className="text-2xl mb-2 block">{cmd.icon}</span>
-                      <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">{cmd.text}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
             </div>
           ) : (
             <>

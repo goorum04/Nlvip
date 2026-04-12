@@ -88,11 +88,11 @@ Responde siempre de forma amigable y profesional. Si algo falla, explica el prob
 
 export async function POST(request) {
   try {
-    // 1. Rate Limiting
+    // 1. Rate Limiting (Más amplio para el chat del asistente)
     const identifier = getIdentifier(request)
-    const { success: limitOk } = await checkRateLimit(identifier, 30, 60000) // 30 reqs/min
+    const { success: limitOk } = await checkRateLimit(identifier, 100, 60000) // 100 reqs/min
     if (!limitOk) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+      return NextResponse.json({ error: 'Too many requests. Límite de 100/min alcanzado.' }, { status: 429 })
     }
 
     const { messages, executeTools = false, toolCallsToExecute = [] } = await request.json()
