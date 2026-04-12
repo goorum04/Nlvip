@@ -686,3 +686,60 @@ CREATE POLICY "Chat audios upload admin" ON storage.objects FOR INSERT WITH CHEC
   bucket_id = 'chat_audios' AND
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'trainer'))
 );
+
+-- =========================================================================
+-- PART 12: COMPATIBILITY FIXES FOR RPC FUNCTIONS
+-- Ensures columns referenced by migration 2 functions actually exist
+-- =========================================================================
+
+-- profiles: steps_goal used by rpc_get_activity_history / rpc_get_member_activity
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS steps_goal INT DEFAULT 8000;
+
+-- diet_templates & workout_templates: goal_tag used by admin assistant RPCs
+ALTER TABLE diet_templates    ADD COLUMN IF NOT EXISTS goal_tag TEXT;
+ALTER TABLE workout_templates ADD COLUMN IF NOT EXISTS goal_tag TEXT;
+
+-- food_logs: the functions use log_date/photo_url/description/logged_at
+-- master-schema.sql has 'date' instead of 'log_date' and lacks the others
+ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS log_date     DATE         DEFAULT CURRENT_DATE;
+ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS photo_url    TEXT;
+ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS description  TEXT;
+ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS logged_at    TIMESTAMPTZ  DEFAULT NOW();
+
+-- Back-fill log_date from legacy 'date' column if it exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'food_logs' AND column_name = 'date') THEN
+    EXECUTE 'UPDATE food_logs SET log_date = "date" WHERE log_date IS NULL';
+  END IF;
+END $$;
+
+-- member_diets: needs UNIQUE(member_id) for ON CONFLICT in rpc_assign_diet_to_member
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes WHERE tablename = 'member_diets' AND indexname = 'idx_member_diets_unique_member'
+  ) THEN
+    -- Keep only most recent row per member before adding unique constraint
+    DELETE FROM member_diets
+    WHERE id NOT IN (
+      SELECT DISTINCT ON (member_id) id FROM member_diets ORDER BY member_id, assigned_at DESC NULLS LAST
+    );
+    CREATE UNIQUE INDEX idx_member_diets_unique_member ON member_diets(member_id);
+  END IF;
+END $$;
+
+-- member_workouts: needs UNIQUE(member_id) for ON CONFLICT in rpc_assign_workout_to_member
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes WHERE tablename = 'member_workouts' AND indexname = 'idx_member_workouts_unique_member'
+  ) THEN
+    -- Keep only most recent row per member before adding unique constraint
+    DELETE FROM member_workouts
+    WHERE id NOT IN (
+      SELECT DISTINCT ON (member_id) id FROM member_workouts ORDER BY member_id, assigned_at DESC NULLS LAST
+    );
+    CREATE UNIQUE INDEX idx_member_workouts_unique_member ON member_workouts(member_id);
+  END IF;
+END $$;
