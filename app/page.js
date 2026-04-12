@@ -1,7 +1,7 @@
 'use client'
 // Sync commit: 2026-03-18 14:15
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,6 +29,7 @@ export default function App() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [profileLoading, setProfileLoading] = useState(false) // New state to track profile fetch
+  const profileLoadingRef = useRef(false) // Prevent concurrent loading
   const [authMode, setAuthMode] = useState('login')
   const { toast } = useToast()
 
@@ -51,7 +52,7 @@ export default function App() {
       if (session?.user) {
         setUser(session.user)
         if (!profile) {
-          await loadProfile(session.user.id)
+          await loadProfile(session.user)
         }
       } else {
         setUser(null)
@@ -67,7 +68,7 @@ export default function App() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUser(user)
-        await loadProfile(user.id)
+        await loadProfile(user)
       }
     } catch (error) {
       console.error('Error:', error)
@@ -76,16 +77,23 @@ export default function App() {
     }
   }
 
-  const loadProfile = async (userId) => {
+  const loadProfile = async (authUser) => {
+    if (!authUser || !authUser.id) return;
+    if (profileLoadingRef.current) return;
+    
+    const userId = authUser.id;
     console.log(`[loadProfile] Starting for ID: ${userId}`)
+    
+    profileLoadingRef.current = true;
     setProfileLoading(true)
+    let timeoutId;
     try {
       console.log('Intentando cargar perfil para:', userId)
 
       // Timeout de 3 segundos para evitar bloqueos por recursión RLS
       const fetchPromise = supabase.from('profiles').select('*').eq('id', userId).single()
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout DB')), 3000)
+        timeoutId = setTimeout(() => reject(new Error('Timeout DB')), 3000)
       )
 
       let result;
@@ -98,9 +106,7 @@ export default function App() {
 
       if (result.data) {
         console.log('Perfil cargado desde DB. Role:', result.data.role)
-        // Auto-fix for missing fields if they exist in auth metadata
-        const { data: { user: actualUser } } = await supabase.auth.getUser()
-        const metadata = actualUser?.user_metadata || {}
+        const metadata = authUser.user_metadata || {}
         if ((!result.data.sex && metadata.sex) || (result.data.has_premium === false && metadata.has_premium === true)) {
           console.log('Sincronizando campos desde metadatos (sex/premium)...')
           const sex = metadata.sex || result.data.sex
@@ -115,7 +121,7 @@ export default function App() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: userId, updates })
-          })
+          }).catch(e => console.warn('Sync profile error:', e))
           result.data = { ...result.data, ...updates }
         }
         setProfile(result.data)
@@ -123,24 +129,22 @@ export default function App() {
       }
 
       // PERMANENT FIX: Si el perfil falta o dio error, asegurar fallback robusto con upsert.
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (authUser) {
-        const metadata = authUser.user_metadata || {}
-        const currentEmail = (authUser.email || '').toLowerCase()
-        const metaPremium = metadata.has_premium === true
-        
-        const baseProfile = {
-          id: authUser.id,
-          email: currentEmail,
-          name: metadata.full_name || metadata.name || currentEmail.split('@')[0],
-          role: metadata.role || 'member',
-          sex: metadata.sex || (currentEmail.includes('maria') ? 'female' : (regSex || null)),
-          has_premium: metaPremium
-        }
+      const metadata = authUser.user_metadata || {}
+      const currentEmail = (authUser.email || '').toLowerCase()
+      const metaPremium = metadata.has_premium === true
+      
+      const baseProfile = {
+        id: authUser.id,
+        email: currentEmail,
+        name: metadata.full_name || metadata.name || currentEmail.split('@')[0],
+        role: metadata.role || 'member',
+        sex: metadata.sex || (currentEmail.includes('maria') ? 'female' : (regSex || null)),
+        has_premium: metaPremium
+      }
 
-        // Check if it's a demo account to assign correct role
-        const demoAccount = Object.values(DEMO_ACCOUNTS).find(acc => acc.email === baseProfile.email)
-        if (demoAccount) {
+      // Check if it's a demo account to assign correct role
+      const demoAccount = Object.values(DEMO_ACCOUNTS).find(acc => acc.email === baseProfile.email)
+      if (demoAccount) {
           baseProfile.name = demoAccount.name
           baseProfile.role = demoAccount.role
           console.log(`[loadProfile] Identified Demo Account: ${demoAccount.role}`)
@@ -163,18 +167,19 @@ export default function App() {
           }
         }
         
-        // RAM Fallback si falla DB o error persistente
-        console.warn('Usando perfil fallback en RAM')
-        setProfile({
-          ...baseProfile,
-          has_premium: true, // premium in demo
-          cycle_enabled: baseProfile.sex === 'female' || currentEmail.includes('maria'),
-          is_fallback: true
-        })
-      }
+      // RAM Fallback si falla DB o error persistente
+      console.warn('Usando perfil fallback en RAM')
+      setProfile({
+        ...baseProfile,
+        has_premium: true, // premium in demo
+        cycle_enabled: baseProfile.sex === 'female' || currentEmail.includes('maria'),
+        is_fallback: true
+      })
     } catch (err) {
       console.error('[loadProfile] Unexpected error:', err)
     } finally {
+      if (timeoutId) clearTimeout(timeoutId)
+      profileLoadingRef.current = false
       setProfileLoading(false)
     }
   }
@@ -186,7 +191,7 @@ export default function App() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
       setUser(data.user)
-      await loadProfile(data.user.id)
+      await loadProfile(data.user)
       toast({ title: '¡Bienvenido!' })
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -292,7 +297,7 @@ export default function App() {
           }
 
           // CRITICAL: Refresh profile state now that DB is updated
-          await loadProfile(data.user.id)
+          await loadProfile(data.user)
 
           // Create onboarding request and show the form immediately
           try {
