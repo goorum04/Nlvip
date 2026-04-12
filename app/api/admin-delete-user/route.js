@@ -118,7 +118,20 @@ export async function POST(request) {
       supabaseAdmin.from('trainer_notices').delete().eq('member_id', userId),
     ])
 
-    // Fase 3: Conversaciones y mensajes (el bloqueador principal del bug)
+    // Fase 3: Datos de contenido y autoría (pueden ser muchos)
+    await Promise.all([
+      supabaseAdmin.from('recipes').delete().eq('created_by', userId),
+      supabaseAdmin.from('recipe_catalog').delete().eq('created_by', userId),
+      supabaseAdmin.from('exercises').delete().eq('created_by', userId),
+      supabaseAdmin.from('workout_videos').delete().eq('uploaded_by', userId),
+      supabaseAdmin.from('training_videos').delete().eq('trainer_id', userId),
+      supabaseAdmin.from('training_videos').delete().eq('uploaded_by', userId),
+      supabaseAdmin.from('training_videos').delete().eq('approved_by', userId),
+      supabaseAdmin.from('workout_templates').delete().eq('trainer_id', userId),
+      supabaseAdmin.from('diet_templates').delete().eq('trainer_id', userId),
+    ])
+
+    // Fase 4: Conversaciones y mensajes (el bloqueador principal del bug)
     // Primero recopilar IDs de cualquier conversación donde el usuario participe o haya creado
     const { data: partConvs } = await supabaseAdmin
       .from('conversation_participants')
@@ -157,11 +170,14 @@ export async function POST(request) {
     await supabaseAdmin.from('admin_assistant_action_logs').delete().eq('admin_id', userId)
     await supabaseAdmin.from('admin_assistant_conversations').delete().eq('admin_id', userId)
 
-    // Fase 4: Relaciones trainer_members e invitation_codes
+    // Fase 5: Relaciones estructurales y metadatos huérfanos
     await Promise.all([
+      supabaseAdmin.from('macro_goals').delete().eq('assigned_by', userId),
+      supabaseAdmin.from('macro_goal_history').delete().eq('changed_by', userId),
       supabaseAdmin.from('trainer_members').delete().eq('member_id', userId),
       supabaseAdmin.from('trainer_members').delete().eq('trainer_id', userId),
       supabaseAdmin.from('invitation_codes').update({ used_by: null }).eq('used_by', userId),
+      supabaseAdmin.from('invitation_codes').delete().eq('trainer_id', userId),
       supabaseAdmin.from('profiles').update({ trainer_id: null }).eq('trainer_id', userId),
     ])
 

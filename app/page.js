@@ -62,8 +62,20 @@ export default function App() {
       }
     })
 
-    return () => subscription.unsubscribe()
-  }, [])
+    // Panic rescue: If app is still loading after 8 seconds, force unlock it.
+    const rescueTimeout = setTimeout(() => {
+      if (loading || profileLoading) {
+        console.warn('Rescue timer triggered: Forcing app unlock after 8s hang.')
+        setLoading(false)
+        setProfileLoading(false)
+      }
+    }, 8000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(rescueTimeout)
+    }
+  }, [loading, profileLoading]) // Add dependencies to check if still stuck
 
   const checkUser = async () => {
     try {
@@ -105,10 +117,10 @@ export default function App() {
     try {
       console.log('Intentando cargar perfil para:', userId)
 
-      // Timeout de 3 segundos para evitar bloqueos por recursión RLS
+      // Timeout de 10 segundos para mayor robustez en conexiones móviles
       const fetchPromise = supabase.from('profiles').select('*').eq('id', userId).single()
       const timeoutPromise = new Promise((_, reject) =>
-        timeoutId = setTimeout(() => reject(new Error('Timeout DB')), 3000)
+        timeoutId = setTimeout(() => reject(new Error('Timeout DB')), 10000)
       )
 
       let result;
