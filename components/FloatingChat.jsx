@@ -74,8 +74,6 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   const timerRef = useRef(null)
   const messagesEndRef = useRef(null)
 
-  const messagesEndRef = useRef(null)
-
   useEffect(() => {
     if (isOpen && userRole === 'member') {
       initializeMemberConversations()
