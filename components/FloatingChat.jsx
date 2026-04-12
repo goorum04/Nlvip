@@ -100,6 +100,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     }
   }, [activeConversation, isOpen])
 
+  useEffect(() => {
     // Initial fetch of unread counts
     fetchUnreadCounts()
     
