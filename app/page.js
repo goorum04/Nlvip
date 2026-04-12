@@ -67,13 +67,22 @@ export default function App() {
 
   const checkUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      // Avoid hanging forever if Supabase API stalls (e.g. offline with SW crash)
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Auth Timeout')), 5000)
+      )
+      
+      const { data: { user } } = await Promise.race([
+        supabase.auth.getUser(),
+        timeoutPromise
+      ])
+      
       if (user) {
         setUser(user)
         await loadProfile(user)
       }
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Error in checkUser (network or timeout):', error.message)
     } finally {
       setLoading(false)
     }

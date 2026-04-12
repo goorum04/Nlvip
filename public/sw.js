@@ -48,8 +48,18 @@ self.addEventListener('fetch', (event) => {
         });
         return response;
       })
-      .catch(() => {
-        return caches.match(event.request);
+      .catch(async () => {
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        
+        // Return a mock 503 response if totally offline and not in cache
+        // This prevents "Failed to convert value to 'Response'" crash.
+        return new Response(JSON.stringify({ error: 'Offline' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        });
       })
   );
 });
