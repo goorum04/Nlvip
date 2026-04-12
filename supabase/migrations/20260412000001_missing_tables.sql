@@ -414,6 +414,12 @@ CREATE TABLE IF NOT EXISTS training_videos (
   created_at   timestamptz DEFAULT now()
 );
 
+-- Add columns if table already existed without them
+ALTER TABLE training_videos ADD COLUMN IF NOT EXISTS is_approved  boolean NOT NULL DEFAULT false;
+ALTER TABLE training_videos ADD COLUMN IF NOT EXISTS approved_by  uuid REFERENCES profiles(id) ON DELETE SET NULL;
+ALTER TABLE training_videos ADD COLUMN IF NOT EXISTS approved_at  timestamptz;
+ALTER TABLE training_videos ADD COLUMN IF NOT EXISTS thumbnail_url text;
+
 CREATE INDEX IF NOT EXISTS idx_training_videos_uploaded ON training_videos(uploaded_by);
 CREATE INDEX IF NOT EXISTS idx_training_videos_approved ON training_videos(is_approved);
 
