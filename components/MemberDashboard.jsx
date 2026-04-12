@@ -51,7 +51,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [onboardingChecked, setOnboardingChecked] = useState(false)
   const [dietViewMode, setDietViewMode] = useState('daily')
   const [myTrainer, setMyTrainer] = useState(null)
-  const [storeProducts, setStoreProducts] = useState([])
   const [gymAdmin, setGymAdmin] = useState(null)
   const [feedImageUrls, setFeedImageUrls] = useState({})
   const [pageTheme, setPageTheme] = useState('default')
@@ -173,7 +172,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         loadOnboarding().catch(e => console.error('Error loading onboarding:', e)),
         loadMyTrainer().catch(e => console.error('Error loading trainer:', e)),
         loadGymAdmin().catch(e => console.error('Error loading admin:', e)),
-        loadStoreProducts().catch(e => console.error('Error loading store products:', e)),
         loadChartData().catch(e => console.error('Error loading chart data:', e)),
         loadMyPrs().catch(e => console.error('Error loading PRs:', e))
       ])
@@ -210,15 +208,6 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     }
   }
 
-  const loadStoreProducts = async () => {
-    try {
-      // Dummy fetch to populate if needed, or just set empty if store_products doesn't exist
-      const { data, error } = await supabase.from('store_products').select('*').limit(10).maybeSingle()
-      if (!error && data) setStoreProducts([data]) // Safely ignore or use real table
-    } catch (e) {
-      console.warn('Error fetching store products:', e)
-    }
-  }
 
   const loadChartData = async () => {
     try {
