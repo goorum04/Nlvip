@@ -47,6 +47,16 @@ export default function App() {
     console.log('App Mounted - Checking session...')
     checkUser()
 
+    // Handle app resume (tab switch or background to foreground)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('App Resumed - Re-checking session...')
+        // We re-check but without forcing the global loading state if we already have a profile
+        checkUser()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     // Listen for auth changes - crucial for mobile session persistence
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth State Changed:', event, session?.user?.id)
@@ -55,27 +65,28 @@ export default function App() {
         if (!profile) {
           await loadProfile(session.user)
         }
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         setUser(null)
         setProfile(null)
         loadedUserIdRef.current = null
       }
     })
 
-    // Panic rescue: If app is still loading after 8 seconds, force unlock it.
+    // Panic rescue: If app is still loading after 10 seconds, force unlock it.
     const rescueTimeout = setTimeout(() => {
       if (loading || profileLoading) {
-        console.warn('Rescue timer triggered: Forcing app unlock after 8s hang.')
+        console.warn('Rescue timer triggered: Forcing app unlock after 10s hang.')
         setLoading(false)
         setProfileLoading(false)
       }
-    }, 8000)
+    }, 10000)
 
     return () => {
       subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       clearTimeout(rescueTimeout)
     }
-  }, [loading, profileLoading]) // Add dependencies to check if still stuck
+  }, []) // Empty dependency array: run once on mount
 
   const checkUser = async () => {
     try {
