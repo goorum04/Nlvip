@@ -401,24 +401,43 @@ CREATE POLICY "Members view assigned exercises" ON workout_exercises FOR SELECT 
 -- PART 7: TRAINING VIDEOS (with admin approval workflow)
 -- =========================================================================
 
-CREATE TABLE IF NOT EXISTS training_videos (
-  id           uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
-  title        text        NOT NULL,
-  description  text,
-  video_url    text        NOT NULL,
-  thumbnail_url text,
-  uploaded_by  uuid        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  is_approved  boolean     NOT NULL DEFAULT false,
-  approved_by  uuid        REFERENCES profiles(id) ON DELETE SET NULL,
-  approved_at  timestamptz,
-  created_at   timestamptz DEFAULT now()
-);
+DO $$
+BEGIN
+  -- Create table only if it doesn't exist
+  CREATE TABLE IF NOT EXISTS training_videos (
+    id            uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
+    title         text        NOT NULL,
+    description   text,
+    video_url     text        NOT NULL,
+    thumbnail_url text,
+    uploaded_by   uuid        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    is_approved   boolean     NOT NULL DEFAULT false,
+    approved_by   uuid        REFERENCES profiles(id) ON DELETE SET NULL,
+    approved_at   timestamptz,
+    created_at    timestamptz DEFAULT now()
+  );
 
--- Add columns if table already existed without them
-ALTER TABLE training_videos ADD COLUMN IF NOT EXISTS is_approved  boolean NOT NULL DEFAULT false;
-ALTER TABLE training_videos ADD COLUMN IF NOT EXISTS approved_by  uuid REFERENCES profiles(id) ON DELETE SET NULL;
-ALTER TABLE training_videos ADD COLUMN IF NOT EXISTS approved_at  timestamptz;
-ALTER TABLE training_videos ADD COLUMN IF NOT EXISTS thumbnail_url text;
+  -- Add columns if the table already existed without them (each in its own exception block)
+  BEGIN
+    ALTER TABLE training_videos ADD COLUMN is_approved boolean NOT NULL DEFAULT false;
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END;
+
+  BEGIN
+    ALTER TABLE training_videos ADD COLUMN thumbnail_url text;
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END;
+
+  BEGIN
+    ALTER TABLE training_videos ADD COLUMN approved_by uuid REFERENCES profiles(id) ON DELETE SET NULL;
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END;
+
+  BEGIN
+    ALTER TABLE training_videos ADD COLUMN approved_at timestamptz;
+  EXCEPTION WHEN duplicate_column THEN NULL;
+  END;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_training_videos_uploaded ON training_videos(uploaded_by);
 CREATE INDEX IF NOT EXISTS idx_training_videos_approved ON training_videos(is_approved);
