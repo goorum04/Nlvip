@@ -371,7 +371,7 @@ export default function AdminAssistant({ userId, onClose }) {
   const [pendingToolCalls, setPendingToolCalls] = useState([])
   const [isExecuting, setIsExecuting] = useState(false)
   const [ttsEnabled, setTtsEnabled] = useState(false)
-  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [assistantIsSpeaking, setAssistantIsSpeaking] = useState(false)
   const synthRef = useRef(null)
 
   // Función TTS para leer respuestas del asistente
@@ -381,9 +381,9 @@ export default function AdminAssistant({ userId, onClose }) {
     const utterance = new SpeechSynthesisUtterance(text.slice(0, 300))
     utterance.lang = 'es-ES'
     utterance.rate = 1.1
-    utterance.onstart = () => setIsSpeaking(true)
-    utterance.onend = () => setIsSpeaking(false)
-    utterance.onerror = () => setIsSpeaking(false)
+    utterance.onstart = () => setAssistantIsSpeaking(true)
+    utterance.onend = () => setAssistantIsSpeaking(false)
+    utterance.onerror = () => setAssistantIsSpeaking(false)
     synthRef.current = utterance
     window.speechSynthesis.speak(utterance)
   }
@@ -648,7 +648,7 @@ export default function AdminAssistant({ userId, onClose }) {
                   <span className="text-xs font-medium text-red-200">Grabando {formatDuration(recordingDuration)}</span>
                 </div>
               )}
-              {isSpeaking && (
+              {assistantIsSpeaking && (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/20 backdrop-blur-sm rounded-full border border-cyan-400/30">
                   <Volume2 className="w-3 h-3 text-cyan-300 animate-pulse" />
                   <span className="text-xs font-medium text-cyan-200">Hablando</span>

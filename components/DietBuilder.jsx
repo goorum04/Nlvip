@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
+import { useSignedUrl } from '@/hooks/useStorage'
 
 export function DietBuilder({ trainerId, existingDiet, onSave, onCancel }) {
     const [step, setStep] = useState(1) // 1: Basic & Macros, 2: Meals
@@ -317,7 +318,6 @@ export function DietBuilder({ trainerId, existingDiet, onSave, onCancel }) {
 export function DietViewer({ dietId }) {
     const [diet, setDiet] = useState(null)
     const [loading, setLoading] = useState(true)
-    const { getSignedUrl } = useSignedUrl() // Assuming hook exists for recipes if needed
 
     useEffect(() => {
         if (dietId) loadDiet()
