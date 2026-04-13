@@ -30,7 +30,7 @@ import { ProgressPhotoGallery } from './ProgressPhotos'
 import { FeedSection } from './FeedSection'
 import AIRoutineGenerator from './AIRoutineGenerator'
 
-export default function AdminDashboard({ user, profile, onLogout }) {
+export default function AdminDashboard({ user, profile, setProfile, onLogout }) {
   const [trainers, setTrainers] = useState([])
   const [codes, setCodes] = useState([])
   const [members, setMembers] = useState([])
@@ -913,8 +913,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         onProfileUpdate={(updatedProfile) => {
-          // Forzar recarga de la página para reflejar cambios
-          window.location.reload()
+          setProfile(updatedProfile)
         }}
         onLogout={onLogout}
       />

@@ -509,18 +509,18 @@ export default function App() {
     if (profile.role === 'admin') {
       return (
         <ErrorBoundary>
-          <AdminDashboard user={user} profile={profile} onLogout={handleLogout} />
+          <AdminDashboard user={user} profile={profile} setProfile={setProfile} onLogout={handleLogout} />
         </ErrorBoundary>
       )
     }
     if (profile.role === 'trainer') return (
       <ErrorBoundary>
-        <TrainerDashboard user={user} profile={profile} onLogout={handleLogout} />
+        <TrainerDashboard user={user} profile={profile} setProfile={setProfile} onLogout={handleLogout} />
       </ErrorBoundary>
     )
     if (profile.role === 'member') return (
       <ErrorBoundary>
-        <MemberDashboard user={user} profile={profile} onLogout={handleLogout} />
+        <MemberDashboard user={user} profile={profile} setProfile={setProfile} onLogout={handleLogout} />
       </ErrorBoundary>
     )
   }

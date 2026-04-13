@@ -37,7 +37,7 @@ import PRTracker from './PRTracker'
 import { WorkoutViewer } from './WorkoutBuilder'
 import { Skeleton } from '@/components/ui/skeleton'
 
-export default function MemberDashboard({ user, profile, onLogout }) {
+export default function MemberDashboard({ user, profile, setProfile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
   const [myWorkout, setMyWorkout] = useState(null)
   const [workoutVideos, setWorkoutVideos] = useState([])
@@ -59,6 +59,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const { toast } = useToast()
   const { getSignedUrl, getSignedUrls } = useSignedUrl()
   const [dataLoaded, setDataLoaded] = useState(false)
+  const [activeTab, setActiveTab] = useState('activity')
 
   // Check if user has premium access (registered with invitation code)
   const hasPremium = profile?.has_premium === true
@@ -601,18 +602,19 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         onProfileUpdate={(updatedProfile) => {
-          window.location.reload()
+          setProfile(updatedProfile)
         }}
         onLogout={onLogout}
       />
 
       <main className="container mx-auto px-4 py-6 pb-24">
         <Tabs 
-          defaultValue="activity" 
-          className="space-y-6"
+          value={activeTab}
           onValueChange={(val) => {
+            setActiveTab(val)
             if (val !== 'bienestar') setPageTheme('default')
           }}
+          className="space-y-6"
         >
           <div className="overflow-x-auto pb-2 -mx-4 px-4">
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
@@ -771,7 +773,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
                 user={user} 
                 profile={profile} 
                 variant="compact" 
-                onProfileUpdate={() => window.location.reload()} 
+                onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)} 
               />
             )}
             <ActivityTracker userId={user.id} />
@@ -780,16 +782,16 @@ export default function MemberDashboard({ user, profile, onLogout }) {
             {/* Bienestar Femenino (Strictly female) */}
             {profile?.sex === 'female' && (
             <TabsContent value="bienestar" className="space-y-4 pb-48 min-h-[80vh] overflow-visible">
-              <LifeStageSelector userId={user.id} profile={profile} onUpdate={() => window.location.reload()} />
+              <LifeStageSelector userId={user.id} profile={profile} onUpdate={(updatedProfile) => setProfile(updatedProfile)} />
               {(!profile?.life_stage || profile.life_stage === 'cycle') && (
-                <CycleModule user={user} profile={profile} variant="full" onProfileUpdate={() => window.location.reload()} onThemeChange={setPageTheme} />
+                <CycleModule user={user} profile={profile} variant="full" onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)} onThemeChange={setPageTheme} />
               )}
-              {profile?.life_stage === 'pregnant' && <PregnancyMode userId={user.id} profile={profile} onUpdate={() => window.location.reload()} onThemeChange={setPageTheme} />}
-              {profile?.life_stage === 'postpartum' && <PostpartumMode userId={user.id} profile={profile} onUpdate={() => window.location.reload()} onThemeChange={setPageTheme} />}
+              {profile?.life_stage === 'pregnant' && <PregnancyMode userId={user.id} profile={profile} onUpdate={(updatedProfile) => setProfile(updatedProfile)} onThemeChange={setPageTheme} />}
+              {profile?.life_stage === 'postpartum' && <PostpartumMode userId={user.id} profile={profile} onUpdate={(updatedProfile) => setProfile(updatedProfile)} onThemeChange={setPageTheme} />}
               {profile?.life_stage === 'lactating' && (
                 <>
                   <LactationTracker userId={user.id} onThemeChange={setPageTheme} />
-                  <PostpartumMode userId={user.id} profile={profile} onUpdate={() => window.location.reload()} onThemeChange={setPageTheme} />
+                  <PostpartumMode userId={user.id} profile={profile} onUpdate={(updatedProfile) => setProfile(updatedProfile)} onThemeChange={setPageTheme} />
                 </>
               )}
               <SymptomsTracker userId={user.id} phase={profile?.life_stage || 'cycle'} />

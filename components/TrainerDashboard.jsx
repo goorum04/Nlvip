@@ -26,7 +26,7 @@ import { AvatarBubble, ProfileModal } from './UserProfile'
 import { WorkoutBuilder } from './WorkoutBuilder'
 import { DietBuilder } from './DietBuilder'
 
-export default function TrainerDashboard({ user, profile, onLogout }) {
+export default function TrainerDashboard({ user, profile, setProfile, onLogout }) {
   const [members, setMembers] = useState([])
   const [workoutTemplates, setWorkoutTemplates] = useState([])
   const [dietTemplates, setDietTemplates] = useState([])
@@ -534,7 +534,7 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         onProfileUpdate={(updatedProfile) => {
-          window.location.reload()
+          setProfile(updatedProfile)
         }}
         onLogout={onLogout}
       />
