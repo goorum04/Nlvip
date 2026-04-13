@@ -514,27 +514,19 @@ export function WorkoutBuilder({ trainerId, existingWorkout = null, onSave, onCa
   const loadExistingWorkout = async () => {
     setLoadingData(true)
     try {
-      // Cargar días
+      // Single query: days + exercises in one round trip (eliminates N+1)
       const { data: daysData } = await supabase
         .from('workout_days')
-        .select('*')
+        .select('*, workout_exercises(*)')
         .eq('workout_template_id', existingWorkout.id)
         .order('day_number')
 
       if (daysData) {
-        setDays(daysData)
-        
-        // Cargar ejercicios de cada día
         const exercisesMap = {}
         for (const day of daysData) {
-          const { data: exercisesData } = await supabase
-            .from('workout_exercises')
-            .select('*')
-            .eq('workout_day_id', day.id)
-            .order('order_index')
-          
-          exercisesMap[day.id] = exercisesData || []
+          exercisesMap[day.id] = [...(day.workout_exercises || [])].sort((a, b) => a.order_index - b.order_index)
         }
+        setDays(daysData)
         setExercisesByDay(exercisesMap)
       }
     } catch (error) {

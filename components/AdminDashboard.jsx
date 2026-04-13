@@ -166,22 +166,19 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
   // Load challenges (all)
   const loadChallenges = async () => {
+    // Single query: challenges + participants in one round trip (eliminates N+1)
     const { data } = await supabase
       .from('challenges')
-      .select('*, creator:profiles!challenges_created_by_fkey(name)')
+      .select('*, creator:profiles!challenges_created_by_fkey(name), challenge_participants(*, member:profiles!challenge_participants_member_id_fkey(name))')
       .order('created_at', { ascending: false })
-    
+
     if (data) {
       setChallenges(data)
+      const map = {}
       for (const challenge of data) {
-        const { data: parts } = await supabase
-          .from('challenge_participants')
-          .select('*, member:profiles!challenge_participants_member_id_fkey(name)')
-          .eq('challenge_id', challenge.id)
-        if (parts) {
-          setChallengeParticipants(prev => ({ ...prev, [challenge.id]: parts }))
-        }
+        map[challenge.id] = challenge.challenge_participants || []
       }
+      setChallengeParticipants(map)
     }
   }
 

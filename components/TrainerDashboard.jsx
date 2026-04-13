@@ -127,24 +127,20 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   }
 
   const loadChallenges = async () => {
+    // Load challenges + participants in one query (eliminates N+1)
     const { data } = await supabase
       .from('challenges')
-      .select('*')
+      .select('*, challenge_participants(*, member:profiles!challenge_participants_member_id_fkey(name))')
       .eq('created_by', user.id)
       .order('created_at', { ascending: false })
 
     if (data) {
       setChallenges(data)
-      // Load participants for each challenge
+      const map = {}
       for (const challenge of data) {
-        const { data: parts } = await supabase
-          .from('challenge_participants')
-          .select('*, member:profiles!challenge_participants_member_id_fkey(name)')
-          .eq('challenge_id', challenge.id)
-        if (parts) {
-          setChallengeParticipants(prev => ({ ...prev, [challenge.id]: parts }))
-        }
+        map[challenge.id] = challenge.challenge_participants || []
       }
+      setChallengeParticipants(map)
     }
   }
 
