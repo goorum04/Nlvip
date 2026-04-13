@@ -64,7 +64,8 @@ export default function ActivityTracker({ userId, compact = false }) {
       const totalSteps = (stepsResult.resultData || []).reduce((sum, s) => sum + (s.value || 0), 0)
 
       if (totalSteps > 0) {
-        await updateSteps(Math.round(totalSteps), false, 'healthkit')
+      if (totalSteps > 0) {
+        await updateSteps(Math.round(totalSteps), false, 'device')
         if (showToast) toast({ title: 'Apple Health sincronizado', description: `${Math.round(totalSteps).toLocaleString()} pasos` })
       }
     } catch {
@@ -109,10 +110,7 @@ export default function ActivityTracker({ userId, compact = false }) {
     if (newSteps < 0) return
     setUpdating(true)
     try {
-      const { data, error } = await supabase.rpc('rpc_update_daily_steps', { 
-        p_steps: newSteps,
-        p_source: source
-      })
+      const { data, error } = await supabase.rpc('rpc_update_daily_steps', { p_steps: newSteps, p_source: source })
       if (error) throw error
       setActivity(prev => ({
         ...prev,
