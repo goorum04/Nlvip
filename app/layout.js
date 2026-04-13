@@ -30,13 +30,13 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es">
+    <html lang="es" className="dark">
       <head>
         <meta name="msapplication-TileColor" content="#7c3aed" />
         <meta name="msapplication-tap-highlight" content="no" />
         <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
       </head>
-      <body className="overscroll-none">
+      <body className="bg-[#030303] text-white overscroll-none">
         <ServiceWorkerInit />
         <CapacitorPushInit />
         {children}
