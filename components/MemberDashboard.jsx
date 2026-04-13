@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle, 
-  Flag, Sparkles, Flame, Target, Zap, Star, ShoppingBag,
+  Flag, Sparkles, Flame, Target, Zap, Star, ShoppingBag, CheckCircle2,
   Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift, Sun, Calendar
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
@@ -100,6 +100,49 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   // Macro calculator removed - only trainers/admins can calculate macros
 
   const { uploadFile, uploading, progress } = useFileUpload()
+  const [isCheckingIn, setIsCheckingIn] = useState(false)
+  const [showCheckinConfetti, setShowCheckinConfetti] = useState(false)
+
+  const CONGRATS_MESSAGES = [
+    "¡Eres una máquina! Rutina completada con éxito. 💪",
+    "¡Boom! Otro entrenamiento para la saca. Sigue así. 🔥",
+    "El sudor de hoy es la fuerza de mañana. ¡Grandísimo trabajo! 💦",
+    "¡Imparable! Has superado tu rutina del día. 🏆",
+    "¡Misión Cumplida! Tu cuerpo (y tu mente) te lo agradecen. 🌟",
+    "No pain, no gain... ¡y tú has dado el 100%! 🚀"
+  ]
+
+  const handleWorkoutCheckin = async () => {
+    setIsCheckingIn(true)
+    try {
+      const { error } = await supabase.from('workout_checkins').insert({
+        member_id: user.id,
+        duration_minutes: 60, // Default 60 min
+        checked_in_at: new Date().toISOString()
+      })
+      if (error) throw error
+
+      const randomMsg = CONGRATS_MESSAGES[Math.floor(Math.random() * CONGRATS_MESSAGES.length)]
+      toast({
+        title: "¡Entrenamiento Completado!",
+        description: randomMsg
+      })
+      
+      setShowCheckinConfetti(true)
+      setTimeout(() => setShowCheckinConfetti(false), 3000)
+
+      // Refresh chart data immediately so the Stats tab is updated
+      if (typeof loadChartData === 'function') loadChartData()
+    } catch (err) {
+      toast({
+        title: "Error al completar",
+        description: err.message,
+        variant: "destructive"
+      })
+    } finally {
+      setIsCheckingIn(false)
+    }
+  }
 
   useEffect(() => {
     loadData()
@@ -853,6 +896,46 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 )}
 
                 <PRTracker memberId={user.id} />
+
+                {/* Workout Checkin Button */}
+                <Card className={`overflow-hidden border-2 transition-all duration-500 ${showCheckinConfetti ? 'bg-emerald-500/20 border-emerald-500/50 scale-105' : 'bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a]'} rounded-3xl`}>
+                  <CardContent className="p-6 text-center">
+                    {showCheckinConfetti ? (
+                      <div className="py-6 animate-pulse">
+                        <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
+                        <h3 className="text-2xl font-bold text-white mb-2">¡SESIÓN FINALIZADA!</h3>
+                        <p className="text-emerald-400 font-medium">Tus estadísticas han sido actualizadas.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="w-16 h-16 bg-violet-500/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                          <CheckCircle2 className="w-8 h-8 text-violet-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-white mb-1">¿Finalizaste tu entrenamiento?</h3>
+                          <p className="text-sm text-gray-400">Guarda esta sesión para mantener al día tus estadísticas y subir en el ranking.</p>
+                        </div>
+                        <Button 
+                          onClick={handleWorkoutCheckin}
+                          disabled={isCheckingIn}
+                          className="w-full sm:w-auto mt-4 px-8 py-6 h-auto text-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-2xl shadow-lg shadow-violet-500/25 transition-all hover:scale-105 active:scale-95"
+                        >
+                          {isCheckingIn ? (
+                            <>
+                              <Loader2 className="w-6 h-6 mr-3 animate-spin" />
+                              Registrando...
+                            </>
+                          ) : (
+                            <>
+                              <Flame className="w-6 h-6 mr-3" />
+                              Completar sesión de hoy
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </>
             ) : (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
