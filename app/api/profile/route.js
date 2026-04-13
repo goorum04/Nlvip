@@ -17,7 +17,8 @@ export async function POST(request) {
 
         const { data, error } = await supabaseAdmin
             .from('profiles')
-            .upsert([{ id, ...updates }], { onConflict: 'id' })
+            .update(updates)
+            .eq('id', id)
 
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 500 })
