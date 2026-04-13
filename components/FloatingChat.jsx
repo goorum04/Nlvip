@@ -64,10 +64,14 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   const [view, setView] = useState(userRole === 'admin' ? 'list' : 'chat')
   const [activeTab, setActiveTab] = useState('trainer')
   
-  // Voice Recording States (Only for Admin)
   const [isRecording, setIsRecording] = useState(false)
   const [audioBlob, setAudioBlob] = useState(null)
   const [recordingDuration, setRecordingDuration] = useState(0)
+
+  // Image Upload States
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const mediaRecorderRef = useRef(null)
   const fileInputRef = useRef(null)

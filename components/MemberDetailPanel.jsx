@@ -8,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   User, Dumbbell, Apple, Activity, Calendar, Mail, Phone,
-  Loader2, ChevronRight, X, Edit, Flame, Target, Zap, Star, Heart
+  Loader2, ChevronRight, X, Edit, Flame, Target, Zap, Star, Heart,
+  MessageSquare
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { WorkoutViewer } from './WorkoutBuilder'
 import { DietViewer } from './DietBuilder'
 
-export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRefresh }) {
+export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRefresh, onOpenChat }) {
   const [loading, setLoading] = useState(true)
   const [memberData, setMemberData] = useState(null)
   const [assignedWorkout, setAssignedWorkout] = useState(null)
@@ -211,11 +212,28 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                   )}
 
                   <Button variant="outline" size="sm" className="w-full border-pink-500/30 text-pink-300 hover:bg-pink-500/10 rounded-xl text-xs">
-                    Ver historial de síntomas
                   </Button>
                 </CardContent>
               </Card>
             )}
+
+            {/* Acciones Rápidas */}
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => onOpenChat?.(member)}
+                className="flex-1 bg-violet-600 hover:bg-violet-500 text-white rounded-xl gap-2 h-12"
+              >
+                <MessageSquare className="w-5 h-5" />
+                Enviar Mensaje
+              </Button>
+              <Button 
+                variant="outline"
+                className="flex-1 border-white/10 text-gray-400 hover:text-white rounded-xl gap-2 h-12"
+              >
+                <Mail className="w-5 h-5" />
+                Email
+              </Button>
+            </div>
 
             {/* Rutina Asignada */}
             <Card className="bg-black/30 border-violet-500/20 rounded-2xl">
