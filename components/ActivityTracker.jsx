@@ -64,7 +64,6 @@ export default function ActivityTracker({ userId, compact = false }) {
       const totalSteps = (stepsResult.resultData || []).reduce((sum, s) => sum + (s.value || 0), 0)
 
       if (totalSteps > 0) {
-      if (totalSteps > 0) {
         await updateSteps(Math.round(totalSteps), false, 'device')
         if (showToast) toast({ title: 'Apple Health sincronizado', description: `${Math.round(totalSteps).toLocaleString()} pasos` })
       }
