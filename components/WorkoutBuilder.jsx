@@ -817,39 +817,25 @@ export function WorkoutViewer({ workoutId, memberPrs = [] }) {
   const loadWorkout = async () => {
     setLoading(true)
     try {
-      // Cargar rutina
+      // Single query: template + days + exercises (eliminates N+1)
       const { data: workoutData } = await supabase
         .from('workout_templates')
-        .select('*')
+        .select('*, workout_days(*, workout_exercises(*))')
         .eq('id', workoutId)
         .single()
 
       if (workoutData) {
-        setWorkout(workoutData)
+        const { workout_days: daysData, ...template } = workoutData
+        setWorkout(template)
 
-        // Cargar días
-        const { data: daysData } = await supabase
-          .from('workout_days')
-          .select('*')
-          .eq('workout_template_id', workoutId)
-          .order('day_number')
+        const sorted = [...(daysData || [])].sort((a, b) => a.day_number - b.day_number)
+        setDays(sorted)
 
-        if (daysData) {
-          setDays(daysData)
-
-          // Cargar ejercicios
-          const exercisesMap = {}
-          for (const day of daysData) {
-            const { data: exercisesData } = await supabase
-              .from('workout_exercises')
-              .select('*')
-              .eq('workout_day_id', day.id)
-              .order('order_index')
-
-            exercisesMap[day.id] = exercisesData || []
-          }
-          setExercisesByDay(exercisesMap)
+        const exercisesMap = {}
+        for (const day of sorted) {
+          exercisesMap[day.id] = [...(day.workout_exercises || [])].sort((a, b) => a.order_index - b.order_index)
         }
+        setExercisesByDay(exercisesMap)
       }
     } catch (error) {
       console.error('Error loading workout:', error)
