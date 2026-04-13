@@ -191,20 +191,23 @@ export default function App() {
         }
 
         if (result.error && (result.error.code === 'PGRST116' || result.error.message?.includes('0 rows'))) {
-          console.log('[loadProfile] Profile missing, creating in DB...')
-          const { data: createdProfile, error: createError } = await supabase
-            .from('profiles')
-            .upsert([baseProfile], { onConflict: 'id' })
-            .select()
-            .single()
+          console.log('[loadProfile] Profile missing, creating via API...')
+          const response = await fetch('/api/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: userId, updates: baseProfile })
+          })
+          const resData = await response.json()
+          const createdProfile = resData.data
+          const createError = resData.error
           
           if (createdProfile) {
-            console.log('[loadProfile] Fallback profile created successfully')
+            console.log('[loadProfile] Fallback profile created successfully via API')
             loadedUserIdRef.current = userId
             setProfile(createdProfile)
             return createdProfile
           } else {
-            console.error('[loadProfile] Fallback creation failed:', createError)
+            console.error('[loadProfile] API Fallback creation failed:', createError)
           }
         }
         
@@ -299,21 +302,30 @@ export default function App() {
 
       // Check if user was created (not just confirmation email sent)
       if (data.user) {
-        // Create profile using upsert to avoid duplicates (in case trigger exists)
-        const { error: profileError } = await supabase.from('profiles').upsert([{
-          id: data.user.id,
-          email: regEmail,
-          name: regName,
-          sex: regSex || null,
-          cycle_enabled: regSex === 'female',
-          life_stage: regSex === 'female' ? 'cycle' : null,
-          role: 'member',
-          has_premium: hasPremium
-        }], { onConflict: 'id' })
+        // Create profile via API to leverage hardening and centralized logic
+        console.log('[handleRegister] Creating profile via API for:', data.user.id)
+        const response = await fetch('/api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            id: data.user.id, 
+            updates: {
+              email: regEmail,
+              name: regName,
+              sex: regSex || null,
+              cycle_enabled: regSex === 'female',
+              life_stage: regSex === 'female' ? 'cycle' : null,
+              role: 'member',
+              has_premium: hasPremium
+            }
+          })
+        })
+        const resData = await response.json()
+        const profileError = resData.error
 
         if (profileError) {
-          console.error('Profile error:', profileError)
-          // Don't throw - the auth user is created, profile might be handled by trigger
+          console.error('Profile creation API error:', profileError)
+          // Don't throw - the auth user is created, profile might have issues but we continue
         }
 
         // If premium (had valid code), update code usage and assign trainer
@@ -469,6 +481,10 @@ export default function App() {
                 onClick={async () => { 
                   setOnboardingData(null)
                   setAuthMode('login')
+                  setRegEmail('')
+                  setRegPassword('')
+                  setRegName('')
+                  setInvitationCode('')
                   await checkUser() 
                 }}
                 className="text-gray-600 text-xs underline hover:text-gray-400 transition-colors"

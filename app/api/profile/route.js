@@ -29,8 +29,7 @@ export async function POST(request) {
 
         const { data, error } = await supabaseAdmin
             .from('profiles')
-            .update(updates)
-            .eq('id', id)
+            .upsert({ ...updates, id }, { onConflict: 'id' })
             .select()
 
         if (error) {

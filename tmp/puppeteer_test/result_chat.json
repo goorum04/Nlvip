@@ -1,8 +1,0 @@
-{
-  "type": "success",
-  "text": "Application error: a client-side exception has occurred (see the browser console for more information).",
-  "errors": [
-    "CONSOLE ERROR: WebSocket connection to 'wss://qnuzcmdjpafbqnofpzfp.supabase.co/realtime/v1/websocket?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFudXpjbWRqcGFmYnFub2ZwemZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczMzM2ODksImV4cCI6MjA4MjkwOTY4OX0.QSC6cnOtOTLqijMbOlvY3wD2wCLIfN6wGyp351Io5gw%0D%0A%0D%0A&vsn=2.0.0' failed: HTTP Authentication failed; no valid credentials available",
-    "CONSOLE ERROR: ReferenceError: ChefHat is not defined"
-  ]
-}
