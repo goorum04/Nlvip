@@ -20,7 +20,8 @@ export function AdminContentTab({
     onCreateDiet,
     onDeleteWorkout,
     onDeleteDiet,
-    onEditWorkout
+    onEditWorkout,
+    onEditDiet
 }) {
     const [activeSubTab, setActiveSubTab] = useState('workouts')
     const [searchTerm, setSearchTerm] = useState('')
@@ -67,11 +68,23 @@ export function AdminContentTab({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Creation Form Column */}
                 <div className="lg:col-span-1">
-                    {activeSubTab === 'workouts' ? (
-                        <WorkoutCreationCard onSubmit={onCreateWorkout} />
-                    ) : (
-                        <DietCreationCard onSubmit={onCreateDiet} />
-                    )}
+                    <Card className="bg-white/5 border-white/10 rounded-3xl p-6 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                            {activeSubTab === 'workouts' ? <Dumbbell className="w-8 h-8 text-violet-400" /> : <Apple className="w-8 h-8 text-green-400" />}
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2">
+                            Nueva {activeSubTab === 'workouts' ? 'Rutina' : 'Dieta'}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-6 px-4">
+                            Crea una nueva plantilla para asignar rápidamente a tus socios.
+                        </p>
+                        <Button
+                            onClick={() => activeSubTab === 'workouts' ? onCreateWorkout?.() : onCreateDiet?.()}
+                            className={`w-full py-6 rounded-2xl font-bold transition-all ${activeSubTab === 'workouts' ? 'bg-violet-600 hover:bg-violet-500' : 'bg-green-600 hover:bg-green-500'}`}
+                        >
+                            <Plus className="w-5 h-5 mr-2" /> Empezar Constructor
+                        </Button>
+                    </Card>
                 </div>
 
                 {/* Templates List Column */}
@@ -111,9 +124,14 @@ export function AdminContentTab({
                                     <CardHeader>
                                         <div className="flex items-center justify-between">
                                             <CardTitle className="text-white text-lg">{d.name}</CardTitle>
-                                            <Button variant="ghost" size="icon" onClick={() => onDeleteDiet?.(d.id)} className="text-gray-500 hover:text-red-400">
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
+                                            <div className="flex items-center gap-1">
+                                                <Button variant="ghost" size="icon" onClick={() => onEditDiet?.(d)} className="text-gray-500 hover:text-green-400">
+                                                    <Edit className="w-4 h-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" onClick={() => onDeleteDiet?.(d.id)} className="text-gray-500 hover:text-red-400">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-4">

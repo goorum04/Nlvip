@@ -1,7 +1,7 @@
 'use client'
 // Sync commit: 2026-03-18 14:15
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,16 +11,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dumbbell, Sparkles, Shield, Gift, Lock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
-import AdminDashboard from '@/components/AdminDashboard'
-import TrainerDashboard from '@/components/TrainerDashboard'
-import MemberDashboard from '@/components/MemberDashboard'
+import dynamic from 'next/dynamic'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { DietOnboardingForm } from '@/components/DietOnboardingForm'
+const AdminDashboard = dynamic(() => import('@/components/AdminDashboard'), { ssr: false })
+const TrainerDashboard = dynamic(() => import('@/components/TrainerDashboard'), { ssr: false })
+const MemberDashboard = dynamic(() => import('@/components/MemberDashboard'), { ssr: false })
+
+const DEMO_ACCOUNTS = {
+  ADMIN: { email: 'admin@demo.com', role: 'admin', name: 'Administrador Demo' },
+  TRAINER: { email: 'entrenador@demo.com', role: 'trainer', name: 'Entrenador Demo' },
+  MEMBER: { email: 'socio@demo.com', role: 'member', name: 'Socio Demo' },
+  MARIA: { email: 'maria@demo.com', role: 'member', name: 'Maria Demo' }
+}
 
 export default function App() {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(false) // New state to track profile fetch
+  const profileLoadingRef = useRef(false) // Prevent concurrent loading
+  const loadedUserIdRef = useRef(null) // Prevent loading screen on resume
   const [authMode, setAuthMode] = useState('login')
   const { toast } = useToast()
 
@@ -34,56 +45,186 @@ export default function App() {
   const [onboardingData, setOnboardingData] = useState(null)
 
   useEffect(() => {
+    console.log('App Mounted - Checking session...')
     checkUser()
-  }, [])
+
+    // Handle app resume (tab switch or background to foreground)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('App Resumed - Re-checking session...')
+        // We re-check but without forcing the global loading state if we already have a profile
+        checkUser()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    // Listen for auth changes - crucial for mobile session persistence
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth State Changed:', event, session?.user?.id)
+      if (session?.user) {
+        setUser(session.user)
+        if (!profile) {
+          await loadProfile(session.user)
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setProfile(null)
+        loadedUserIdRef.current = null
+      }
+    })
+
+    // Panic rescue: If app is still loading after 10 seconds, force unlock it.
+    const rescueTimeout = setTimeout(() => {
+      if (loading || profileLoading) {
+        console.warn('Rescue timer triggered: Forcing app unlock after 10s hang.')
+        setLoading(false)
+        setProfileLoading(false)
+      }
+    }, 10000)
+
+    return () => {
+      subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      clearTimeout(rescueTimeout)
+    }
+  }, []) // Empty dependency array: run once on mount
 
   const checkUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      // Avoid hanging forever if Supabase API stalls (e.g. offline with SW crash)
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Auth Timeout')), 5000)
+      )
+      
+      const { data: { user } } = await Promise.race([
+        supabase.auth.getUser(),
+        timeoutPromise
+      ])
+      
       if (user) {
         setUser(user)
-        await loadProfile(user.id)
+        await loadProfile(user)
       }
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Error in checkUser (network or timeout):', error.message)
     } finally {
       setLoading(false)
     }
   }
 
-  const loadProfile = async (userId) => {
+  const loadProfile = async (authUser) => {
+    if (!authUser || !authUser.id) return;
+    if (profileLoadingRef.current) return;
+    
+    const userId = authUser.id;
+    const isBackgroundLoad = (loadedUserIdRef.current === userId && profile !== null);
+    
+    console.log(`[loadProfile] Starting for ID: ${userId} (Background Load: ${isBackgroundLoad})`)
+    
+    profileLoadingRef.current = true;
+    if (!isBackgroundLoad) {
+      setProfileLoading(true)
+    }
+    let timeoutId;
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
-      
-      if (data) {
-        setProfile(data)
-      } else if (error && (error.code === 'PGRST116' || error.message.includes('0 rows'))) {
-        // PERMANENT FIX: If profile is missing, create it on the fly
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const newProfile = {
-            id: user.id,
-            email: user.email,
-            name: user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0],
-            role: 'member',
-            has_premium: false
+      console.log('Intentando cargar perfil para:', userId)
+
+      // Timeout de 10 segundos para mayor robustez en conexiones móviles
+      const fetchPromise = supabase.from('profiles').select('*').eq('id', userId).single()
+      const timeoutPromise = new Promise((_, reject) =>
+        timeoutId = setTimeout(() => reject(new Error('Timeout DB')), 10000)
+      )
+
+      let result;
+      try {
+        result = await Promise.race([fetchPromise, timeoutPromise])
+      } catch (err) {
+        console.warn('Error o timeout al cargar perfil:', err.message)
+        result = { data: null, error: err }
+      }
+
+      if (result.data) {
+        console.log('Perfil cargado desde DB. Role:', result.data.role)
+        const metadata = authUser.user_metadata || {}
+        if ((!result.data.sex && metadata.sex) || (result.data.has_premium === false && metadata.has_premium === true)) {
+          console.log('Sincronizando campos desde metadatos (sex/premium)...')
+          const sex = metadata.sex || result.data.sex
+          const hasPremium = metadata.has_premium === true || result.data.has_premium === true
+          const updates = { 
+            sex, 
+            has_premium: hasPremium,
+            cycle_enabled: sex === 'female', 
+            life_stage: (sex === 'female' && !result.data.life_stage) ? 'cycle' : result.data.life_stage 
           }
-          
+          fetch('/api/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: userId, updates })
+          }).catch(e => console.warn('Sync profile error:', e))
+          result.data = { ...result.data, ...updates }
+        }
+        loadedUserIdRef.current = userId
+        setProfile(result.data)
+        return result.data
+      }
+
+      // PERMANENT FIX: Si el perfil falta o dio error, asegurar fallback robusto con upsert.
+      const metadata = authUser.user_metadata || {}
+      const currentEmail = (authUser.email || '').toLowerCase()
+      const metaPremium = metadata.has_premium === true
+      
+      const baseProfile = {
+        id: authUser.id,
+        email: currentEmail,
+        name: metadata.full_name || metadata.name || currentEmail.split('@')[0],
+        role: metadata.role || 'member',
+        sex: metadata.sex || (currentEmail.includes('maria') ? 'female' : (regSex || null)),
+        has_premium: metaPremium
+      }
+
+      // Check if it's a demo account to assign correct role
+      const demoAccount = Object.values(DEMO_ACCOUNTS).find(acc => acc.email === baseProfile.email)
+      if (demoAccount) {
+          baseProfile.name = demoAccount.name
+          baseProfile.role = demoAccount.role
+          console.log(`[loadProfile] Identified Demo Account: ${demoAccount.role}`)
+        }
+
+        if (result.error && (result.error.code === 'PGRST116' || result.error.message?.includes('0 rows'))) {
+          console.log('[loadProfile] Profile missing, creating in DB...')
           const { data: createdProfile, error: createError } = await supabase
             .from('profiles')
-            .upsert([newProfile], { onConflict: 'id' })
+            .upsert([baseProfile], { onConflict: 'id' })
             .select()
             .single()
           
           if (createdProfile) {
+            console.log('[loadProfile] Fallback profile created successfully')
+            loadedUserIdRef.current = userId
             setProfile(createdProfile)
-          } else if (createError) {
-            console.error('Error creating fallback profile:', createError)
+            return createdProfile
+          } else {
+            console.error('[loadProfile] Fallback creation failed:', createError)
           }
         }
-      }
+        
+      // RAM Fallback si falla DB o error persistente
+      console.warn('Usando perfil fallback en RAM')
+      loadedUserIdRef.current = userId
+      setProfile({
+        ...baseProfile,
+        has_premium: true, // premium in demo
+        cycle_enabled: baseProfile.sex === 'female' || currentEmail.includes('maria'),
+        is_fallback: true
+      })
     } catch (err) {
-      console.error('Profile loading error:', err)
+      console.error('[loadProfile] Unexpected error:', err)
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId)
+      profileLoadingRef.current = false
+      if (!isBackgroundLoad) {
+        setProfileLoading(false)
+      }
     }
   }
 
@@ -94,7 +235,7 @@ export default function App() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
       setUser(data.user)
-      await loadProfile(data.user.id)
+      await loadProfile(data.user)
       toast({ title: '¡Bienvenido!' })
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -111,16 +252,20 @@ export default function App() {
       let trainerId = null
       let hasPremium = false
       
-      // If invitation code provided, validate it
+    // If invitation code provided, validate it
       if (invitationCode.trim()) {
         const { data: codeData, error: codeError } = await supabase
           .from('invitation_codes')
           .select('*')
-          .eq('code', invitationCode.toUpperCase())
+          .eq('code', invitationCode.toUpperCase().trim())
           .eq('is_active', true)
-          .single()
+          .maybeSingle()
 
-        if (codeError || !codeData) {
+        if (codeError) {
+          throw new Error('Error al validar el código. Inténtalo de nuevo.')
+        }
+
+        if (!codeData) {
           throw new Error('Código de invitación inválido o expirado')
         }
 
@@ -140,7 +285,15 @@ export default function App() {
 
       const { data, error } = await supabase.auth.signUp({
         email: regEmail,
-        password: regPassword
+        password: regPassword,
+        options: {
+          data: {
+            name: regName,
+            sex: regSex || null,
+            role: 'member',
+            has_premium: hasPremium
+          }
+        }
       })
       if (error) throw error
 
@@ -151,8 +304,10 @@ export default function App() {
           id: data.user.id,
           email: regEmail,
           name: regName,
+          sex: regSex || null,
+          cycle_enabled: regSex === 'female',
+          life_stage: regSex === 'female' ? 'cycle' : null,
           role: 'member',
-          sex: regSex,
           has_premium: hasPremium
         }], { onConflict: 'id' })
 
@@ -171,18 +326,26 @@ export default function App() {
             .single()
           
           if (currentCode) {
+            console.log(`[handleRegister] Consuming code ${invitationCode} for user ${data.user.id}`)
             await supabase
               .from('invitation_codes')
-              .update({ uses_count: (currentCode.uses_count || 0) + 1 })
+              .update({ 
+                uses_count: (currentCode.uses_count || 0) + 1,
+                used_by: data.user.id
+              })
               .eq('code', invitationCode.toUpperCase())
           }
 
           if (trainerId) {
+            console.log(`[handleRegister] Assigning trainer ${trainerId}`)
             await supabase.from('trainer_members').insert([{
               trainer_id: trainerId,
               member_id: data.user.id
             }])
           }
+
+          // CRITICAL: Refresh profile state now that DB is updated
+          await loadProfile(data.user)
 
           // Create onboarding request and show the form immediately
           try {
@@ -232,26 +395,95 @@ export default function App() {
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
+    loadedUserIdRef.current = null
     toast({ title: 'Sesión cerrada' })
   }
 
   // Loading screen
-  if (loading) {
+  if (loading || profileLoading) {
     return (
-      <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6">
-        <div className="text-center max-w-sm">
-          <div className="flex justify-center mb-6">
+      <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6 text-center">
+        <div className="max-w-sm space-y-6">
+          <div className="flex justify-center relative">
+            <div className="absolute inset-0 bg-violet-500/20 blur-3xl rounded-full" />
             <img 
               src="/logo-nl-vip.jpg" 
               alt="NL VIP TEAM" 
-              className="w-32 h-32 object-contain rounded-2xl shadow-2xl shadow-violet-500/30 animate-pulse"
+              className="w-32 h-32 object-contain rounded-2xl shadow-2xl shadow-violet-500/30 animate-pulse relative z-10"
             />
           </div>
-          <p className="text-gray-300 text-lg font-medium leading-relaxed">
-            No más empezar de cero.<br/>
-            <span className="text-violet-400">Esta vez hay estrategia, guía y resultados reales.</span>
-          </p>
+          <div className="space-y-2">
+            <p className="text-gray-300 text-lg font-medium">
+              {profileLoading ? 'Preparando tu experiencia...' : 'Cargando sesión...'}
+            </p>
+            <p className="text-violet-400 text-sm animate-pulse">
+              No más empezar de cero.
+            </p>
+          </div>
         </div>
+      </div>
+    )
+  }
+
+  // Post-registration onboarding screen
+  if (authMode === 'onboarding' && onboardingData) {
+    return (
+      <div className="min-h-screen bg-[#030303] relative overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[120px] animate-pulse" style={{animationDelay: '1s'}} />
+        </div>
+        <div className="relative z-10 min-h-screen py-8 px-4">
+          <div className="w-full max-w-md mx-auto">
+            <div className="text-center mb-6">
+              <img
+                src="/logo-nl-vip.jpg"
+                alt="NL VIP TEAM"
+                className="w-16 h-16 object-contain rounded-xl shadow-lg shadow-violet-500/30 mx-auto"
+              />
+            </div>
+
+            <Card className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 shadow-2xl rounded-3xl overflow-hidden">
+              <CardContent className="p-6">
+                <div className="mb-5">
+                  <h2 className="text-white text-lg font-bold">¡Ya eres parte del club! 🎉</h2>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Rellena tu perfil nutricional para que tu entrenador pueda prepararte un plan a medida. Solo tarda unos minutos.
+                  </p>
+                </div>
+                <DietOnboardingForm
+                  requestId={onboardingData.requestId}
+                  memberId={onboardingData.memberId}
+                  onComplete={async () => {
+                    setOnboardingData(null)
+                    setAuthMode('login')
+                    toast({ title: '¡Formulario enviado!', description: 'Tu entrenador preparará tu plan. Cargando tu panel...' })
+                    await checkUser()
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            <p className="text-center mt-4">
+              <button
+                onClick={async () => { 
+                  setOnboardingData(null)
+                  setAuthMode('login')
+                  await checkUser() 
+                }}
+                className="text-gray-600 text-xs underline hover:text-gray-400 transition-colors"
+                id="skip-onboarding-btn"
+              >
+                Rellenar más tarde
+              </button>
+            </p>
+
+            <p className="text-center text-gray-600 text-xs mt-3">
+              © 2025 NL VIP Club. Premium Fitness Experience.
+            </p>
+          </div>
+        </div>
+        <Toaster />
       </div>
     )
   }

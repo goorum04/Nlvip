@@ -24,10 +24,17 @@ function getOpenAI() {
 // Llama a OpenAI y genera el borrador de la dieta, pero no lo guarda en BBDD.
 export async function POST(req) {
   try {
-    const limit = checkRateLimit(getIdentifier(req), 10, 60_000)
-    if (!limit.allowed) {
+    // Rate limiting: Más flexible para generar planes de dieta
+    const identifier = getIdentifier(req)
+    const isAuth = req.headers.get('authorization')
+    let baseLimit = 50 // Subimos de 10 a 50
+    // Si hay token, asumimos que puede ser admin y damos margen
+    if (isAuth) baseLimit = 200
+
+    const limit = await checkRateLimit(identifier, baseLimit, 60_000)
+    if (!limit.success) {
       return NextResponse.json(
-        { error: `Demasiadas peticiones. Inténtalo en ${Math.ceil(limit.resetInMs / 1000)}s` },
+        { error: `Demasiadas peticiones. Como medida de seguridad, hay un límite de ${baseLimit} peticiones por minuto.` },
         { status: 429 }
       )
     }
@@ -71,9 +78,9 @@ export async function POST(req) {
     const isFatLoss = goal === 'perder_grasa' || goal === 'cut'
     const isBulk = goal === 'ganar_masa' || goal === 'bulk'
 
-    // Protein: 2.2g/kg lean mass for fat loss, 2.0g/kg otherwise (based on NL VIP methodology)
-    const proteinPerKg = isFatLoss ? 2.2 : 2.0
-    const protein_g = Math.round(leanMass * proteinPerKg)
+    // Protein: 2.4g/kg total weight for muscle gain, 2.2g/kg otherwise
+    const proteinFactor = isBulk ? 2.4 : 2.2
+    const protein_g = Math.round(weight * proteinFactor)
 
     // Fat: 0.9g/kg total weight
     const fat_g = Math.round(weight * 0.9)

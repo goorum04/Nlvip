@@ -253,7 +253,7 @@ export function ProgressPhotoGallery({ photos, canDelete = false, onDelete }) {
   const [selectedGroup, setSelectedGroup] = useState(null)
   const [imageUrls, setImageUrls] = useState({})
   const [loading, setLoading] = useState(true)
-  const { getSignedUrl } = useSignedUrl()
+  const { getSignedUrls } = useSignedUrl()
 
   // Agrupar fotos por group_id
   const photoGroups = photos.reduce((acc, photo) => {
@@ -280,17 +280,17 @@ export function ProgressPhotoGallery({ photos, canDelete = false, onDelete }) {
 
   const loadImages = async () => {
     setLoading(true)
-    const urls = {}
-    
-    // Solo cargar los firmados necesarios (optimización posible aquí para cargar solo lo visible)
-    for (const photo of photos) {
-      const url = await getSignedUrl('progress_photos', photo.photo_url, 3600)
-      if (url) {
-        urls[photo.id] = url
+    const photosWithUrls = photos.filter(p => p.photo_url)
+    if (photosWithUrls.length > 0) {
+      const paths = photosWithUrls.map(p => p.photo_url)
+      const signed = await getSignedUrls('progress_photos', paths, 3600)
+      const urls = {}
+      for (const { path, url } of signed) {
+        const photo = photosWithUrls.find(p => p.photo_url === path)
+        if (photo && url) urls[photo.id] = url
       }
+      setImageUrls(urls)
     }
-    
-    setImageUrls(urls)
     setLoading(false)
   }
 

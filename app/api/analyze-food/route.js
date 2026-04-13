@@ -15,10 +15,11 @@ const schema = z.object({
 
 export async function POST(request) {
   try {
-    const limit = checkRateLimit(getIdentifier(request), 15, 60_000)
-    if (!limit.allowed) {
+    const identifier = getIdentifier(request)
+    const { success: limitOk } = await checkRateLimit(identifier, 30, 60_000)
+    if (!limitOk) {
       return NextResponse.json(
-        { error: `Demasiadas peticiones. Inténtalo en ${Math.ceil(limit.resetInMs / 1000)}s` },
+        { error: `Demasiadas peticiones de análisis de comida. Inténtalo de nuevo en un minuto.` },
         { status: 429 }
       )
     }

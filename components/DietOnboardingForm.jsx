@@ -25,7 +25,8 @@ import {
   Zap,
   Star,
   Camera,
-  X
+  X,
+  Footprints
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -115,7 +116,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
   const [meals, setMeals] = useState({ num_comidas: '5', horario_comidas: '' })
   const [training, setTraining] = useState({ momento: 'tarde', horario_especifico: '' })
   const [measurements, setMeasurements] = useState({ 
-    peso: '', altura: '', cintura: '', pecho: '', biceps: '', cadera: '', muslo: '' 
+    peso: '', altura: '', cintura: '', pecho: '', biceps: '', cadera: '', muslo: '', gluteo: '', gemelo: ''
   })
   const [extras, setExtras] = useState({ favoritos: '', no_me_gusta: '', condicion_medica: '' })
   const [photos, setPhotos] = useState({ front: null, side: null, back: null })
@@ -209,6 +210,8 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
         'Medida - Bíceps': measurements.biceps,
         'Medida - Cadera': measurements.cadera,
         'Medida - Muslo': measurements.muslo,
+        'Medida - Glúteo': measurements.gluteo,
+        'Medida - Gemelo': measurements.gemelo,
         restricciones: (multiChecks.includes('otra') && otraAlergia)
           ? (multiChecks.join(', ').replace('otra', `Otra: ${otraAlergia}`))
           : (multiChecks.join(', ') || 'ninguna'),
@@ -395,6 +398,8 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
               { id: 'biceps', label: 'Bíceps contr. (cm)', icon: Zap },
               { id: 'cadera', label: 'Cadera (cm)', icon: Star },
               { id: 'muslo', label: 'Muslo (cm)', icon: RulerIcon },
+              { id: 'gluteo', label: 'Glúteo (cm)', icon: Star },
+              { id: 'gemelo', label: 'Gemelo (cm)', icon: Footprints },
             ].map(m => (
               <div key={m.id} className="space-y-1">
                 <Label className="text-gray-500 text-[10px] ml-1 uppercase">{m.label}</Label>

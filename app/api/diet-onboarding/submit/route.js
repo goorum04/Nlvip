@@ -60,6 +60,26 @@ export async function POST(req) {
       await supabaseAdmin.from('profiles').update(profileUpdate).eq('id', memberId)
     }
 
+    // 2. NEW: Create initial progress record for charts/history
+    try {
+      await supabase.from('progress_records').insert({
+        member_id: memberId,
+        date: new Date().toISOString(),
+        weight_kg: weightKg,
+        chest_cm: parseFloat(responses['Medida - Pecho']) || null,
+        waist_cm: parseFloat(responses['Medida - Cintura']) || null,
+        hips_cm: parseFloat(responses['Medida - Cadera']) || null,
+        arms_cm: parseFloat(responses['Medida - Bíceps']) || null,
+        legs_cm: parseFloat(responses['Medida - Muslo']) || null,
+        glutes_cm: parseFloat(responses['Medida - Glúteo']) || null,
+        calves_cm: parseFloat(responses['Medida - Gemelo']) || null,
+        notes: 'Medidas iniciales (desde cuestionario)'
+      })
+    } catch (err) {
+      console.warn('Failed to insert initial progress record:', err)
+      // Non-blocking
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Tu cuestionario ha sido enviado al administrador. Te avisaremos cuando tu plan esté listo.'

@@ -32,12 +32,18 @@ export function LifeStageSelector({ userId, profile, onUpdate }) {
         if (profile?.life_stage === stage) return
         setSaving(true)
         try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({ life_stage: stage, updated_at: new Date().toISOString() })
-                .eq('id', userId)
+            const res = await fetch('/api/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: userId,
+                    updates: { life_stage: stage, updated_at: new Date().toISOString() }
+                })
+            })
+            const data = await res.json()
+            const error = data.error
 
-            if (error) throw error
+            if (error) throw new Error(error)
             onUpdate?.({ ...profile, life_stage: stage })
             toast({ title: `✅ Modo ${stages.find(s => s.value === stage)?.label} activado` })
         } catch (error) {
@@ -131,11 +137,17 @@ export function PregnancyMode({ userId, profile, onUpdate, onThemeChange }) {
         if (!dueDate) return
         setSaving(true)
         try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({ due_date: dueDate, updated_at: new Date().toISOString() })
-                .eq('id', userId)
-            if (error) throw error
+            const res = await fetch('/api/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: userId,
+                    updates: { due_date: dueDate, updated_at: new Date().toISOString() }
+                })
+            })
+            const data = await res.json()
+            const error = data.error
+            if (error) throw new Error(error)
             onUpdate?.({ ...profile, due_date: dueDate })
             toast({ title: '✅ Fecha guardada' })
             setShowConfig(false)
@@ -313,11 +325,17 @@ export function PostpartumMode({ userId, profile, onUpdate, onThemeChange }) {
         if (!birthDate) return
         setSaving(true)
         try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({ postpartum_date: birthDate, updated_at: new Date().toISOString() })
-                .eq('id', userId)
-            if (error) throw error
+            const res = await fetch('/api/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: userId,
+                    updates: { postpartum_date: birthDate, updated_at: new Date().toISOString() }
+                })
+            })
+            const data = await res.json()
+            const error = data.error
+            if (error) throw new Error(error)
             onUpdate?.({ ...profile, postpartum_date: birthDate })
             toast({ title: '✅ Fecha guardada' })
             setShowConfig(false)

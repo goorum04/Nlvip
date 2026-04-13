@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import {
   Dumbbell, Users, Bell, LogOut, Plus, Apple, Sparkles, Eye, Send,
-  Video, Camera, TrendingUp, Trash2, Loader2, Calculator, Target, Trophy, UtensilsCrossed, MessageSquare, ChefHat
+  Video, Camera, TrendingUp, Trash2, Loader2, Calculator, Target, Trophy, UtensilsCrossed, MessageSquare, ChefHat, Heart
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
@@ -23,6 +23,8 @@ import { ProgressPhotoGallery } from './ProgressPhotos'
 import { RecipesManager } from './RecipesManager'
 import { FeedSection } from './FeedSection'
 import { AvatarBubble, ProfileModal } from './UserProfile'
+import { WorkoutBuilder } from './WorkoutBuilder'
+import { DietBuilder } from './DietBuilder'
 
 export default function TrainerDashboard({ user, profile, onLogout }) {
   const [members, setMembers] = useState([])
@@ -32,9 +34,11 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const [loading, setLoading] = useState(false)
   const [selectedMemberForProgress, setSelectedMemberForProgress] = useState(null)
   const [memberProgressPhotos, setMemberProgressPhotos] = useState([])
-  const [selectedWorkoutForVideos, setSelectedWorkoutForVideos] = useState(null)
-  const [workoutVideos, setWorkoutVideos] = useState({})
   const [showVideoUploader, setShowVideoUploader] = useState(null)
+  const [showWorkoutBuilder, setShowWorkoutBuilder] = useState(false)
+  const [showDietBuilder, setShowDietBuilder] = useState(false)
+  const [editingWorkout, setEditingWorkout] = useState(null)
+  const [editingDiet, setEditingDiet] = useState(null)
   const [activeTab, setActiveTab] = useState('members')
   const [dietRequests, setDietRequests] = useState([])
   const [selectedRequestAnswers, setSelectedRequestAnswers] = useState(null)
@@ -123,24 +127,20 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   }
 
   const loadChallenges = async () => {
+    // Load challenges + participants in one query (eliminates N+1)
     const { data } = await supabase
       .from('challenges')
-      .select('*')
+      .select('*, challenge_participants(*, member:profiles!challenge_participants_member_id_fkey(name))')
       .eq('created_by', user.id)
       .order('created_at', { ascending: false })
 
     if (data) {
       setChallenges(data)
-      // Load participants for each challenge
+      const map = {}
       for (const challenge of data) {
-        const { data: parts } = await supabase
-          .from('challenge_participants')
-          .select('*, member:profiles!challenge_participants_member_id_fkey(name)')
-          .eq('challenge_id', challenge.id)
-        if (parts) {
-          setChallengeParticipants(prev => ({ ...prev, [challenge.id]: parts }))
-        }
+        map[challenge.id] = challenge.challenge_participants || []
       }
+      setChallengeParticipants(map)
     }
   }
 
@@ -182,24 +182,24 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   const loadMembers = async () => {
     const { data } = await supabase
       .from('trainer_members')
-      .select(`member_id, member:profiles!trainer_members_member_id_fkey(id, name, email, created_at)`)
+      .select(`member_id, member:profiles!trainer_members_member_id_fkey(id, name, email, created_at, sex, life_stage)`)
       .eq('trainer_id', user.id)
     if (data) setMembers(data.map(tm => tm.member))
   }
 
   const loadWorkoutTemplates = async () => {
-    const { data } = await supabase.from('workout_templates').select('*').eq('trainer_id', user.id).order('created_at', { ascending: false })
+    // Load workouts + videos in one query (eliminates N+1)
+    const { data } = await supabase
+      .from('workout_templates')
+      .select('*, workout_videos(*)')
+      .eq('trainer_id', user.id)
+      .order('created_at', { ascending: false })
+
     if (data) {
       setWorkoutTemplates(data)
-      // Load videos for each workout
       const videos = {}
       for (const workout of data) {
-        const { data: workoutVids } = await supabase
-          .from('workout_videos')
-          .select('*')
-          .eq('workout_template_id', workout.id)
-          .order('created_at')
-        if (workoutVids) videos[workout.id] = workoutVids
+        videos[workout.id] = (workout.workout_videos || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
       }
       setWorkoutVideos(videos)
     }
@@ -594,7 +594,10 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                             {member.name?.charAt(0)}
                           </div>
                           <div>
-                            <p className="font-semibold text-white">{member.name}</p>
+                            <p className="font-semibold text-white flex items-center gap-2">
+                              {member.name}
+                              {member.sex === 'female' && <Heart className="w-3 h-3 text-pink-400" />}
+                            </p>
                             <p className="text-sm text-gray-500">{member.email}</p>
                           </div>
                         </div>
@@ -605,8 +608,22 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                     </DialogTrigger>
                     <DialogContent className="bg-[#1a1a1a] border-[#2a2a2a] rounded-3xl max-w-lg">
                       <DialogHeader>
-                        <DialogTitle className="text-white text-xl">{member.name}</DialogTitle>
-                        <DialogDescription className="text-gray-500">{member.email}</DialogDescription>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <DialogTitle className="text-white text-xl">{member.name}</DialogTitle>
+                            <DialogDescription className="text-gray-500">{member.email}</DialogDescription>
+                          </div>
+                          {member.sex === 'female' && (
+                            <div className="bg-pink-500/10 border border-pink-500/20 px-3 py-1 rounded-full flex items-center gap-2">
+                              <Heart className="w-4 h-4 text-pink-500" />
+                              <span className="text-xs text-pink-400 font-bold uppercase tracking-wider">
+                                {member.life_stage === 'pregnant' ? 'Embarazada' :
+                                  member.life_stage === 'postpartum' ? 'Post-parto' :
+                                    member.life_stage === 'lactating' ? 'Lactancia' : 'Ciclo Regular'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </DialogHeader>
                       <div className="space-y-4 pt-4">
                         <div>
@@ -806,31 +823,33 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
 
           {/* WORKOUTS TAB */}
           <TabsContent value="workouts" className="space-y-4">
-            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+            <Card className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-violet-400" />
-                  Crear Rutina
-                </CardTitle>
+                <CardTitle className="text-white">Nuevas Plantillas</CardTitle>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCreateWorkout} className="space-y-4">
-                  <div>
-                    <Label className="text-gray-400 text-sm">Nombre</Label>
-                    <Input value={newWorkoutName} onChange={(e) => setNewWorkoutName(e.target.value)} placeholder="Ej: Full Body Explosivo" required className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1" />
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Button
+                  onClick={() => { setEditingWorkout(null); setShowWorkoutBuilder(true); }}
+                  className="h-32 rounded-3xl bg-violet-600/10 border border-violet-600/20 hover:bg-violet-600/20 flex flex-col gap-2 transition-all"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-600/40">
+                    <Dumbbell className="w-6 h-6 text-white" />
                   </div>
-                  <div>
-                    <Label className="text-gray-400 text-sm">Descripción / Ejercicios</Label>
-                    <Textarea value={newWorkoutDesc} onChange={(e) => setNewWorkoutDesc(e.target.value)} placeholder="Detalla los ejercicios, series, repeticiones..." required className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1 min-h-[150px]" />
+                  <span className="font-bold">Nueva Rutina</span>
+                </Button>
+
+                <Button
+                  onClick={() => { setEditingDiet(null); setShowDietBuilder(true); }}
+                  className="h-32 rounded-3xl bg-green-600/10 border border-green-600/20 hover:bg-green-600/20 flex flex-col gap-2 transition-all"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-green-600 flex items-center justify-center shadow-lg shadow-green-600/40">
+                    <Apple className="w-6 h-6 text-white" />
                   </div>
-                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-2xl py-6">
-                    <Dumbbell className="w-5 h-5 mr-2" /> Crear Rutina
-                  </Button>
-                </form>
+                  <span className="font-bold">Nueva Dieta</span>
+                </Button>
               </CardContent>
             </Card>
 
-            {/* Workout Templates with Videos */}
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white">Mis Rutinas ({workoutTemplates.length})</CardTitle>
@@ -842,6 +861,14 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
                       <div>
                         <h4 className="font-bold text-white">{workout.name}</h4>
                         <p className="text-sm text-gray-400 line-clamp-2 mt-1">{workout.description}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => { setEditingWorkout(workout); setShowWorkoutBuilder(true); }} className="h-8 w-8 text-violet-400 hover:bg-violet-400/10">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDeleteWorkout(workout.id)} className="h-8 w-8 text-red-400 hover:bg-red-400/10">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
 
@@ -962,54 +989,27 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
 
             <Card className="bg-[#1a1a1a] border-violet-500/20">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-violet-400" />
-                  Crear Dieta
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCreateDiet} className="space-y-4">
-                  <div>
-                    <Label className="text-gray-400 text-sm">Nombre</Label>
-                    <Input value={newDietName} onChange={(e) => setNewDietName(e.target.value)} placeholder="Ej: Definición 2000kcal" required className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1" />
-                  </div>
-                  <div className="grid grid-cols-4 gap-3">
-                    {[
-                      { label: 'Calorías', value: newDietCalories, setter: setNewDietCalories, placeholder: '2000' },
-                      { label: 'Proteína (g)', value: newDietProtein, setter: setNewDietProtein, placeholder: '150' },
-                      { label: 'Carbos (g)', value: newDietCarbs, setter: setNewDietCarbs, placeholder: '200' },
-                      { label: 'Grasas (g)', value: newDietFat, setter: setNewDietFat, placeholder: '60' },
-                    ].map(f => (
-                      <div key={f.label}>
-                        <Label className="text-gray-400 text-xs">{f.label}</Label>
-                        <Input type="number" value={f.value} onChange={(e) => f.setter(e.target.value)} placeholder={f.placeholder} required className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1" />
-                      </div>
-                    ))}
-                  </div>
-                  <div>
-                    <Label className="text-gray-400 text-sm">Plan de Comidas</Label>
-                    <Textarea value={newDietContent} onChange={(e) => setNewDietContent(e.target.value)} placeholder="Desayuno:&#10;Almuerzo:&#10;Cena:..." required className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1 min-h-[150px]" />
-                  </div>
-                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-2xl py-6">
-                    <Apple className="w-5 h-5 mr-2" /> Crear Dieta
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
-              <CardHeader>
                 <CardTitle className="text-white">Mis Dietas ({dietTemplates.length})</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {dietTemplates.map(t => (
-                  <div key={t.id} className="p-4 bg-black/30 rounded-2xl border border-[#2a2a2a]">
-                    <h4 className="font-bold text-white mb-2">{t.name}</h4>
-                    <div className="flex gap-4 text-sm">
-                      <span className="text-violet-400 font-semibold">{t.calories} kcal</span>
-                      <span className="text-gray-400">P: {t.protein_g}g</span>
-                      <span className="text-gray-400">C: {t.carbs_g}g</span>
-                      <span className="text-gray-400">G: {t.fat_g}g</span>
+                  <div key={t.id} className="p-4 bg-black/30 rounded-2xl border border-[#2a2a2a] flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-white mb-2">{t.name}</h4>
+                      <div className="flex gap-4 text-sm">
+                        <span className="text-green-400 font-semibold">{t.calories} kcal</span>
+                        <span className="text-gray-400">P: {t.protein_g}g</span>
+                        <span className="text-gray-400">C: {t.carbs_g}g</span>
+                        <span className="text-gray-400">G: {t.fat_g}g</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => { setEditingDiet(t); setShowDietBuilder(true); }} className="h-8 w-8 text-green-400 hover:bg-green-400/10">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => handleDeleteDiet(t.id)} className="h-8 w-8 text-red-400 hover:bg-red-400/10">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -1287,8 +1287,8 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
-      </main>
+        </Tabs >
+      </main >
 
       {/* Diet Validation Modal */}
       <Dialog open={dietDraft !== null} onOpenChange={(val) => { if (!val) { setDietDraft(null); setDraftCorrectionHistory([]) } }}>
@@ -1408,13 +1408,40 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
       </Dialog>
 
       {/* Floating Chat */}
-      <FloatingChat
+      < FloatingChat
         userId={user.id}
         userRole="trainer"
         members={members}
       />
 
       <Toaster />
-    </div>
+      {
+        showWorkoutBuilder && (
+          <Dialog open={showWorkoutBuilder} onOpenChange={setShowWorkoutBuilder}>
+            <DialogContent className="max-w-5xl bg-[#1a1a1a] border-white/5 rounded-[40px] p-0 overflow-hidden">
+              <WorkoutBuilder
+                trainerId={user.id} existingWorkout={editingWorkout}
+                onSave={() => { setShowWorkoutBuilder(false); loadWorkoutTemplates(); }}
+                onCancel={() => setShowWorkoutBuilder(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        )
+      }
+
+      {
+        showDietBuilder && (
+          <Dialog open={showDietBuilder} onOpenChange={setShowDietBuilder}>
+            <DialogContent className="max-w-4xl bg-[#1a1a1a] border-white/5 rounded-[40px] p-0 overflow-hidden">
+              <DietBuilder
+                trainerId={user.id} existingDiet={editingDiet}
+                onSave={() => { setShowDietBuilder(false); loadDietTemplates(); }}
+                onCancel={() => setShowDietBuilder(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        )
+      }
+    </div >
   )
 }

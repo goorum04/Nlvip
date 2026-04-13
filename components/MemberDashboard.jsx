@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,6 +35,7 @@ import { DietDailyView, DietWeeklyView } from './DietTabParts'
 import { SymptomsTracker } from './SymptomsTracker'
 import PRTracker from './PRTracker'
 import { WorkoutViewer } from './WorkoutBuilder'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function MemberDashboard({ user, profile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
@@ -51,12 +52,13 @@ export default function MemberDashboard({ user, profile, onLogout }) {
   const [onboardingChecked, setOnboardingChecked] = useState(false)
   const [dietViewMode, setDietViewMode] = useState('daily')
   const [myTrainer, setMyTrainer] = useState(null)
-  const [storeProducts, setStoreProducts] = useState([])
+  const [gymAdmin, setGymAdmin] = useState(null)
   const [feedImageUrls, setFeedImageUrls] = useState({})
   const [pageTheme, setPageTheme] = useState('default')
   const [showProfileModal, setShowProfileModal] = useState(false)
   const { toast } = useToast()
-  const { getSignedUrl } = useSignedUrl()
+  const { getSignedUrl, getSignedUrls } = useSignedUrl()
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   // Check if user has premium access (registered with invitation code)
   const hasPremium = profile?.has_premium === true
@@ -159,20 +161,28 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     }
   }, [])
 
+
   const loadData = async () => {
-    await Promise.all([
-      loadFeed(),
-      loadMyWorkout(),
-      loadMyDiet(),
-      loadProgress(),
-      loadProgressPhotos(),
-      loadNotices(),
-      loadOnboarding(),
-      loadMyTrainer(),
-      loadStoreProducts(),
-      loadChartData(),
-      loadMyPrs()
-    ])
+    try {
+      await Promise.all([
+        loadFeed().catch(e => console.error('Error loading feed:', e)),
+        loadMyWorkout().catch(e => console.error('Error loading workout:', e)),
+        loadMyDiet().catch(e => console.error('Error loading diet:', e)),
+        loadProgress().catch(e => console.error('Error loading progress:', e)),
+        loadProgressPhotos().catch(e => console.error('Error loading photos:', e)),
+        loadNotices().catch(e => console.error('Error loading notices:', e)),
+        loadOnboarding().catch(e => console.error('Error loading onboarding:', e)),
+        loadMyTrainer().catch(e => console.error('Error loading trainer:', e)),
+        loadGymAdmin().catch(e => console.error('Error loading admin:', e)),
+        loadChartData().catch(e => console.error('Error loading chart data:', e)),
+        loadMyPrs().catch(e => console.error('Error loading PRs:', e))
+      ])
+    } catch (err) {
+      console.error('Fatal error loading dashboard data:', err)
+    } finally {
+      setOnboardingChecked(true)
+      setDataLoaded(true)
+    }
   }
 
   const loadMyPrs = async () => {
@@ -201,20 +211,9 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       setPendingOnboarding(data || null)
     } catch (e) {
       console.warn('Error fetching onboarding:', e.message)
-    } finally {
-      setOnboardingChecked(true)
     }
   }
 
-  const loadStoreProducts = async () => {
-    try {
-      // Dummy fetch to populate if needed, or just set empty if store_products doesn't exist
-      const { data, error } = await supabase.from('store_products').select('*').limit(10).maybeSingle()
-      if (!error && data) setStoreProducts([data]) // Safely ignore or use real table
-    } catch (e) {
-      console.warn('Error fetching store products:', e)
-    }
-  }
 
   const loadChartData = async () => {
     try {
@@ -312,6 +311,17 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     }
   }
 
+  const loadGymAdmin = async () => {
+    // Fetch the owner/admin (assuming there is one with role admin)
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, name, email')
+      .eq('role', 'admin')
+      .limit(1)
+      .single()
+    if (data) setGymAdmin(data)
+  }
+
   const loadFeed = async () => {
     const { data } = await supabase
       .from('feed_posts')
@@ -322,15 +332,18 @@ export default function MemberDashboard({ user, profile, onLogout }) {
     
     if (data) {
       setFeedPosts(data)
-      // Load signed URLs for images
-      const urls = {}
-      for (const post of data) {
-        if (post.image_url) {
-          const url = await getSignedUrl('feed_images', post.image_url, 3600)
-          if (url) urls[post.id] = url
+      // Batch-load all signed URLs in a single request instead of one per image
+      const postsWithImages = data.filter(p => p.image_url)
+      if (postsWithImages.length > 0) {
+        const paths = postsWithImages.map(p => p.image_url)
+        const signed = await getSignedUrls('feed_images', paths, 3600)
+        const urls = {}
+        for (const { path, url } of signed) {
+          const post = postsWithImages.find(p => p.image_url === path)
+          if (post && url) urls[post.id] = url
         }
+        setFeedImageUrls(urls)
       }
-      setFeedImageUrls(urls)
     }
   }
 
@@ -339,7 +352,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .from('member_workouts')
       .select(`*, workout:workout_templates!member_workouts_workout_template_id_fkey(id, name, description, workout_videos(*))`)
       .eq('member_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (data) {
       setMyWorkout(data)
@@ -357,7 +370,7 @@ export default function MemberDashboard({ user, profile, onLogout }) {
       .from('member_diets')
       .select(`*, diet:diet_templates!member_diets_diet_template_id_fkey(id, name, calories, protein_g, carbs_g, fat_g, content)`)
       .eq('member_id', user.id)
-      .single()
+      .maybeSingle()
     if (data) setMyDiet(data)
   }
 
@@ -675,6 +688,25 @@ export default function MemberDashboard({ user, profile, onLogout }) {
               </CardContent>
             </Card>
 
+            {!dataLoaded && feedPosts.length === 0 && (
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <Card key={i} className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
+                    <CardContent className="p-5 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="w-12 h-12 rounded-2xl bg-white/5" />
+                        <div className="space-y-2 flex-1">
+                          <Skeleton className="h-4 w-1/3 bg-white/5" />
+                          <Skeleton className="h-3 w-1/4 bg-white/5" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-4 w-full bg-white/5" />
+                      <Skeleton className="h-4 w-3/4 bg-white/5" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
             {feedPosts.map((post) => (
               <Card key={post.id} className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden hover:border-violet-500/30 transition-all duration-300">
                 <CardContent className="p-5">
@@ -776,6 +808,18 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
           {/* WORKOUT TAB */}
           <TabsContent value="workout" className="space-y-4">
+            {!dataLoaded && !myWorkout && (
+              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
+                <CardContent className="p-5 space-y-4">
+                  <Skeleton className="h-6 w-1/2 bg-white/5" />
+                  <Skeleton className="h-4 w-full bg-white/5" />
+                  <Skeleton className="h-4 w-5/6 bg-white/5" />
+                  <div className="space-y-2 pt-2">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full rounded-xl bg-white/5" />)}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             {myWorkout ? (
               <>
                 <WorkoutViewer 
@@ -820,6 +864,17 @@ export default function MemberDashboard({ user, profile, onLogout }) {
 
           {/* DIET TAB */}
           <TabsContent value="diet" className="space-y-6">
+            {!dataLoaded && !myDiet && (
+              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
+                <CardContent className="p-5 space-y-4">
+                  <Skeleton className="h-6 w-1/3 bg-white/5" />
+                  <div className="grid grid-cols-4 gap-3">
+                    {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-16 rounded-2xl bg-white/5" />)}
+                  </div>
+                  <Skeleton className="h-32 w-full rounded-2xl bg-white/5" />
+                </CardContent>
+              </Card>
+            )}
             {onboardingChecked && pendingOnboarding && (
               <DietOnboardingBanner
                 requestId={pendingOnboarding.id}
@@ -1100,6 +1155,8 @@ export default function MemberDashboard({ user, profile, onLogout }) {
         userRole="member"
         trainerId={myTrainer?.id}
         trainerName={myTrainer?.name}
+        adminId={gymAdmin?.id}
+        adminName={gymAdmin?.name}
       />
 
       <Toaster />

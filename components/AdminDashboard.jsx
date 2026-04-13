@@ -16,13 +16,18 @@ import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { RecipesManager } from './RecipesManager'
 import AdminAssistant from './AdminAssistant'
+import { AdminUsersTab } from './AdminUsersTab'
+import { AdminContentTab } from './AdminContentTab'
+import { AdminCodesTab } from './AdminCodesTab'
+import { AdminFeedTab } from './AdminFeedTab'
+import { MemberDetailPanel } from './MemberDetailPanel'
+import { WorkoutBuilder } from './WorkoutBuilder'
+import { DietBuilder } from './DietBuilder'
+import { AvatarBubble, ProfileModal } from './UserProfile'
 import FloatingChat from './FloatingChat'
 import FloatingAdminAssistant from './FloatingAdminAssistant'
 import { ProgressPhotoGallery } from './ProgressPhotos'
 import { FeedSection } from './FeedSection'
-import { AvatarBubble, ProfileModal } from './UserProfile'
-import { WorkoutBuilder } from './WorkoutBuilder'
-import { MemberDetailPanel } from './MemberDetailPanel'
 import AIRoutineGenerator from './AIRoutineGenerator'
 
 export default function AdminDashboard({ user, profile, onLogout }) {
@@ -37,6 +42,13 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [allAssignments, setAllAssignments] = useState([])
   const [trainingVideos, setTrainingVideos] = useState([])
   const [loading, setLoading] = useState(false)
+  const [selectedMember, setSelectedMember] = useState(null)
+  const [showMemberDetail, setShowMemberDetail] = useState(false)
+  const [showWorkoutBuilder, setShowWorkoutBuilder] = useState(false)
+  const [showDietBuilder, setShowDietBuilder] = useState(false)
+  const [editingWorkout, setEditingWorkout] = useState(null)
+  const [editingDiet, setEditingDiet] = useState(null)
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const { toast } = useToast()
 
   // New states for trainer-like features
@@ -50,16 +62,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
   const [selectedRequestAnswers, setSelectedRequestAnswers] = useState(null)
   const [dietDraft, setDietDraft] = useState(null)
 
-  // Profile modal state
-  const [showProfileModal, setShowProfileModal] = useState(false)
-
-  // Member detail panel state
-  const [selectedMember, setSelectedMember] = useState(null)
-  const [showMemberDetail, setShowMemberDetail] = useState(false)
-
-  // Workout builder state
-  const [showWorkoutBuilder, setShowWorkoutBuilder] = useState(false)
-  const [editingWorkout, setEditingWorkout] = useState(null)
+  // Workout builder assistant state
   const [showAIGenerator, setShowAIGenerator] = useState(false)
 
   // Form states
@@ -163,22 +166,19 @@ export default function AdminDashboard({ user, profile, onLogout }) {
 
   // Load challenges (all)
   const loadChallenges = async () => {
+    // Single query: challenges + participants in one round trip (eliminates N+1)
     const { data } = await supabase
       .from('challenges')
-      .select('*, creator:profiles!challenges_created_by_fkey(name)')
+      .select('*, creator:profiles!challenges_created_by_fkey(name), challenge_participants(*, member:profiles!challenge_participants_member_id_fkey(name))')
       .order('created_at', { ascending: false })
-    
+
     if (data) {
       setChallenges(data)
+      const map = {}
       for (const challenge of data) {
-        const { data: parts } = await supabase
-          .from('challenge_participants')
-          .select('*, member:profiles!challenge_participants_member_id_fkey(name)')
-          .eq('challenge_id', challenge.id)
-        if (parts) {
-          setChallengeParticipants(prev => ({ ...prev, [challenge.id]: parts }))
-        }
+        map[challenge.id] = challenge.challenge_participants || []
       }
+      setChallengeParticipants(map)
     }
   }
 
@@ -212,6 +212,7 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       setLoading(false)
     }
   }
+
 
   const handleCreateDiet = async (e) => {
     e.preventDefault()
@@ -535,12 +536,14 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       // Llamar al endpoint seguro
       const response = await fetch('/api/create-trainer', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({
           email: newTrainerEmail,
           password: newTrainerPassword,
-          name: newTrainerName,
-          adminToken: session?.access_token
+          name: newTrainerName
         })
       })
 
@@ -621,6 +624,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         description: !currentStatus ? 'Código activado' : 'Código desactivado'
       })
       loadCodes()
+    } else {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
     }
   }
 
@@ -636,6 +641,8 @@ export default function AdminDashboard({ user, profile, onLogout }) {
         description: 'El post ya no será visible en el feed'
       })
       loadFeedPosts()
+    } else {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
     }
   }
 
@@ -2457,8 +2464,31 @@ export default function AdminDashboard({ user, profile, onLogout }) {
       />
 
       <FloatingAdminAssistant userId={user.id} />
+      {showDietBuilder && (
+        <Dialog open={showDietBuilder} onOpenChange={setShowDietBuilder}>
+          <DialogContent className="max-w-4xl bg-[#1a1a1a] border-white/5 rounded-[40px] p-0 overflow-hidden">
+            <DietBuilder
+              trainerId={user.id} existingDiet={editingDiet}
+              onSave={() => { setShowDietBuilder(false); loadData(); }}
+              onCancel={() => setShowDietBuilder(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {showProfileModal && (
+        <ProfileModal
+          user={user} profile={profile}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
 
       <Toaster />
+      <FloatingChat
+        userId={user.id}
+        userRole={profile?.role}
+        members={members}
+      />
     </div>
   )
 }

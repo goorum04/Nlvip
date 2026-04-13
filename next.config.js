@@ -1,6 +1,8 @@
 const { withSentryConfig } = require('@sentry/nextjs')
 
+const isStaticExport = process.env.STATIC_EXPORT === 'true';
 const nextConfig = {
+  output: isStaticExport ? 'export' : undefined,
   images: {
     unoptimized: true,
   },
@@ -23,7 +25,9 @@ const nextConfig = {
     maxInactiveAge: 10000,
     pagesBufferLength: 2,
   },
+  // Solo añadir headers si NO es exportación estática (Vercel/Web)
   async headers() {
+    if (isStaticExport) return [];
     return [
       {
         source: "/(.*)",

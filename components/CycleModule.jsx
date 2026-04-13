@@ -238,18 +238,24 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
 
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          cycle_enabled: configForm.cycle_enabled,
-          cycle_start_date: configForm.cycle_start_date,
-          cycle_length_days: configForm.cycle_length_days,
-          period_length_days: configForm.period_length_days,
-          updated_at: new Date().toISOString()
+      const res = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: user.id,
+          updates: {
+            cycle_enabled: configForm.cycle_enabled,
+            cycle_start_date: configForm.cycle_start_date,
+            cycle_length_days: configForm.cycle_length_days,
+            period_length_days: configForm.period_length_days,
+            updated_at: new Date().toISOString()
+          }
         })
-        .eq('id', user.id)
+      })
+      const data = await res.json()
+      const error = data.error
 
-      if (error) throw error
+      if (error) throw new Error(error)
 
       toast({ title: '¡Guardado!' })
 

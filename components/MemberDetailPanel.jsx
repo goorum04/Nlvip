@@ -7,14 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
-  User, Dumbbell, Apple, Heart, Activity, Calendar, Mail, Phone,
-  Loader2, ChevronRight, X, Edit, Flame, Target, Zap, Star, TrendingUp, ClipboardList,
-  MessageCircle, Trophy
+  User, Dumbbell, Apple, Activity, Calendar, Mail, Phone,
+  Loader2, ChevronRight, X, Edit, Flame, Target, Zap, Star, Heart
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { WorkoutViewer } from './WorkoutBuilder'
-import { CycleModule } from './CycleModule'
-import { PregnancyMode, PostpartumMode, LactationTracker } from './LifeStageModules'
+import { DietViewer } from './DietBuilder'
 
 export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRefresh }) {
   const [loading, setLoading] = useState(true)
@@ -24,13 +22,8 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
   const [workoutDays, setWorkoutDays] = useState([])
   const [availableWorkouts, setAvailableWorkouts] = useState([])
   const [availableDiets, setAvailableDiets] = useState([])
-  const [progressRecords, setProgressRecords] = useState([])
   const [showWorkoutDetail, setShowWorkoutDetail] = useState(false)
   const [assigning, setAssigning] = useState(false)
-  const [sendingOnboarding, setSendingOnboarding] = useState(false)
-  const [onboardingResponse, setOnboardingResponse] = useState(null)
-  const [showOnboardingDetail, setShowOnboardingDetail] = useState(false)
-  const [memberPrs, setMemberPrs] = useState([])
   const { toast } = useToast()
 
   useEffect(() => {
@@ -103,38 +96,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
         .order('created_at', { ascending: false })
 
       setAvailableDiets(diets || [])
-      
-      // Cargar historial de progreso
-      const { data: progress } = await supabase
-        .from('progress_records')
-        .select('*')
-        .eq('member_id', member.id)
-        .order('date', { ascending: false })
-        .limit(10)
 
-      setProgressRecords(progress || [])
-
-      // Cargar respuesta de onboarding si existe
-      const { data: onboarding } = await supabase
-        .from('diet_onboarding_requests')
-        .select('*')
-        .eq('member_id', member.id)
-        .eq('status', 'submitted')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      
-      setOnboardingResponse(onboarding)
-
-      // Cargar PRs del miembro
-      const { data: { session } } = await supabase.auth.getSession()
-      const prRes = await fetch(`/api/member-prs?memberId=${member.id}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
-      })
-      if (prRes.ok) {
-        const prData = await prRes.json()
-        setMemberPrs(prData)
-      }
 
     } catch (error) {
       console.error('Error loading member data:', error)
@@ -167,86 +129,21 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
   const handleAssignDiet = async (dietId) => {
     setAssigning(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
       const { error } = await supabase
         .from('member_diets')
         .upsert([{
           member_id: member.id,
           diet_template_id: dietId,
-          assigned_by: user?.id
+          assigned_by: (await supabase.auth.getUser()).data.user?.id
         }], { onConflict: 'member_id' })
 
       if (error) throw error
-      
-      // GENERAR PLAN DE RECETAS AUTOMÁTICO
-      toast({ title: 'Generando plan de recetas...', description: 'Buscando las mejores recetas para tu dieta.' })
-      
-      try {
-        const response = await fetch('/api/generate-recipe-plan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            memberId: member.id,
-            dietId: dietId,
-            trainerId: user?.id
-          })
-        })
-        
-        const result = await response.json()
-        if (result.success) {
-          toast({ title: '¡Plan de recetas actualizado!', description: `${result.itemsCount} recetas asignadas para tu semana.` })
-        }
-      } catch (genError) {
-        console.error('Error generating recipe plan:', genError)
-        // No bloqueamos el éxito de la asignación de dieta si falla el plan de recetas
-      }
-
       toast({ title: '¡Dieta asignada!' })
       loadMemberData()
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
       setAssigning(false)
-    }
-  }
-
-  const handleSendOnboarding = async () => {
-    setSendingOnboarding(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      // Check for existing pending request
-      const { data: existing, error: checkError } = await supabase
-        .from('diet_onboarding_requests')
-        .select('id, status')
-        .eq('member_id', member.id)
-        .eq('status', 'pending')
-        .maybeSingle()
-
-      if (checkError) console.error(checkError)
-
-      if (existing) {
-        toast({ title: 'Ya existe un cuestionario pendiente', description: 'El socio aún no ha respondido el formulario.' })
-        return
-      }
-
-      // Create new request
-      const { error: insertError } = await supabase
-        .from('diet_onboarding_requests')
-        .insert({
-          member_id: member.id,
-          requested_by: user?.id,
-          status: 'pending'
-        })
-
-      if (insertError) throw insertError
-
-      toast({ title: '✅ Cuestionario enviado', description: 'El socio verá el formulario la próxima vez que abra su app.' })
-    } catch (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
-    } finally {
-      setSendingOnboarding(false)
     }
   }
 
@@ -260,24 +157,8 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold text-lg">
               {member?.name?.charAt(0)}
             </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <span>{member?.name}</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('open-chat', { 
-                      detail: { memberId: member.id, name: member.name } 
-                    }))
-                    onClose() // Opcional: cerrar el panel al abrir el chat
-                  }}
-                  className="rounded-xl border-violet-500/30 text-violet-400 hover:bg-violet-500/10 gap-2 h-8"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Chatear
-                </Button>
-              </div>
+            <div>
+              <span>{member?.name}</span>
               <p className="text-sm text-gray-400 font-normal">{member?.email}</p>
             </div>
           </DialogTitle>
@@ -291,7 +172,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
           <div className="space-y-6 py-4">
             {/* Bienestar Femenino (Solo si es mujer) */}
             {memberData?.sex === 'female' && (
-              <Card className="bg-gradient-to-br from-pink-500/10 to-violet-500/5 border-pink-500/20 rounded-2xl overflow-hidden">
+              <Card className="bg-gradient-to-br from-pink-500/10 to-violet-500/5 border-pink-500/20 rounded-2xl">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-white text-base flex items-center gap-2">
                     <Heart className="w-5 h-5 text-pink-400" />
@@ -302,28 +183,36 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                   <div className="flex items-center justify-between p-3 bg-black/30 rounded-xl">
                     <span className="text-sm text-gray-400">Etapa actual:</span>
                     <span className="text-sm font-bold text-pink-300 uppercase">
-                      {memberData?.life_stage === 'cycle' ? 'Ciclo Natural' :
-                        memberData?.life_stage === 'pregnant' ? 'Embarazo' :
-                          memberData?.life_stage === 'postpartum' ? 'Post-parto' :
-                            memberData?.life_stage === 'lactating' ? 'Lactancia' : 'No configurado'}
+                      {memberData.life_stage === 'cycle' ? 'Ciclo Natural' :
+                        memberData.life_stage === 'pregnant' ? 'Embarazo' :
+                          memberData.life_stage === 'postpartum' ? 'Post-parto' :
+                            memberData.life_stage === 'lactating' ? 'Lactancia' : 'No configurado'}
                     </span>
                   </div>
 
-                  {(!memberData?.life_stage || memberData.life_stage === 'cycle') && (
-                    <CycleModule user={{ id: member.id }} profile={memberData} variant="compact" onProfileUpdate={loadMemberData} />
-                  )}
-                  {memberData?.life_stage === 'pregnant' && (
-                    <PregnancyMode userId={member.id} profile={memberData} onUpdate={loadMemberData} />
-                  )}
-                  {memberData?.life_stage === 'postpartum' && (
-                    <PostpartumMode userId={member.id} profile={memberData} onUpdate={loadMemberData} />
-                  )}
-                  {memberData?.life_stage === 'lactating' && (
-                    <div className="space-y-4">
-                      <LactationTracker userId={member.id} />
-                      <PostpartumMode userId={member.id} profile={memberData} onUpdate={loadMemberData} />
+                  {memberData.life_stage === 'pregnant' && memberData.due_date && (
+                    <div className="p-3 bg-black/30 rounded-xl">
+                      <p className="text-xs text-gray-500">Fecha probable de parto:</p>
+                      <p className="text-sm text-white font-semibold">{new Date(memberData.due_date).toLocaleDateString()}</p>
                     </div>
                   )}
+
+                  {memberData.life_stage === 'cycle' && memberData.cycle_enabled && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2 bg-black/30 rounded-lg">
+                        <p className="text-[10px] text-gray-500 font-bold uppercase">Ciclo</p>
+                        <p className="text-sm text-white">{memberData.cycle_length_days} días</p>
+                      </div>
+                      <div className="p-2 bg-black/30 rounded-lg">
+                        <p className="text-[10px] text-gray-500 font-bold uppercase">Periodo</p>
+                        <p className="text-sm text-white">{memberData.period_length_days} días</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button variant="outline" size="sm" className="w-full border-pink-500/30 text-pink-300 hover:bg-pink-500/10 rounded-xl text-xs">
+                    Ver historial de síntomas
+                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -351,7 +240,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                     </div>
                     {workoutDays.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-3">
-                        {[...workoutDays].sort((a, b) => (a.day_number || 0) - (b.day_number || 0)).map(day => (
+                        {workoutDays.sort((a, b) => a.day_number - b.day_number).map(day => (
                           <span key={day.id} className="px-2 py-1 bg-violet-500/20 rounded-lg text-xs text-violet-300">
                             Día {day.day_number}: {day.name}
                           </span>
@@ -392,45 +281,16 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                     <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
                       <h4 className="font-semibold text-white mb-3">{assignedDiet.name}</h4>
 
-                      {/* Macros Grid */}
-                      <div className="grid grid-cols-4 gap-2">
-                        <div className="bg-orange-500/20 rounded-xl p-3 text-center">
-                          <Flame className="w-4 h-4 text-orange-400 mx-auto mb-1" />
-                          <p className="text-lg font-bold text-white">{assignedDiet.calories}</p>
-                          <p className="text-xs text-gray-400">kcal</p>
-                        </div>
-                        <div className="bg-blue-500/20 rounded-xl p-3 text-center">
-                          <Target className="w-4 h-4 text-blue-400 mx-auto mb-1" />
-                          <p className="text-lg font-bold text-white">{assignedDiet.protein_g}g</p>
-                          <p className="text-xs text-gray-400">Proteína</p>
-                        </div>
-                        <div className="bg-yellow-500/20 rounded-xl p-3 text-center">
-                          <Zap className="w-4 h-4 text-yellow-400 mx-auto mb-1" />
-                          <p className="text-lg font-bold text-white">{assignedDiet.carbs_g}g</p>
-                          <p className="text-xs text-gray-400">Carbos</p>
-                        </div>
-                        <div className="bg-purple-500/20 rounded-xl p-3 text-center">
-                          <Star className="w-4 h-4 text-purple-400 mx-auto mb-1" />
-                          <p className="text-lg font-bold text-white">{assignedDiet.fat_g}g</p>
-                          <p className="text-xs text-gray-400">Grasas</p>
-                        </div>
-                      </div>
-
-                      {assignedDiet.content && (
-                        <div className="mt-3 p-3 bg-black/30 rounded-xl">
-                          <p className="text-sm text-gray-300 whitespace-pre-wrap line-clamp-4">
-                            {assignedDiet.content}
-                          </p>
-                        </div>
-                      )}
+                      {/* Macros Details */}
+                      <DietViewer dietId={assignedDiet.id} />
                     </div>
                   </div>
                 ) : (
                   <p className="text-gray-500 text-sm">Sin dieta asignada</p>
                 )}
 
-                <div className="pt-4 flex flex-col gap-3">
-                  <Select onValueChange={handleAssignDiet} disabled={assigning || sendingOnboarding}>
+                <div className="pt-2">
+                  <Select onValueChange={handleAssignDiet} disabled={assigning}>
                     <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white">
                       <SelectValue placeholder="Asignar dieta..." />
                     </SelectTrigger>
@@ -442,133 +302,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                       ))}
                     </SelectContent>
                   </Select>
-
-                  <div className="relative flex items-center py-2">
-                    <div className="flex-grow border-t border-white/10"></div>
-                    <span className="flex-shrink-0 mx-4 text-gray-500 text-xs uppercase tracking-wider">O</span>
-                    <div className="flex-grow border-t border-white/10"></div>
-                  </div>
-
-                  <Button 
-                    onClick={handleSendOnboarding}
-                    disabled={sendingOnboarding || assigning}
-                    className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 text-white shadow-lg shadow-violet-500/20"
-                  >
-                    {sendingOnboarding ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <ClipboardList className="w-4 h-4 mr-2" />
-                    )}
-                    Solicitar cuestionario
-                  </Button>
-
-                  {onboardingResponse && (
-                    <Button 
-                      onClick={() => setShowOnboardingDetail(true)}
-                      variant="outline"
-                      className="w-full border-green-500/30 text-green-400 hover:bg-green-500/10 gap-2"
-                    >
-                      <ClipboardList className="w-4 h-4" />
-                      Ver respuestas cuestionario
-                    </Button>
-                  )}
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Modal de Respuestas de Cuestionario */}
-            <Dialog open={showOnboardingDetail} onOpenChange={setShowOnboardingDetail}>
-              <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-lg max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="text-white flex items-center gap-2">
-                    <ClipboardList className="w-5 h-5 text-violet-400" />
-                    Respuestas Cuestionario - {member.name}
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  {onboardingResponse?.responses && Object.entries(onboardingResponse.responses).map(([key, value]) => (
-                    <div key={key} className="p-3 bg-white/5 rounded-xl border border-white/5">
-                      <p className="text-[10px] text-violet-400 uppercase font-bold mb-1">{key}</p>
-                      <p className="text-sm text-white/90 whitespace-pre-wrap">{String(value)}</p>
-                    </div>
-                  ))}
-                  {!onboardingResponse?.responses && (
-                    <p className="text-gray-500 text-center">No hay respuestas detalladas guardadas.</p>
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            {/* Historial de Medidas */}
-            <Card className="bg-black/30 border-violet-500/20 rounded-2xl">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-white text-base flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-violet-400" />
-                  Historial de Medidas
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {progressRecords.length > 0 ? (
-                  progressRecords.map(r => (
-                    <div key={r.id} className="p-3 bg-white/5 rounded-xl border border-white/5">
-                      <div className="flex justify-between items-start mb-2">
-                        <p className="text-violet-400 text-xs font-bold">{new Date(r.date).toLocaleDateString()}</p>
-                        {r.weight_kg && <p className="text-sm font-black text-white">{r.weight_kg} kg</p>}
-                      </div>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-400">
-                        {r.chest_cm && <span>Pecho: {r.chest_cm}cm</span>}
-                        {r.waist_cm && <span>Cintura: {r.waist_cm}cm</span>}
-                        {r.hips_cm && <span>Cadera: {r.hips_cm}cm</span>}
-                        {r.arms_cm && <span>Brazos: {r.arms_cm}cm</span>}
-                        {r.legs_cm && <span>Piernas: {r.legs_cm}cm</span>}
-                        {r.glutes_cm && <span>Glúteo: {r.glutes_cm}cm</span>}
-                        {r.calves_cm && <span>Gemelo: {r.calves_cm}cm</span>}
-                      </div>
-                      {r.notes && (
-                        <p className="text-[10px] text-gray-500 mt-2 italic border-t border-white/5 pt-1">
-                          "{r.notes}"
-                        </p>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-sm py-4 text-center">Sin registros de progreso</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Récords Personales (PR) */}
-            <Card className="bg-black/30 border-violet-500/20 rounded-2xl">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-white text-base flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-yellow-500" />
-                  Récords Personales (PR)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {memberPrs.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-2">
-                    {Object.values(memberPrs.reduce((acc, pr) => {
-                      if (!acc[pr.exercise_name] || parseFloat(pr.estimated_1rm) > parseFloat(acc[pr.exercise_name].estimated_1rm)) {
-                        acc[pr.exercise_name] = pr
-                      }
-                      return acc
-                    }, {})).map((pr, idx) => (
-                      <div key={idx} className="p-3 bg-white/5 rounded-xl border border-white/5 flex justify-between items-center">
-                        <div>
-                          <p className="text-white font-bold text-sm uppercase">{pr.exercise_name}</p>
-                          <p className="text-xs text-gray-500">{new Date(pr.date).toLocaleDateString()}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-black text-white">{pr.weight_kg} kg <span className="text-[10px] text-gray-500">x{pr.reps}</span></p>
-                          <p className="text-[10px] text-violet-400 font-bold uppercase">1RM: {pr.estimated_1rm} kg</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-sm py-4 text-center">Sin récords registrados</p>
-                )}
               </CardContent>
             </Card>
           </div>
@@ -584,7 +318,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                   Rutina: {assignedWorkout.name}
                 </DialogTitle>
               </DialogHeader>
-              <WorkoutViewer workoutId={assignedWorkout.id} memberPrs={memberPrs} />
+              <WorkoutViewer workoutId={assignedWorkout.id} />
             </DialogContent>
           </Dialog>
         )}
