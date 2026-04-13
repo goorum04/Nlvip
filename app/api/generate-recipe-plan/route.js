@@ -223,28 +223,66 @@ export async function POST(req) {
       plan = newPlan
     }
 
-    // 5. Guardar recetas y generar items del plan para 7 días
-    const planItems = []
-
+    // 5. Recopilar todas las recetas únicas necesarias y guardarlas en batch
+    const selectedBySlotDay = []
     for (let dayIndex = 1; dayIndex <= 7; dayIndex++) {
-      for (const [slot, config] of Object.entries(MEAL_SLOTS)) {
+      for (const [slot] of Object.entries(MEAL_SLOTS)) {
         const candidates = slotResults[slot] || []
         if (candidates.length === 0) continue
-
-        // Elegir receta aleatoria de los candidatos para variedad
         const selected = candidates[Math.floor(Math.random() * candidates.length)]
-        
-        // Guardar en la DB local
-        const recipeId = await saveRecipeToDB(selected)
-        if (!recipeId) continue
-
-        planItems.push({
-          plan_id: plan.id,
-          day_of_week: dayIndex,
-          meal_type: slot,
-          recipe_id: recipeId
-        })
+        selectedBySlotDay.push({ dayIndex, slot, recipe: selected })
       }
+    }
+
+    // Batch-check which recipes already exist
+    const uniqueTitles = [...new Set(selectedBySlotDay.map(s => s.recipe.title))]
+    const { data: existingRecipes } = await supabase
+      .from('recipe_catalog')
+      .select('id, title')
+      .in('title', uniqueTitles)
+
+    const titleToId = {}
+    for (const r of (existingRecipes || [])) titleToId[r.title] = r.id
+
+    // Batch-insert only the missing recipes
+    const missingRecipes = selectedBySlotDay
+      .map(s => s.recipe)
+      .filter((r, idx, arr) => arr.findIndex(x => x.title === r.title) === idx) // unique
+      .filter(r => !titleToId[r.title])
+
+    if (missingRecipes.length > 0) {
+      const toInsert = missingRecipes.map(r => ({
+        title: r.title,
+        description: `Receta personalizada: ${r.title}`,
+        ingredients: r.ingredients ? r.ingredients.split('\n') : [],
+        instructions: r.instructions ? r.instructions.split('\n') : [],
+        calories: r.calories,
+        protein_g: r.protein_g,
+        carbs_g: r.carbs_g,
+        fat_g: r.fats_g,
+        prep_time_min: r.readyInMinutes || 30,
+        image_url: r.image,
+        dietary_tags: [r.category],
+        is_public: true
+      }))
+      const { data: inserted } = await supabase
+        .from('recipe_catalog')
+        .insert(toInsert)
+        .select('id, title')
+      for (const r of (inserted || [])) titleToId[r.title] = r.id
+    }
+
+    // Build plan items using the pre-fetched IDs (no more per-item queries)
+    const planItems = []
+    for (const { dayIndex, slot, recipe } of selectedBySlotDay) {
+      const recipeId = titleToId[recipe.title]
+      if (!recipeId) continue
+      planItems.push({
+        plan_id: plan.id,
+        day_of_week: dayIndex,
+        meal_type: slot,
+        recipe_id: recipeId
+      })
     }
 
     // 6. Insertar items (limpiar anteriores)

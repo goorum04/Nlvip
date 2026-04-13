@@ -188,18 +188,18 @@ export default function TrainerDashboard({ user, profile, onLogout }) {
   }
 
   const loadWorkoutTemplates = async () => {
-    const { data } = await supabase.from('workout_templates').select('*').eq('trainer_id', user.id).order('created_at', { ascending: false })
+    // Load workouts + videos in one query (eliminates N+1)
+    const { data } = await supabase
+      .from('workout_templates')
+      .select('*, workout_videos(*)')
+      .eq('trainer_id', user.id)
+      .order('created_at', { ascending: false })
+
     if (data) {
       setWorkoutTemplates(data)
-      // Load videos for each workout
       const videos = {}
       for (const workout of data) {
-        const { data: workoutVids } = await supabase
-          .from('workout_videos')
-          .select('*')
-          .eq('workout_template_id', workout.id)
-          .order('created_at')
-        if (workoutVids) videos[workout.id] = workoutVids
+        videos[workout.id] = (workout.workout_videos || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
       }
       setWorkoutVideos(videos)
     }
