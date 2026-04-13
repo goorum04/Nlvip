@@ -217,7 +217,20 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
       .eq('status', 'submitted')
       .eq('requested_by', user.id)
       .order('created_at', { ascending: false })
-    if (data) setDietRequests(data)
+      
+    if (data) {
+      // Show only the latest form per member to prevent duplicates
+      const uniqueRequests = []
+      const seenMembers = new Set()
+      
+      for (const req of data) {
+        if (!seenMembers.has(req.member_id)) {
+          seenMembers.add(req.member_id)
+          uniqueRequests.push(req)
+        }
+      }
+      setDietRequests(uniqueRequests)
+    }
   }
 
   const loadNotices = async () => {

@@ -253,8 +253,9 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
         .select('id, status')
         .eq('member_id', user.id)
         .eq('status', 'pending')
-        .maybeSingle()
-      setPendingOnboarding(data || null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+      setPendingOnboarding(data?.[0] || null)
     } catch (e) {
       console.warn('Error fetching onboarding:', e.message)
     }

@@ -161,7 +161,20 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       .from('diet_onboarding_requests')
       .select('*, member:profiles!diet_onboarding_requests_member_id_fkey(name, email)')
       .order('created_at', { ascending: false })
-    if (data) setDietRequests(data || [])
+      
+    if (data) {
+      // Show only the latest form per member to prevent duplicates
+      const uniqueRequests = []
+      const seenMembers = new Set()
+      
+      for (const req of data) {
+        if (!seenMembers.has(req.member_id)) {
+          seenMembers.add(req.member_id)
+          uniqueRequests.push(req)
+        }
+      }
+      setDietRequests(uniqueRequests)
+    }
   }
 
   // Load challenges (all)

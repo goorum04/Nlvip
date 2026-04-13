@@ -30,20 +30,38 @@ export async function POST(req) {
       }
     }
 
-    // Check if there's already a pending request
-    const { data: existing } = await supabaseAdmin
+    // Check if there's ANY existing request for this member
+    const { data: existingData } = await supabaseAdmin
       .from('diet_onboarding_requests')
       .select('id, status')
       .eq('member_id', memberId)
-      .eq('status', 'pending')
-      .maybeSingle()
+      .order('created_at', { ascending: false })
+      .limit(1)
+      
+    const existing = existingData?.[0]
 
     if (existing) {
+      if (existing.status === 'pending') {
+        return NextResponse.json({
+          success: true,
+          alreadyExists: true,
+          requestId: existing.id,
+          message: 'Ya hay un formulario pendiente para este socio.'
+        })
+      }
+
+      // If it exists but is completed/submitted, we reset it to pending to act as a new request
+      const { error: updateError } = await supabaseAdmin
+        .from('diet_onboarding_requests')
+        .update({ status: 'pending', requested_by: requestedBy || user.id })
+        .eq('id', existing.id)
+
+      if (updateError) throw new Error(updateError.message)
+
       return NextResponse.json({
         success: true,
-        alreadyExists: true,
         requestId: existing.id,
-        message: 'Ya hay un formulario pendiente para este socio.'
+        message: 'Cuestionario reenviado al socio correctamente.'
       })
     }
 
