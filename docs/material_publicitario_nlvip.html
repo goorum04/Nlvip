@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NL VIP TEAM — Material Publicitario</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --violet: #8b5cf6;
+            --cyan: #06b6d4;
+            --bg: #0a0a0a;
+            --card: #141414;
+            --card-border: rgba(255,255,255,0.06);
+            --text: #f0f0f0;
+            --dim: #888;
+            --gold: #C9A24D;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            padding: 0;
+        }
+
+        .no-print {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--violet), var(--cyan));
+            color: #000;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 13px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: scale(1.05); }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 50px 40px;
+        }
+
+        /* ── COVER ── */
+        .cover {
+            text-align: center;
+            padding: 100px 40px 80px;
+            position: relative;
+            overflow: hidden;
+            page-break-after: always;
+        }
+        .cover::before {
+            content: '';
+            position: absolute;
+            top: -150px; left: 50%; transform: translateX(-50%);
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .cover .badge {
+            display: inline-block;
+            background: rgba(139,92,246,0.1);
+            color: var(--violet);
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            border: 1px solid rgba(139,92,246,0.2);
+            margin-bottom: 30px;
+        }
+        .cover h1 {
+            font-size: 64px;
+            font-weight: 900;
+            letter-spacing: -3px;
+            background: linear-gradient(135deg, #fff 30%, var(--dim));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+        .cover .subtitle {
+            font-size: 18px;
+            color: var(--violet);
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .cover .tagline {
+            font-size: 14px;
+            color: var(--dim);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .cover .divider {
+            width: 60px; height: 3px;
+            background: linear-gradient(90deg, var(--violet), var(--cyan));
+            margin: 40px auto 20px;
+            border-radius: 10px;
+        }
+        .cover .date {
+            font-size: 11px;
+            color: var(--dim);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* ── SECTIONS ── */
+        .section {
+            margin-bottom: 50px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--violet);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(139,92,246,0.2);
+        }
+
+        h2 {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--cyan);
+            margin: 28px 0 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 28px 30px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+            background: linear-gradient(180deg, var(--violet), var(--cyan));
+        }
+        .card.gold::before {
+            background: linear-gradient(180deg, var(--gold), #e8c96a);
+        }
+
+        /* ── SPEECH BLOCK ── */
+        .speech {
+            font-size: 16px;
+            font-style: italic;
+            color: #d4d4d4;
+            line-height: 1.9;
+            border-left: 3px solid var(--violet);
+            padding-left: 24px;
+            margin: 16px 0;
+        }
+        .speech strong {
+            color: #fff;
+            font-style: normal;
+        }
+
+        /* ── SCRIPT BOX ── */
+        .script-box {
+            background: #000;
+            border-radius: 16px;
+            padding: 22px 24px;
+            margin: 16px 0;
+            border: 1px solid rgba(255,255,255,0.08);
+            font-size: 13px;
+            line-height: 1.8;
+            color: #ccc;
+            white-space: pre-line;
+        }
+        .script-label {
+            display: block;
+            color: var(--cyan);
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        /* ── TABLE ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+        }
+        th {
+            text-align: left;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--dim);
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.02);
+        }
+        td {
+            padding: 14px 16px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: #ccc;
+            vertical-align: top;
+        }
+        td:first-child {
+            color: #fff;
+            font-weight: 600;
+        }
+        tr:hover td {
+            background: rgba(139,92,246,0.03);
+        }
+
+        /* ── LIST ── */
+        ul.checklist {
+            list-style: none;
+            padding: 0;
+        }
+        ul.checklist li {
+            padding: 10px 0;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        ul.checklist li::before {
+            content: '☐';
+            font-size: 16px;
+            color: var(--violet);
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 6px 0;
+            font-size: 14px;
+            color: #ccc;
+        }
+        .feature-list li strong {
+            color: #fff;
+        }
+
+        /* ── FOOTER ── */
+        .footer {
+            text-align: center;
+            padding: 60px 40px 40px;
+            font-size: 11px;
+            color: var(--dim);
+            letter-spacing: 1px;
+        }
+
+        .tip-box {
+            background: rgba(139,92,246,0.08);
+            border: 1px solid rgba(139,92,246,0.15);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-top: 30px;
+            font-size: 13px;
+            color: #bbb;
+        }
+        .tip-box strong {
+            color: var(--violet);
+        }
+
+        /* ── PRINT ── */
+        @media print {
+            .no-print { display: none !important; }
+            body { 
+                background: #fff !important; 
+                color: #111 !important; 
+                padding: 0; 
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .container { padding: 30px 40px; }
+            .cover { 
+                background: #fff !important; 
+                padding: 80px 40px 60px;
+            }
+            .cover h1 { 
+                -webkit-text-fill-color: #111 !important; 
+                color: #111 !important;
+                font-size: 48px;
+            }
+            .cover .subtitle { color: #6d28d9 !important; }
+            .cover .tagline { color: #666 !important; }
+            .cover::before { display: none; }
+            .card { 
+                background: #f9f9f9 !important; 
+                border: 1px solid #e0e0e0 !important; 
+                page-break-inside: avoid;
+            }
+            .card::before { display: block; }
+            .script-box { 
+                background: #f4f4f4 !important; 
+                border: 1px solid #ddd !important; 
+                color: #333 !important; 
+            }
+            .speech { color: #333 !important; border-color: #6d28d9 !important; }
+            .speech strong { color: #000 !important; }
+            h2 { color: #111 !important; }
+            h3 { color: #0891b2 !important; }
+            .section-title { color: #6d28d9 !important; }
+            .section-title::after { background: #e0e0e0 !important; }
+            td, th { color: #333 !important; border-color: #eee !important; }
+            td:first-child { color: #111 !important; }
+            .tip-box { background: #f5f0ff !important; border-color: #ddd !important; color: #333 !important; }
+            .tip-box strong { color: #6d28d9 !important; }
+            .footer { color: #999 !important; }
+            .section { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="btn" onclick="window.print()">⬇ DESCARGAR PDF</button>
+    </div>
+
+    <!-- ═══════════ COVER ═══════════ -->
+    <div class="cover">
+        <div class="badge">Material Publicitario & Guía de Ventas</div>
+        <h1>NL VIP TEAM</h1>
+        <p class="subtitle">Gimnasio Premium · App Exclusiva</p>
+        <p class="tagline">Todo lo que necesitas para publicitar la app, convencer a tus socios y hacer crecer tu comunidad fitness.</p>
+        <div class="divider"></div>
+        <p class="date">Abril 2026</p>
+    </div>
+
+    <div class="container">
+
+        <!-- ═══════════ DISCURSO DEL DUEÑO ═══════════ -->
+        <div class="section">
+            <div class="section-title">01 · Discurso del Dueño</div>
+            <h2>🎤 Textos para Memorizar</h2>
+
+            <h3>Versión Corta — 30 segundos (Cara a cara)</h3>
+            <div class="card gold">
+                <p class="speech">
+                    "Oye, ¿conoces nuestra app? Se llama <strong>NL VIP TEAM</strong>. Es como tener a tu entrenador en el bolsillo las 24 horas. Ahí tienes tu <strong>rutina personalizada</strong> con vídeos de cada ejercicio, tu <strong>dieta</strong> con las comidas de cada día, puedes registrar tu <strong>peso y medidas</strong>, subir <strong>fotos de progreso</strong>… y si tienes cualquier duda, le escribes directamente a tu entrenador por el <strong>chat</strong>. Todo privado, solo lo ves tú y tu entrenador. Es <strong>gratis para los socios VIP</strong>. ¿Te la descargo?"
+                </p>
+            </div>
+
+            <h3>Versión Media — 1 minuto (Para grupo o clase)</h3>
+            <div class="card">
+                <p class="speech">
+                    "Chicos, quiero contaros algo que va a cambiar vuestra experiencia en el gimnasio. Hemos lanzado <strong>NL VIP TEAM</strong>, nuestra propia app.
+                    <br><br>
+                    <strong>Primero:</strong> tu rutina personalizada, día por día, con series, repeticiones y vídeos de cada ejercicio. Se acabó el no acordarte de qué tocaba.
+                    <br><br>
+                    <strong>Segundo:</strong> tu plan de dieta hecho a medida, con tus macros calculados — proteína, carbohidratos y grasas — adaptado a tu objetivo.
+                    <br><br>
+                    <strong>Tercero:</strong> puedes registrar tu progreso — peso, medidas, fotos — y ver cómo evolucionas semana a semana con gráficas.
+                    <br><br>
+                    Y lo mejor: tienes un <strong>chat directo con tu entrenador</strong>. Cualquier duda, a cualquier hora.
+                    <br><br>
+                    Para las chicas tenemos algo único: el <strong>módulo de bienestar femenino</strong>, que adapta tu entrenamiento y nutrición a tu ciclo hormonal. Ningún otro gimnasio tiene esto.
+                    <br><br>
+                    Es <strong>gratuita para los socios VIP</strong>. Os la podéis descargar ahora mismo."
+                </p>
+            </div>
+
+            <h3>Versión Larga — Para eventos y puertas abiertas</h3>
+            <div class="card">
+                <p class="speech">
+                    "Bienvenidos. En nuestro gimnasio siempre hemos creído que entrenar no es solo venir y mover hierro. Es un proceso completo: entrenamiento, nutrición, descanso y seguimiento.
+                    <br><br>
+                    Por eso hemos desarrollado <strong>NL VIP TEAM</strong>, nuestra plataforma tecnológica exclusiva para socios. No es una app genérica — está diseñada específicamente para nuestro gimnasio y nuestros entrenadores."
+                </p>
+                <ul class="feature-list" style="margin: 16px 0 16px 24px;">
+                    <li>💪 <strong>Rutina personalizada</strong> creada por tu entrenador, con vídeos explicativos</li>
+                    <li>🥗 <strong>Plan de nutrición</strong> con comidas detalladas, macros calculados y recetas</li>
+                    <li>👟 <strong>Tracker de actividad</strong> — pasos, entrenamientos, récords personales</li>
+                    <li>📊 <strong>Registro de progreso</strong> — peso, medidas corporales, fotos privadas</li>
+                    <li>📈 <strong>Gráficas de evolución</strong> — para que VEAS tu transformación</li>
+                    <li>🏠 <strong>Feed social privado</strong> — comparte logros con la comunidad del gym</li>
+                    <li>🏆 <strong>Retos y logros</strong> — medallas por constancia y superación</li>
+                    <li>💬 <strong>Chat directo</strong> con tu entrenador y con administración</li>
+                    <li>🌙 <strong>Módulo de bienestar femenino</strong> — sincronización con el ciclo hormonal</li>
+                </ul>
+                <p class="speech">
+                    "Todo esto privado y seguro. Solo tú y tu entrenador tenéis acceso a tus datos. Es el equivalente a tener un entrenador personal 24/7 en tu bolsillo. Y es <strong>gratuito para nuestros socios VIP</strong>."
+                </p>
+            </div>
+        </div>
+
+        <!-- ═══════════ POSTS INSTAGRAM ═══════════ -->
+        <div class="section">
+            <div class="section-title">02 · Posts para Instagram / TikTok</div>
+            <h2>📱 Publicaciones Listas para Copiar y Pegar</h2>
+
+            <h3>Post 1 — Lanzamiento</h3>
+            <div class="card">
+                <div class="script-box">
+                    <span class="script-label">Instagram / Facebook</span>
+🖤 NL VIP TEAM — Tu Gimnasio en tu Bolsillo 🖤
+
+Hemos creado algo que NINGÚN otro gimnasio tiene.
+
+Tu rutina personalizada 💪
+Tu dieta a medida 🥗
+Tu progreso en gráficas 📊
+Chat directo con tu entrenador 💬
+Y para ellas: bienestar hormonal 🌙
+
+Todo en UNA app. Todo PRIVADO. Todo GRATIS para socios VIP.
+
+Pídele a tu entrenador que te la active 🔥
+
+#NLVIPTEAM #GimnasioPremium #FitnessApp #TransformaciónReal #EntrenadorPersonal #NutriciónDeportiva #GymLife #Fitness2026
+                </div>
+            </div>
+
+            <h3>Post 2 — Enfocado en Dieta</h3>
+            <div class="card">
+                <div class="script-box">
+                    <span class="script-label">Instagram / Facebook</span>
+¿Sigues preguntando "qué como hoy"? 🍳
+
+Con NL VIP TEAM tienes tu plan de comidas completo:
+✅ Desayuno, comida, cena y snacks
+✅ Macros calculados (proteína, carbos, grasa)
+✅ Recetas paso a paso
+✅ Adaptado a TU objetivo
+
+Tu entrenador lo diseña. Tú solo abres la app.
+
+Se acabaron las excusas 💪🔥
+
+#DietaPersonalizada #MacrosFitness #NLVIPTEAM #ComerBien
+                </div>
+            </div>
+
+            <h3>Post 3 — Enfocado en Progreso</h3>
+            <div class="card">
+                <div class="script-box">
+                    <span class="script-label">Instagram / Facebook</span>
+📸 Antes vs Después — Pero de VERDAD
+
+Con NL VIP TEAM puedes:
+→ Registrar tu peso cada semana
+→ Tus medidas: pecho, cintura, brazo, pierna, glúteo
+→ Subir fotos de progreso (100% privadas)
+→ Ver tu evolución en gráficas
+
+Cuando ves los números bajar y las fotos cambiar…
+ahí es cuando NO dejas el gimnasio 🔥
+
+#ProgresoReal #TransformaciónFísica #NLVIPTEAM #Motivación
+                </div>
+            </div>
+
+            <h3>Post 4 — Bienestar Femenino</h3>
+            <div class="card">
+                <div class="script-box">
+                    <span class="script-label">Instagram / Facebook</span>
+🌙 Para ELLAS: tu cuerpo no es igual todos los días.
+
+NL VIP TEAM tiene un módulo exclusivo de bienestar femenino:
+
+🔄 Sincroniza tu entrenamiento con tu ciclo
+📊 Macros que se adaptan a tu fase hormonal
+🤰 Modo embarazo y postparto
+🍼 Tracker de lactancia
+📝 Registro de síntomas
+
+Porque entrenar inteligente > entrenar duro.
+
+Ningún otro gimnasio te ofrece esto. Punto.
+
+#BienestarFemenino #CicloMenstrual #FitnessFemenino #NLVIPTEAM
+                </div>
+            </div>
+
+            <h3>Post 5 — Comunidad</h3>
+            <div class="card">
+                <div class="script-box">
+                    <span class="script-label">Instagram / Facebook</span>
+🏆 En NL VIP TEAM no entrenas solo.
+
+→ Feed privado para compartir logros
+→ Retos semanales con la comunidad
+→ Medallas y badges por constancia
+→ Chat directo con tu entrenador
+
+Es como tener tu propio Instagram fitness,
+pero solo con gente de TU gimnasio 🖤
+
+#ComunidadFitness #NLVIPTEAM #GymFamily
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ REELS ═══════════ -->
+        <div class="section">
+            <div class="section-title">03 · Guiones para Reels / TikTok</div>
+            <h2>🎬 Vídeos Cortos</h2>
+
+            <div class="card">
+                <h3 style="margin-top:0;">Reel 1: "Lo que ves vs Lo que hay detrás" (15 seg)</h3>
+                <div class="script-box">
+                    <span class="script-label">Guión Visual</span>
+<strong>[Clip 1]</strong> Alguien entrenando normal en el gym
+<strong>Texto:</strong> "Lo que ves: alguien entrenando"
+
+<strong>[Transición rápida — mostrar móvil con la app]</strong>
+<strong>Texto:</strong> "Lo que NO ves: rutina personalizada, dieta calculada, progreso registrado, chat con entrenador"
+
+<strong>[Logo NL VIP TEAM]</strong>
+<strong>Voz/Texto:</strong> "NL VIP TEAM — Tu gym en tu bolsillo"
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0;">Reel 2: "POV: Eres socio VIP" (20 seg)</h3>
+                <div class="script-box">
+                    <span class="script-label">Guión Visual</span>
+<strong>[POV entrando al gym]</strong>
+"POV: Eres socio VIP de [Nombre del Gym]"
+
+<strong>[Abrir app — mostrar pantalla]</strong>
+"Abres tu app y ya tienes la rutina del día"
+
+<strong>[Scroll a dieta]</strong>
+"Tu dieta con cada comida preparada"
+
+<strong>[Mostrar chat]</strong>
+"Y si tienes dudas, le escribes a tu entrenador"
+
+<strong>[Mostrar gráfica de progreso]</strong>
+"Y ves cómo vas mejorando cada semana"
+
+<strong>Texto final:</strong> "Esto es NL VIP TEAM 🖤"
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0;">Reel 3: "3 cosas que no sabías" (15 seg)</h3>
+                <div class="script-box">
+                    <span class="script-label">Guión Visual</span>
+"3 cosas que no sabías de [Nombre del Gym]:"
+
+"1. Tenemos nuestra PROPIA app de fitness"
+"2. Tu entrenador te manda la rutina y dieta al móvil"
+"3. Puedes ver tu progreso real con fotos y gráficas"
+
+"¿El precio? GRATIS para socios VIP"
+
+"Link en bio 👇"
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ WHATSAPP ═══════════ -->
+        <div class="section">
+            <div class="section-title">04 · Mensajes para WhatsApp</div>
+            <h2>💬 Plantillas de Difusión</h2>
+
+            <h3>Anuncio General</h3>
+            <div class="card">
+                <div class="script-box">
+                    <span class="script-label">WhatsApp — Difusión / Grupo</span>
+🖤 *NL VIP TEAM* — Novedad para socios 🖤
+
+Hemos lanzado nuestra app exclusiva:
+
+📱 Tu rutina personalizada en el móvil
+🥗 Tu plan de dieta con macros
+📊 Registro de progreso y gráficas
+💬 Chat directo con tu entrenador
+🏆 Retos y logros
+
+*Gratuita para socios VIP* ✨
+
+Pídele a tu entrenador que te active el acceso.
+
+¡Te esperamos! 💪
+                </div>
+            </div>
+
+            <h3>Recordatorio Individual</h3>
+            <div class="card">
+                <div class="script-box">
+                    <span class="script-label">WhatsApp — Mensaje directo</span>
+¡Hola [NOMBRE]! 👋
+
+¿Ya tienes la app de NL VIP TEAM? 📱
+
+Ahí puedes ver tu rutina, tu dieta y registrar tu progreso. Si necesitas ayuda para instalarla, pregúntame sin problema 😊
+
+Un saludo 💪
+                </div>
+            </div>
+
+            <h3>Captación de Nuevos Socios</h3>
+            <div class="card">
+                <div class="script-box">
+                    <span class="script-label">WhatsApp — Prospección</span>
+💎 ¿Buscas un gimnasio que sea MÁS que un gimnasio?
+
+En *[Nombre del Gym]* cada socio VIP tiene:
+✅ Entrenador personal asignado
+✅ Rutina personalizada en el móvil
+✅ Plan de dieta adaptado
+✅ Seguimiento de progreso real
+✅ Chat directo con tu entrenador
+
+Todo incluido en la cuota. Sin extras.
+
+📲 Descubre NL VIP TEAM — la app que hace la diferencia.
+
+Ven a conocernos: [dirección]
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ CARTELES ═══════════ -->
+        <div class="section">
+            <div class="section-title">05 · Carteles y Vinilos para el Gimnasio</div>
+            <h2>🪧 Textos para Imprimir</h2>
+
+            <div class="card">
+                <h3 style="margin-top:0">📍 Recepción</h3>
+                <div class="script-box" style="text-align:center; font-size:16px;">
+📱 <strong>¿YA TIENES NL VIP TEAM?</strong>
+
+Tu rutina · Tu dieta · Tu progreso
+Todo en una app.
+
+<strong>Pide tu acceso en recepción.</strong>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0">🪞 Vestuario</h3>
+                <div class="script-box" style="text-align:center; font-size:16px;">
+<strong>"TU CUERPO CAMBIA.
+TRÁCKALO."</strong>
+
+Peso · Medidas · Fotos
+NL VIP TEAM 📊
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0">🏋️ Zona de Peso Libre</h3>
+                <div class="script-box" style="text-align:center; font-size:16px;">
+<strong>"¿No te acuerdas del ejercicio?
+Abre tu app." 💪</strong>
+
+NL VIP TEAM
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0">🏆 Zona Cardio</h3>
+                <div class="script-box" style="text-align:center; font-size:16px;">
+<strong>RETO DE LA SEMANA</strong>
+
+Completa los retos en NL VIP TEAM
+y gana insignias exclusivas.
+
+<strong>¿Tienes lo que hay que tener?</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ ARGUMENTOS DE VENTA ═══════════ -->
+        <div class="section">
+            <div class="section-title">06 · Argumentos de Venta</div>
+            <h2>💡 Qué Decir para Cada Función</h2>
+
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:30%">Funcionalidad</th>
+                            <th>Qué decirle al socio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>💪 Rutina personalizada</td>
+                            <td>"Tu entrenador te prepara la rutina y te llega al móvil. Con vídeos de cada ejercicio."</td>
+                        </tr>
+                        <tr>
+                            <td>🥗 Plan de dieta</td>
+                            <td>"Nada de dietas genéricas. Tu dieta calculada con tus macros, comida por comida."</td>
+                        </tr>
+                        <tr>
+                            <td>📸 Fotos de progreso</td>
+                            <td>"Puedes subir fotos cada semana y ver el cambio. Solo las ves tú y tu entrenador."</td>
+                        </tr>
+                        <tr>
+                            <td>📈 Gráficas</td>
+                            <td>"Ves tu peso y medidas en gráficas. Cuando ves la curva bajar, la motivación sube."</td>
+                        </tr>
+                        <tr>
+                            <td>💬 Chat</td>
+                            <td>"Cualquier duda, le escribes a tu entrenador por la app. No hace falta esperar a verle."</td>
+                        </tr>
+                        <tr>
+                            <td>🏠 Feed social</td>
+                            <td>"Es como un Instagram privado del gym. Compartes logros, la gente te motiva."</td>
+                        </tr>
+                        <tr>
+                            <td>🏆 Retos / Badges</td>
+                            <td>"Hay retos semanales y medallas. Es como un juego, pero con tu cuerpo."</td>
+                        </tr>
+                        <tr>
+                            <td>🌙 Bienestar femenino</td>
+                            <td>"Para las chicas, la app adapta la dieta y entreno al ciclo hormonal. Es ciencia, no magia."</td>
+                        </tr>
+                        <tr>
+                            <td>🍳 Recetas</td>
+                            <td>"Tienes recetas saludables con los ingredientes exactos y pasos. No hay excusa."</td>
+                        </tr>
+                        <tr>
+                            <td>🏅 Récords personales</td>
+                            <td>"Registra tus PR en sentadilla, press banca... Ves cómo subes de fuerza."</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════ OBJECIONES ═══════════ -->
+        <div class="section">
+            <div class="section-title">07 · Respuestas a Objeciones</div>
+            <h2>🛡️ Cómo Contestar las Excusas</h2>
+
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:35%">Objeción del socio</th>
+                            <th>Tu respuesta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>"No uso apps"</td>
+                            <td>"Es súper sencilla, te la enseño en 2 minutos. Solo abre y ya ves tu rutina."</td>
+                        </tr>
+                        <tr>
+                            <td>"Prefiero papel"</td>
+                            <td>"Lo entiendo, pero aquí tienes vídeos de cada ejercicio y las gráficas las hace sola."</td>
+                        </tr>
+                        <tr>
+                            <td>"¿Es gratis de verdad?"</td>
+                            <td>"Sí, viene incluida con tu cuota VIP. Sin trucos ni pagos extra."</td>
+                        </tr>
+                        <tr>
+                            <td>"¿Es segura?"</td>
+                            <td>"Solo tú y tu entrenador veis tus datos. Nadie más. Todo encriptado."</td>
+                        </tr>
+                        <tr>
+                            <td>"Ya uso otra app"</td>
+                            <td>"Esta está hecha para TI. Tu entrenador te pone la rutina y dieta directamente."</td>
+                        </tr>
+                        <tr>
+                            <td>"No tengo espacio"</td>
+                            <td>"No se descarga, es una web-app. Se abre desde el navegador como una página."</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════ CHECKLIST ═══════════ -->
+        <div class="section">
+            <div class="section-title">08 · Checklist de Lanzamiento</div>
+            <h2>📋 Pasos para Activar la Campaña</h2>
+
+            <div class="card">
+                <ul class="checklist">
+                    <li>Preparar QR code con el enlace de la app</li>
+                    <li>Imprimir cartel para recepción con QR</li>
+                    <li>Enviar WhatsApp masivo a todos los socios VIP</li>
+                    <li>Publicar post de lanzamiento en Instagram</li>
+                    <li>Publicar 1 reel mostrando la app</li>
+                    <li>Publicar story con link a la app</li>
+                    <li>Informar a todos los entrenadores para que hablen con sus socios</li>
+                    <li>Poner vinilo / cartel en vestuarios</li>
+                    <li>Hacer demo en persona a los primeros 10 socios</li>
+                </ul>
+            </div>
+
+            <div class="tip-box">
+                <strong>💡 Consejo final:</strong> La mejor publicidad es que el entrenador se la enseñe al socio en persona, le abra la rutina del día, y le diga: <em>"Mira, esto es lo que toca hoy. Y aquí tienes tu dieta. ¿Ves? Ya no necesitas preguntarme."</em> Eso vende más que cualquier reel.
+            </div>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        NL VIP TEAM © 2026 · Material Confidencial · Solo para uso interno
+    </div>
+
+</body>
+</html>

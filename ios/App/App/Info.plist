@@ -46,10 +46,20 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
+<<<<<<< Updated upstream
 	<string>NL VIP necesita acceso al micrófono para que el administrador del gimnasio pueda grabar mensajes de audio en el chat y usar el reconocimiento de voz del asistente IA de gestión.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>NL VIP lee tus pasos diarios de Apple Health para mostrar tu actividad y ayudarte a cumplir tus objetivos de fitness.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>NL VIP puede registrar tus entrenamientos en Apple Health para llevar un seguimiento completo de tu actividad física.</string>
+=======
+	<string>Necesitamos acceso al micrófono para que puedas enviar mensajes de voz y usar comandos de voz en el asistente.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Necesitamos acceso a la transcripción para poder entender tus comandos de voz en el asistente de IA.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Necesitamos acceso a la cámara para que puedas tomar fotos o grabar videos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Necesitamos acceso a tu galería para que puedas seleccionar y enviar fotos en el chat.</string>
+>>>>>>> Stashed changes
 </dict>
 </plist>
