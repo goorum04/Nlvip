@@ -12,6 +12,7 @@ import {
   getCyclePhase,
   calculateTotalCalories,
   calculateMacros,
+  calculateSymptomAdjustedMacros,
   getWorkoutRecommendation,
   getPhaseName
 } from '@/lib/cycleFunctions'
@@ -188,6 +189,32 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
     period_length_days: profile?.period_length_days || 5
   })
 
+  // Síntomas de hoy para ajustar macros
+  const [todaySymptoms, setTodaySymptoms] = useState(null)
+  const [symptomsLoaded, setSymptomsLoaded] = useState(false)
+
+  useEffect(() => {
+    if (profile?.sex !== 'female' || !profile?.cycle_enabled || !user?.id) {
+      setSymptomsLoaded(true)
+      return
+    }
+    const today = new Date().toISOString().split('T')[0]
+    supabase
+      .from('cycle_symptoms')
+      .select('energy_level, mood, pain_level, extra_symptoms')
+      .eq('user_id', user.id)
+      .eq('date', today)
+      .single()
+      .then(({ data, error }) => {
+        if (error && error.code !== 'PGRST116') {
+          console.warn('[CycleModule] Symptom fetch warning:', error.message)
+        }
+        setTodaySymptoms(data ?? null)
+        setSymptomsLoaded(true)
+      })
+      .catch(() => { setTodaySymptoms(null); setSymptomsLoaded(true) })
+  }, [user?.id, profile?.sex, profile?.cycle_enabled])
+
   const cycleData = useMemo(() => {
     if (profile?.sex !== 'female' || !profile?.cycle_enabled) {
       return null
@@ -199,8 +226,10 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
       profile.period_length_days
     )
 
-    const calories = calculateTotalCalories(profile.weight_kg, stepsToday, phase)
-    const macros = calculateMacros(profile.weight_kg, calories, phase)
+    const baseCalories = calculateTotalCalories(profile.weight_kg, stepsToday, phase)
+    const { protein, fat, carbs, adjustedCalories, isSymptomAdjusted } =
+      calculateSymptomAdjustedMacros(profile.weight_kg, baseCalories, phase, todaySymptoms)
+    const macros = { protein, fat, carbs }
     const workout = getWorkoutRecommendation(phase)
     const phaseConfig = PHASE_CONFIG[phase] || PHASE_CONFIG.unknown
 
@@ -208,15 +237,16 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
       phase,
       cycleDay,
       daysUntilPeriod,
-      calories,
+      calories: adjustedCalories,
       macros,
+      isSymptomAdjusted,
       workout,
       phaseConfig,
       cycleLength: profile.cycle_length_days || 28,
       periodLength: profile.period_length_days || 5,
       theme: phaseConfig === PHASE_CONFIG.unknown ? 'default' : phase
     }
-  }, [profile, stepsToday])
+  }, [profile, stepsToday, todaySymptoms])
 
   // Notificar cambio de tema al padre
   useEffect(() => {
@@ -437,6 +467,14 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
       </Card>
 
       {/* Macros Especializados */}
+      {cycleData.isSymptomAdjusted && symptomsLoaded && (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl w-fit">
+          <Sparkles className="w-3 h-3 text-amber-400 flex-shrink-0" />
+          <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+            Ajustado por tu bienestar de hoy
+          </span>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="bg-[#0B0B0B]/40 backdrop-blur-xl border-white/5 rounded-3xl p-6">
           <div className="flex items-center gap-2 mb-4">
