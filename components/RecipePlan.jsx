@@ -328,15 +328,11 @@ export function MemberRecipePlan({ userId, forceFullWeek = false }) {
           .eq('plan_id', planData.id)
           .order('day_of_week')
 
-        // Cargar recetas del catálogo (recipe_catalog)
-        const { data: catalogData } = await supabase
-          .from('recipe_catalog')
-          .select('*')
-        
-        // También cargar de recipes (legacy)
-        const { data: legacyData } = await supabase
-          .from('recipes')
-          .select('*')
+        // Cargar ambas fuentes de recetas en paralelo
+        const [{ data: catalogData }, { data: legacyData }] = await Promise.all([
+          supabase.from('recipe_catalog').select('*'),
+          supabase.from('recipes').select('*')
+        ])
         
         // Mapear ambas fuentes al formato unificado del frontend
         const mappedCatalog = (catalogData || []).map(r => ({

@@ -11,11 +11,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dumbbell, Sparkles, Shield, Gift, Lock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
-import AdminDashboard from '@/components/AdminDashboard'
-import TrainerDashboard from '@/components/TrainerDashboard'
-import MemberDashboard from '@/components/MemberDashboard'
+import dynamic from 'next/dynamic'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { DietOnboardingForm } from '@/components/DietOnboardingForm'
+
+const AdminDashboard = dynamic(() => import('@/components/AdminDashboard'), { ssr: false })
+const TrainerDashboard = dynamic(() => import('@/components/TrainerDashboard'), { ssr: false })
+const MemberDashboard = dynamic(() => import('@/components/MemberDashboard'), { ssr: false })
 
 const DEMO_ACCOUNTS = {
   ADMIN: { email: 'admin@demo.com', role: 'admin', name: 'Administrador Demo' },

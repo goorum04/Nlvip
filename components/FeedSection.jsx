@@ -10,10 +10,11 @@ import { Heart, MessageCircle, Flag, Loader2, Zap, Trash2, EyeOff, Eye } from 'l
 import { useToast } from '@/hooks/use-toast'
 import ImageUploader from './ImageUploader'
 
-// Helper to get signed URL
-const getSignedUrl = async (bucket, path, expiresIn = 3600) => {
-  const { data } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn)
-  return data?.signedUrl
+// Helper to batch-get signed URLs in a single request
+const getSignedUrlsBatch = async (bucket, paths, expiresIn = 3600) => {
+  if (!paths.length) return []
+  const { data } = await supabase.storage.from(bucket).createSignedUrls(paths, expiresIn)
+  return data || []
 }
 
 // Helper to upload file
@@ -48,15 +49,18 @@ export function FeedSection({ userId, userRole = 'member', canModerate = false }
     
     if (data) {
       setFeedPosts(data)
-      
-      const urls = {}
-      for (const post of data) {
-        if (post.image_url) {
-          const url = await getSignedUrl('feed_images', post.image_url, 3600)
-          if (url) urls[post.id] = url
+
+      const postsWithImages = data.filter(p => p.image_url)
+      if (postsWithImages.length > 0) {
+        const paths = postsWithImages.map(p => p.image_url)
+        const signed = await getSignedUrlsBatch('feed_images', paths, 3600)
+        const urls = {}
+        for (const { path, signedUrl } of signed) {
+          const post = postsWithImages.find(p => p.image_url === path)
+          if (post && signedUrl) urls[post.id] = signedUrl
         }
+        setFeedImageUrls(urls)
       }
-      setFeedImageUrls(urls)
     }
   }
 
