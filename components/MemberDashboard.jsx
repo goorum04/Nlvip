@@ -102,6 +102,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const { uploadFile, uploading, progress } = useFileUpload()
   const [isCheckingIn, setIsCheckingIn] = useState(false)
   const [showCheckinConfetti, setShowCheckinConfetti] = useState(false)
+  const [hasCheckedInToday, setHasCheckedInToday] = useState(false)
 
   const CONGRATS_MESSAGES = [
     "¡Eres una máquina! Rutina completada con éxito. 💪",
@@ -129,6 +130,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
       })
       
       setShowCheckinConfetti(true)
+      setHasCheckedInToday(true)
       setTimeout(() => setShowCheckinConfetti(false), 3000)
 
       // Refresh chart data immediately so the Stats tab is updated
@@ -280,6 +282,14 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
         date: new Date(p.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
         weight: p.weight_kg
       }))
+
+      // Check if user has already checked in today
+      const today = new Date()
+      const checkedInToday = (checkins || []).some(c => {
+        const d = new Date(c.checked_in_at)
+        return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()
+      })
+      setHasCheckedInToday(checkedInToday)
 
       // Transform workout data by week
       const workoutsByWeek = {}
@@ -878,30 +888,44 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <div className="w-16 h-16 bg-violet-500/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                          <CheckCircle2 className="w-8 h-8 text-violet-400" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-white mb-1">¿Finalizaste tu entrenamiento?</h3>
-                          <p className="text-sm text-gray-400">Guarda esta sesión para mantener al día tus estadísticas y subir en el ranking.</p>
-                        </div>
-                        <Button 
-                          onClick={handleWorkoutCheckin}
-                          disabled={isCheckingIn}
-                          className="w-full sm:w-auto mt-4 px-8 py-6 h-auto text-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-2xl shadow-lg shadow-violet-500/25 transition-all hover:scale-105 active:scale-95"
-                        >
-                          {isCheckingIn ? (
-                            <>
-                              <Loader2 className="w-6 h-6 mr-3 animate-spin" />
-                              Registrando...
-                            </>
-                          ) : (
-                            <>
-                              <Flame className="w-6 h-6 mr-3" />
-                              Completar sesión de hoy
-                            </>
-                          )}
-                        </Button>
+                        {hasCheckedInToday ? (
+                          <>
+                            <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                              <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold text-white mb-1">¡Sesión de hoy completada!</h3>
+                              <p className="text-sm text-emerald-400/80">Has registrado con éxito tu entrenamiento diario. Mañana más.</p>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-16 h-16 bg-violet-500/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                              <CheckCircle2 className="w-8 h-8 text-violet-400" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold text-white mb-1">¿Finalizaste tu entrenamiento?</h3>
+                              <p className="text-sm text-gray-400">Guarda esta sesión para mantener al día tus estadísticas y subir en el ranking.</p>
+                            </div>
+                            <Button 
+                              onClick={handleWorkoutCheckin}
+                              disabled={isCheckingIn}
+                              className="w-full sm:w-auto mt-4 px-8 py-6 h-auto text-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-2xl shadow-lg shadow-violet-500/25 transition-all hover:scale-105 active:scale-95"
+                            >
+                              {isCheckingIn ? (
+                                <>
+                                  <Loader2 className="w-6 h-6 mr-3 animate-spin" />
+                                  Registrando...
+                                </>
+                              ) : (
+                                <>
+                                  <Flame className="w-6 h-6 mr-3" />
+                                  Completar sesión de hoy
+                                </>
+                              )}
+                            </Button>
+                          </>
+                        )}
                       </div>
                     )}
                   </CardContent>
