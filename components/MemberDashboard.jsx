@@ -867,36 +867,6 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
             )}
             {myWorkout ? (
               <>
-                <WorkoutViewer 
-                  workoutId={myWorkout.workout?.id} 
-                  memberPrs={myPrs} 
-                />
-
-                {/* Workout Videos */}
-                {workoutVideos.length > 0 && (
-                  <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
-                    <CardHeader>
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <Video className="w-5 h-5 text-violet-500" />
-                        Vídeos de la Rutina ({workoutVideos.length})
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-3">
-                        {workoutVideos.map(video => (
-                          <VideoCard
-                            key={video.id}
-                            video={video}
-                            onClick={() => setSelectedVideo(video)}
-                          />
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                <PRTracker memberId={user.id} />
-
                 {/* Workout Checkin Button */}
                 <Card className={`overflow-hidden border-2 transition-all duration-500 ${showCheckinConfetti ? 'bg-emerald-500/20 border-emerald-500/50 scale-105' : 'bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a]'} rounded-3xl`}>
                   <CardContent className="p-6 text-center">
@@ -936,6 +906,36 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                     )}
                   </CardContent>
                 </Card>
+
+                <WorkoutViewer 
+                  workoutId={myWorkout.workout?.id} 
+                  memberPrs={myPrs} 
+                />
+
+                {/* Workout Videos */}
+                {workoutVideos.length > 0 && (
+                  <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Video className="w-5 h-5 text-violet-500" />
+                        Vídeos de la Rutina ({workoutVideos.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-3">
+                        {workoutVideos.map(video => (
+                          <VideoCard
+                            key={video.id}
+                            video={video}
+                            onClick={() => setSelectedVideo(video)}
+                          />
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <PRTracker memberId={user.id} />
               </>
             ) : (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
