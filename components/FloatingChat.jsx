@@ -19,18 +19,34 @@ const AudioPlayer = ({ path }) => {
   const audioRef = useRef(null)
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/storage/v1/object/public/chat_audios/${path}`
 
+  useEffect(() => {
+    const audio = audioRef.current
+    return () => {
+      if (audio) {
+        audio.pause()
+        audio.currentTime = 0
+      }
+    }
+  }, [])
+
   if (!path) return null
+
+  const togglePlay = (e) => {
+    e.stopPropagation()
+    const audio = audioRef.current
+    if (!audio) return
+    if (audio.paused) {
+      audio.play().catch(console.error)
+    } else {
+      audio.pause()
+    }
+  }
 
   return (
     <div className="flex items-center gap-3 bg-black/20 rounded-xl p-2 min-w-[200px]">
       <button 
         type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          if (playing) audioRef.current.pause()
-          else audioRef.current.play()
-          setPlaying(!playing)
-        }}
+        onClick={togglePlay}
         className="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center text-black"
       >
         {playing ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
@@ -42,6 +58,8 @@ const AudioPlayer = ({ path }) => {
         ref={audioRef} 
         src={url} 
         onEnded={() => setPlaying(false)} 
+        onPause={() => setPlaying(false)}
+        onPlay={() => setPlaying(true)}
         className="hidden" 
       />
     </div>
@@ -77,6 +95,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   const fileInputRef = useRef(null)
   const timerRef = useRef(null)
   const messagesEndRef = useRef(null)
+  const stopRequestedRef = useRef(false)
 
   useEffect(() => {
     if (isOpen && userRole === 'member') {
@@ -464,7 +483,14 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   // Recording Logic
   const startRecording = async () => {
     try {
+      stopRequestedRef.current = false
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      
+      if (stopRequestedRef.current) {
+        stream.getTracks().forEach(track => track.stop())
+        return
+      }
+
       mediaRecorderRef.current = new MediaRecorder(stream)
       const chunks = []
 
@@ -487,11 +513,12 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   }
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+    stopRequestedRef.current = true
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop()
-      setIsRecording(false)
-      if (timerRef.current) clearInterval(timerRef.current)
     }
+    setIsRecording(false)
+    if (timerRef.current) clearInterval(timerRef.current)
   }
 
   const formatDuration = (seconds) => {
