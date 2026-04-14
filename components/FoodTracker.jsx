@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
+import { getApiUrl } from '@/lib/utils'
 
 // Componente de barra de progreso de macros
 function MacroProgressBar({ label, icon: Icon, consumed, total, color, unit = 'g' }) {
@@ -101,7 +102,7 @@ export default function FoodTracker({ userId }) {
     setShowCamera(false)
     
     try {
-      const response = await fetch('/api/analyze-food', {
+      const response = await fetch(getApiUrl() + '/api/analyze-food', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageBase64 })

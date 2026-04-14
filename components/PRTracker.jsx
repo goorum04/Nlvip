@@ -11,6 +11,7 @@ import {
   Calendar, Trash2, Loader2, Info, ChevronRight
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { getApiUrl } from '@/lib/utils'
 
 export default function PRTracker({ memberId }) {
   const [prs, setPrs] = useState([])
@@ -32,7 +33,7 @@ export default function PRTracker({ memberId }) {
     setLoading(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      const res = await fetch(`/api/member-prs?memberId=${memberId}`, {
+      const res = await fetch(`${getApiUrl()}/api/member-prs?memberId=${memberId}`, {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       })
       const data = await res.json()
@@ -50,7 +51,7 @@ export default function PRTracker({ memberId }) {
     setAdding(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      const res = await fetch('/api/member-prs', {
+      const res = await fetch(getApiUrl() + '/api/member-prs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

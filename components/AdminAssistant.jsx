@@ -11,6 +11,7 @@ import {
   Play, Pause
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { getApiUrl } from '@/lib/utils'
 
 // Componente AudioPlayer para el asistente
 const AudioPlayer = ({ path }) => {
@@ -515,7 +516,7 @@ export default function AdminAssistant({ userId, onClose }) {
       setInput('')
       setAudioBlob(null)
 
-      const response = await fetch('/api/admin-assistant', {
+      const response = await fetch(getApiUrl() + '/api/admin-assistant', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -570,7 +571,7 @@ export default function AdminAssistant({ userId, onClose }) {
       }))
 
       const { data: { session } } = await supabase.auth.getSession()
-      const response = await fetch('/api/admin-assistant', {
+      const response = await fetch(getApiUrl() + '/api/admin-assistant', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

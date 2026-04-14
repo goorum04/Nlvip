@@ -14,6 +14,7 @@ import {
   Coffee, Sun, Moon, Apple, ChefHat, Loader2, ImagePlus, X, Camera, Sparkles, Wand2
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { getApiUrl } from '@/lib/utils'
 
 // Iconos por categoría
 const categoryIcons = {
@@ -248,7 +249,7 @@ function AIRecipeGeneratorModal({ isOpen, onClose, onRecipeGenerated }) {
     setError(null)
 
     try {
-      const response = await fetch('/api/generate-recipe', {
+      const response = await fetch(getApiUrl() + '/api/generate-recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageBase64 })

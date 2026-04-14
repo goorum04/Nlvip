@@ -14,6 +14,7 @@ import { Toaster } from '@/components/ui/toaster'
 import dynamic from 'next/dynamic'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { DietOnboardingForm } from '@/components/DietOnboardingForm'
+import { getApiUrl } from '@/lib/utils'
 const AdminDashboard = dynamic(() => import('@/components/AdminDashboard'), { ssr: false })
 const TrainerDashboard = dynamic(() => import('@/components/TrainerDashboard'), { ssr: false })
 const MemberDashboard = dynamic(() => import('@/components/MemberDashboard'), { ssr: false })
@@ -156,7 +157,7 @@ export default function App() {
             cycle_enabled: sex === 'female', 
             life_stage: (sex === 'female' && !result.data.life_stage) ? 'cycle' : result.data.life_stage 
           }
-          fetch('/api/profile', {
+          fetch(getApiUrl() + '/api/profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: userId, updates })
@@ -192,7 +193,7 @@ export default function App() {
 
         if (result.error && (result.error.code === 'PGRST116' || result.error.message?.includes('0 rows'))) {
           console.log('[loadProfile] Profile missing, creating via API...')
-          const response = await fetch('/api/profile', {
+          const response = await fetch(getApiUrl() + '/api/profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: userId, updates: baseProfile })
@@ -361,7 +362,7 @@ export default function App() {
 
           // Create onboarding request and show the form immediately
           try {
-            const onbRes = await fetch('/api/diet-onboarding/request', {
+            const onbRes = await fetch(getApiUrl() + '/api/diet-onboarding/request', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

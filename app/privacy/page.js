@@ -21,12 +21,21 @@ export default function Privacy() {
         <li><strong>Datos de identificación:</strong> nombre, correo electrónico.</li>
         <li><strong>Datos físicos y de salud:</strong> peso, altura, porcentaje de grasa corporal, medidas corporales (cintura, pecho, caderas, glúteos, gemelos, etc.), objetivo fitness y nivel de actividad.</li>
         <li><strong>Datos de Apple HealthKit:</strong> pasos diarios (solo lectura). Esta información se usa exclusivamente para mostrar tu actividad diaria dentro de la app y ajustar tus objetivos calóricos. <strong>NL VIP TEAM no comparte datos de HealthKit con terceros.</strong></li>
-        <li><strong>Datos de audio:</strong> mensajes de voz enviados en el chat con el entrenador, y comandos de voz utilizados con el asistente IA de gestión. El audio se procesa mediante servicios de transcripción de inteligencia artificial (OpenAI) con fines exclusivos de funcionalidad.</li>
+        <li><strong>Datos de audio:</strong> mensajes de voz enviados en el chat con el entrenador, y comandos de voz utilizados con el asistente IA de gestión. El audio se procesa mediante servicios de transcripción de inteligencia artificial (OpenAI **Whisper**) con fines exclusivos de funcionalidad técnica.</li>
         <li><strong>Datos de actividad:</strong> registros de entrenamiento, registros de comida, progreso de medidas y fotos de progreso.</li>
         <li><strong>Datos de notificaciones:</strong> token de dispositivo para el envío de notificaciones push relacionadas con el servicio (recordatorios de entrenamiento, mensajes del entrenador, actualizaciones de plan).</li>
       </ul>
 
-      <h2>2. Uso de la información</h2>
+      <h2>2. Inteligencia Artificial y Procesamiento de Datos</h2>
+      <p>NL VIP TEAM utiliza modelos de Inteligencia Artificial avanzados para asistir a los entrenadores en la creación de planes personalizados:</p>
+      <ul>
+        <li><strong>Modelos utilizados:</strong> Utilizamos específicamente los modelos **GPT-4o** y **Whisper** de OpenAI.</li>
+        <li><strong>Supervisión Humana (Human-in-the-loop):</strong> Todos los planes de dieta y entrenamiento generados con asistencia de IA son **revisados, editados y aprobados por un entrenador cualificado humano** antes de ser asignados al socio. La IA actúa únicamente como una herramienta de apoyo al profesional.</li>
+        <li><strong>Anonimización:</strong> Los datos enviados a los modelos de OpenAI para cálculos nutricionales no incluyen nombres reales, apellidos ni direcciones de correo electrónico. Los datos se envían de forma seudonimizada mediante identificadores internos.</li>
+        <li><strong>No Entrenamiento:</strong> Según nuestros acuerdos con proveedores, los datos de los usuarios de NL VIP TEAM **no se utilizan para entrenar los modelos globales** de OpenAI.</li>
+      </ul>
+
+      <h2>3. Uso de la información</h2>
       <p>Los datos recopilados se utilizan exclusivamente para:</p>
       <ul>
         <li>Personalizar planes de nutrición y entrenamiento.</li>

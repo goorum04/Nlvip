@@ -29,6 +29,7 @@ import FloatingAdminAssistant from './FloatingAdminAssistant'
 import { ProgressPhotoGallery } from './ProgressPhotos'
 import { FeedSection } from './FeedSection'
 import AIRoutineGenerator from './AIRoutineGenerator'
+import { getApiUrl } from '@/lib/utils'
 
 export default function AdminDashboard({ user, profile, setProfile, onLogout }) {
   const [trainers, setTrainers] = useState([])
@@ -260,7 +261,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const handleGenerateDietFromRequest = async (request) => {
     setLoading(true)
     try {
-      const res = await fetch('/api/diet-onboarding/generate-draft', {
+      const res = await fetch(getApiUrl() + '/api/diet-onboarding/generate-draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -289,7 +290,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const handleAssignDraftDiet = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/diet-onboarding/complete', {
+      const res = await fetch(getApiUrl() + '/api/diet-onboarding/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dietDraft)
@@ -392,8 +393,8 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
     setLoading(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-
-      const response = await fetch('/api/admin-delete-user', {
+      
+      const response = await fetch(getApiUrl() + '/api/admin-delete-user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -543,11 +544,10 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
     setLoading(true)
 
     try {
-      // Obtener sesión actual para verificar admin
       const { data: { session } } = await supabase.auth.getSession()
 
       // Llamar al endpoint seguro
-      const response = await fetch('/api/create-trainer', {
+      const response = await fetch(getApiUrl() + '/api/create-trainer', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

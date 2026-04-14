@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { 
-  Camera, X, Loader2, Upload, Calendar, ChevronLeft, ChevronRight,
+  Camera as CameraIcon, X, Loader2, Upload, Calendar, ChevronLeft, ChevronRight,
   ZoomIn, Trash2, AlertCircle, Image as ImageIcon
 } from 'lucide-react'
 import { useFileUpload, useSignedUrl, generateFileId, getFileExtension } from '@/hooks/useStorage'
 import { supabase } from '@/lib/supabase'
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
+import { Capacitor } from '@capacitor/core'
 
 // Componente para subir fotos de progreso (3 fotos requeridas)
 export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
@@ -27,6 +29,37 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
   const backInputRef = useRef(null)
 
   const { uploadFile, uploading, progress, error: uploadError } = useFileUpload()
+
+  const handleNativeCamera = async (type) => {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: true,
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Prompt
+      });
+
+      if (image.webPath) {
+        // Convertir Uri a File objeto
+        const response = await fetch(image.webPath);
+        const blob = await response.blob();
+        const file = new File([blob], `progress_${type}_${Date.now()}.${image.format}`, { type: blob.type });
+        
+        setPhotos(prev => ({
+          ...prev,
+          [type]: {
+            file: file,
+            preview: image.webPath
+          }
+        }))
+      }
+    } catch (err) {
+      console.error('Error al capturar imagen:', err);
+      if (err.message !== 'User cancelled photos app') {
+        setError('No se pudo acceder a la cámara o galería');
+      }
+    }
+  }
 
   const handleFileSelect = (e, type) => {
     const selectedFile = e.target.files?.[0]
@@ -126,11 +159,17 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => inputRef.current?.click()}
+          onClick={() => {
+            if (Capacitor.isNativePlatform()) {
+              handleNativeCamera(type)
+            } else {
+              inputRef.current?.click()
+            }
+          }}
           disabled={uploading}
           className="w-full aspect-square border-dashed border-[#2a2a2a] bg-black/30 hover:bg-black/50 text-gray-500 hover:text-violet-400 rounded-2xl flex flex-col gap-2 p-0"
         >
-          <Camera className="w-6 h-6" />
+          <CameraIcon className="w-6 h-6" />
           <span className="text-[10px] px-1">Subir</span>
         </Button>
       ) : (

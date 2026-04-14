@@ -2,12 +2,50 @@
 
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Camera, X, Loader2, Image as ImageIcon } from 'lucide-react'
+import { Camera as CameraIcon, X, Loader2, Image as ImageIcon } from 'lucide-react'
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
+import { Capacitor } from '@capacitor/core'
 
 export default function ImageUploader({ onImageSelect, onImageRemove, disabled }) {
   const [preview, setPreview] = useState(null)
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
+
+  const handleNativeCamera = async () => {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: true,
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Prompt // Preguntar al usuario: Cámara o Galería
+      });
+
+      if (image.webPath) {
+        setPreview(image.webPath);
+        
+        // Convertir Uri a File objeto para compatibilidad con el resto de la app
+        const response = await fetch(image.webPath);
+        const blob = await response.blob();
+        const file = new File([blob], `photo_${Date.now()}.${image.format}`, { type: blob.type });
+        
+        onImageSelect?.(file);
+      }
+    } catch (err) {
+      console.error('Error al capturar imagen:', err);
+      // No mostrar error si el usuario cancela
+      if (err.message !== 'User cancelled photos app') {
+        setError('No se pudo acceder a la cámara o galería');
+      }
+    }
+  }
+
+  const handleButtonClick = () => {
+    if (Capacitor.isNativePlatform()) {
+      handleNativeCamera();
+    } else {
+      fileInputRef.current?.click();
+    }
+  }
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0]
@@ -62,11 +100,11 @@ export default function ImageUploader({ onImageSelect, onImageRemove, disabled }
         <Button
           type="button"
           variant="outline"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={handleButtonClick}
           disabled={disabled}
           className="w-full border-dashed border-[#2a2a2a] bg-black/30 hover:bg-black/50 text-gray-400 hover:text-violet-400 rounded-xl py-8"
         >
-          <Camera className="w-5 h-5 mr-2" />
+          <CameraIcon className="w-5 h-5 mr-2" />
           Añadir foto
         </Button>
       ) : (

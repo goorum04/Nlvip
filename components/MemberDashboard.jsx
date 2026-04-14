@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
+import { getApiUrl } from '@/lib/utils'
 import FloatingChat from './FloatingChat'
 import ImageUploader from './ImageUploader'
 import VideoPlayer, { VideoCard } from './VideoPlayer'
@@ -234,7 +235,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const loadMyPrs = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      const res = await fetch(`/api/member-prs?memberId=${user.id}`, {
+      const res = await fetch(`${getApiUrl()}/api/member-prs?memberId=${user.id}`, {
         headers: { 'Authorization': `Bearer ${session?.access_token}` }
       })
       if (res.ok) {

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getApiUrl } from '@/lib/utils'
 
 export default function ServiceWorkerInit() {
   useEffect(() => {
@@ -44,7 +45,7 @@ async function setupPushSubscription(reg) {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.access_token) return
 
-    await fetch('/api/notifications/subscribe', {
+    await fetch(getApiUrl() + '/api/notifications/subscribe', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

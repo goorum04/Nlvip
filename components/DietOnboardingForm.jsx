@@ -29,6 +29,7 @@ import {
   Footprints
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { getApiUrl } from '@/lib/utils'
 
 // Steps of the questionnaire
 const STEPS = [
@@ -219,7 +220,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
       }
 
       const { data: { session } } = await supabase.auth.getSession()
-      const res = await fetch('/api/diet-onboarding/submit', {
+      const res = await fetch(getApiUrl() + '/api/diet-onboarding/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
