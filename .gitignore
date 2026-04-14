@@ -21,7 +21,7 @@ node_modules/
 
 # Next.js
 /.next/
-/out/
+# /out/ - Habilitado para Capacitor (el build estático debe subirse a GitHub)
 next-env.d.ts
 *.tsbuildinfo
 
