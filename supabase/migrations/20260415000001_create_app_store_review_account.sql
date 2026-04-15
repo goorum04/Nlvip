@@ -122,10 +122,13 @@ BEGIN
   END IF;
 
   -- -----------------------------------------------------------------------
-  -- 3. Crear perfil de socio con datos completos
+  -- 3. Crear/actualizar perfil de socio con datos completos
   --    weight_kg + height_cm son necesarios para has_complete_profile = true
   --    (ver función calculate_activity_metrics en CUENTA-PASOS.sql)
   --    Hombre, 78 kg, 178 cm → zancada = 178 × 0.415 / 100 = 0.7387 m
+  --
+  --    Se usa ON CONFLICT porque el trigger on_auth_user_created puede haber
+  --    creado ya una fila vacía en profiles al insertar en auth.users.
   -- -----------------------------------------------------------------------
   INSERT INTO profiles (
     id,
@@ -145,7 +148,15 @@ BEGIN
     78.0,
     178,
     8000
-  );
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email      = EXCLUDED.email,
+    name       = EXCLUDED.name,
+    role       = EXCLUDED.role,
+    sex        = EXCLUDED.sex,
+    weight_kg  = EXCLUDED.weight_kg,
+    height_cm  = EXCLUDED.height_cm,
+    steps_goal = EXCLUDED.steps_goal;
 
   -- -----------------------------------------------------------------------
   -- 4. Sembrar historial de actividad de los últimos 7 días
