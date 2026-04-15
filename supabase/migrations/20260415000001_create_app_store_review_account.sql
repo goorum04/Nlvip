@@ -18,7 +18,7 @@
 
 DO $$
 DECLARE
-  v_user_id        UUID := 'fedcba98-7654-3210-fedc-ba9876543210';
+  v_user_id        UUID;
   v_has_provider_id BOOLEAN;
 BEGIN
 
@@ -29,6 +29,9 @@ BEGIN
     RAISE NOTICE 'La cuenta revisor@demo.com ya existe — sin cambios.';
     RETURN;
   END IF;
+
+  -- Generar UUID fresco para evitar colisiones con perfiles huérfanos
+  v_user_id := gen_random_uuid();
 
   -- -----------------------------------------------------------------------
   -- 1. Crear usuario en auth.users
