@@ -37,9 +37,10 @@ export default function ActivityTracker({ userId, compact = false }) {
       const { HealthKit } = await import('@perfood/capacitor-healthkit')
 
       const available = await HealthKit.isAvailable()
+      setHealthKitAvailable(available) // Mark as available if the device supports it
+      
       if (!available) return
 
-      setHealthKitAvailable(true)
       setHealthKitSyncing(true)
 
       await HealthKit.requestAuthorization({
@@ -47,6 +48,7 @@ export default function ActivityTracker({ userId, compact = false }) {
         read: ['stepCount', 'activeEnergyBurned'],
         write: []
       })
+      
 
       const todayStart = new Date()
       todayStart.setHours(0, 0, 0, 0)
@@ -164,7 +166,10 @@ export default function ActivityTracker({ userId, compact = false }) {
               </div>
               <div>
                 <p className="text-2xl font-bold text-white">{(activity?.steps || 0).toLocaleString()}</p>
-                <p className="text-xs text-gray-400">pasos hoy</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-xs text-gray-400">pasos hoy</p>
+                  {healthKitAvailable && <Heart className="w-2.5 h-2.5 text-pink-500 fill-pink-500" />}
+                </div>
               </div>
             </div>
             <div className="text-right">
@@ -265,6 +270,21 @@ export default function ActivityTracker({ userId, compact = false }) {
               <span className="text-xs text-gray-400">de {stepsGoal.toLocaleString()}</span>
             </div>
           </div>
+        </div>
+
+        {/* Identificación clara de Fuente de Datos (Requisito Apple Health) */}
+        <div className="flex flex-col items-center -mt-4 mb-2">
+          {healthKitAvailable ? (
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/20">
+              <Heart className="w-3 h-3 text-pink-500 fill-pink-500" />
+              <span className="text-[10px] font-semibold text-pink-400 uppercase tracking-wider">Sincronizado con Apple Health</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-500/10 border border-gray-500/20">
+              <RefreshCw className="w-3 h-3 text-gray-400" />
+              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Seguimiento Local</span>
+            </div>
+          )}
         </div>
 
         {/* Stats grid */}
@@ -383,6 +403,15 @@ export default function ActivityTracker({ userId, compact = false }) {
             </div>
           </div>
         )}
+        {/* Información de HealthKit (Requisito Transparencia Apple) */}
+        <div className="pt-4 border-t border-white/5">
+          <div className="flex items-start gap-2 text-[10px] text-gray-500 leading-relaxed italic text-center justify-center">
+            <Heart className="w-3 h-3 text-pink-500/50 flex-shrink-0 mt-0.5" />
+            <p>
+              NL VIP utiliza los servicios de **Apple HealthKit** para leer el recuento de pasos y proporcionar una experiencia de seguimiento precisa. Puedes gestionar los permisos en Ajustes {">"} Salud.
+            </p>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )
