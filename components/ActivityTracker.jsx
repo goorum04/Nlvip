@@ -32,23 +32,47 @@ export default function ActivityTracker({ userId, compact = false }) {
   const syncFromHealthKit = async (showToast = false) => {
     try {
       const { Capacitor } = await import('@capacitor/core')
-      if (Capacitor.getPlatform() !== 'ios') return
+      
+      // Early exit if not on iOS
+      if (Capacitor.getPlatform() !== 'ios') {
+        if (showToast) toast({ 
+          title: 'No disponible', 
+          description: 'La sincronización con Apple Health solo está disponible en la App nativa de iPhone.' 
+        })
+        return
+      }
 
       const { HealthKit } = await import('@perfood/capacitor-healthkit')
 
       const available = await HealthKit.isAvailable()
-      setHealthKitAvailable(available) // Mark as available if the device supports it
+      setHealthKitAvailable(available)
       
-      if (!available) return
+      if (!available) {
+        if (showToast) toast({ 
+          title: 'HealthKit no disponible', 
+          description: 'Tu dispositivo no admite HealthKit o no está configurado correctamente en el build nativo.' 
+        })
+        return
+      }
 
       setHealthKitSyncing(true)
 
-      await HealthKit.requestAuthorization({
-        all: [],
-        read: ['stepCount', 'activeEnergyBurned'],
-        write: []
-      })
-      
+      // Request auth
+      try {
+        await HealthKit.requestAuthorization({
+          all: [],
+          read: ['stepCount', 'activeEnergyBurned'],
+          write: []
+        })
+      } catch (authErr) {
+        console.error('Auth error:', authErr)
+        if (showToast) toast({ 
+          title: 'Permiso denegado', 
+          description: 'Por favor, activa el acceso a Salud en Ajustes > Salud > NL VIP.',
+          variant: 'destructive'
+        })
+        return
+      }
 
       const todayStart = new Date()
       todayStart.setHours(0, 0, 0, 0)
@@ -68,9 +92,16 @@ export default function ActivityTracker({ userId, compact = false }) {
       if (totalSteps > 0) {
         await updateSteps(Math.round(totalSteps), false, 'device')
         if (showToast) toast({ title: 'Apple Health sincronizado', description: `${Math.round(totalSteps).toLocaleString()} pasos` })
+      } else if (showToast) {
+        toast({ title: 'Sincronizado', description: 'No se encontraron pasos nuevos en Apple Health para hoy.' })
       }
-    } catch {
-      // HealthKit no disponible — sin error visible
+    } catch (err) {
+      console.error('Error in syncFromHealthKit:', err)
+      if (showToast) toast({ 
+        title: 'Error de sincronización', 
+        description: 'Hubo un problema al conectar con Apple Health.',
+        variant: 'destructive'
+      })
     } finally {
       setHealthKitSyncing(false)
     }
