@@ -610,11 +610,11 @@ export default function App() {
             <div className="inline-flex flex-col items-center gap-3 px-8 py-6 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl">
               <img 
                 src="/logo-nl-vip.jpg" 
-                alt="NL VIP TEAM" 
+                alt="NL VIP Club" 
                 className="w-24 h-24 object-contain rounded-xl shadow-lg shadow-violet-500/30"
               />
               <div className="text-center">
-                <span className="text-2xl font-black text-white tracking-tight">NL VIP TEAM</span>
+                <span className="text-2xl font-black text-white tracking-tight">NL VIP Club</span>
                 <p className="text-xs text-gray-400 mt-1">Premium Fitness</p>
               </div>
             </div>

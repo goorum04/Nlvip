@@ -15,11 +15,11 @@ export function DashboardHeader({ profile, hasPremium, onLogout, onProfileClick 
                     <div className="flex items-center gap-3">
                         <img
                             src="/logo-nl-vip.jpg"
-                            alt="NL VIP TEAM"
+                            alt="NL VIP Club"
                             className="w-12 h-12 rounded-2xl object-cover shadow-lg shadow-violet-500/20"
                         />
                         <div>
-                            <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500">NL VIP TEAM</h1>
+                            <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP Club</h1>
                             <p className="text-xs text-gray-500">Premium Fitness</p>
                         </div>
                     </div>
