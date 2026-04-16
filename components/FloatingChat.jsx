@@ -815,7 +815,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                       <div className="h-12 flex items-center gap-3 bg-red-500/10 px-4 rounded-2xl border border-red-500/20 w-full animate-pulse">
                         <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                         <span className="text-red-500 font-bold text-xs">GRABANDO {formatDuration(recordingDuration)}</span>
-                        <span className="text-[10px] text-red-400/50 uppercase ml-auto">Suelta para enviar</span>
+                        <span className="text-[10px] text-red-400/50 uppercase ml-auto">Pulsa para enviar</span>
                       </div>
                     ) : (
                       <Input
@@ -838,11 +838,15 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                   {userRole === 'admin' && (
                     <button
                       type="button"
-                      onMouseDown={(e) => startRecording(e)}
-                      onMouseUp={(e) => stopRecording(e)}
-                      onMouseLeave={(e) => stopRecording(e)}
-                      onTouchStart={(e) => startRecording(e)}
-                      onTouchEnd={(e) => stopRecording(e)}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        if (isRecording) {
+                          stopRecording(e)
+                        } else {
+                          startRecording(e)
+                        }
+                      }}
                       style={{ touchAction: 'none', WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
                       className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all flex-shrink-0 ${
                         isRecording 

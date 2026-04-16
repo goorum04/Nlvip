@@ -867,19 +867,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                 </div>
               </div>
 
-              {/* Botón de Voz Compacto */}
-              <Button 
-                size="icon"
-                variant="outline"
-                onClick={() => {
-                  setTabHistory(prev => [...prev, activeTab])
-                  setActiveTab('assistant')
-                  setVoiceTrigger(Date.now())
-                }}
-                className="h-10 w-10 rounded-xl border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition-all flex-shrink-0"
-              >
-                <Mic className="w-5 h-5" />
-              </Button>
+
             </div>
 
             <div className="flex items-center gap-3">

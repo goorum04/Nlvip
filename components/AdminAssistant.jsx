@@ -712,16 +712,7 @@ export default function AdminAssistant({ userId, onClose }) {
                   <span className="text-xs font-medium text-cyan-200">Hablando</span>
                 </div>
               )}
-              <button
-                onClick={() => setTtsEnabled(!ttsEnabled)}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                  ttsEnabled
-                    ? 'bg-white/20 text-white hover:bg-white/30'
-                    : 'bg-black/20 text-white/50 hover:bg-black/30'
-                }`}
-              >
-                {ttsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-              </button>
+
 
               {onClose && (
                 <button
@@ -793,11 +784,15 @@ export default function AdminAssistant({ userId, onClose }) {
         <div className="p-4 border-t border-white/5 bg-black/50 backdrop-blur-xl">
           <div className="flex gap-3 items-center">
             <button
-              onMouseDown={(e) => startRecording(e)}
-              onMouseUp={(e) => stopRecording(e)}
-              onMouseLeave={(e) => stopRecording(e)}
-              onTouchStart={(e) => startRecording(e)}
-              onTouchEnd={(e) => stopRecording(e)}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                if (isRecording) {
+                  stopRecording(e)
+                } else {
+                  startRecording(e)
+                }
+              }}
               disabled={isLoading}
               style={{ touchAction: 'none', WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
               className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all flex-shrink-0 ${
@@ -816,7 +811,7 @@ export default function AdminAssistant({ userId, onClose }) {
                 <div className="h-14 flex items-center gap-3 bg-red-500/10 px-5 rounded-2xl border border-red-500/20 w-full animate-pulse">
                   <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                   <span className="text-red-500 font-bold text-sm tracking-tight">GRABANDO {formatDuration(recordingDuration)}</span>
-                  <span className="text-[10px] text-red-400/50 uppercase ml-auto">Suelta para enviar</span>
+                  <span className="text-[10px] text-red-400/50 uppercase ml-auto">Pulsa para enviar</span>
                 </div>
               ) : (
                 <>
