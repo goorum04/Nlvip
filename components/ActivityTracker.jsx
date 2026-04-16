@@ -44,15 +44,18 @@ export default function ActivityTracker({ userId, compact = false }) {
 
       const { HealthKit } = await import('@perfood/capacitor-healthkit')
 
-      const available = await HealthKit.isAvailable()
+      const availableResponse = await HealthKit.isAvailable()
+      // Plugings usually return objects like { isAvailable: true } 
+      const available = typeof availableResponse === 'object' ? availableResponse.isAvailable : availableResponse
+      
       setHealthKitAvailable(available)
       
       if (!available) {
         if (showToast) toast({ 
           title: 'HealthKit no disponible', 
-          description: 'Tu dispositivo no admite HealthKit o no está configurado correctamente en el build nativo.' 
+          description: 'Tu dispositivo no admite HealthKit o faltan permisos nativos en Xcode.' 
         })
-        return
+        // No salimos tempranamente para forzar el intento y ver si requestAuthorization lanza el popup de todos modos
       }
 
       setHealthKitSyncing(true)
@@ -232,19 +235,21 @@ export default function ActivityTracker({ userId, compact = false }) {
               Actividad de Hoy
             </CardTitle>
             <div className="flex items-center gap-2">
-              {healthKitAvailable && (
-                <button
-                  onClick={() => syncFromHealthKit(true)}
-                  disabled={healthKitSyncing}
-                  className="flex items-center gap-1 text-[10px] text-pink-400 bg-pink-500/10 border border-pink-500/20 rounded-full px-2 py-1 hover:bg-pink-500/20 transition-all"
-                  title="Sincronizar con Apple Health"
-                >
-                  {healthKitSyncing
-                    ? <Loader2 className="w-3 h-3 animate-spin" />
-                    : <Heart className="w-3 h-3" />}
-                  <span>Apple Health</span>
-                </button>
-              )}
+              <button
+                onClick={() => syncFromHealthKit(true)}
+                disabled={healthKitSyncing}
+                className={`flex items-center gap-1 text-[10px] rounded-full px-2 py-1 transition-all ${
+                  healthKitAvailable 
+                    ? 'text-pink-400 bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20' 
+                    : 'text-gray-400 bg-gray-500/10 border border-gray-500/20'
+                }`}
+                title="Sincronizar con Apple Health / Forzar Diagnóstico"
+              >
+                {healthKitSyncing
+                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                  : <Heart className={`w-3 h-3 ${healthKitAvailable ? 'fill-pink-500' : ''}`} />}
+                <span>{healthKitAvailable ? 'Apple Health' : 'Test Health'}</span>
+              </button>
               <span className="text-xs text-gray-400">
                 {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}
               </span>
