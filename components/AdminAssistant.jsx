@@ -443,7 +443,12 @@ export default function AdminAssistant({ userId, onClose }) {
     }
   }, [])
 
-  const startRecording = async () => {
+  const startRecording = async (e) => {
+    if (e) {
+      if (e.cancelable) e.preventDefault()
+      e.stopPropagation()
+    }
+    
     try {
       stopRequestedRef.current = false
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -453,12 +458,24 @@ export default function AdminAssistant({ userId, onClose }) {
         return
       }
       
-      // 1. Audio Recording logic
-      mediaRecorderRef.current = new MediaRecorder(stream)
+      // Determinar tipo de audio compatible (iOS prefiere mp4/aac)
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4') 
+        ? 'audio/mp4' 
+        : MediaRecorder.isTypeSupported('audio/webm') 
+          ? 'audio/webm' 
+          : ''
+      
+      const options = mimeType ? { mimeType } : {}
+      mediaRecorderRef.current = new MediaRecorder(stream, options)
       const chunks = []
-      mediaRecorderRef.current.ondataavailable = (e) => chunks.push(e.data)
+      
+      mediaRecorderRef.current.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data)
+      }
+      
       mediaRecorderRef.current.onstop = async () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' })
+        if (chunks.length === 0) return
+        const blob = new Blob(chunks, { type: mimeType || 'audio/webm' })
         setAudioBlob(blob)
         stream.getTracks().forEach(track => track.stop())
         // Auto-send when released
@@ -468,6 +485,7 @@ export default function AdminAssistant({ userId, onClose }) {
       mediaRecorderRef.current.start()
       setIsRecording(true)
       setRecordingDuration(0)
+      if (timerRef.current) clearInterval(timerRef.current)
       timerRef.current = setInterval(() => setRecordingDuration(p => p + 1), 1000)
 
       // 2. Transcription logic (while holding)
@@ -481,17 +499,30 @@ export default function AdminAssistant({ userId, onClose }) {
       }
     } catch (err) {
       console.error('Error starting recording:', err)
+      setIsRecording(false)
       toast({ title: 'Error', description: 'No se pudo acceder al micrófono', variant: 'destructive' })
     }
   }
 
-  const stopRecording = () => {
+  const stopRecording = (e) => {
+    if (e) {
+      if (e.cancelable) e.preventDefault()
+      e.stopPropagation()
+    }
+    
     stopRequestedRef.current = true
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop()
+      try {
+        mediaRecorderRef.current.stop()
+      } catch (err) {
+        console.error('Error stopping recorder:', err)
+      }
     }
     setIsRecording(false)
-    if (timerRef.current) clearInterval(timerRef.current)
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
     
     if (recognitionRef.current) {
       try {
@@ -762,12 +793,13 @@ export default function AdminAssistant({ userId, onClose }) {
         <div className="p-4 border-t border-white/5 bg-black/50 backdrop-blur-xl">
           <div className="flex gap-3">
             <button
-              onMouseDown={startRecording}
-              onMouseUp={stopRecording}
-              onMouseLeave={stopRecording}
-              onTouchStart={startRecording}
-              onTouchEnd={stopRecording}
+              onMouseDown={(e) => startRecording(e)}
+              onMouseUp={(e) => stopRecording(e)}
+              onMouseLeave={(e) => stopRecording(e)}
+              onTouchStart={(e) => startRecording(e)}
+              onTouchEnd={(e) => stopRecording(e)}
               disabled={isLoading}
+              style={{ touchAction: 'none', WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
               className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
                 isRecording
                   ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-110'

@@ -481,7 +481,12 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   }
 
   // Recording Logic
-  const startRecording = async () => {
+  const startRecording = async (e) => {
+    if (e) {
+      if (e.cancelable) e.preventDefault()
+      e.stopPropagation()
+    }
+
     try {
       stopRequestedRef.current = false
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -491,12 +496,24 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
         return
       }
 
-      mediaRecorderRef.current = new MediaRecorder(stream)
+      // Determinar tipo de audio compatible (iOS prefiere mp4/aac)
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4') 
+        ? 'audio/mp4' 
+        : MediaRecorder.isTypeSupported('audio/webm') 
+          ? 'audio/webm' 
+          : ''
+      
+      const options = mimeType ? { mimeType } : {}
+      mediaRecorderRef.current = new MediaRecorder(stream, options)
       const chunks = []
 
-      mediaRecorderRef.current.ondataavailable = (e) => chunks.push(e.data)
+      mediaRecorderRef.current.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data)
+      }
+
       mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' })
+        if (chunks.length === 0) return
+        const blob = new Blob(chunks, { type: mimeType || 'audio/webm' })
         setAudioBlob(blob)
         stream.getTracks().forEach(track => track.stop())
       }
@@ -504,21 +521,35 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       mediaRecorderRef.current.start()
       setIsRecording(true)
       setRecordingDuration(0)
+      if (timerRef.current) clearInterval(timerRef.current)
       timerRef.current = setInterval(() => {
         setRecordingDuration(prev => prev + 1)
       }, 1000)
     } catch (err) {
       console.error('Error recording:', err)
+      setIsRecording(false)
     }
   }
 
-  const stopRecording = () => {
+  const stopRecording = (e) => {
+    if (e) {
+      if (e.cancelable) e.preventDefault()
+      e.stopPropagation()
+    }
+    
     stopRequestedRef.current = true
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop()
+      try {
+        mediaRecorderRef.current.stop()
+      } catch (err) {
+        console.error('Error stopping recorder:', err)
+      }
     }
     setIsRecording(false)
-    if (timerRef.current) clearInterval(timerRef.current)
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
   }
 
   const formatDuration = (seconds) => {
@@ -804,11 +835,12 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                 {userRole === 'admin' && (
                   <button
                     type="button"
-                    onMouseDown={startRecording}
-                    onMouseUp={stopRecording}
-                    onMouseLeave={stopRecording}
-                    onTouchStart={startRecording}
-                    onTouchEnd={stopRecording}
+                    onMouseDown={(e) => startRecording(e)}
+                    onMouseUp={(e) => stopRecording(e)}
+                    onMouseLeave={(e) => stopRecording(e)}
+                    onTouchStart={(e) => startRecording(e)}
+                    onTouchEnd={(e) => stopRecording(e)}
+                    style={{ touchAction: 'none', WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
                     className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
                       isRecording 
                         ? 'bg-red-500 text-white shadow-lg shadow-red-500/40 scale-110' 
