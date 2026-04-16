@@ -791,7 +791,7 @@ export default function AdminAssistant({ userId, onClose }) {
 
         {/* INPUT AREA */}
         <div className="p-4 border-t border-white/5 bg-black/50 backdrop-blur-xl">
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
             <button
               onMouseDown={(e) => startRecording(e)}
               onMouseUp={(e) => stopRecording(e)}
@@ -800,7 +800,7 @@ export default function AdminAssistant({ userId, onClose }) {
               onTouchEnd={(e) => stopRecording(e)}
               disabled={isLoading}
               style={{ touchAction: 'none', WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
-              className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
+              className={`relative w-14 h-14 rounded-2xl flex items-center justify-center transition-all flex-shrink-0 ${
                 isRecording
                   ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-110'
                   : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10'
@@ -812,21 +812,31 @@ export default function AdminAssistant({ userId, onClose }) {
               <Mic className="w-6 h-6" />
             </button>
             <div className="flex-1 relative">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder={isRecording ? "Suelta para enviar..." : "Escribe o mantén pulsado el micro..."}
-                disabled={isLoading}
-                className="w-full h-14 bg-white/5 border-white/10 rounded-2xl pl-5 pr-14 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20"
-              />
-              <Button
-                onClick={() => handleSend()}
-                disabled={isLoading || !input.trim()}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-lg shadow-violet-500/25 disabled:opacity-30 disabled:shadow-none"
-              >
-                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-              </Button>
+              {isRecording ? (
+                <div className="h-14 flex items-center gap-3 bg-red-500/10 px-5 rounded-2xl border border-red-500/20 w-full animate-pulse">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <span className="text-red-500 font-bold text-sm tracking-tight">GRABANDO {formatDuration(recordingDuration)}</span>
+                  <span className="text-[10px] text-red-400/50 uppercase ml-auto">Suelta para enviar</span>
+                </div>
+              ) : (
+                <>
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+                    placeholder="Escribe o mantén pulsado..."
+                    disabled={isLoading}
+                    className="w-full h-14 bg-white/5 border-white/10 rounded-2xl pl-5 pr-14 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20"
+                  />
+                  <Button
+                    onClick={() => handleSend()}
+                    disabled={isLoading || !input.trim()}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-lg shadow-violet-500/25 disabled:opacity-30 disabled:shadow-none"
+                  >
+                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                  </Button>
+                </>
+              )}
             </div>
           </div>
           <p className="text-center text-[10px] text-gray-600 mt-3 font-medium uppercase tracking-widest">

@@ -777,89 +777,93 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
           <div className="p-4 bg-zinc-950 border-t border-white/5">
             {view === 'list' ? (
               <p className="text-xs text-zinc-500 text-center py-2">Selecciona un socio para comenzar a chatear</p>
-            ) : isRecording ? (
-              <div className="flex items-center gap-4 bg-red-500/10 p-2 rounded-2xl border border-red-500/20 w-full animate-pulse">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <div className="flex-1 text-red-500 font-medium text-sm">Grabando audio... {formatDuration(recordingDuration)}</div>
-                <div className="text-xs text-red-400/60 font-medium uppercase tracking-widest">Suelto para enviar</div>
-              </div>
-            ) : audioBlob ? (
-              <div className="flex items-center gap-4 bg-violet-500/10 p-3 rounded-2xl border border-violet-500/20">
-                <Play size={18} className="text-violet-500" />
-                <span className="text-xs text-violet-500 font-medium flex-1">Audio listo para enviar</span>
-                <button onClick={() => setAudioBlob(null)} className="text-zinc-500 hover:text-white">
-                  <Trash2 size={18} />
-                </button>
-                <Button onClick={handleSend} className="bg-violet-500 text-black rounded-xl">Enviar</Button>
-              </div>
-            ) : imagePreview ? (
-              <div className="flex items-center gap-4 bg-cyan-500/10 p-3 rounded-2xl border border-cyan-500/20">
-                <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10">
-                  <img src={imagePreview} className="w-full h-full object-cover" />
-                </div>
-                <span className="text-xs text-cyan-400 font-medium flex-1">Imagen lista para enviar</span>
-                <button onClick={() => { setImageFile(null); setImagePreview(null); }} className="text-zinc-500 hover:text-white">
-                  <Trash2 size={18} />
-                </button>
-                <Button onClick={handleSend} disabled={uploadingImage} className="bg-cyan-500 text-black rounded-xl">
-                  {uploadingImage ? <Loader2 size={16} className="animate-spin" /> : 'Enviar'}
-                </Button>
-              </div>
             ) : (
-              <form onSubmit={handleSend} className="flex gap-2">
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleImageSelect} 
-                  accept="image/*" 
-                  className="hidden" 
-                />
-                
-                <div className="flex-1 relative">
-                  <Input
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Escribe un mensaje..."
-                    className="h-12 bg-white/5 border-white/5 rounded-2xl px-4 text-sm focus:border-violet-500/50 text-white placeholder:text-zinc-500"
-                  />
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-all"
-                >
-                  <ImageIcon size={20} />
-                </button>
-
-                {userRole === 'admin' && (
-                  <button
-                    type="button"
-                    onMouseDown={(e) => startRecording(e)}
-                    onMouseUp={(e) => stopRecording(e)}
-                    onMouseLeave={(e) => stopRecording(e)}
-                    onTouchStart={(e) => startRecording(e)}
-                    onTouchEnd={(e) => stopRecording(e)}
-                    style={{ touchAction: 'none', WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
-                      isRecording 
-                        ? 'bg-red-500 text-white shadow-lg shadow-red-500/40 scale-110' 
-                        : 'bg-zinc-900 border border-white/5 text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <Mic size={20} />
-                  </button>
+              <div className="flex flex-col gap-2">
+                {audioBlob && (
+                  <div className="flex items-center gap-4 bg-violet-500/10 p-3 rounded-2xl border border-violet-500/20 animate-in fade-in slide-in-from-bottom-2">
+                    <Play size={18} className="text-violet-500" />
+                    <span className="text-xs text-violet-500 font-medium flex-1">Audio listo para enviar</span>
+                    <button onClick={(e) => { e.preventDefault(); setAudioBlob(null); }} className="text-zinc-500 hover:text-white">
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 )}
 
-                <Button 
-                  type="submit" 
-                  size="icon"
-                  disabled={loading || (!newMessage.trim() && !audioBlob && !imageFile)}
-                  className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 text-black shadow-lg shadow-violet-500/20"
-                >
-                  <Send size={18} />
-                </Button>
-              </form>
+                {imagePreview && (
+                  <div className="flex items-center gap-4 bg-cyan-500/10 p-3 rounded-2xl border border-cyan-500/20 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10">
+                      <img src={imagePreview} className="w-full h-full object-cover" />
+                    </div>
+                    <span className="text-xs text-cyan-400 font-medium flex-1">Imagen lista para enviar</span>
+                    <button onClick={(e) => { e.preventDefault(); setImageFile(null); setImagePreview(null); }} className="text-zinc-500 hover:text-white">
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                )}
+
+                <form onSubmit={handleSend} className="flex gap-2 items-center">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleImageSelect} 
+                    accept="image/*" 
+                    className="hidden" 
+                  />
+                  
+                  <div className="flex-1 relative">
+                    {isRecording ? (
+                      <div className="h-12 flex items-center gap-3 bg-red-500/10 px-4 rounded-2xl border border-red-500/20 w-full animate-pulse">
+                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        <span className="text-red-500 font-bold text-xs">GRABANDO {formatDuration(recordingDuration)}</span>
+                        <span className="text-[10px] text-red-400/50 uppercase ml-auto">Suelta para enviar</span>
+                      </div>
+                    ) : (
+                      <Input
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Escribe un mensaje..."
+                        className="h-12 bg-white/5 border-white/5 rounded-2xl px-4 text-sm focus:border-violet-500/50 text-white placeholder:text-zinc-500"
+                      />
+                    )}
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-all flex-shrink-0"
+                  >
+                    <ImageIcon size={20} />
+                  </button>
+
+                  {userRole === 'admin' && (
+                    <button
+                      type="button"
+                      onMouseDown={(e) => startRecording(e)}
+                      onMouseUp={(e) => stopRecording(e)}
+                      onMouseLeave={(e) => stopRecording(e)}
+                      onTouchStart={(e) => startRecording(e)}
+                      onTouchEnd={(e) => stopRecording(e)}
+                      style={{ touchAction: 'none', WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all flex-shrink-0 ${
+                        isRecording 
+                          ? 'bg-red-500 text-white shadow-lg shadow-red-500/40 scale-110' 
+                          : 'bg-zinc-900 border border-white/5 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <Mic size={20} />
+                    </button>
+                  )}
+
+                  <Button 
+                    type="submit" 
+                    size="icon"
+                    disabled={loading || (!newMessage.trim() && !audioBlob && !imageFile)}
+                    className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 text-black shadow-lg shadow-violet-500/20 flex-shrink-0"
+                  >
+                    {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                  </Button>
+                </form>
+              </div>
             )}
             <p className="text-[10px] text-zinc-600 mt-2 text-center">
               {userRole === 'admin' ? 'Pulsa el icono de audio para enviar mensajes de voz' : 'Puedes usar el micrófono para dictar texto'}
