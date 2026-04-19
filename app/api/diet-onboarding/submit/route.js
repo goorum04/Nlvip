@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { sendNativeApplePush } from '@/lib/apn'
+import { sendPushToUser } from '@/lib/webpush'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -78,6 +80,39 @@ export async function POST(req) {
     } catch (err) {
       console.warn('Failed to insert initial progress record:', err)
       // Non-blocking
+    }
+
+    // Notify admin: socio ha completado el cuestionario
+    try {
+      // Obtener nombre del socio
+      const { data: memberProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('name, email')
+        .eq('id', memberId)
+        .single()
+      const memberName = memberProfile?.name || memberProfile?.email?.split('@')[0] || 'Un socio'
+
+      // Obtener admin
+      const { data: adminProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('role', 'admin')
+        .limit(1)
+        .single()
+
+      if (adminProfile?.id) {
+        const notifPayload = {
+          title: '📋 Cuestionario completado',
+          body: `${memberName} ha rellenado el formulario nutricional. ¡Ya puedes preparar su plan!`,
+          url: '/admin/nutrition',
+        }
+        // Push nativo (iOS)
+        await sendNativeApplePush(supabaseAdmin, adminProfile.id, notifPayload)
+        // Web Push (PWA)
+        await sendPushToUser(supabaseAdmin, adminProfile.id, { ...notifPayload, icon: '/icons/icon-192x192.png' })
+      }
+    } catch (notifErr) {
+      console.warn('[Push] Error notificando admin:', notifErr.message)
     }
 
     return NextResponse.json({

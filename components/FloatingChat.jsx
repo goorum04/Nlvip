@@ -466,6 +466,28 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
 
       if (error) throw error
       
+      // Enviar notificación a los receptores
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          fetch('/api/notifications/message', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+              conversationId: activeConversation.id,
+              senderId: userId,
+              text: newMessage,
+              messageType
+            })
+          }) // Fire and forget
+        }
+      } catch (notifErr) {
+        console.warn('Error disparando notificación de mensaje:', notifErr)
+      }
+      
       setNewMessage('')
       setAudioBlob(null)
       setImageFile(null)

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { sendPushToUser } from '@/lib/webpush'
+import { sendNativeApplePush } from '@/lib/apn'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -43,6 +44,13 @@ export async function POST(req) {
       body,
       url: url || '/',
       icon: '/icons/icon-192x192.png',
+    })
+
+    // Native Apple Push
+    await sendNativeApplePush(supabaseAdmin, targetUserId, {
+      title,
+      body,
+      url: url || '/',
     })
 
     return NextResponse.json({ success: true })
