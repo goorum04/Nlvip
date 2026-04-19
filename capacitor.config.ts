@@ -4,10 +4,18 @@ const config: CapacitorConfig = {
   appId: 'com.nlvipnutrition.app',
   appName: 'NL VIP Club',
   webDir: 'out',
-  // server: {
-  //   url: 'https://app.nlvipnutrition.com',
-  //   cleartext: false
-  // }
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 10000,
+      launchAutoHide: false,
+      backgroundColor: "#030303",
+      androidSplashResourceName: "splash",
+      androidScaleType: "CENTER_CROP",
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true
+    }
+  }
 };
 
 export default config;

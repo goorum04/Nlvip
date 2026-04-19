@@ -90,6 +90,21 @@ export default function App() {
     }
   }, []) // Empty dependency array: run once on mount
 
+  // Explicitly hide Splash Screen when we finish loading
+  useEffect(() => {
+    if (!loading && !profileLoading) {
+      if (typeof window !== 'undefined') {
+        import('@capacitor/core').then(({ Capacitor }) => {
+          if (Capacitor.isNativePlatform()) {
+            import('@capacitor/splash-screen').then(({ SplashScreen }) => {
+              SplashScreen.hide().catch(e => console.warn('SplashScreen hide error', e))
+            })
+          }
+        }).catch(err => console.warn('Capacitor core import failed', err))
+      }
+    }
+  }, [loading, profileLoading])
+
   const checkUser = async () => {
     try {
       // Avoid hanging forever if Supabase API stalls (e.g. offline with SW crash)
