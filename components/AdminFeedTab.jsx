@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { MessageSquare, Shield, AlertCircle } from 'lucide-react'
+import { MessageSquare, Shield, CircleAlert as AlertCircle } from 'lucide-react'
 import { FeedSection } from './FeedSection'
 
 export function AdminFeedTab({ user }) {

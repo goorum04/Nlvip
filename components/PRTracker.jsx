@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { 
   Trophy, Plus, History, TrendingUp, Dumbbell, 
-  Calendar, Trash2, Loader2, Info, ChevronRight
+  Calendar, Trash2, LoaderCircle as Loader2, Info, ChevronRight
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { getApiUrl } from '@/lib/utils'

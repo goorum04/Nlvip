@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Video, X, Loader2, Upload, Clock, AlertCircle } from 'lucide-react'
+import { Video, X, LoaderCircle as Loader2, Upload, Clock, CircleAlert as AlertCircle } from 'lucide-react'
 import { useFileUpload, useVideoValidation, generateFileId, getFileExtension } from '@/hooks/useStorage'
 import { supabase } from '@/lib/supabase'
 

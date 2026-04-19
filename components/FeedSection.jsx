@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Heart, MessageCircle, Flag, Loader2, Zap, Trash2, EyeOff, Eye } from 'lucide-react'
+import { Heart, MessageCircle, Flag, LoaderCircle as Loader2, Zap, Trash2, EyeOff, Eye } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import ImageUploader from './ImageUploader'
 

@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { 
-  Mic, MicOff, Send, Bot, User, Loader2, CheckCircle2, XCircle, X,
+  Mic, MicOff, Send, Bot, User, LoaderCircle as Loader2, CircleCheckBig as CheckCircle2, CircleX as XCircle, X,
   Volume2, VolumeX, Sparkles, AlertTriangle, Zap, Crown, Wand2,
   ChefHat, Flame, Beef, Wheat, Droplets, Clock, BarChart3, Info,
   Play, Pause

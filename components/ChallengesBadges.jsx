@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { 
   Trophy, Target, Flame, Crown, Medal, Dumbbell, Footprints, 
-  Star, CheckCircle2, Clock, Users, Zap, Lock, Sparkles
+  Star, CircleCheckBig as CheckCircle2, Clock, Users, Zap, Lock, Sparkles
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 

@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Sparkles, Loader2, ChevronDown, ChevronUp, Dumbbell, Save, RefreshCw } from 'lucide-react'
+import { Sparkles, LoaderCircle as Loader2, ChevronDown, ChevronUp, Dumbbell, Save, RefreshCw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { getApiUrl } from '@/lib/utils'
 

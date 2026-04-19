@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { 
-  Camera as CameraIcon, Upload, Loader2, Check, X, Flame, Beef, Wheat, Droplets,
-  Plus, Trash2, UtensilsCrossed, AlertCircle, ChevronDown, ChevronUp
+  Camera as CameraIcon, Upload, LoaderCircle as Loader2, Check, X, Flame, Beef, Wheat, Droplets,
+  Plus, Trash2, UtensilsCrossed, CircleAlert as AlertCircle, ChevronDown, ChevronUp
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { 
   Smile, Frown, Meh, Zap, Battery, BatteryLow, 
-  Droplets, Heart, AlertCircle, CheckCircle2, Loader2, 
+  Droplets, Heart, CircleAlert as AlertCircle, CircleCheckBig as CheckCircle2, LoaderCircle as Loader2, 
   ChevronDown, ChevronUp 
 } from 'lucide-react'
 

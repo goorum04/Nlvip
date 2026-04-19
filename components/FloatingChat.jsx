@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import {
   MessageCircle, Send, X, Minimize2, Mic, MicOff,
   Trash2, Play, Pause, Shield, User, ChevronLeft,
-  Bot, Volume2, Image as ImageIcon, Loader2
+  Bot, Volume2, Image as ImageIcon, LoaderCircle as Loader2
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 

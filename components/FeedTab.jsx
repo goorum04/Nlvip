@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { 
-  Zap, Loader2, Flag, Heart, MessageCircle, 
+  Zap, LoaderCircle as Loader2, Flag, Heart, MessageCircle, 
   Image as ImageIcon 
 } from 'lucide-react'
 import ImageUploader from './ImageUploader'

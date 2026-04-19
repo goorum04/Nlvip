@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
-    Dumbbell, Apple, Plus, Trash2, Edit, Loader2,
+    Dumbbell, Apple, Plus, Trash2, Pencil as Edit, LoaderCircle as Loader2,
     ChevronRight, Target, Zap, Flame, Star, Search
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'

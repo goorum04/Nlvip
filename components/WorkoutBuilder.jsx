@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-  Plus, Trash2, Video, Upload, Loader2, ChevronDown, ChevronUp,
+  Plus, Trash2, Video, Upload, LoaderCircle as Loader2, ChevronDown, ChevronUp,
   Dumbbell, Calendar, Play, GripVertical, Save, X, Eye, BookOpen, Search
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'

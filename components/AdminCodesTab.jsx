@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-    Code, Plus, Trash2, Key, Loader2,
-    Calendar, Users, CheckCircle2, XCircle
+    Code, Plus, Trash2, Key, LoaderCircle as Loader2,
+    Calendar, Users, CircleCheckBig as CheckCircle2, CircleX as XCircle
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 

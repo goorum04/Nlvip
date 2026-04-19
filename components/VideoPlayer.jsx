@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Play, Clock, Loader2, Video, X } from 'lucide-react'
+import { Play, Clock, LoaderCircle as Loader2, Video, X } from 'lucide-react'
 import { useSignedUrl } from '@/hooks/useStorage'
 
 export default function VideoPlayer({ video, onClose }) {

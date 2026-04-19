@@ -11,8 +11,8 @@ import { useToast } from '@/hooks/use-toast'
 import { getApiUrl } from '@/lib/utils'
 import {
     Baby, Heart, Milk, Timer, Plus, TrendingUp,
-    Clock, Loader2, ChevronLeft, ChevronRight,
-    Droplets, BarChart3, AlertCircle, Sparkles, Settings
+    Clock, LoaderCircle as Loader2, ChevronLeft, ChevronRight,
+    Droplets, BarChart3, CircleAlert as AlertCircle, Sparkles, Settings
 } from 'lucide-react'
 
 // =============================================================

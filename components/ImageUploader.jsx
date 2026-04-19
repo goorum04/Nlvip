@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Camera as CameraIcon, X, Loader2, Image as ImageIcon } from 'lucide-react'
+import { Camera as CameraIcon, X, LoaderCircle as Loader2, Image as ImageIcon } from 'lucide-react'
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { Capacitor } from '@capacitor/core'
 

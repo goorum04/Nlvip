@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { 
-  Camera as CameraIcon, X, Loader2, Upload, Calendar, ChevronLeft, ChevronRight,
+  Camera as CameraIcon, X, LoaderCircle as Loader2, Upload, Calendar, ChevronLeft, ChevronRight,
   ZoomIn, Trash2, CircleAlert as AlertCircle, Image as ImageIcon
 } from 'lucide-react'
 import { useFileUpload, useSignedUrl, generateFileId, getFileExtension } from '@/hooks/useStorage'

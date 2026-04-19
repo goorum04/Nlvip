@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
     Apple, Plus, Trash2, Clock, UtensilsCrossed,
     Flame, Target, Zap, Star, Save, X, ChevronRight,
-    ChevronLeft, Info
+    ChevronLeft, Info, LoaderCircle as Loader2
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'

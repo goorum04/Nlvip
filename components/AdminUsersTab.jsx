@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-    Users, UserPlus, Shield, Trash2, Key, Loader2,
+    Users, UserPlus, Shield, Trash2, Key, LoaderCircle as Loader2,
     ChevronRight, ExternalLink, Mail, Phone, Calendar
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'

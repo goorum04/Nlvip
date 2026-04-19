@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, CheckCircle2 } from 'lucide-react'
+import { Bell, CircleCheckBig as CheckCircle2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
