@@ -33,7 +33,8 @@ workflows:
         script: |
           rm -rf .next out
           cp next.config.mobile.js next.config.js
-          npm run build
+          # Usamos npx next build && npx next export para asegurar la creación de la carpeta 'out'
+          npx next build && npx next export -o out
           git checkout next.config.js
 
       - name: Sync Capacitor
