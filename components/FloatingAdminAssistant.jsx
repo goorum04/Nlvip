@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Wand2, Sparkles } from 'lucide-react'
+import { WandSparkles as Wand2, Sparkles } from 'lucide-react'
 import AdminAssistant from './AdminAssistant'
 
 export default function FloatingAdminAssistant({ userId }) {
