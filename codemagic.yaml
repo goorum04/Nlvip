@@ -5,13 +5,17 @@ workflows:
     instance_type: mac_mini_m1
 
     environment:
+      # Codemagic native App Store Connect integration
+      # This handles authentication automatically using the variables configured in UI
+      app_store_connect:
+        auth: integration
       groups:
-        - app_store_credentials   # Variables secretas que configuras en Codemagic UI
+        - app_store_credentials
       vars:
         BUNDLE_ID: "com.leonardos.app"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        APP_STORE_APPLE_ID: "6759666320"  # ID real de App Store Connect
+        APP_STORE_APPLE_ID: "6759666320"
       node: v20.11.0
       xcode: latest
       cocoapods: default
@@ -32,7 +36,6 @@ workflows:
         script: |
           cp next.config.mobile.js next.config.js
           npm run build
-          # Restaurar config original
           git checkout next.config.js
 
       - name: Sync Capacitor
@@ -51,16 +54,20 @@ workflows:
 
       - name: Fetch signing files
         script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Add signing certificates to keychain
+        script: |
+          keychain add-certificates
 
       - name: Build and sign iOS app
         script: |
           xcode-project use-profiles
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" \
-            --mode release \
-            --bundle-id "$BUNDLE_ID"
+            --scheme "$XCODE_SCHEME"
 
     artifacts:
       - build/ios/ipa/*.ipa
@@ -68,9 +75,7 @@ workflows:
 
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY    # Variable en Codemagic UI
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER  # Variable en Codemagic UI
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID    # Variable en Codemagic UI
+        auth: integration
         submit_to_testflight: true
         beta_groups:
           - "Internal Testers"
