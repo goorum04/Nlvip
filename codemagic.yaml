@@ -11,7 +11,7 @@ workflows:
         BUNDLE_ID: "com.leonardos.app"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        APP_STORE_APPLE_ID: "6746540888"  # Reemplaza con tu Apple ID numérico de App Store Connect
+        APP_STORE_APPLE_ID: "6759666320"  # ID real de App Store Connect
       node: v20.11.0
       xcode: latest
       cocoapods: default
