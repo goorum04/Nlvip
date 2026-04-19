@@ -458,7 +458,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       const { error } = await supabase.from('messages').insert([{
         conversation_id: activeConversation.id,
         sender_id: userId,
-        text: newMessage,
+        text: newMessage.trim() || null,
         type: messageType,
         audio_path: audioPath,
         image_path: imagePath
