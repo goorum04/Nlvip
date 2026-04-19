@@ -90,7 +90,24 @@ export default function App() {
     }
   }, []) // Empty dependency array: run once on mount
 
-  // Explicitly hide Splash Screen when we finish loading
+  // 1. Unconditional Fallback: Guarantee the Splash Screen hides after 1.5s
+  // This prevents the app from being stuck behind a white screen if the state machine gets interrupted.
+  useEffect(() => {
+    const fallbackTimer = setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        import('@capacitor/core').then(({ Capacitor }) => {
+          if (Capacitor.isNativePlatform()) {
+            import('@capacitor/splash-screen').then(({ SplashScreen }) => {
+              SplashScreen.hide().catch(e => console.warn('SplashScreen fallback hide error', e))
+            }).catch(e => console.warn('SplashScreen module load error', e))
+          }
+        }).catch(err => console.warn('Capacitor core import fallback failed', err))
+      }
+    }, 1500)
+    return () => clearTimeout(fallbackTimer)
+  }, [])
+
+  // 2. State-driven hide: Explicitly hide Splash Screen when we finish loading
   useEffect(() => {
     if (!loading && !profileLoading) {
       if (typeof window !== 'undefined') {
