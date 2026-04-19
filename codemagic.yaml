@@ -14,6 +14,11 @@ workflows:
         XCODE_SCHEME: "App"
         APP_STORE_APPLE_ID: "6759666320"
         STATIC_EXPORT: "true"
+        NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder"
+        SUPABASE_SERVICE_ROLE_KEY: "placeholder"
+        OPENAI_API_KEY: "placeholder"
+        NEXT_PUBLIC_SITE_URL: "https://nlvip.vercel.app"
       node: v20.11.0
       xcode: latest
       cocoapods: default
