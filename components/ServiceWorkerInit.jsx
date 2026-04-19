@@ -6,14 +6,12 @@ import { getApiUrl } from '@/lib/utils'
 
 export default function ServiceWorkerInit() {
   useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
-
-    navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(() => {
-      navigator.serviceWorker.ready.then(reg => {
-        setupPushSubscription(reg)
-      })
-    }).catch(() => {
-      // SW registration failed silently - app still works
+    // Force unregister of Service Worker to bypass stale cache
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      for (let registration of registrations) {
+        registration.unregister()
+        console.log('Service Worker unregistered to clear cache')
+      }
     })
   }, [])
 

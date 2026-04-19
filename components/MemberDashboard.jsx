@@ -17,6 +17,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { getApiUrl } from '@/lib/utils'
+import { Preferences } from '@capacitor/preferences'
 import FloatingChat from './FloatingChat'
 import ImageUploader from './ImageUploader'
 import VideoPlayer, { VideoCard } from './VideoPlayer'
@@ -60,24 +61,30 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const { toast } = useToast()
   const { getSignedUrl, getSignedUrls } = useSignedUrl()
   const [dataLoaded, setDataLoaded] = useState(false)
-  const [activeTab, setActiveTab ] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('member_dash_active_tab')
-      return saved || 'activity'
-    }
-    return 'activity'
-  })
+  const [activeTab, setActiveTab ] = useState('activity')
   const [tabsInitialized, setTabsInitialized] = useState(false)
 
-  // Mark tabs as initialized on mount to allow saving
+  // Load active tab from Preferences on mount
   useEffect(() => {
-    setTabsInitialized(true)
+    const loadSavedTab = async () => {
+      try {
+        const { value } = await Preferences.get({ key: 'member_dash_active_tab' })
+        if (value) {
+          setActiveTab(value)
+        }
+      } catch (e) {
+        console.warn('Could not load tab from preferences', e)
+      } finally {
+        setTabsInitialized(true)
+      }
+    }
+    loadSavedTab()
   }, [])
 
-  // Save active tab to localStorage when it changes
+  // Save active tab to Preferences when it changes
   useEffect(() => {
     if (tabsInitialized) {
-      localStorage.setItem('member_dash_active_tab', activeTab)
+      Preferences.set({ key: 'member_dash_active_tab', value: activeTab })
     }
   }, [activeTab, tabsInitialized])
 
