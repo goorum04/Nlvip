@@ -1,0 +1,70 @@
+workflows:
+  ios-release:
+    name: NL VIP Club - iOS Release
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+
+    environment:
+      groups:
+        - app_store_credentials   # Variables secretas que configuras en Codemagic UI
+      vars:
+        BUNDLE_ID: "com.leonardos.app"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        APP_STORE_APPLE_ID: "6746540888"  # Reemplaza con tu Apple ID numérico de App Store Connect
+      node: v20.11.0
+      xcode: latest
+      cocoapods: default
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+
+      - name: Build Next.js for mobile
+        script: |
+          cp next.config.mobile.js next.config.js
+          npm run build
+          # Restaurar config original
+          git checkout next.config.js
+
+      - name: Sync Capacitor
+        script: |
+          npx cap sync ios
+
+      - name: Install CocoaPods
+        script: |
+          cd ios/App && pod install
+
+      - name: Set build number from CI
+        script: |
+          BUILD_NUMBER=$(( $(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID") + 1 ))
+          cd ios/App
+          agvtool new-version -all $BUILD_NUMBER
+
+      - name: Build and sign iOS app
+        script: |
+          xcode-project use-profiles
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY    # Variable en Codemagic UI
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER  # Variable en Codemagic UI
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID    # Variable en Codemagic UI
+        submit_to_testflight: true
+        beta_groups:
+          - "Internal Testers"
