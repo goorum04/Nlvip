@@ -15,16 +15,14 @@ import {
   UtensilsCrossed,
   Clock,
   Target,
-  AlertCircle,
+  CircleAlert as AlertCircle,
   Heart,
   Briefcase,
-  Scale,
+  Scale as ScaleIcon,
   Ruler,
-  RulerIcon,
-  Scissors,
   Zap,
   Star,
-  Camera,
+  Camera as CameraIcon,
   X,
   Footprints
 } from 'lucide-react'
@@ -398,7 +396,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
               { id: 'pecho', label: 'Pecho (cm)', icon: Heart },
               { id: 'biceps', label: 'Bíceps contr. (cm)', icon: Zap },
               { id: 'cadera', label: 'Cadera (cm)', icon: Star },
-              { id: 'muslo', label: 'Muslo (cm)', icon: RulerIcon },
+              { id: 'muslo', label: 'Muslo (cm)', icon: Ruler },
               { id: 'gluteo', label: 'Glúteo (cm)', icon: Star },
               { id: 'gemelo', label: 'Gemelo (cm)', icon: Footprints },
             ].map(m => (
@@ -494,7 +492,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
           {/* Optional body photos */}
           <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <Camera className="w-4 h-4 text-cyan-400" />
+              <CameraIcon className="w-4 h-4 text-cyan-400" />
               <Label className="text-cyan-300 text-sm font-semibold">Fotos corporales <span className="text-gray-500 font-normal">(opcional)</span></Label>
             </div>
             <p className="text-gray-500 text-[11px] leading-relaxed">
@@ -521,7 +519,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
                     </div>
                   ) : (
                     <label className="flex flex-col items-center justify-center aspect-[3/4] rounded-xl border border-dashed border-white/10 bg-white/[0.02] cursor-pointer hover:bg-white/[0.05] transition-colors gap-1">
-                      <Camera className="w-5 h-5 text-gray-500" />
+                      <CameraIcon className="w-5 h-5 text-gray-500" />
                       <span className="text-[10px] text-gray-500">{label}</span>
                       <input
                         type="file"

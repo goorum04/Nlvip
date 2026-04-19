@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { 
-  Camera, Upload, Loader2, Check, X, Flame, Beef, Wheat, Droplets,
+  Camera as CameraIcon, Upload, Loader2, Check, X, Flame, Beef, Wheat, Droplets,
   Plus, Trash2, UtensilsCrossed, AlertCircle, ChevronDown, ChevronUp
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -249,7 +249,7 @@ export default function FoodTracker({ userId }) {
               onClick={() => fileInputRef.current?.click()}
               className="w-full h-14 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-semibold rounded-2xl shadow-lg shadow-orange-500/20"
             >
-              <Camera className="w-5 h-5 mr-2" />
+              <CameraIcon className="w-5 h-5 mr-2" />
               Fotografiar Comida
             </Button>
           )}

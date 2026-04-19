@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { User, Camera, Save, Trash2, Loader2, X, AlertTriangle } from 'lucide-react'
+import { User, Camera as CameraIcon, Save, Trash2, Loader2, X, AlertTriangle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { getApiUrl } from '@/lib/utils'
 
@@ -346,7 +346,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                 {uploading ? (
                   <Loader2 className="w-4 h-4 text-white animate-spin" />
                 ) : (
-                  <Camera className="w-4 h-4 text-white" />
+                  <CameraIcon className="w-4 h-4 text-white" />
                 )}
                 <input
                   type="file"

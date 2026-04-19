@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { TrendingUp, Camera, Loader2 } from 'lucide-react'
+import { TrendingUp, Camera as CameraIcon, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -91,7 +91,7 @@ export function ProgressTab({ user, records, photos, chartData, loading, onAddPr
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-white flex items-center gap-2">
-                        <Camera className="w-5 h-5 text-violet-500" />
+                        <CameraIcon className="w-5 h-5 text-violet-500" />
                         Fotos de Progreso
                     </CardTitle>
                     <Button variant="outline" size="sm" onClick={() => setShowPhotoUploader(!showPhotoUploader)} className="rounded-xl border-[#2a2a2a] text-gray-400">

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { 
   UtensilsCrossed, Search, Flame, Clock, Users, Plus, Edit2, Trash2,
-  Coffee, Sun, Moon, Apple, ChefHat, Loader2, ImagePlus, X, Camera, Sparkles, Wand2
+  Coffee, Sun, Moon, Apple, ChefHat, Loader2, ImagePlus, X, Camera as CameraIcon, Sparkles, Wand2
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { getApiUrl } from '@/lib/utils'
@@ -340,7 +340,7 @@ function AIRecipeGeneratorModal({ isOpen, onClose, onRecipeGenerated }) {
                   </div>
                 ) : (
                   <label className="flex flex-col items-center justify-center w-full aspect-video bg-white/5 border-2 border-dashed border-violet-500/30 rounded-xl cursor-pointer hover:bg-white/10 transition-all">
-                    <Camera className="w-12 h-12 text-violet-400 mb-3" />
+                    <CameraIcon className="w-12 h-12 text-violet-400 mb-3" />
                     <span className="text-white font-medium">Subir foto del producto</span>
                     <span className="text-gray-500 text-sm mt-1">Toca para hacer foto o seleccionar imagen</span>
                     <input

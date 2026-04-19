@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { 
   Camera as CameraIcon, X, Loader2, Upload, Calendar, ChevronLeft, ChevronRight,
-  ZoomIn, Trash2, AlertCircle, Image as ImageIcon
+  ZoomIn, Trash2, CircleAlert as AlertCircle, Image as ImageIcon
 } from 'lucide-react'
 import { useFileUpload, useSignedUrl, generateFileId, getFileExtension } from '@/hooks/useStorage'
 import { supabase } from '@/lib/supabase'
@@ -30,34 +30,56 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
 
   const { uploadFile, uploading, progress, error: uploadError } = useFileUpload()
 
+  const base64ToBlob = (base64, mime) => {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mime });
+  }
+
   const handleNativeCamera = async (type) => {
     try {
+      // Verificar permisos primero
+      const status = await Camera.checkPermissions();
+      if (status.camera !== 'granted' || status.photos !== 'granted') {
+        const request = await Camera.requestPermissions();
+        if (request.camera !== 'granted' || request.photos !== 'granted') {
+          setError('Permisos de cámara o galería denegados. Actívalos en ajustes.');
+          return;
+        }
+      }
+
       const image = await Camera.getPhoto({
         quality: 90,
         allowEditing: true,
-        resultType: CameraResultType.Uri,
+        resultType: CameraResultType.Base64,
         source: CameraSource.Prompt
       });
 
-      if (image.webPath) {
-        // Convertir Uri a File objeto
-        const response = await fetch(image.webPath);
-        const blob = await response.blob();
-        const file = new File([blob], `progress_${type}_${Date.now()}.${image.format}`, { type: blob.type });
+      if (image.base64String) {
+        const mimeType = `image/${image.format}`;
+        const blob = base64ToBlob(image.base64String, mimeType);
+        const fileName = `progress_${type}_${Date.now()}.${image.format}`;
+        const file = new File([blob], fileName, { type: mimeType });
+        const previewUrl = `data:${mimeType};base64,${image.base64String}`;
         
         setPhotos(prev => ({
           ...prev,
           [type]: {
             file: file,
-            preview: image.webPath
+            preview: previewUrl
           }
         }))
       }
     } catch (err) {
       console.error('Error al capturar imagen:', err);
-      if (err.message !== 'User cancelled photos app') {
-        setError('No se pudo acceder a la cámara o galería');
+      if (err.message?.includes('cancelled')) {
+        return;
       }
+      setError(`Error: ${err.message || 'No se pudo acceder a la cámara o galería'}`);
     }
   }
 
@@ -149,7 +171,6 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        capture="environment"
         onChange={(e) => handleFileSelect(e, type)}
         className="hidden"
         disabled={uploading}

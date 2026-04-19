@@ -11,31 +11,51 @@ export default function ImageUploader({ onImageSelect, onImageRemove, disabled }
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
 
+  const base64ToBlob = (base64, mime) => {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mime });
+  }
+
   const handleNativeCamera = async () => {
     try {
+      // Verificar permisos primero
+      const status = await Camera.checkPermissions();
+      if (status.camera !== 'granted' || status.photos !== 'granted') {
+        const request = await Camera.requestPermissions();
+        if (request.camera !== 'granted' || request.photos !== 'granted') {
+          setError('Permisos de cámara o galería denegados. Actívalos en ajustes.');
+          return;
+        }
+      }
+
       const image = await Camera.getPhoto({
         quality: 90,
         allowEditing: true,
-        resultType: CameraResultType.Uri,
-        source: CameraSource.Prompt // Preguntar al usuario: Cámara o Galería
+        resultType: CameraResultType.Base64,
+        source: CameraSource.Prompt
       });
 
-      if (image.webPath) {
-        setPreview(image.webPath);
+      if (image.base64String) {
+        const mimeType = `image/${image.format}`;
+        const blob = base64ToBlob(image.base64String, mimeType);
+        const fileName = `photo_${Date.now()}.${image.format}`;
+        const file = new File([blob], fileName, { type: mimeType });
         
-        // Convertir Uri a File objeto para compatibilidad con el resto de la app
-        const response = await fetch(image.webPath);
-        const blob = await response.blob();
-        const file = new File([blob], `photo_${Date.now()}.${image.format}`, { type: blob.type });
-        
+        setPreview(`data:${mimeType};base64,${image.base64String}`);
         onImageSelect?.(file);
       }
     } catch (err) {
       console.error('Error al capturar imagen:', err);
       // No mostrar error si el usuario cancela
-      if (err.message !== 'User cancelled photos app') {
-        setError('No se pudo acceder a la cámara o galería');
+      if (err.message?.includes('cancelled')) {
+        return;
       }
+      setError(`Error: ${err.message || 'No se pudo acceder a la cámara o galería'}`);
     }
   }
 
@@ -90,7 +110,6 @@ export default function ImageUploader({ onImageSelect, onImageRemove, disabled }
         ref={fileInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/gif"
-        capture="environment"
         onChange={handleFileSelect}
         className="hidden"
         disabled={disabled}

@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle, 
-  Flag, Sparkles, Flame, Target, Zap, Star, ShoppingBag, CheckCircle2,
-  Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift, Sun, Calendar
+  Flag, Sparkles, Flame, Target, Zap, Star, ShoppingBag, CircleCheckBig as CheckCircle2,
+  Camera as CameraIcon, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift, Sun, Calendar
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
@@ -1125,7 +1125,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Camera className="w-5 h-5 text-violet-500" />
+                    <CameraIcon className="w-5 h-5 text-violet-500" />
                     Fotos de Progreso
                   </CardTitle>
                   {!showPhotoUploader && (

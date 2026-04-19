@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import {
   Dumbbell, Users, Bell, LogOut, Plus, Apple, Sparkles, Eye, Send,
-  Video, Camera, TrendingUp, Trash2, Loader2, Calculator, Target, Trophy, UtensilsCrossed, MessageSquare, ChefHat, Heart
+  Video, Camera as CameraIcon, TrendingUp, Trash2, Loader2, Calculator, Target, Trophy, UtensilsCrossed, MessageSquare, ChefHat, Heart
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
@@ -1165,8 +1165,8 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Camera className="w-5 h-5 text-violet-400" />
-                  Fotos de Progreso de Socios
+                  <CameraIcon className="w-5 h-5 text-violet-400" />
+                  Fotos de Progreso de Mis Socios
                 </CardTitle>
               </CardHeader>
               <CardContent>

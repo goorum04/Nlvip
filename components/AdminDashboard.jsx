@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
-import { Users, Key, Shield, LogOut, UserPlus, Code, Plus, Calculator, Send, Loader2, UtensilsCrossed, Bot, Dumbbell, Apple, Target, Trophy, Camera, Eye, TrendingUp, Settings, ChevronDown, Link, FileCheck, MessageSquare, Trash2, Search, Flame, Clock, Edit2, Mic, ChefHat, Sparkles } from 'lucide-react'
+import { Users, Key, Shield, LogOut, UserPlus, Code, Plus, Calculator, Send, Loader2, UtensilsCrossed, Bot, Dumbbell, Apple, Target, Trophy, Camera as CameraIcon, Eye, TrendingUp, Settings, ChevronDown, Link, FileCheck, MessageSquare, Trash2, Search, Flame, Clock, Edit2, Mic, ChefHat, Sparkles } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { RecipesManager } from './RecipesManager'
@@ -978,7 +978,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                   onClick={() => setActiveTab('progress')}
                   className={`cursor-pointer gap-3 ${activeTab === 'progress' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
-                  <Camera className="w-4 h-4" />
+                  <CameraIcon className="w-4 h-4" />
                   Fotos de Progreso
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -1897,7 +1897,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
             <Card className="bg-[#1a1a1a] border-violet-500/20">
               <CardHeader>
                 <CardTitle className="text-violet-400 flex items-center gap-2">
-                  <Camera className="w-5 h-5" />
+                  <CameraIcon className="w-5 h-5" />
                   Fotos de Progreso de Socios
                   <span className="text-xs bg-violet-500/20 px-2 py-1 rounded-full text-violet-300">Solo Admin</span>
                 </CardTitle>

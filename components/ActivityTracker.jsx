@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  Footprints, Flame, MapPin, Target, Plus, Minus, AlertCircle,
+  Footprints, Flame, MapPin, Target, Plus, Minus, CircleAlert as AlertCircle,
   TrendingUp, Calendar, Loader2, ChevronRight, RefreshCw, Heart
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
