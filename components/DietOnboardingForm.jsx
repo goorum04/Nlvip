@@ -10,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Apple,
   ChefHat,
-  Loader2,
-  CheckCircle2,
+  LoaderCircle as Loader2,
+  CircleCheckBig as CheckCircle2,
   UtensilsCrossed,
   Clock,
   Target,

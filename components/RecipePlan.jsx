@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { 
   UtensilsCrossed, Coffee, Sun, Moon, Apple, ChefHat, Clock, Flame,
-  RefreshCw, Edit2, X, Check, Search, LoaderCircle as Loader2, Calendar, Target
+  RefreshCw, Pencil as Edit2, X, Check, Search, LoaderCircle as Loader2, Calendar, Target
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 

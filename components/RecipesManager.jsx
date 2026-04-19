@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { 
-  UtensilsCrossed, Search, Flame, Clock, Users, Plus, Edit2, Trash2,
+  UtensilsCrossed, Search, Flame, Clock, Users, Plus, Pencil as Edit2, Trash2,
   Coffee, Sun, Moon, Apple, ChefHat, LoaderCircle as Loader2, ImagePlus, X, Camera as CameraIcon, Sparkles, Wand2
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'

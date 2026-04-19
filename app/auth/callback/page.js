@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { LoaderCircle as Loader2, CheckCircle, CircleX as XCircle } from 'lucide-react'
 
 // Componente interno que usa useSearchParams
 function AuthCallbackContent() {
