@@ -18,16 +18,45 @@ async function initNativePush() {
 
     const { PushNotifications } = await import('@capacitor/push-notifications')
 
-    // Check/request permission
+    // We do NOT request permissions automatically on app launch anymore.
+    // That causes the TestFlight "Start Testing" screen to glitch into a blank white screen.
+    // Instead, we check if they ALREADY granted it. If so, initialize silently.
+    // We will request permissions ONLY when the user logs in.
     let permStatus = await PushNotifications.checkPermissions()
-    if (permStatus.receive === 'prompt') {
-      // Small delay so it doesn't pop up nada más abrir la app
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      permStatus = await PushNotifications.requestPermissions()
+    
+    // Si ya tienen permiso, inicializamos. Si no, esperamos a que el usuario inicie sesión.
+    if (permStatus.receive === 'granted') {
+      await registerAndListen(PushNotifications, Capacitor)
     }
-    if (permStatus.receive !== 'granted') return
 
-    // Register with APNs
+    // Subscribe to auth state to request permission after login
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+        // Now that the user is logged in and the TestFlight screen is definitely gone:
+        let currentStatus = await PushNotifications.checkPermissions()
+        if (currentStatus.receive === 'prompt') {
+          // Si es la carga inicial (donde TestFlight muestra su cartel "Start Testing"),
+          // le damos 15 segundos enteros para que lo cierre tranquilo.
+          // Si es un inicio de sesión manual, le damos solo 3.
+          const delayTimeout = event === 'INITIAL_SESSION' ? 15000 : 3000
+          await new Promise(resolve => setTimeout(resolve, delayTimeout))
+          currentStatus = await PushNotifications.requestPermissions()
+        }
+        if (currentStatus.receive === 'granted') {
+          await registerAndListen(PushNotifications, Capacitor)
+        }
+      }
+    })
+  } catch (e) {
+    console.warn('Push init fallback:', e)
+  }
+}
+
+async function registerAndListen(PushNotifications, Capacitor) {
+  try {
+    // Evitar registrar múltiples veces
+    await PushNotifications.removeAllListeners()
+    
     await PushNotifications.register()
 
     // Save token to Supabase when registration succeeds
@@ -61,7 +90,7 @@ async function initNativePush() {
         window.location.href = url
       }
     })
-  } catch {
-    // Push init falla silenciosamente — la app sigue funcionando
+  } catch (e) {
+    console.warn('Push register error:', e)
   }
 }
