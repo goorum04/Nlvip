@@ -11,18 +11,21 @@ const schema = z.object({
   responses: z.record(z.string(), z.unknown())
 })
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
-
 function getOpenAI() {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )
 }
 
 // POST /api/diet-onboarding/generate-draft
 // Llama a OpenAI y genera el borrador de la dieta, pero no lo guarda en BBDD.
 export async function POST(req) {
+  const supabase = getSupabase()
   try {
     // Rate limiting: Más flexible para generar planes de dieta
     const identifier = getIdentifier(req)

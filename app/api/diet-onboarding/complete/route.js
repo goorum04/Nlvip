@@ -2,14 +2,17 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { sendPushToUser } from '@/lib/webpush'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )
+}
 
 // POST /api/diet-onboarding/complete
 // Called when admin/trainer CONFIRMS and assigns the reviewed draft
 export async function POST(req) {
+  const supabase = getSupabase()
   try {
     const { requestId, memberId, responses, macros, fullDietContent } = await req.json()
 
