@@ -28,6 +28,55 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
   const sideInputRef = useRef(null)
   const backInputRef = useRef(null)
 
+  // Load and save photo session to localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(`progress_photos_session_${memberId}`)
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        const restoredPhotos = { ...photos }
+        
+        Object.keys(parsed).forEach(type => {
+          if (parsed[type].base64 && parsed[type].mimeType && parsed[type].fileName) {
+            const blob = base64ToBlob(parsed[type].base64, parsed[type].mimeType)
+            const file = new File([blob], parsed[type].fileName, { type: parsed[type].mimeType })
+            restoredPhotos[type] = {
+              file,
+              preview: parsed[type].preview,
+              base64: parsed[type].base64 // Keep base64 for re-serialization
+            }
+          }
+        })
+        setPhotos(restoredPhotos)
+      } catch (e) {
+        console.error('Failed to restore photo session', e)
+      }
+    }
+  }, [memberId])
+
+  useEffect(() => {
+    const sessionData = {}
+    let hasPhotos = false
+    
+    Object.keys(photos).forEach(type => {
+      if (photos[type].file && photos[type].base64) {
+        hasPhotos = true
+        sessionData[type] = {
+          base64: photos[type].base64,
+          mimeType: photos[type].file.type,
+          fileName: photos[type].file.name,
+          preview: photos[type].preview
+        }
+      }
+    })
+
+    if (hasPhotos) {
+      localStorage.setItem(`progress_photos_session_${memberId}`, JSON.stringify(sessionData))
+    } else {
+      localStorage.removeItem(`progress_photos_session_${memberId}`)
+    }
+  }, [photos, memberId])
+
   const { uploadFile, uploading, progress, error: uploadError } = useFileUpload()
 
   const base64ToBlob = (base64, mime) => {
@@ -70,7 +119,8 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
           ...prev,
           [type]: {
             file: file,
-            preview: previewUrl
+            preview: previewUrl,
+            base64: image.base64String
           }
         }))
       }
@@ -151,6 +201,8 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
 
       if (dbError) throw dbError
 
+      // Clear session after success
+      localStorage.removeItem(`progress_photos_session_${memberId}`)
       onSuccess?.()
     } catch (err) {
       setError(err.message)

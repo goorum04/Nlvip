@@ -61,6 +61,23 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const { getSignedUrl, getSignedUrls } = useSignedUrl()
   const [dataLoaded, setDataLoaded] = useState(false)
   const [activeTab, setActiveTab] = useState('activity')
+  const [tabsInitialized, setTabsInitialized] = useState(false)
+
+  // Load active tab from localStorage on mount
+  useEffect(() => {
+    const savedTab = localStorage.getItem('member_dash_active_tab')
+    if (savedTab) {
+      setActiveTab(savedTab)
+    }
+    setTabsInitialized(true)
+  }, [])
+
+  // Save active tab to localStorage when it changes
+  useEffect(() => {
+    if (tabsInitialized) {
+      localStorage.setItem('member_dash_active_tab', activeTab)
+    }
+  }, [activeTab, tabsInitialized])
 
   // Check if user has premium access (registered with invitation code)
   const hasPremium = profile?.has_premium === true
