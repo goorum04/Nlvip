@@ -49,12 +49,18 @@ workflows:
           cd ios/App
           agvtool new-version -all $BUILD_NUMBER
 
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+
       - name: Build and sign iOS app
         script: |
           xcode-project use-profiles
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+            --scheme "$XCODE_SCHEME" \
+            --mode release \
+            --bundle-id "$BUNDLE_ID"
 
     artifacts:
       - build/ios/ipa/*.ipa
