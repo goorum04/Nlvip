@@ -201,7 +201,7 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-white font-bold text-lg flex items-center gap-2">
-            <Camera className="w-5 h-5 text-violet-400" />
+            <CameraIcon className="w-5 h-5 text-violet-400" />
             Nuevo Reporte
           </h3>
           <p className="text-gray-500 text-[10px]">Las 3 perspectivas son obligatorias</p>
@@ -384,7 +384,7 @@ export function ProgressPhotoGallery({ photos, canDelete = false, onDelete }) {
                       </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Camera className="w-6 h-6 text-gray-800" />
+                        <CameraIcon className="w-6 h-6 text-gray-800" />
                       </div>
                     )}
                   </button>
