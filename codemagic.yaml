@@ -51,6 +51,7 @@ workflows:
 
       - name: Fetch signing files
         script: |
+          keychain initialize
           # Generar clave privada para el certificado de distribución
           openssl genrsa -out /tmp/cert_key.pem 2048
           # Descargar perfiles y crear certificado automáticamente
