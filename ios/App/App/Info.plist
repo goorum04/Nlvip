@@ -71,8 +71,9 @@
 	<!-- HealthKit y Movimiento -->
 	<key>NSHealthShareUsageDescription</key>
 	<string>NL VIP TEAM lee tus pasos diarios de Apple Health para mostrar tu actividad y ayudarte a cumplir tus objetivos de fitness.</string>
+
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>NL VIP TEAM puede registrar tus entrenamientos en Apple Health para llevar un seguimiento completo de tu actividad física.</string>
+	<string>NL VIP TEAM requiere permisos para leer y sincronizar tus datos de actividad física de Apple Health con tu perfil de entrenamiento.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>NL VIP TEAM usa el sensor de movimiento para registrar tus pasos diarios y mostrarte tu progreso de actividad.</string>
 </dict>
