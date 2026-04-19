@@ -45,9 +45,9 @@ workflows:
 
       - name: Set build number from CI
         script: |
-          BUILD_NUMBER=$(( $(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID") + 1 ))
           cd ios/App
-          agvtool new-version -all $BUILD_NUMBER
+          # Usamos el número de build interno de Codemagic para asegurar que siempre sea único y mayor
+          agvtool new-version -all $(($BUILD_NUMBER + 10))
 
       - name: Fetch signing files
         script: |
