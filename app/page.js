@@ -53,26 +53,6 @@ export default function App() {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
         console.log('App Resumed - Re-checking session...')
-        
-        // --- v1.13 FORCE PURGE LOGIC ---
-        // If this is the first time in v1.13, we clear EVERYTHING once.
-        if (typeof window !== 'undefined') {
-          const lastPurgeVersion = localStorage.getItem('last_purge_version')
-          if (lastPurgeVersion !== '1.13') {
-            console.log('v1.13 detected - performing one-time cache purge...')
-            localStorage.clear()
-            // Try to clear Preferences if available
-            try {
-              const { Preferences } = await import('@capacitor/preferences')
-              await Preferences.clear()
-            } catch (e) {}
-            localStorage.setItem('last_purge_version', '1.13')
-            window.location.reload()
-            return
-          }
-        }
-        // ---------------------------------
-
         // We re-check but without forcing the global loading state if we already have a profile
         checkUser()
       }
