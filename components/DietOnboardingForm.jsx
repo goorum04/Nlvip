@@ -24,7 +24,8 @@ import {
   Star,
   Camera as CameraIcon,
   X,
-  Footprints
+  Footprints,
+  Scissors
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { getApiUrl } from '@/lib/utils'
@@ -93,7 +94,7 @@ const STEPS = [
   {
     id: 'medidas',
     title: 'Medidas Iniciales',
-    icon: Scale,
+    icon: ScaleIcon,
     color: 'from-cyan-500 to-blue-500',
     type: 'measurements'
   },
@@ -390,7 +391,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             {[
-              { id: 'peso', label: 'Peso (kg)', icon: Scale },
+              { id: 'peso', label: 'Peso (kg)', icon: ScaleIcon },
               { id: 'altura', label: 'Altura (cm)', icon: Ruler },
               { id: 'cintura', label: 'Cintura (cm)', icon: Scissors },
               { id: 'pecho', label: 'Pecho (cm)', icon: Heart },
