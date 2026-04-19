@@ -4,16 +4,13 @@ import * as Sentry from '@sentry/nextjs'
 import { z } from 'zod'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-})
-
 const schema = z.object({
   imageBase64: z.string().max(5_000_000, 'Imagen demasiado grande (máx 5MB en base64)').optional().nullable(),
   imageUrl: z.string().url('URL de imagen inválida').optional().nullable()
 }).refine(d => d.imageBase64 || d.imageUrl, { message: 'Se requiere imageBase64 o imageUrl' })
 
 export async function POST(request) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   try {
     const identifier = getIdentifier(request)
     const { success: limitOk } = await checkRateLimit(identifier, 30, 60_000)

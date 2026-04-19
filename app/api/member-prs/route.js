@@ -1,14 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 // GET /api/member-prs?memberId=xxx
 export async function GET(request) {
+  const supabaseAdmin = getSupabase()
   try {
     // Verificar autenticación
     const token = request.headers.get('Authorization')?.slice(7) || null
@@ -48,6 +51,7 @@ export async function GET(request) {
 
 // POST /api/member-prs
 export async function POST(request) {
+  const supabaseAdmin = getSupabase()
   try {
     // Verificar autenticación
     const token = request.headers.get('Authorization')?.slice(7) || null

@@ -3,15 +3,18 @@ import { NextResponse } from 'next/server'
 import { sendNativeApplePush } from '@/lib/apn'
 import { sendPushToUser } from '@/lib/webpush'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 // POST /api/diet-onboarding/submit
 // Called when member submits the questionnaire (approvance pending)
 export async function POST(req) {
+  const supabaseAdmin = getSupabase()
   try {
     // Verificar autenticación
     const token = req.headers.get('Authorization')?.slice(7) || null
@@ -64,7 +67,7 @@ export async function POST(req) {
 
     // 2. NEW: Create initial progress record for charts/history
     try {
-      await supabase.from('progress_records').insert({
+      await supabaseAdmin.from('progress_records').insert({
         member_id: memberId,
         date: new Date().toISOString(),
         weight_kg: weightKg,

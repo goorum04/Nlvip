@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const supabase = createClient(supabaseUrl, supabaseKey)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )
+}
 
 const SPOONACULAR_KEY = process.env.SPOONACULAR_API_KEY
 
@@ -86,7 +89,7 @@ async function searchSpoonacular(slot, config, diet, macros, intolerances, exclu
 
 
 // Guardar receta en recipe_catalog (FK de member_recipe_plan_items) y devolver el ID
-async function saveRecipeToDB(recipe) {
+async function saveRecipeToDB(recipe, supabase) {
   // Primero intentar buscar si ya existe por título
   const { data: existing } = await supabase
     .from('recipe_catalog')
@@ -123,6 +126,7 @@ async function saveRecipeToDB(recipe) {
 }
 
 export async function POST(req) {
+  const supabase = getSupabase()
   try {
     const { memberId, dietId, trainerId } = await req.json()
 

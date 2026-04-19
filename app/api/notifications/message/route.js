@@ -3,17 +3,20 @@ import { NextResponse } from 'next/server'
 import { sendNativeApplePush } from '@/lib/apn'
 import { sendPushToUser } from '@/lib/webpush'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 // POST /api/notifications/message
 // Called by a Postgres trigger via pg_net (or directly) when a new message is inserted.
 // Body: { conversationId, senderId, text }
 // This endpoint is protected by a shared secret to avoid public abuse.
 export async function POST(req) {
+  const supabaseAdmin = getSupabase()
   try {
     // Verify session
     const token = req.headers.get('Authorization')?.slice(7) || null
