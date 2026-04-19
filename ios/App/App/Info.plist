@@ -65,6 +65,8 @@
 	<string>NL VIP TEAM necesita acceso a la cámara para que puedas tomar fotos o grabar videos en la app.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>NL VIP TEAM necesita acceso a tu galería para que puedas seleccionar y enviar fotos de progreso o en el chat.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>NL VIP TEAM necesita permiso para guardar fotos de progreso en tu galería.</string>
 
 	<!-- HealthKit y Movimiento -->
 	<key>NSHealthShareUsageDescription</key>
