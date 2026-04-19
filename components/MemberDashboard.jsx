@@ -60,15 +60,17 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const { toast } = useToast()
   const { getSignedUrl, getSignedUrls } = useSignedUrl()
   const [dataLoaded, setDataLoaded] = useState(false)
-  const [activeTab, setActiveTab] = useState('activity')
+  const [activeTab, setActiveTab ] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('member_dash_active_tab')
+      return saved || 'activity'
+    }
+    return 'activity'
+  })
   const [tabsInitialized, setTabsInitialized] = useState(false)
 
-  // Load active tab from localStorage on mount
+  // Mark tabs as initialized on mount to allow saving
   useEffect(() => {
-    const savedTab = localStorage.getItem('member_dash_active_tab')
-    if (savedTab) {
-      setActiveTab(savedTab)
-    }
     setTabsInitialized(true)
   }, [])
 

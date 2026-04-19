@@ -429,8 +429,8 @@ export default function App() {
 
   // --- Main Render Logic ---
   const renderContent = () => {
-    // 1. Loading screen
-    if (loading || profileLoading) {
+    // 1. Loading screen - Only show if we don't have a profile yet
+    if ((loading || profileLoading) && !profile) {
       return (
         <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6 text-center">
           <div className="max-w-sm space-y-6">
