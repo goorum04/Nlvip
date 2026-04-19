@@ -51,8 +51,12 @@ workflows:
 
       - name: Fetch signing files
         script: |
+          # Generar clave privada para el certificado de distribución
+          openssl genrsa -out /tmp/cert_key.pem 2048
+          # Descargar perfiles y crear certificado automáticamente
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key @file:/tmp/cert_key.pem \
             --create
 
       - name: Add signing certificates to keychain
