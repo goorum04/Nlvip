@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 // POST /api/diet-onboarding/request
 // Called by admin/trainer to send the questionnaire to a member, or by the member themselves at registration
 export async function POST(req) {
