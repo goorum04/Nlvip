@@ -6,9 +6,9 @@ workflows:
 
     environment:
       # Codemagic native App Store Connect integration
-      # This handles authentication automatically using the variables configured in UI
       app_store_connect:
         auth: integration
+        key: "NL VIP Club Key"
       groups:
         - app_store_credentials
       vars:
