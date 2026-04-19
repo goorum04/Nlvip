@@ -1276,6 +1276,12 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
             )}
           </TabsContent>
         </Tabs>
+
+        <div className="mt-8 pb-4 text-center">
+          <span className="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">
+            Build: v1.13 - NATIVE STORAGE ACTIVE
+          </span>
+        </div>
       </main>
 
       {/* Video Player Modal */}

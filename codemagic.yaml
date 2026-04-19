@@ -31,13 +31,14 @@ workflows:
 
       - name: Build Next.js for mobile
         script: |
+          rm -rf .next out
           cp next.config.mobile.js next.config.js
           npm run build
           git checkout next.config.js
 
       - name: Sync Capacitor
         script: |
-          npx cap sync ios
+          npx cap sync ios --inline
 
       - name: Install CocoaPods
         script: |
