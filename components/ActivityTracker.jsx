@@ -102,7 +102,7 @@ export default function ActivityTracker({ userId, compact = false }) {
       console.error('Error in syncFromHealthKit:', err)
       if (showToast) toast({ 
         title: 'Error de sincronización', 
-        description: 'Hubo un problema al conectar con Apple Health.',
+        description: `Error: ${err.message || 'Problema al conectar con Apple Health.'}`,
         variant: 'destructive'
       })
     } finally {
