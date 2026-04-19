@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle, 
   Flag, Sparkles, Flame, Target, Zap, Star, ShoppingBag, CircleCheckBig as CheckCircle2,
-  Camera as CameraIcon, Video, Image as ImageIcon, LoaderCircle as Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift, Sun, Calendar
+  Camera as CameraIcon, Video, Image as ImageIcon, LoaderCircle as Loader2, Trophy, ChartBar as BarChart3, UtensilsCrossed, Footprints, Lock, Gift, Sun, Calendar
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'

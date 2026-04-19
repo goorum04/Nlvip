@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
     MessageCircle, Mail, Phone, ExternalLink,
-    HelpCircle, ChevronRight, MessageSquare, Instagram
+    CircleHelp as HelpCircle, ChevronRight, MessageSquare, Instagram
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {

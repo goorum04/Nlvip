@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { 
   Mic, MicOff, Send, Bot, User, LoaderCircle as Loader2, CircleCheckBig as CheckCircle2, CircleX as XCircle, X,
   Volume2, VolumeX, Sparkles, TriangleAlert as AlertTriangle, Zap, Crown, WandSparkles as Wand2,
-  ChefHat, Flame, Beef, Wheat, Droplets, Clock, BarChart3, Info,
+  ChefHat, Flame, Beef, Wheat, Droplets, Clock, ChartBar as BarChart3, Info,
   Play, Pause
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'

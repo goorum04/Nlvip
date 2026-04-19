@@ -12,7 +12,7 @@ import { getApiUrl } from '@/lib/utils'
 import {
     Baby, Heart, Milk, Timer, Plus, TrendingUp,
     Clock, LoaderCircle as Loader2, ChevronLeft, ChevronRight,
-    Droplets, BarChart3, CircleAlert as AlertCircle, Sparkles, Settings
+    Droplets, ChartBar as BarChart3, CircleAlert as AlertCircle, Sparkles, Settings
 } from 'lucide-react'
 
 // =============================================================

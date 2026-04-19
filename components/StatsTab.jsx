@@ -1,6 +1,6 @@
 'use client'
 
-import { BarChart3 } from 'lucide-react'
+import { ChartBar as BarChart3 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import ProgressCharts from './ProgressCharts'
 
