@@ -13,7 +13,6 @@ workflows:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         APP_STORE_APPLE_ID: "6759666320"
-        STATIC_EXPORT: "true"
       node: v20.11.0
       xcode: latest
       cocoapods: default
@@ -33,7 +32,9 @@ workflows:
       - name: Build Next.js for mobile
         script: |
           rm -rf .next out
-          npx next build
+          cp next.config.mobile.js next.config.js
+          npm run build
+          git checkout next.config.js
           ls -la out
 
       - name: Sync Capacitor
