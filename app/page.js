@@ -204,14 +204,15 @@ export default function App() {
 
     // Login / Register Screen
     return (
-      <div className="min-h-screen bg-[#030303] flex flex-col items-center justify-center p-4 overflow-hidden">
-        {/* Animated Background Orbs */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-violet-600/10 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-cyan-600/10 rounded-full blur-[120px] animate-pulse [animation-delay:2s]" />
-        </div>
+      <>
+        <div className="min-h-screen bg-[#030303] flex flex-col items-center justify-center p-4 overflow-hidden">
+          {/* Animated Background Orbs */}
+          <div className="fixed inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-violet-600/10 rounded-full blur-[120px] animate-pulse" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-cyan-600/10 rounded-full blur-[120px] animate-pulse [animation-delay:2s]" />
+          </div>
 
-        <div className="w-full max-w-md relative animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          <div className="w-full max-w-md relative animate-in fade-in slide-in-from-bottom-8 duration-1000">
           <div className="flex flex-col items-center mb-8">
             <div className="relative mb-6 group">
               <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-[2.5rem] blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
@@ -385,6 +386,7 @@ export default function App() {
         </div>
       </div>
       <Toaster />
+      </>
     )
   }
 
