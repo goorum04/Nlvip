@@ -7,12 +7,14 @@ import { getApiUrl } from '@/lib/utils'
 export default function ServiceWorkerInit() {
   useEffect(() => {
     // Force unregister of Service Worker to bypass stale cache
-    navigator.serviceWorker.getRegistrations().then(registrations => {
-      for (let registration of registrations) {
-        registration.unregister()
-        console.log('Service Worker unregistered to clear cache')
-      }
-    })
+    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (let registration of registrations) {
+          registration.unregister()
+          console.log('Service Worker unregistered to clear cache')
+        }
+      }).catch(err => console.warn('SW unregister error:', err))
+    }
   }, [])
 
   return null
