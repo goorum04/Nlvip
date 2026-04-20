@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Footprints, Flame, MapPin, Target, Plus, Minus, CircleAlert as AlertCircle,
-  TrendingUp, Calendar, LoaderCircle as Loader2, ChevronRight, RefreshCw, Heart
+import { Flame, MapPin, Target, Plus, Minus, CircleAlert as AlertCircle,
+  TrendingUp, Calendar, LoaderCircle as Loader2, ChevronRight, RefreshCw, Heart, Footprints
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
+import { Capacitor } from '@capacitor/core'
+import { HealthKit } from '@perfood/capacitor-healthkit'
 
 // Componente principal de Actividad Diaria
 export default function ActivityTracker({ userId, compact = false }) {
@@ -31,8 +32,6 @@ export default function ActivityTracker({ userId, compact = false }) {
 
   const syncFromHealthKit = async (showToast = false) => {
     try {
-      const { Capacitor } = await import('@capacitor/core')
-      
       // Early exit if not on iOS
       if (Capacitor.getPlatform() !== 'ios') {
         if (showToast) toast({ 
@@ -41,8 +40,6 @@ export default function ActivityTracker({ userId, compact = false }) {
         })
         return
       }
-
-      const { HealthKit } = await import('@perfood/capacitor-healthkit')
 
       if (showToast) toast({ title: 'Paso 1/4', description: 'Comprobando Apple Health en tu iPhone...' })
       
