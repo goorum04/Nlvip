@@ -17,7 +17,9 @@ import { useToast } from '@/hooks/use-toast'
 const AudioPlayer = ({ path }) => {
   const [playing, setPlaying] = useState(false)
   const audioRef = useRef(null)
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/storage/v1/object/public/chat_audios/${path}`
+  const url = path
+    ? supabase.storage.from('chat_audios').getPublicUrl(path).data.publicUrl
+    : ''
 
   useEffect(() => {
     const audio = audioRef.current
