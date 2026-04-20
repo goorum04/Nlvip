@@ -35,11 +35,6 @@ export default function App() {
   const [regSex, setRegSex] = useState('female')
   const [invitationCode, setInvitationCode] = useState('')
   const { toast } = useToast()
-  
-  // States for Splash logic
-  const [splashVisible, setSplashVisible] = useState(true)
-  const [bootReady, setBootReady] = useState(false)
-  const [errorDetails, setErrorDetails] = useState(null)
 
   useEffect(() => {
     async function boot() {
@@ -51,19 +46,8 @@ export default function App() {
         }
       } catch (err) {
         console.error("Boot error:", err)
-        setErrorDetails(err.message)
       } finally {
         setLoading(false)
-        setBootReady(true)
-        // Hide splash after a short aesthetic delay
-        setTimeout(async () => {
-          setSplashVisible(false)
-          // Also try to hide native splash if capacitor is present
-          try {
-            const { SplashScreen } = await import('@capacitor/splash-screen')
-            await SplashScreen.hide()
-          } catch(e) {}
-        }, 800)
       }
     }
     boot()
@@ -92,12 +76,7 @@ export default function App() {
         .maybeSingle()
 
       if (error) throw error
-      
-      if (data) {
-        setProfile(data)
-      } else {
-        // Fallback or demo detection can go here
-      }
+      if (data) setProfile(data)
     } catch (err) {
       console.error('Error loading profile:', err)
     } finally {
@@ -152,46 +131,32 @@ export default function App() {
 
   // --- RENDERING LOGIC ---
 
-  if (splashVisible) {
+  if ((loading || profileLoading) && !profile) {
     return (
-      <div className="fixed inset-0 z-[9999] bg-[#030303] flex flex-col items-center justify-center p-6 transition-opacity duration-500">
-        <div className="relative">
-          <div className="absolute inset-0 bg-violet-500/20 blur-3xl rounded-full scale-150 animate-pulse" />
-          <img 
-            src="/logo-nl-vip.jpg" 
-            alt="NL VIP Logo" 
-            className="relative w-32 h-32 rounded-3xl object-cover shadow-2xl shadow-violet-500/40 animate-in fade-in zoom-in duration-700"
-          />
-        </div>
-        <div className="mt-8 flex flex-col items-center gap-2">
-          <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400 tracking-tighter">NL VIP CLUB</h1>
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-            <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-            <div className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-bounce" />
+      <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6 text-center">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-violet-500/20 blur-2xl rounded-full animate-pulse" />
+            <img 
+              src="/logo-nl-vip.jpg" 
+              alt="NL VIP CLUB" 
+              className="relative w-24 h-24 rounded-2xl shadow-2xl border border-white/5"
+            />
+          </div>
+          <div className="space-y-2">
+            <p className="text-gray-300 text-lg font-medium">
+              {profileLoading ? 'Preparando tu experiencia...' : 'Cargando sesión...'}
+            </p>
+            <p className="text-violet-400 text-sm animate-pulse">
+              No más empezar de cero.
+            </p>
           </div>
         </div>
-        {errorDetails && (
-          <div className="mt-12 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl max-w-xs text-center">
-            <p className="text-red-400 text-xs font-mono break-all">{errorDetails}</p>
-          </div>
-        )}
       </div>
     )
   }
 
   const renderContent = () => {
-    if ((loading || profileLoading) && !profile) {
-      return (
-        <div className="min-h-screen bg-[#030303] flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-violet-500/20 border-t-violet-500 rounded-full animate-spin" />
-            <p className="text-gray-500 font-medium animate-pulse">Sincronizando...</p>
-          </div>
-        </div>
-      )
-    }
-
     if (user && profile) {
       if (profile.role === 'admin') {
         return <AdminDashboard user={user} profile={profile} onLogout={handleLogout} />
