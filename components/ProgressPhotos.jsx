@@ -10,9 +10,7 @@ import {
 } from 'lucide-react'
 import { useFileUpload, useSignedUrl, generateFileId, getFileExtension } from '@/hooks/useStorage'
 import { supabase } from '@/lib/supabase'
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
-import { Capacitor } from '@capacitor/core'
-import { Preferences } from '@capacitor/preferences'
+// ⚠️ Capacitor imports must be dynamic inside functions to prevent iOS startup crash
 
 // Componente para subir fotos de progreso (3 fotos requeridas)
 export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
@@ -33,6 +31,7 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
   useEffect(() => {
     const loadSavedSession = async () => {
       try {
+        const { Preferences } = await import('@capacitor/preferences')
         const { value: saved } = await Preferences.get({ key: `progress_photos_session_${memberId}` })
         if (saved) {
           const parsed = JSON.parse(saved)
@@ -60,6 +59,7 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
 
   useEffect(() => {
     const saveSession = async () => {
+      const { Preferences } = await import('@capacitor/preferences')
       const sessionData = {}
       let hasPhotos = false
       
@@ -101,6 +101,7 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
 
   const handleNativeCamera = async (type) => {
     try {
+      const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera')
       // Verificar permisos primero
       const status = await Camera.checkPermissions();
       if (status.camera !== 'granted' || status.photos !== 'granted') {
@@ -212,6 +213,7 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
       if (dbError) throw dbError
 
       // Clear session after success
+      const { Preferences } = await import('@capacitor/preferences')
       await Preferences.remove({ key: `progress_photos_session_${memberId}` })
       onSuccess?.()
     } catch (err) {
@@ -242,7 +244,8 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => {
+          onClick={async () => {
+            const { Capacitor } = await import('@capacitor/core')
             if (Capacitor.isNativePlatform()) {
               handleNativeCamera(type)
             } else {

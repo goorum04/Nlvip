@@ -3,8 +3,7 @@
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Camera as CameraIcon, X, LoaderCircle as Loader2, Image as ImageIcon } from 'lucide-react'
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
-import { Capacitor } from '@capacitor/core'
+// ⚠️ Capacitor imports must be dynamic inside functions to prevent iOS startup crash
 
 export default function ImageUploader({ onImageSelect, onImageRemove, disabled }) {
   const [preview, setPreview] = useState(null)
@@ -23,6 +22,7 @@ export default function ImageUploader({ onImageSelect, onImageRemove, disabled }
 
   const handleNativeCamera = async () => {
     try {
+      const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
       // Verificar permisos primero
       const status = await Camera.checkPermissions();
       if (status.camera !== 'granted' || status.photos !== 'granted') {
@@ -59,7 +59,8 @@ export default function ImageUploader({ onImageSelect, onImageRemove, disabled }
     }
   }
 
-  const handleButtonClick = () => {
+  const handleButtonClick = async () => {
+    const { Capacitor } = await import('@capacitor/core');
     if (Capacitor.isNativePlatform()) {
       handleNativeCamera();
     } else {
