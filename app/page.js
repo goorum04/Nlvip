@@ -1,7 +1,7 @@
 'use client'
 // Sync commit: 2026-03-18 14:15
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,9 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dumbbell, Sparkles, Shield, Gift, Lock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
-import AdminDashboard from '@/components/AdminDashboard'
-import TrainerDashboard from '@/components/TrainerDashboard'
-import MemberDashboard from '@/components/MemberDashboard'
+
+// Lazy-load dashboards: keeps the initial JS bundle small so the iOS WebView can
+// paint the login screen fast and avoid the TestFlight startup watchdog.
+const AdminDashboard = lazy(() => import('@/components/AdminDashboard'))
+const TrainerDashboard = lazy(() => import('@/components/TrainerDashboard'))
+const MemberDashboard = lazy(() => import('@/components/MemberDashboard'))
 
 const DEMO_ACCOUNTS = {
   ADMIN: { email: 'admin@demo.com', role: 'admin', name: 'Administrador Demo' },
@@ -42,7 +45,15 @@ export default function App() {
   useEffect(() => {
     async function boot() {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        // 5s timeout — prevents the iOS watchdog from killing the app if
+        // supabase.auth.getSession() hangs on a slow/unavailable network.
+        const sessionTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('getSession timeout')), 5000)
+        )
+        const { data: { session } } = await Promise.race([
+          supabase.auth.getSession(),
+          sessionTimeout,
+        ])
         if (session?.user) {
           setUser(session.user)
           // Fire profile load WITHOUT blocking — setLoading(false) must always run
@@ -374,5 +385,28 @@ export default function App() {
     )
   }
 
-  return renderContent()
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6 text-center">
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative">
+              <div className="absolute inset-0 bg-violet-500/20 blur-2xl rounded-full animate-pulse" />
+              <img
+                src="/logo-nl-vip.jpg"
+                alt="NL VIP CLUB"
+                className="relative w-24 h-24 rounded-2xl shadow-2xl border border-white/5"
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-gray-300 text-lg font-medium">Preparando tu experiencia...</p>
+              <p className="text-violet-400 text-sm animate-pulse">No más empezar de cero.</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      {renderContent()}
+    </Suspense>
+  )
 }
