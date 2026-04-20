@@ -10,7 +10,7 @@ import { Flame, MapPin, Target, Plus, Minus, CircleAlert as AlertCircle,
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { Capacitor } from '@capacitor/core'
-import { HealthKit } from '@perfood/capacitor-healthkit'
+import { CapacitorHealthkit } from '@perfood/capacitor-healthkit'
 
 // Componente principal de Actividad Diaria
 export default function ActivityTracker({ userId, compact = false }) {
@@ -44,7 +44,7 @@ export default function ActivityTracker({ userId, compact = false }) {
       if (showToast) toast({ title: 'Paso 1/4', description: 'Comprobando Apple Health en tu iPhone...' })
       
       try {
-        await HealthKit.isAvailable()
+        await CapacitorHealthkit.isAvailable()
         setHealthKitAvailable(true)
       } catch (availErr) {
         console.warn('HealthKit not available:', availErr)
@@ -62,7 +62,7 @@ export default function ActivityTracker({ userId, compact = false }) {
       // Request auth
       if (showToast) toast({ title: 'Paso 2/4', description: 'Solicitando permisos de lectura...' })
       try {
-        await HealthKit.requestAuthorization({
+        await CapacitorHealthkit.requestAuthorization({
           all: [],
           read: ['stepCount', 'activeEnergyBurned'],
           write: []
@@ -84,7 +84,7 @@ export default function ActivityTracker({ userId, compact = false }) {
       const now = new Date()
 
       // Leer pasos de hoy
-      const stepsResult = await HealthKit.queryHKitSampleType({
+      const stepsResult = await CapacitorHealthkit.queryHKitSampleType({
         startDate: todayStart.toISOString(),
         endDate: now.toISOString(),
         sampleName: 'stepCount',
