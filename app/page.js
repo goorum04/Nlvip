@@ -16,10 +16,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { DietOnboardingForm } from '@/components/DietOnboardingForm'
 import { getApiUrl } from '@/lib/utils'
 
-// Static imports avoid chunk loading issues in file:// protocol on iOS
-import { Capacitor } from '@capacitor/core'
-import { SplashScreen } from '@capacitor/splash-screen'
-
 const AdminDashboard = dynamic(() => import('@/components/AdminDashboard'), { ssr: false })
 const TrainerDashboard = dynamic(() => import('@/components/TrainerDashboard'), { ssr: false })
 const MemberDashboard = dynamic(() => import('@/components/MemberDashboard'), { ssr: false })
@@ -98,8 +94,14 @@ export default function App() {
   // 1. Unconditional Fallback: Guarantee the Splash Screen hides after 1.5s
   useEffect(() => {
     const fallbackTimer = setTimeout(() => {
-      if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
-        SplashScreen.hide().catch(e => console.warn('SplashScreen fallback hide error', e))
+      if (typeof window !== 'undefined') {
+        import('@capacitor/core').then(({ Capacitor }) => {
+          if (Capacitor.isNativePlatform()) {
+            import('@capacitor/splash-screen').then(({ SplashScreen }) => {
+              SplashScreen.hide().catch(e => console.warn('SplashScreen fallback hide error', e))
+            })
+          }
+        })
       }
     }, 1500)
     return () => clearTimeout(fallbackTimer)
@@ -108,9 +110,13 @@ export default function App() {
   // 2. State-driven hide: Explicitly hide Splash Screen when we finish loading
   useEffect(() => {
     if (!loading && !profileLoading && typeof window !== 'undefined') {
-      if (Capacitor.isNativePlatform()) {
-        SplashScreen.hide().catch(e => console.warn('SplashScreen hide error', e))
-      }
+      import('@capacitor/core').then(({ Capacitor }) => {
+        if (Capacitor.isNativePlatform()) {
+          import('@capacitor/splash-screen').then(({ SplashScreen }) => {
+            SplashScreen.hide().catch(e => console.warn('SplashScreen hide error', e))
+          })
+        }
+      })
     }
   }, [loading, profileLoading])
 

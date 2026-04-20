@@ -3,9 +3,6 @@
 import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-import { Capacitor } from '@capacitor/core'
-import { PushNotifications } from '@capacitor/push-notifications'
-
 export default function CapacitorPushInit() {
   useEffect(() => {
     initNativePush()
@@ -16,7 +13,10 @@ export default function CapacitorPushInit() {
 
 async function initNativePush() {
   try {
+    const { Capacitor } = await import('@capacitor/core')
     if (!Capacitor.isNativePlatform()) return
+
+    const { PushNotifications } = await import('@capacitor/push-notifications')
 
     // We do NOT request permissions automatically on app launch anymore.
     // That causes the TestFlight "Start Testing" screen to glitch into a blank white screen.
