@@ -73,7 +73,7 @@ export default function ActivityTracker({ userId, compact = false }) {
       try {
         await CapacitorHealthkit.requestAuthorization({
           all: [],
-          read: ['stepCount', 'activeEnergyBurned'],
+          read: ['steps', 'calories'],
           write: []
         })
       } catch (authErr) {
@@ -96,7 +96,7 @@ export default function ActivityTracker({ userId, compact = false }) {
       const stepsResult = await CapacitorHealthkit.queryHKitSampleType({
         startDate: todayStart.toISOString(),
         endDate: now.toISOString(),
-        sampleName: 'stepCount',
+        sampleName: 'steps',
         limit: 0,
         ascending: false
       })
