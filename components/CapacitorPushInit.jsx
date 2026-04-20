@@ -2,14 +2,13 @@
 
 import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Capacitor } from '@capacitor/core'
-import { PushNotifications } from '@capacitor/push-notifications'
 
+// ⚠️ IMPORTANT: Capacitor native plugin imports MUST be dynamic (inside useEffect).
+// Top-level static imports of @capacitor/push-notifications cause an immediate
+// crash on iOS because the native bridge isn't ready when the JS module is first evaluated.
 export default function CapacitorPushInit() {
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      initNativePush()
-    }
+    initNativePush()
   }, [])
 
   return null
@@ -17,13 +16,19 @@ export default function CapacitorPushInit() {
 
 async function initNativePush() {
   try {
+    // Dynamic import ensures this only runs in the browser/WebView,
+    // never during SSG, and only after the DOM is mounted.
+    const { Capacitor } = await import('@capacitor/core')
+    if (!Capacitor.isNativePlatform()) return
+
+    const { PushNotifications } = await import('@capacitor/push-notifications')
 
     // We do NOT request permissions automatically on app launch anymore.
     // That causes the TestFlight "Start Testing" screen to glitch into a blank white screen.
     // Instead, we check if they ALREADY granted it. If so, initialize silently.
     // We will request permissions ONLY when the user logs in.
     let permStatus = await PushNotifications.checkPermissions()
-    
+
     // Si ya tienen permiso, inicializamos. Si no, esperamos a que el usuario inicie sesión.
     if (permStatus.receive === 'granted') {
       await registerAndListen(PushNotifications, Capacitor)
@@ -56,7 +61,7 @@ async function registerAndListen(PushNotifications, Capacitor) {
   try {
     // Evitar registrar múltiples veces
     await PushNotifications.removeAllListeners()
-    
+
     await PushNotifications.register()
 
     // Save token to Supabase when registration succeeds

@@ -9,8 +9,7 @@ import { Flame, MapPin, Target, Plus, Minus, CircleAlert as AlertCircle,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
-import { Capacitor } from '@capacitor/core'
-import { CapacitorHealthkit } from '@perfood/capacitor-healthkit'
+// ⚠️ Capacitor plugin imports are dynamic to prevent iOS crash at module evaluation time
 
 // Componente principal de Actividad Diaria
 export default function ActivityTracker({ userId, compact = false }) {
@@ -32,6 +31,9 @@ export default function ActivityTracker({ userId, compact = false }) {
 
   const syncFromHealthKit = async (showToast = false) => {
     try {
+      // Dynamic import — only runs in browser, never during SSG/SSR build
+      const { Capacitor } = await import('@capacitor/core')
+
       // Early exit if not on iOS
       if (Capacitor.getPlatform() !== 'ios') {
         if (showToast) toast({ 
@@ -40,6 +42,9 @@ export default function ActivityTracker({ userId, compact = false }) {
         })
         return
       }
+
+      // Dynamic import of HealthKit plugin — safe because we already confirmed iOS platform
+      const { CapacitorHealthkit } = await import('@perfood/capacitor-healthkit')
 
       if (showToast) toast({ title: 'Paso 1/4', description: 'Comprobando Apple Health en tu iPhone...' })
       
