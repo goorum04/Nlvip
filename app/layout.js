@@ -1,6 +1,7 @@
 import './globals.css'
 import ServiceWorkerInit from '@/components/ServiceWorkerInit'
 import CapacitorPushInit from '@/components/CapacitorPushInit'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export const metadata = {
   title: 'NL VIP Club',
@@ -37,9 +38,13 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
       </head>
       <body className="bg-[#030303] text-white overscroll-none">
-        <ServiceWorkerInit />
-        <CapacitorPushInit />
-        {children}
+        <ErrorBoundary>
+          {/* Diagnostic: Disable potential background crashers temporarily 
+          <ServiceWorkerInit />
+          <CapacitorPushInit />
+          */}
+          {children}
+        </ErrorBoundary>
       </body>
     </html>
   )

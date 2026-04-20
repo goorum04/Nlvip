@@ -72,12 +72,14 @@ export class ErrorBoundary extends React.Component {
                   </Button>
                 </div>
 
-                {/* Secret debug info (hidden) */}
-                <div 
-                  className="pt-6 opacity-0 hover:opacity-10 transition-opacity cursor-default select-none"
-                  onDoubleClick={() => console.log('DEBUG:', this.state.error)}
-                >
-                  <p className="text-[10px] text-gray-700">Ref: {this.state.error?.name || 'Error'}</p>
+                {/* Secret debug info (Always show message in diagnostic build) */}
+                <div className="pt-6 text-left overflow-auto max-h-40 bg-red-900/10 p-4 rounded-xl border border-red-900/20">
+                  <p className="text-xs text-red-400 font-mono mb-2">
+                    ERROR: {this.state.error?.message || 'Unknown Exception'}
+                  </p>
+                  <pre className="text-[10px] text-gray-500 font-mono whitespace-pre-wrap">
+                    {this.state.error?.stack?.split('\n').slice(0, 5).join('\n')}
+                  </pre>
                 </div>
               </div>
             </div>
