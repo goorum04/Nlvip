@@ -92,11 +92,14 @@ export default function ActivityTracker({ userId, compact = false }) {
       todayStart.setHours(0, 0, 0, 0)
       const now = new Date()
 
-      // Leer pasos de hoy
+      // Leer pasos de hoy — sampleName uses the SampleNames enum values
+      // from @perfood/capacitor-healthkit, which are the raw Apple
+      // HKQuantityTypeIdentifier names (NOT the friendly names used by
+      // requestAuthorization).
       const stepsResult = await CapacitorHealthkit.queryHKitSampleType({
         startDate: todayStart.toISOString(),
         endDate: now.toISOString(),
-        sampleName: 'steps',
+        sampleName: 'stepCount',
         limit: 0,
         ascending: false
       })
