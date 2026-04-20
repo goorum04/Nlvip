@@ -22,6 +22,9 @@ const DEMO_ACCOUNTS = {
   MARIA: { email: 'maria@demo.com', role: 'member', name: 'Maria Demo' }
 }
 
+// Module-level flag to prevent concurrent profile loads (avoids stale closure bug)
+let _profileLoadingInFlight = false
+
 export default function App() {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -42,11 +45,16 @@ export default function App() {
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
           setUser(session.user)
-          await loadProfile(session.user.id)
+          // Fire profile load WITHOUT blocking — setLoading(false) must always run
+          // even if the network is slow. The loading screen will hide once both
+          // loading=false AND profileLoading resolves.
+          loadProfile(session.user.id)
         }
       } catch (err) {
         console.error("Boot error:", err)
       } finally {
+        // Always unblock the UI within the session-check phase.
+        // profileLoading has its own state that controls the spinner separately.
         setLoading(false)
       }
     }
@@ -55,10 +63,11 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user)
-        await loadProfile(session.user.id)
+        loadProfile(session.user.id)
       } else {
         setUser(null)
         setProfile(null)
+        _profileLoadingInFlight = false
       }
     })
 
@@ -66,21 +75,31 @@ export default function App() {
   }, [])
 
   async function loadProfile(userId) {
-    if (profileLoading) return
+    // Use module-level flag to prevent concurrent loads (stale closure safe)
+    if (_profileLoadingInFlight) return
+    _profileLoadingInFlight = true
     setProfileLoading(true)
     try {
-      const { data, error } = await supabase
+      // 10-second timeout — prevents infinite spinner on slow mobile networks
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Profile load timeout')), 10000)
+      )
+      const fetchPromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle()
 
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise])
+
       if (error) throw error
       if (data) setProfile(data)
     } catch (err) {
       console.error('Error loading profile:', err)
+      // On timeout or error, proceed to login screen silently
     } finally {
       setProfileLoading(false)
+      _profileLoadingInFlight = false
     }
   }
 
