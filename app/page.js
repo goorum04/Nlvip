@@ -384,8 +384,9 @@ export default function App() {
           </p>
         </div>
       </div>
-
       <Toaster />
-    </div>
-  )
+    )
+  }
+
+  return renderContent()
 }
