@@ -1,6 +1,7 @@
 import './globals.css'
 import ServiceWorkerInit from '@/components/ServiceWorkerInit'
 import CapacitorPushInit from '@/components/CapacitorPushInit'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export const metadata = {
   title: 'NL VIP Club',
@@ -39,7 +40,9 @@ export default function RootLayout({ children }) {
       <body className="bg-[#030303] text-white overscroll-none">
         <ServiceWorkerInit />
         <CapacitorPushInit />
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </body>
     </html>
   )

@@ -31,11 +31,16 @@ workflows:
 
       - name: Build Next.js for mobile
         script: |
+          set -e
           rm -rf .next out
           cp next.config.mobile.js next.config.js
           npm run build
           git checkout next.config.js
           ls -la out
+          # Fail fast if the static export didn't produce an index.html —
+          # otherwise cap sync would ship an empty public/ and the WebView
+          # would load a blank screen on TestFlight.
+          test -f out/index.html || { echo "BUILD FAILED: out/index.html missing"; exit 1; }
 
       - name: Sync Capacitor
         script: |
