@@ -26,7 +26,11 @@ export default function ActivityTracker({ userId, compact = false }) {
   useEffect(() => {
     loadActivity()
     loadHistory()
-    syncFromHealthKit()
+    // Do NOT auto-call syncFromHealthKit() on mount — the native
+    // HKHealthStore._validateAuthorizationRequestWithShareTypes:readTypes:
+    // can raise an NSException that kills the process before any UI shows
+    // (confirmed in TestFlight crash report, v1.32 build 55, Apr 2026).
+    // The user can still trigger the sync manually via the HealthKit button.
   }, [userId])
 
   const syncFromHealthKit = async (showToast = false) => {
