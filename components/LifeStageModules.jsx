@@ -326,7 +326,7 @@ export function PostpartumMode({ userId, profile, onUpdate, onThemeChange }) {
         if (!birthDate) return
         setSaving(true)
         try {
-            const res = await fetch('/api/profile', {
+            const res = await fetch(getApiUrl() + '/api/profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

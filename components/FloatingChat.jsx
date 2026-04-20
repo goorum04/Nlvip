@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getApiUrl } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -472,7 +473,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
-          fetch('/api/notifications/message', {
+          fetch(getApiUrl() + '/api/notifications/message', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
