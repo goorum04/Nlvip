@@ -2,6 +2,7 @@ import './globals.css'
 import ServiceWorkerInit from '@/components/ServiceWorkerInit'
 import CapacitorPushInit from '@/components/CapacitorPushInit'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { Toaster } from '@/components/ui/toaster'
 
 export const metadata = {
   title: 'NL VIP Club',
@@ -43,6 +44,7 @@ export default function RootLayout({ children }) {
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
+        <Toaster />
       </body>
     </html>
   )

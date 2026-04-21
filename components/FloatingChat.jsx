@@ -10,7 +10,7 @@ import {
   Trash2, Play, Pause, Shield, User, ChevronLeft,
   Bot, Volume2, Image as ImageIcon, LoaderCircle as Loader2
 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { useToast, toast } from '@/hooks/use-toast'
 
 // El administrador se busca dinámicamente en initializeMemberConversations
 
@@ -24,13 +24,14 @@ const AudioPlayer = ({ path }) => {
     if (!path) return
     let cancelled = false
     ;(async () => {
-      // chat_audios bucket is private, so getPublicUrl() returns a URL that 403s.
-      // We need a signed URL.
       const { data, error } = await supabase.storage
         .from('chat_audios')
         .createSignedUrl(path, 3600)
       if (!cancelled && data?.signedUrl) setUrl(data.signedUrl)
-      if (error) console.warn('[Audio] signed URL error:', error.message)
+      if (error) {
+        console.warn('[Audio] signed URL error:', error.message)
+        toast({ title: '❌ No puedo cargar el audio', description: error.message, variant: 'destructive' })
+      }
     })()
     return () => { cancelled = true }
   }, [path])
@@ -50,9 +51,19 @@ const AudioPlayer = ({ path }) => {
   const togglePlay = (e) => {
     e.stopPropagation()
     const audio = audioRef.current
-    if (!audio || !url) return
+    if (!audio || !url) {
+      toast({ title: 'Audio no disponible', description: 'URL vacía o aún cargando.' })
+      return
+    }
     if (audio.paused) {
-      audio.play().catch(err => console.warn('[Audio] play error:', err))
+      audio.play().catch(err => {
+        console.warn('[Audio] play error:', err)
+        toast({
+          title: '❌ Fallo al reproducir',
+          description: `${err?.name || 'Error'}: ${err?.message || err}`,
+          variant: 'destructive',
+        })
+      })
     } else {
       audio.pause()
     }
@@ -73,10 +84,20 @@ const AudioPlayer = ({ path }) => {
       <audio
         ref={audioRef}
         src={url}
+        preload="auto"
+        playsInline
         onEnded={() => setPlaying(false)}
         onPause={() => setPlaying(false)}
         onPlay={() => setPlaying(true)}
-        onError={(e) => console.warn('[Audio] element error:', e.target.error?.code, e.target.error?.message)}
+        onError={(e) => {
+          const mediaError = e.target.error
+          console.warn('[Audio] element error:', mediaError?.code, mediaError?.message)
+          toast({
+            title: '❌ Error de audio',
+            description: `Código ${mediaError?.code}: ${mediaError?.message || 'desconocido'}`,
+            variant: 'destructive',
+          })
+        }}
         className="hidden"
       />
     </div>
@@ -557,8 +578,13 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       }
 
       mediaRecorderRef.current.onstop = () => {
-        if (chunks.length === 0) return
+        if (chunks.length === 0) {
+          toast({ title: '⚠️ Grabación vacía', description: 'No se capturó audio. Reintenta.' })
+          return
+        }
         const blob = new Blob(chunks, { type: mimeType || 'audio/webm' })
+        // Surface recording stats so we can tell if iOS MediaRecorder produced a valid file.
+        toast({ title: '🎤 Audio grabado', description: `${Math.round(blob.size / 1024)} KB — ${blob.type || 'sin tipo'}` })
         setAudioBlob(blob)
         stream.getTracks().forEach(track => track.stop())
       }

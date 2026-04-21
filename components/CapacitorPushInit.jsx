@@ -2,6 +2,12 @@
 
 import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { toast } from '@/hooks/use-toast'
+
+// Enable verbose push diagnostics via a toast whenever we hit a milestone.
+// Users on TestFlight see the toasts and can screenshot them for us.
+// Set to false before GA if needed.
+const PUSH_DEBUG = true
 
 // ⚠️ IMPORTANT: Capacitor native plugin imports MUST be dynamic (inside useEffect).
 // Top-level static imports of @capacitor/push-notifications cause an immediate
@@ -49,6 +55,11 @@ async function initNativePush() {
         }
         if (currentStatus.receive === 'granted') {
           await registerAndListen(PushNotifications, Capacitor)
+        } else if (PUSH_DEBUG) {
+          toast({
+            title: '⚠️ Permiso push no concedido',
+            description: `Estado: ${currentStatus.receive}. Ve a Ajustes → NL VIP Club → Notificaciones.`,
+          })
         }
       }
     })
@@ -67,9 +78,11 @@ async function registerAndListen(PushNotifications, Capacitor) {
     // and the token is silently lost.
     await PushNotifications.addListener('registration', async (token) => {
       console.log('[Push] Token recibido:', token.value?.slice(0, 12) + '…')
+      if (PUSH_DEBUG) toast({ title: '📱 Token push recibido', description: token.value?.slice(0, 16) + '…' })
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user?.id) {
         console.warn('[Push] No hay sesión al registrar token')
+        if (PUSH_DEBUG) toast({ title: '⚠️ Push sin sesión', description: 'Token recibido pero no hay usuario logueado.' })
         return
       }
 
@@ -82,12 +95,22 @@ async function registerAndListen(PushNotifications, Capacitor) {
         },
         { onConflict: 'user_id,token' }
       )
-      if (error) console.warn('[Push] Error guardando token:', error.message)
-      else console.log('[Push] Token guardado en device_tokens')
+      if (error) {
+        console.warn('[Push] Error guardando token:', error.message)
+        if (PUSH_DEBUG) toast({ title: '❌ Error guardando token', description: error.message, variant: 'destructive' })
+      } else {
+        console.log('[Push] Token guardado en device_tokens')
+        if (PUSH_DEBUG) toast({ title: '✅ Push listo', description: 'Token guardado en device_tokens.' })
+      }
     })
 
     await PushNotifications.addListener('registrationError', (err) => {
       console.warn('[Push] registrationError:', err?.error || err)
+      if (PUSH_DEBUG) toast({
+        title: '❌ Error de registro push',
+        description: String(err?.error || err?.message || err),
+        variant: 'destructive',
+      })
     })
 
     // Notificación recibida con la app abierta
