@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { User, Camera as CameraIcon, Save, Trash2, LoaderCircle as Loader2, X, TriangleAlert as AlertTriangle } from 'lucide-react'
+import { User, Camera as CameraIcon, Save, Trash2, LoaderCircle as Loader2, X, TriangleAlert as AlertTriangle, Bell } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
 
@@ -228,6 +228,31 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       }
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleTestPush = async () => {
+    setLoading(true)
+    try {
+      const res = await authFetch('/api/push/test', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'fallo desconocido')
+      const { apn, result } = data
+      const lines = [
+        `provider: ${apn.providerReady ? 'OK' : 'NO'} (${apn.initError || 'ok'})`,
+        `p8: ${apn.p8KeyBytes}B, keyId: ${apn.keyIdSet ? '✓' : '✗'}, teamId: ${apn.teamIdSet ? '✓' : '✗'}`,
+        `tokens: ${result.tokens}, enviados: ${result.sent}, fallidos: ${result.failed}`,
+      ]
+      if (result.reasons?.length) lines.push(`razones: ${result.reasons.join(' | ')}`)
+      toast({
+        title: result.sent > 0 ? '✅ Push de prueba enviado' : '❌ Push no enviado',
+        description: lines.join('\n'),
+        variant: result.sent > 0 ? 'default' : 'destructive',
+      })
+    } catch (error) {
+      toast({ title: '❌ Error probando push', description: error.message, variant: 'destructive' })
     } finally {
       setLoading(false)
     }
@@ -464,6 +489,16 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
             ) : (
               <><Save className="w-4 h-4 mr-2" /> Guardar Cambios</>
             )}
+          </Button>
+
+          {/* Test push button — cierra la app después de pulsar para ver si llega con la app cerrada */}
+          <Button
+            onClick={handleTestPush}
+            disabled={loading}
+            variant="outline"
+            className="w-full rounded-xl border-violet-500/30 bg-black/40 text-violet-200 hover:bg-violet-500/10"
+          >
+            <Bell className="w-4 h-4 mr-2" /> Probar notificación push
           </Button>
 
           {/* Delete Account Section */}
