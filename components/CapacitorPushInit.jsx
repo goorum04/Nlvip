@@ -22,10 +22,15 @@ export default function CapacitorPushInit() {
 
 async function initNativePush() {
   try {
+    if (PUSH_DEBUG) toast({ title: '🔧 Push init…' })
+
     // Dynamic import ensures this only runs in the browser/WebView,
     // never during SSG, and only after the DOM is mounted.
     const { Capacitor } = await import('@capacitor/core')
-    if (!Capacitor.isNativePlatform()) return
+    if (!Capacitor.isNativePlatform()) {
+      if (PUSH_DEBUG) toast({ title: 'ℹ️ No nativo', description: 'Capacitor.isNativePlatform() = false' })
+      return
+    }
 
     const { PushNotifications } = await import('@capacitor/push-notifications')
 
@@ -34,6 +39,7 @@ async function initNativePush() {
     // Instead, we check if they ALREADY granted it. If so, initialize silently.
     // We will request permissions ONLY when the user logs in.
     let permStatus = await PushNotifications.checkPermissions()
+    if (PUSH_DEBUG) toast({ title: '🔧 Permiso push', description: `Estado inicial: ${permStatus.receive}` })
 
     // Si ya tienen permiso, inicializamos. Si no, esperamos a que el usuario inicie sesión.
     if (permStatus.receive === 'granted') {
@@ -52,6 +58,7 @@ async function initNativePush() {
           const delayTimeout = event === 'INITIAL_SESSION' ? 15000 : 3000
           await new Promise(resolve => setTimeout(resolve, delayTimeout))
           currentStatus = await PushNotifications.requestPermissions()
+          if (PUSH_DEBUG) toast({ title: '🔧 Permiso tras pedirlo', description: currentStatus.receive })
         }
         if (currentStatus.receive === 'granted') {
           await registerAndListen(PushNotifications, Capacitor)
@@ -65,11 +72,18 @@ async function initNativePush() {
     })
   } catch (e) {
     console.warn('Push init fallback:', e)
+    if (PUSH_DEBUG) toast({
+      title: '❌ Push init falló',
+      description: String(e?.message || e),
+      variant: 'destructive',
+    })
   }
 }
 
 async function registerAndListen(PushNotifications, Capacitor) {
   try {
+    if (PUSH_DEBUG) toast({ title: '🔧 Registrando APNs…' })
+
     // Evitar duplicados si registerAndListen se llama más de una vez
     await PushNotifications.removeAllListeners()
 
@@ -128,7 +142,13 @@ async function registerAndListen(PushNotifications, Capacitor) {
 
     // Now it's safe to trigger registration — listeners are in place
     await PushNotifications.register()
+    if (PUSH_DEBUG) toast({ title: '🔧 register() devolvió OK', description: 'Esperando el token de APNs…' })
   } catch (e) {
     console.warn('Push register error:', e)
+    if (PUSH_DEBUG) toast({
+      title: '❌ Error en register()',
+      description: String(e?.message || e),
+      variant: 'destructive',
+    })
   }
 }

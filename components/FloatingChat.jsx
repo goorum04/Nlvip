@@ -83,13 +83,16 @@ const AudioPlayer = ({ path }) => {
       </div>
       <audio
         ref={audioRef}
-        src={url}
+        {...(url ? { src: url } : {})}
         preload="auto"
         playsInline
         onEnded={() => setPlaying(false)}
         onPause={() => setPlaying(false)}
         onPlay={() => setPlaying(true)}
         onError={(e) => {
+          // If the signed URL hasn't resolved yet, Chrome fires a spurious
+          // MEDIA_ELEMENT_ERROR with "Empty src attribute". Swallow it.
+          if (!url) return
           const mediaError = e.target.error
           console.warn('[Audio] element error:', mediaError?.code, mediaError?.message)
           toast({
