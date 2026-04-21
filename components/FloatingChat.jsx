@@ -17,10 +17,23 @@ import { useToast } from '@/hooks/use-toast'
 // Componente AudioPlayer (Fuera del principal para evitar re-renders innecesarios)
 const AudioPlayer = ({ path }) => {
   const [playing, setPlaying] = useState(false)
+  const [url, setUrl] = useState('')
   const audioRef = useRef(null)
-  const url = path
-    ? supabase.storage.from('chat_audios').getPublicUrl(path).data.publicUrl
-    : ''
+
+  useEffect(() => {
+    if (!path) return
+    let cancelled = false
+    ;(async () => {
+      // chat_audios bucket is private, so getPublicUrl() returns a URL that 403s.
+      // We need a signed URL.
+      const { data, error } = await supabase.storage
+        .from('chat_audios')
+        .createSignedUrl(path, 3600)
+      if (!cancelled && data?.signedUrl) setUrl(data.signedUrl)
+      if (error) console.warn('[Audio] signed URL error:', error.message)
+    })()
+    return () => { cancelled = true }
+  }, [path])
 
   useEffect(() => {
     const audio = audioRef.current
@@ -37,9 +50,9 @@ const AudioPlayer = ({ path }) => {
   const togglePlay = (e) => {
     e.stopPropagation()
     const audio = audioRef.current
-    if (!audio) return
+    if (!audio || !url) return
     if (audio.paused) {
-      audio.play().catch(console.error)
+      audio.play().catch(err => console.warn('[Audio] play error:', err))
     } else {
       audio.pause()
     }
@@ -47,7 +60,7 @@ const AudioPlayer = ({ path }) => {
 
   return (
     <div className="flex items-center gap-3 bg-black/20 rounded-xl p-2 min-w-[200px]">
-      <button 
+      <button
         type="button"
         onClick={togglePlay}
         className="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center text-black"
@@ -57,13 +70,14 @@ const AudioPlayer = ({ path }) => {
       <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
         <div className={`h-full bg-violet-500 ${playing ? 'animate-progress' : ''}`} style={{ width: playing ? '100%' : '0%', transition: playing ? 'width 30s linear' : 'none' }}></div>
       </div>
-      <audio 
-        ref={audioRef} 
-        src={url} 
-        onEnded={() => setPlaying(false)} 
+      <audio
+        ref={audioRef}
+        src={url}
+        onEnded={() => setPlaying(false)}
         onPause={() => setPlaying(false)}
         onPlay={() => setPlaying(true)}
-        className="hidden" 
+        onError={(e) => console.warn('[Audio] element error:', e.target.error?.code, e.target.error?.message)}
+        className="hidden"
       />
     </div>
   )
@@ -434,11 +448,17 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
 
       // 1. Manejar Audio
       if (audioBlob) {
-        const fileName = `${userId}_${Date.now()}.webm`
+        // Derive extension from real blob mime type so the served Content-Type
+        // matches the actual codec (critical for iOS which can't play .webm).
+        const ext = audioBlob.type.includes('mp4') ? 'm4a'
+          : audioBlob.type.includes('mpeg') ? 'mp3'
+          : audioBlob.type.includes('ogg') ? 'ogg'
+          : 'webm'
+        const fileName = `${userId}_${Date.now()}.${ext}`
         const { data, error } = await supabase.storage
           .from('chat_audios')
-          .upload(fileName, audioBlob)
-        
+          .upload(fileName, audioBlob, { contentType: audioBlob.type || undefined })
+
         if (error) throw error
         audioPath = data.path
         messageType = 'audio'
