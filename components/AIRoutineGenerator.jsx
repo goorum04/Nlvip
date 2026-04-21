@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Sparkles, LoaderCircle as Loader2, ChevronDown, ChevronUp, Dumbbell, Save, RefreshCw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { getApiUrl } from '@/lib/utils'
+import { authFetch } from '@/lib/utils'
 
 const EQUIPMENT_OPTIONS = [
   { value: 'cable', label: 'Cable / Polea' },
@@ -101,7 +101,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
 
     setStep('loading')
     try {
-      const res = await fetch(getApiUrl() + '/api/generate-routine', {
+      const res = await authFetch('/api/generate-routine', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

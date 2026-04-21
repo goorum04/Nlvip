@@ -6,26 +6,51 @@ export async function POST(request) {
         const body = await request.json()
         const { id, updates } = body
 
-        console.log(`[API Profile] Update request for ID: ${id}`, { 
-            fields: Object.keys(updates || {}),
-            hasEmail: updates && 'email' in updates
-        })
-
         if (!id || !updates) {
             return NextResponse.json({ error: 'Missing id or updates' }, { status: 400 })
         }
 
-        // Hardening: Nunca permitir que el email sea null si viene en el objeto updates
-        // Si el email es null o está vacío, lo eliminamos de las actualizaciones para no machacar el valor actual
-        if ('email' in updates && (updates.email === null || updates.email === undefined || updates.email === '')) {
-            console.warn(`[API Profile] Warning: Attempted to nullify email for user ${id}. Field removed from updates.`)
-            delete updates.email
-        }
-
         const supabaseAdmin = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL,
-            process.env.SUPABASE_SERVICE_ROLE_KEY
+            process.env.SUPABASE_SERVICE_ROLE_KEY,
+            { auth: { autoRefreshToken: false, persistSession: false } }
         )
+
+        // Require a Bearer token so we can verify the caller
+        const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '')
+        if (!token) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+        }
+        const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token)
+        if (authError || !caller) {
+            return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+        }
+
+        // Only self or admin can update a profile
+        let isAdmin = false
+        if (caller.id !== id) {
+            const { data: callerProfile } = await supabaseAdmin
+                .from('profiles')
+                .select('role')
+                .eq('id', caller.id)
+                .maybeSingle()
+            isAdmin = callerProfile?.role === 'admin'
+            if (!isAdmin) {
+                return NextResponse.json({ error: 'Prohibido' }, { status: 403 })
+            }
+        }
+
+        // Never allow clients to promote themselves or change ownership fields.
+        // Only admins can change role/trainer_id.
+        const SELF_FORBIDDEN = ['role', 'trainer_id', 'is_premium', 'premium_until']
+        if (!isAdmin) {
+            for (const field of SELF_FORBIDDEN) delete updates[field]
+        }
+
+        // Never null out the email accidentally
+        if ('email' in updates && !updates.email) {
+            delete updates.email
+        }
 
         const { data, error } = await supabaseAdmin
             .from('profiles')
@@ -39,11 +64,9 @@ export async function POST(request) {
         }
 
         if (!data || data.length === 0) {
-            console.warn(`[API Profile] No profile found to update for ID: ${id}`)
             return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
         }
 
-        console.log(`[API Profile] Successfully updated user ${id}`)
         return NextResponse.json({ success: true, data: data[0] })
     } catch (error) {
         console.error('[API Profile] Unexpected error:', error)

@@ -34,7 +34,7 @@ import {
   Apple
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { getApiUrl } from '@/lib/utils'
+import { authFetch } from '@/lib/utils'
 import { SymptomsTracker } from '@/components/SymptomsTracker'
 
 const PHASE_CONFIG = {
@@ -269,7 +269,7 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
 
     setLoading(true)
     try {
-      const res = await fetch(getApiUrl() + '/api/profile', {
+      const res = await authFetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

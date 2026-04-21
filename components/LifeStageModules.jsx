@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { getApiUrl } from '@/lib/utils'
+import { authFetch } from '@/lib/utils'
 import {
     Baby, Heart, Milk, Timer, Plus, TrendingUp,
     Clock, LoaderCircle as Loader2, ChevronLeft, ChevronRight,
@@ -33,7 +33,7 @@ export function LifeStageSelector({ userId, profile, onUpdate }) {
         if (profile?.life_stage === stage) return
         setSaving(true)
         try {
-            const res = await fetch(getApiUrl() + '/api/profile', {
+            const res = await authFetch('/api/profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -138,7 +138,7 @@ export function PregnancyMode({ userId, profile, onUpdate, onThemeChange }) {
         if (!dueDate) return
         setSaving(true)
         try {
-            const res = await fetch(getApiUrl() + '/api/profile', {
+            const res = await authFetch('/api/profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -326,7 +326,7 @@ export function PostpartumMode({ userId, profile, onUpdate, onThemeChange }) {
         if (!birthDate) return
         setSaving(true)
         try {
-            const res = await fetch(getApiUrl() + '/api/profile', {
+            const res = await authFetch('/api/profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

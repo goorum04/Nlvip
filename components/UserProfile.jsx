@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { User, Camera as CameraIcon, Save, Trash2, LoaderCircle as Loader2, X, TriangleAlert as AlertTriangle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { getApiUrl } from '@/lib/utils'
+import { authFetch } from '@/lib/utils'
 
 // Avatar Bubble Component - Para mostrar en el header
 export function AvatarBubble({ profile, size = 'md', onClick }) {
@@ -153,7 +153,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
         .getPublicUrl(fileName)
 
       // Actualizar perfil con la nueva URL
-      const res = await fetch(getApiUrl() + '/api/profile', {
+      const res = await authFetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -189,7 +189,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
 
     setLoading(true)
     try {
-      const res = await fetch(getApiUrl() + '/api/profile', {
+      const res = await authFetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -77,8 +77,29 @@ export async function POST(request) {
     // Cargar catálogo de ejercicios desde Supabase
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
     )
+
+    // Only admins and trainers can generate routines. A trainer_id in the
+    // body must match the caller (or caller must be admin).
+    const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '')
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const { data: { user: caller }, error: authErr } = await supabase.auth.getUser(token)
+    if (authErr || !caller) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', caller.id)
+      .maybeSingle()
+    const callerRole = callerProfile?.role
+    if (callerRole !== 'admin' && callerRole !== 'trainer') {
+      return NextResponse.json({ error: 'Prohibido' }, { status: 403 })
+    }
+    if (trainer_id && callerRole !== 'admin' && trainer_id !== caller.id) {
+      return NextResponse.json({ error: 'No puedes asignar rutinas a otro entrenador' }, { status: 403 })
+    }
 
     const { data: catalog, error: catalogError } = await supabase
       .from('exercises')
