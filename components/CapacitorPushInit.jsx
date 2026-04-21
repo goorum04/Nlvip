@@ -59,17 +59,21 @@ async function initNativePush() {
 
 async function registerAndListen(PushNotifications, Capacitor) {
   try {
-    // Evitar registrar múltiples veces
+    // Evitar duplicados si registerAndListen se llama más de una vez
     await PushNotifications.removeAllListeners()
 
-    await PushNotifications.register()
-
-    // Save token to Supabase when registration succeeds
+    // CRITICAL: listeners must be registered BEFORE calling register(),
+    // otherwise the 'registration' event may fire before we're listening
+    // and the token is silently lost.
     await PushNotifications.addListener('registration', async (token) => {
+      console.log('[Push] Token recibido:', token.value?.slice(0, 12) + '…')
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user?.id) return
+      if (!session?.user?.id) {
+        console.warn('[Push] No hay sesión al registrar token')
+        return
+      }
 
-      await supabase.from('device_tokens').upsert(
+      const { error } = await supabase.from('device_tokens').upsert(
         {
           user_id: session.user.id,
           token: token.value,
@@ -78,12 +82,15 @@ async function registerAndListen(PushNotifications, Capacitor) {
         },
         { onConflict: 'user_id,token' }
       )
+      if (error) console.warn('[Push] Error guardando token:', error.message)
+      else console.log('[Push] Token guardado en device_tokens')
     })
 
-    // Error silencioso en registro
-    await PushNotifications.addListener('registrationError', () => {})
+    await PushNotifications.addListener('registrationError', (err) => {
+      console.warn('[Push] registrationError:', err?.error || err)
+    })
 
-    // Notificación recibida con la app abierta — mostrar como toast nativo
+    // Notificación recibida con la app abierta
     await PushNotifications.addListener('pushNotificationReceived', (notification) => {
       console.log('[Push] Recibida en primer plano:', notification.title)
     })
@@ -95,6 +102,9 @@ async function registerAndListen(PushNotifications, Capacitor) {
         window.location.href = url
       }
     })
+
+    // Now it's safe to trigger registration — listeners are in place
+    await PushNotifications.register()
   } catch (e) {
     console.warn('Push register error:', e)
   }
