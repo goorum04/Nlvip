@@ -16,7 +16,11 @@ export class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     this.setState({ error, errorInfo })
-    console.error("ErrorBoundary caught an error:", error, errorInfo)
+    console.error("ErrorBoundary caught an error:", error)
+    console.error("Component stack:", errorInfo?.componentStack)
+    if (typeof window !== 'undefined' && window.Sentry?.captureException) {
+      window.Sentry.captureException(error, { contexts: { react: { componentStack: errorInfo?.componentStack } } })
+    }
   }
 
   handleReset = () => {
@@ -73,13 +77,18 @@ export class ErrorBoundary extends React.Component {
                 </div>
 
                 {/* Secret debug info (Always show message in diagnostic build) */}
-                <div className="pt-6 text-left overflow-auto max-h-40 bg-red-900/10 p-4 rounded-xl border border-red-900/20">
+                <div className="pt-6 text-left overflow-auto max-h-52 bg-red-900/10 p-4 rounded-xl border border-red-900/20">
                   <p className="text-xs text-red-400 font-mono mb-2">
                     ERROR: {this.state.error?.message || 'Unknown Exception'}
                   </p>
                   <pre className="text-[10px] text-gray-500 font-mono whitespace-pre-wrap">
                     {this.state.error?.stack?.split('\n').slice(0, 5).join('\n')}
                   </pre>
+                  {this.state.errorInfo?.componentStack && (
+                    <pre className="mt-2 text-[10px] text-gray-600 font-mono whitespace-pre-wrap border-t border-red-900/20 pt-2">
+                      {this.state.errorInfo.componentStack.split('\n').slice(0, 6).join('\n')}
+                    </pre>
+                  )}
                 </div>
               </div>
             </div>
