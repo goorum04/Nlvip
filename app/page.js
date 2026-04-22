@@ -41,6 +41,8 @@ export default function App() {
   const [regName, setRegName] = useState('')
   const [regSex, setRegSex] = useState('female')
   const [invitationCode, setInvitationCode] = useState('')
+  const [preparingAccount, setPreparingAccount] = useState(false)
+  const [profileLoadFailed, setProfileLoadFailed] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -75,10 +77,16 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user)
+        // Reset the in-flight flag so a fresh SIGNED_IN event after a previous
+        // aborted load doesn't skip the re-fetch.
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          _profileLoadingInFlight = false
+        }
         loadProfile(session.user.id)
       } else {
         setUser(null)
         setProfile(null)
+        setProfileLoadFailed(false)
         _profileLoadingInFlight = false
       }
     })
@@ -91,6 +99,7 @@ export default function App() {
     if (_profileLoadingInFlight) return
     _profileLoadingInFlight = true
     setProfileLoading(true)
+    setProfileLoadFailed(false)
     try {
       // 10-second timeout — prevents infinite spinner on slow mobile networks
       const timeoutPromise = new Promise((_, reject) =>
@@ -105,10 +114,17 @@ export default function App() {
       const { data, error } = await Promise.race([fetchPromise, timeoutPromise])
 
       if (error) throw error
-      if (data) setProfile(data)
+      if (data) {
+        setProfile(data)
+      } else {
+        // User is authenticated but no profile row exists yet (trigger delay,
+        // or RLS is blocking the read). Surface it instead of silently
+        // dropping them on the login screen.
+        setProfileLoadFailed(true)
+      }
     } catch (err) {
       console.error('Error loading profile:', err)
-      // On timeout or error, proceed to login screen silently
+      setProfileLoadFailed(true)
     } finally {
       setProfileLoading(false)
       _profileLoadingInFlight = false
@@ -118,6 +134,10 @@ export default function App() {
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
+    // Clear any stale in-flight flag so the post-login loadProfile call
+    // from onAuthStateChange isn't skipped.
+    _profileLoadingInFlight = false
+    setProfileLoadFailed(false)
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
@@ -150,6 +170,12 @@ export default function App() {
         // the diet onboarding request is created. Requires a session,
         // which Supabase returns here when email confirmation is off.
         if (trimmedCode && data.session?.access_token) {
+          // Block the UI with a "preparing your space" screen until the
+          // premium flag is persisted AND the freshly-updated profile has
+          // been reloaded. Otherwise onAuthStateChange renders the member
+          // dashboard immediately with has_premium=false and the onboarding
+          // banner is hidden behind the premium gate.
+          setPreparingAccount(true)
           try {
             const res = await fetch(getApiUrl() + '/api/redeem-premium-code', {
               method: 'POST',
@@ -176,6 +202,12 @@ export default function App() {
               description: 'Podrás canjearlo más tarde desde tu panel.',
               variant: 'destructive',
             })
+          } finally {
+            // Force a profile reload with the new has_premium=true flag
+            // before releasing the loading gate.
+            _profileLoadingInFlight = false
+            await loadProfile(data.user.id)
+            setPreparingAccount(false)
           }
         } else {
           toast({ title: '¡Cuenta creada!', description: 'Ya puedes acceder a tu panel.' })
@@ -192,29 +224,95 @@ export default function App() {
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
+    setProfileLoadFailed(false)
+    _profileLoadingInFlight = false
   }
 
   // --- RENDERING LOGIC ---
 
-  if ((loading || profileLoading) && !profile) {
+  // Gate 1: authenticated but profile fetch failed (timeout, RLS, missing row).
+  // Show an explicit retry/logout screen instead of silently dropping the user
+  // on the login screen, which looked like a "login loop" to the user.
+  if (user && !profile && profileLoadFailed && !profileLoading) {
+    return (
+      <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6 text-center">
+        <div className="flex flex-col items-center gap-6 max-w-sm">
+          <img
+            src="/logo-nl-vip.jpg"
+            alt="NL VIP TEAM"
+            className="w-20 h-20 rounded-2xl shadow-2xl border border-white/5"
+          />
+          <div className="space-y-2">
+            <p className="text-white text-lg font-semibold">No se pudo cargar tu cuenta</p>
+            <p className="text-gray-400 text-sm">
+              Puede ser un problema temporal de red. Reintenta o cierra sesión para volver a empezar.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 w-full">
+            <Button
+              onClick={() => loadProfile(user.id)}
+              className="w-full h-12 bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-xl"
+            >
+              Reintentar
+            </Button>
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              className="w-full h-12 text-gray-400 hover:text-white rounded-xl"
+            >
+              Cerrar sesión
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if ((loading || profileLoading || preparingAccount) && !profile) {
     return (
       <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6 text-center">
         <div className="flex flex-col items-center gap-6">
           <div className="relative">
             <div className="absolute inset-0 bg-violet-500/20 blur-2xl rounded-full animate-pulse" />
-            <img 
-              src="/logo-nl-vip.jpg" 
-              alt="NL VIP TEAM" 
+            <img
+              src="/logo-nl-vip.jpg"
+              alt="NL VIP TEAM"
               className="relative w-24 h-24 rounded-2xl shadow-2xl border border-white/5"
             />
           </div>
           <div className="space-y-2">
             <p className="text-gray-300 text-lg font-medium">
-              {profileLoading ? 'Preparando tu experiencia...' : 'Cargando sesión...'}
+              {preparingAccount
+                ? 'Preparando tu espacio Premium...'
+                : profileLoading ? 'Preparando tu experiencia...' : 'Cargando sesión...'}
             </p>
             <p className="text-violet-400 text-sm animate-pulse">
-              No más empezar de cero.
+              {preparingAccount ? 'Activando tu plan y formulario de dieta.' : 'No más empezar de cero.'}
             </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Gate 2: premium is being prepared after signUp. Even if a stale profile
+  // row was loaded, don't render the dashboard until we've refreshed with
+  // has_premium=true.
+  if (preparingAccount) {
+    return (
+      <div className="min-h-screen bg-[#030303] flex items-center justify-center p-6 text-center">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-violet-500/20 blur-2xl rounded-full animate-pulse" />
+            <img
+              src="/logo-nl-vip.jpg"
+              alt="NL VIP TEAM"
+              className="relative w-24 h-24 rounded-2xl shadow-2xl border border-white/5"
+            />
+          </div>
+          <div className="space-y-2">
+            <p className="text-gray-300 text-lg font-medium">Preparando tu espacio Premium...</p>
+            <p className="text-violet-400 text-sm animate-pulse">Activando tu plan y formulario de dieta.</p>
           </div>
         </div>
       </div>
