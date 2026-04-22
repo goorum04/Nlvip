@@ -642,6 +642,23 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
     }
   }
 
+  const deleteCode = async (codeId, codeLabel) => {
+    if (!window.confirm(`¿Borrar el código ${codeLabel}? Los socios que ya lo canjearon no se verán afectados, pero nadie más podrá usarlo.`)) {
+      return
+    }
+    const { error } = await supabase
+      .from('invitation_codes')
+      .delete()
+      .eq('id', codeId)
+
+    if (!error) {
+      toast({ title: 'Código borrado', description: `${codeLabel} ya no existe.` })
+      loadCodes()
+    } else {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
+  }
+
   const hidePost = async (postId) => {
     const { error } = await supabase
       .from('feed_posts')
@@ -1283,14 +1300,25 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                           Expira: {new Date(code.expires_at).toLocaleDateString()}
                         </p>
                       </div>
-                      <Button
-                        size="sm"
-                        variant={code.is_active ? "destructive" : "default"}
-                        className={code.is_active ? "" : "bg-gradient-to-r from-violet-600 to-cyan-600 hover:bg-[rgb(6, 182, 212)] text-black"}
-                        onClick={() => toggleCodeStatus(code.id, code.is_active)}
-                      >
-                        {code.is_active ? 'Desactivar' : 'Activar'}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant={code.is_active ? "destructive" : "default"}
+                          className={code.is_active ? "" : "bg-gradient-to-r from-violet-600 to-cyan-600 hover:bg-[rgb(6, 182, 212)] text-black"}
+                          onClick={() => toggleCodeStatus(code.id, code.is_active)}
+                        >
+                          {code.is_active ? 'Desactivar' : 'Activar'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          onClick={() => deleteCode(code.id, code.code)}
+                          title="Borrar código"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                   {codes.length === 0 && (

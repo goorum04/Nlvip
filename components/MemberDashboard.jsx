@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -61,6 +61,10 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const { getSignedUrl, getSignedUrls } = useSignedUrl()
   const [dataLoaded, setDataLoaded] = useState(false)
   const [activeTab, setActiveTab] = useState('activity')
+  // Tracks whether we've already auto-jumped the newly-registered premium
+  // member to the diet onboarding tab — only happens once per session so
+  // we don't fight the user if they navigate away.
+  const autoJumpedToOnboardingRef = useRef(false)
 
   // Check if user has premium access (registered with invitation code)
   const hasPremium = profile?.has_premium === true
@@ -146,6 +150,19 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
       setIsCheckingIn(false)
     }
   }
+
+  // First-run landing: if a premium member has a pending diet onboarding
+  // and they haven't moved elsewhere yet, snap them to the Dieta tab so
+  // the questionnaire is the first thing they see after registering.
+  useEffect(() => {
+    if (autoJumpedToOnboardingRef.current) return
+    if (!onboardingChecked) return
+    if (!pendingOnboarding) return
+    if (!hasPremium) return
+    if (activeTab !== 'activity') return
+    autoJumpedToOnboardingRef.current = true
+    setActiveTab('diet')
+  }, [onboardingChecked, pendingOnboarding, hasPremium, activeTab])
 
   useEffect(() => {
     loadData()
@@ -1052,6 +1069,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 requestId={pendingOnboarding.id}
                 memberId={user.id}
                 memberName={profile.name}
+                autoExpand={autoJumpedToOnboardingRef.current}
                 onCompleted={() => {
                   setPendingOnboarding(null)
                   loadData()

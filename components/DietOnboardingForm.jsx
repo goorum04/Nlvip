@@ -575,9 +575,11 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
   )
 }
 
-// Banner component to show when member has a pending onboarding
-export function DietOnboardingBanner({ requestId, memberId, memberName, onCompleted }) {
-  const [showForm, setShowForm] = useState(false)
+// Banner component to show when member has a pending onboarding.
+// `autoExpand` starts the banner with the form already open — used when the
+// banner is the first thing a freshly-registered premium member should see.
+export function DietOnboardingBanner({ requestId, memberId, memberName, onCompleted, autoExpand = false }) {
+  const [showForm, setShowForm] = useState(autoExpand)
 
   if (showForm) {
     return (
