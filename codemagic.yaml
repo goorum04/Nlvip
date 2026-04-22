@@ -5,7 +5,10 @@ workflows:
     instance_type: mac_mini_m1
 
     integrations:
-      app_store_connect: "NL VIP Team Key"
+      # This name MUST match the App Store Connect integration configured in
+      # Codemagic → Team/Personal Settings → Integrations. Renaming it here
+      # does NOT rename the integration — it breaks the lookup.
+      app_store_connect: "NL VIP Club Key"
 
     environment:
       vars:
