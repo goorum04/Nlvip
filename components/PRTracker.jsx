@@ -46,6 +46,17 @@ export default function PRTracker({ memberId }) {
     }
   }
 
+  const handleDeletePR = async (prId) => {
+    if (!window.confirm('¿Eliminar este récord personal? No se puede deshacer.')) return
+    const { error } = await supabase.from('member_prs').delete().eq('id', prId)
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } else {
+      toast({ title: 'Récord eliminado' })
+      loadPRs()
+    }
+  }
+
   const handleAddPR = async (e) => {
     e.preventDefault()
     setAdding(true)
@@ -221,7 +232,12 @@ export default function PRTracker({ memberId }) {
                         <Calendar className="w-3 h-3" />
                         {new Date(pr.date).toLocaleDateString()}
                       </div>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-red-400">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeletePR(pr.id)}
+                        className="h-6 w-6 p-0 hover:text-red-400"
+                      >
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>

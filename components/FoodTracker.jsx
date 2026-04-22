@@ -176,6 +176,21 @@ export default function FoodTracker({ userId }) {
     setEditableAnalysis(null)
   }
 
+  const startManualEntry = () => {
+    // Open the editable form directly without going through photo analysis.
+    // Useful for quick entries: a protein shake, a glass of water, dressings, etc.
+    setAnalysis(null)
+    setEditableAnalysis({
+      food_name: '',
+      description: '',
+      calories: '',
+      protein_g: '',
+      carbs_g: '',
+      fat_g: '',
+      meal_type: 'other'
+    })
+  }
+
   if (loading) {
     return (
       <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border-violet-500/20 rounded-3xl">
@@ -243,15 +258,25 @@ export default function FoodTracker({ userId }) {
             />
           </div>
 
-          {/* Botón para añadir comida */}
-          {!analysis && !analyzing && (
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full h-14 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-semibold rounded-2xl shadow-lg shadow-orange-500/20"
-            >
-              <CameraIcon className="w-5 h-5 mr-2" />
-              Fotografiar Comida
-            </Button>
+          {/* Botones para añadir comida */}
+          {!editableAnalysis && !analyzing && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full h-14 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-semibold rounded-2xl shadow-lg shadow-orange-500/20"
+              >
+                <CameraIcon className="w-5 h-5 mr-2" />
+                Fotografiar
+              </Button>
+              <Button
+                onClick={startManualEntry}
+                variant="outline"
+                className="w-full h-14 border-orange-500/30 bg-black/40 text-orange-200 hover:bg-orange-500/10 font-semibold rounded-2xl"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Añadir manualmente
+              </Button>
+            </div>
           )}
           
           <input
@@ -278,7 +303,9 @@ export default function FoodTracker({ userId }) {
           {editableAnalysis && !analyzing && (
             <div className="space-y-4 p-4 bg-white/5 rounded-2xl border border-white/10">
               <div className="flex items-center justify-between">
-                <h4 className="text-white font-semibold">Resultado del análisis</h4>
+                <h4 className="text-white font-semibold">
+                  {analysis ? 'Resultado del análisis' : 'Entrada manual'}
+                </h4>
                 {analysis?.confidence && (
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     analysis.confidence === 'high' ? 'bg-green-500/20 text-green-400' :

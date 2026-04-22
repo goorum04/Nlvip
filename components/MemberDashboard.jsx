@@ -9,10 +9,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle, 
+import {
+  Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle,
   Flag, Sparkles, Flame, Target, Zap, Star, ShoppingBag, CheckCircle2,
-  Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift, Sun, Calendar
+  Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift, Sun, Calendar, Trash2
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
@@ -563,6 +563,17 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
     if (!error) {
       toast({ title: 'Foto eliminada' })
       loadProgressPhotos()
+    }
+  }
+
+  const handleDeleteProgressRecord = async (recordId) => {
+    if (!window.confirm('¿Eliminar este registro de medidas? No se puede deshacer.')) return
+    const { error } = await supabase.from('progress_records').delete().eq('id', recordId)
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } else {
+      toast({ title: 'Registro eliminado' })
+      loadProgress()
     }
   }
 
@@ -1207,7 +1218,17 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                     <div key={r.id} className="bg-black/30 rounded-2xl p-4 border border-[#2a2a2a]">
                       <div className="flex justify-between items-start mb-2">
                         <p className="text-violet-500 font-semibold">{new Date(r.date).toLocaleDateString()}</p>
-                        {r.weight_kg && <p className="text-2xl font-black text-white">{r.weight_kg} kg</p>}
+                        <div className="flex items-center gap-2">
+                          {r.weight_kg && <p className="text-2xl font-black text-white">{r.weight_kg} kg</p>}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteProgressRecord(r.id)}
+                            className="h-8 w-8 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                       <div className="flex flex-wrap gap-3 text-xs text-gray-400">
                         {r.chest_cm && <span>Pecho: {r.chest_cm}cm</span>}
