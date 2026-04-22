@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { sendNativeApplePush } from '@/lib/apn'
 import { sendPushToUser } from '@/lib/webpush'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/cron/progress-reminders
 //
 // Runs once a day from Vercel Cron. For every member that has
