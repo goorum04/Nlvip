@@ -534,10 +534,11 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
     e.preventDefault()
     setLoading(true)
     try {
+      const weightKg = parseFloat(newWeight) || null
       const { error } = await supabase.from('progress_records').insert([{
         member_id: user.id,
         date: new Date().toISOString(),
-        weight_kg: parseFloat(newWeight) || null,
+        weight_kg: weightKg,
         chest_cm: parseFloat(newChest) || null,
         waist_cm: parseFloat(newWaist) || null,
         hips_cm: parseFloat(newHips) || null,
@@ -548,6 +549,14 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
         notes: progressNotes
       }])
       if (error) throw error
+
+      // Mirror the latest weight into profiles so TDEE/macro calculations
+      // stay in sync without the member having to touch the profile form.
+      if (weightKg) {
+        await supabase.from('profiles').update({ weight_kg: weightKg }).eq('id', user.id)
+        setProfile?.(prev => prev ? { ...prev, weight_kg: weightKg } : prev)
+      }
+
       toast({ title: '¡Progreso registrado!' })
       setNewWeight(''); setNewChest(''); setNewWaist(''); setNewHips(''); setNewArms(''); setNewLegs(''); setNewGlutes(''); setNewCalf(''); setProgressNotes('')
       loadProgress()

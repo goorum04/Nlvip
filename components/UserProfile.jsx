@@ -84,7 +84,6 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
   const [sex, setSex] = useState(profile?.sex || '')
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
   const [heightCm, setHeightCm] = useState(profile?.height_cm || '')
-  const [weightKg, setWeightKg] = useState(profile?.weight_kg || '')
   const [previewUrl, setPreviewUrl] = useState(null)
 
   useEffect(() => {
@@ -95,7 +94,6 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       setSex(profile.sex || '')
       setAvatarUrl(profile.avatar_url || '')
       setHeightCm(profile.height_cm || '')
-      setWeightKg(profile.weight_kg || '')
       loadAvatarPreview()
     }
   }, [profile])
@@ -200,7 +198,6 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
             birth_date: birthDate || null,
             sex: sex || null,
             height_cm: parseInt(heightCm) || null,
-            weight_kg: parseFloat(weightKg) || null,
             avatar_url: avatarUrl || null,
             updated_at: new Date().toISOString()
           }
@@ -220,9 +217,8 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
           name: name.trim(),
           phone: phone.trim() || null,
           birth_date: birthDate || null,
-           sex: sex || null,
+          sex: sex || null,
           height_cm: parseInt(heightCm) || null,
-          weight_kg: parseFloat(weightKg) || null,
           avatar_url: avatarUrl || null
         })
       }
@@ -402,28 +398,18 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-gray-300 text-sm">Altura (cm)</Label>
-                <Input
-                  type="number"
-                  value={heightCm}
-                  onChange={(e) => setHeightCm(e.target.value)}
-                  placeholder="Ej: 175"
-                  className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-gray-300 text-sm">Peso (kg)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={weightKg}
-                  onChange={(e) => setWeightKg(e.target.value)}
-                  placeholder="Ej: 70.5"
-                  className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
-                />
-              </div>
+            <div>
+              <Label className="text-gray-300 text-sm">Altura (cm)</Label>
+              <Input
+                type="number"
+                value={heightCm}
+                onChange={(e) => setHeightCm(e.target.value)}
+                placeholder="Ej: 175"
+                className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
+              />
+              <p className="text-xs text-gray-500 mt-1.5">
+                Tu peso y medidas se gestionan desde la pestaña <span className="text-violet-400 font-medium">Progreso</span>.
+              </p>
             </div>
             <div>
               <Label className="text-gray-300 text-sm">Sexo</Label>

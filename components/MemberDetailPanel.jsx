@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import {
   User, Dumbbell, Apple, Activity, Calendar, Mail, Phone,
   LoaderCircle as Loader2, ChevronRight, X, Pencil as Edit, Flame, Target, Zap, Star, Heart,
-  MessageSquare
+  MessageSquare, Bell
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { authFetch } from '@/lib/utils'
 import { WorkoutViewer } from './WorkoutBuilder'
 import { DietViewer } from './DietBuilder'
 
@@ -127,6 +128,27 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
     }
   }
 
+  const handleSendProgressReminder = async () => {
+    if (!member?.id) return
+    try {
+      const res = await authFetch('/api/notifications/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetUserId: member.id,
+          title: '📸 Toca hacer revisión',
+          body: 'Sube tus 3 fotos y todas las medidas en la pestaña Progreso.',
+          url: '/',
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'No se pudo enviar')
+      toast({ title: '✅ Recordatorio enviado', description: `${member.name || 'Socio'} lo recibirá ahora mismo.` })
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
+  }
+
   const handleAssignDiet = async (dietId) => {
     setAssigning(true)
     try {
@@ -218,20 +240,21 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
             )}
 
             {/* Acciones Rápidas */}
-            <div className="flex gap-2">
-              <Button 
+            <div className="grid grid-cols-2 gap-2">
+              <Button
                 onClick={() => onOpenChat?.(member)}
-                className="flex-1 bg-violet-600 hover:bg-violet-500 text-white rounded-xl gap-2 h-12"
+                className="bg-violet-600 hover:bg-violet-500 text-white rounded-xl gap-2 h-12"
               >
                 <MessageSquare className="w-5 h-5" />
-                Enviar Mensaje
+                Mensaje
               </Button>
-              <Button 
+              <Button
+                onClick={handleSendProgressReminder}
                 variant="outline"
-                className="flex-1 border-white/10 text-gray-400 hover:text-white rounded-xl gap-2 h-12"
+                className="border-violet-500/30 bg-black/40 text-violet-200 hover:bg-violet-500/10 rounded-xl gap-2 h-12"
               >
-                <Mail className="w-5 h-5" />
-                Email
+                <Bell className="w-5 h-5" />
+                Pedir revisión
               </Button>
             </div>
 
