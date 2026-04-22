@@ -24,9 +24,27 @@ export async function POST(req) {
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
     if (authError || !user) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
 
-    const { conversationId, senderId, text, messageType } = await req.json()
-    if (!conversationId || !senderId) {
-      return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 })
+    const { conversationId, text, messageType } = await req.json()
+    if (!conversationId) {
+      return NextResponse.json({ error: 'conversationId requerido' }, { status: 400 })
+    }
+
+    // SECURITY: derive senderId from the verified token, never trust the body.
+    // A client could otherwise spoof another user's name in push notifications.
+    const senderId = user.id
+
+    // Verify the caller is actually a participant of this conversation.
+    // Stops random authenticated users from triggering push spam to arbitrary
+    // conversations they don't belong to.
+    const { data: isParticipant } = await supabaseAdmin
+      .from('conversation_participants')
+      .select('user_id')
+      .eq('conversation_id', conversationId)
+      .eq('user_id', senderId)
+      .maybeSingle()
+
+    if (!isParticipant) {
+      return NextResponse.json({ error: 'No eres participante de esa conversación' }, { status: 403 })
     }
 
     // Get the OTHER participant in the conversation (the recipient)

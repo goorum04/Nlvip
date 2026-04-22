@@ -29,7 +29,7 @@ import FloatingAdminAssistant from './FloatingAdminAssistant'
 import { ProgressPhotoGallery } from './ProgressPhotos'
 import { FeedSection } from './FeedSection'
 import AIRoutineGenerator from './AIRoutineGenerator'
-import { getApiUrl } from '@/lib/utils'
+import { getApiUrl, authFetch } from '@/lib/utils'
 
 export default function AdminDashboard({ user, profile, setProfile, onLogout }) {
   const [trainers, setTrainers] = useState([])
@@ -290,7 +290,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const handleAssignDraftDiet = async () => {
     setLoading(true)
     try {
-      const res = await fetch(getApiUrl() + '/api/diet-onboarding/complete', {
+      const res = await authFetch('/api/diet-onboarding/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dietDraft)

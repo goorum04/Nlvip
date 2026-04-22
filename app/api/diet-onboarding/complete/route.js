@@ -10,10 +10,28 @@ function getSupabase() {
 }
 
 // POST /api/diet-onboarding/complete
-// Called when admin/trainer CONFIRMS and assigns the reviewed draft
+// Called when admin/trainer CONFIRMS and assigns the reviewed draft.
+// Auth: Authorization: Bearer <supabase_jwt> — only admin or trainer can call.
 export async function POST(req) {
   const supabase = getSupabase()
   try {
+    // Require an admin/trainer session to prevent arbitrary clients from
+    // overwriting members' diets or spamming push notifications.
+    const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!callerProfile || !['admin', 'trainer'].includes(callerProfile.role)) {
+      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+    }
+
     const { requestId, memberId, responses, macros, fullDietContent } = await req.json()
 
     if (!requestId || !memberId || !responses || !macros || !fullDietContent) {
