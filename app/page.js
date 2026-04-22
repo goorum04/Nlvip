@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dumbbell, Sparkles, Shield, Gift, Lock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
+import { getApiUrl } from '@/lib/utils'
 
 // Lazy-load dashboards: keeps the initial JS bundle small so the iOS WebView can
 // paint the login screen fast and avoid the TestFlight startup watchdog.
@@ -131,20 +132,54 @@ export default function App() {
     e.preventDefault()
     setLoading(true)
     try {
-      const { data, error } = await supabase.auth.signUp({ 
-        email: regEmail, 
+      const trimmedCode = invitationCode.trim()
+      const { data, error } = await supabase.auth.signUp({
+        email: regEmail,
         password: regPassword,
         options: {
           data: {
             name: regName,
             sex: regSex,
-            invitation_code: invitationCode.trim() || null
+            invitation_code: trimmedCode || null
           }
         }
       })
       if (error) throw error
       if (data.user) {
-        toast({ title: '¡Cuenta creada!', description: 'Ya puedes acceder a tu panel.' })
+        // Redeem the premium code server-side so has_premium is set and
+        // the diet onboarding request is created. Requires a session,
+        // which Supabase returns here when email confirmation is off.
+        if (trimmedCode && data.session?.access_token) {
+          try {
+            const res = await fetch(getApiUrl() + '/api/redeem-premium-code', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${data.session.access_token}`,
+              },
+              body: JSON.stringify({ code: trimmedCode }),
+            })
+            const payload = await res.json().catch(() => ({}))
+            if (!res.ok) {
+              toast({
+                title: 'Cuenta creada, pero el código falló',
+                description: payload.error || 'Puedes canjearlo más tarde desde tu panel.',
+                variant: 'destructive',
+              })
+            } else {
+              toast({ title: '¡Bienvenido Premium!', description: 'Tu código se ha activado correctamente.' })
+            }
+          } catch (redeemErr) {
+            console.error('redeem-premium-code network error:', redeemErr)
+            toast({
+              title: 'Cuenta creada, pero el código falló',
+              description: 'Podrás canjearlo más tarde desde tu panel.',
+              variant: 'destructive',
+            })
+          }
+        } else {
+          toast({ title: '¡Cuenta creada!', description: 'Ya puedes acceder a tu panel.' })
+        }
       }
     } catch (error) {
       toast({ title: 'Error de registro', description: error.message, variant: 'destructive' })
