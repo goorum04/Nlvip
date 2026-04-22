@@ -68,6 +68,46 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
         }
 
+        // Mirror the member's weight into progress_records so the stats
+        // chart picks it up. progress_records is the canonical history
+        // source for the weight chart; updating only profiles.weight_kg
+        // would leave the chart empty.
+        //
+        // We compare against the latest progress_record for this member
+        // (not the old profile value) so the first time a weight is set
+        // it always lands in history, and subsequent saves without a
+        // change don't create duplicate rows.
+        if (typeof updates.weight_kg !== 'undefined' && updates.weight_kg !== null) {
+            const newWeight = Number(updates.weight_kg)
+            if (!Number.isNaN(newWeight)) {
+                const { data: latest } = await supabaseAdmin
+                    .from('progress_records')
+                    .select('weight_kg')
+                    .eq('member_id', id)
+                    .order('date', { ascending: false })
+                    .limit(1)
+                    .maybeSingle()
+
+                const latestWeight = latest?.weight_kg !== undefined && latest?.weight_kg !== null
+                    ? Number(latest.weight_kg)
+                    : null
+
+                if (latestWeight !== newWeight) {
+                    const { error: progressError } = await supabaseAdmin
+                        .from('progress_records')
+                        .insert({
+                            member_id: id,
+                            date: new Date().toISOString(),
+                            weight_kg: newWeight,
+                        })
+                    if (progressError) {
+                        // Non-fatal: the profile update already succeeded. Just log it.
+                        console.warn(`[API Profile] Could not mirror weight to progress_records:`, progressError.message)
+                    }
+                }
+            }
+        }
+
         return NextResponse.json({ success: true, data: data[0] })
     } catch (error) {
         console.error('[API Profile] Unexpected error:', error)
