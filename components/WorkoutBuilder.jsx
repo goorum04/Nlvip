@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Plus, Trash2, Video, Upload, LoaderCircle as Loader2, ChevronDown, ChevronUp,
-  Dumbbell, Calendar, Play, GripVertical, Save, X, Eye, BookOpen, Search
+  Dumbbell, Calendar, Play, GripVertical, Save, X, Eye, BookOpen, Search, Coffee, Sun
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -795,7 +795,7 @@ export function WorkoutBuilder({ trainerId, existingWorkout = null, onSave, onCa
 }
 
 // Componente para ver una rutina (modo lectura)
-export function WorkoutViewer({ workoutId, memberPrs = [] }) {
+export function WorkoutViewer({ workoutId, memberPrs = [], highlightToday = false }) {
   const [workout, setWorkout] = useState(null)
   const [days, setDays] = useState([])
   const [exercisesByDay, setExercisesByDay] = useState({})
@@ -863,6 +863,40 @@ export function WorkoutViewer({ workoutId, memberPrs = [] }) {
     return <p className="text-gray-500 text-center py-8">Rutina no encontrada</p>
   }
 
+  // Mapeo simple semana → día de rutina:
+  // Lunes = day_number 1, Martes = 2 ... hasta days.length.
+  // Si hoy es fin de semana o excede la cantidad de días de la rutina,
+  // hoy es un día de descanso.
+  //
+  // Decisión de diseño: sin columna `weekday` en BBDD, usar getDay() es la
+  // heurística más sencilla. Si el entrenador diseña un 4-días Lun/Mar/Jue/Vie,
+  // el jueves el socio verá "día 4" y no "día 3" — pero sigue siendo mejor
+  // que mostrar siempre día 1 por defecto.
+  const weekday = ((new Date().getDay() + 6) % 7) + 1 // 1=Lunes ... 7=Domingo
+  const todayDayNumber = weekday <= days.length ? weekday : null
+  const todayDay = todayDayNumber ? days.find(d => d.day_number === todayDayNumber) : null
+  const otherDays = todayDay ? days.filter(d => d.id !== todayDay.id) : days
+
+  const renderDayCard = (day) => (
+    <WorkoutDayCard
+      key={day.id}
+      day={day}
+      exercises={(exercisesByDay[day.id] || []).map((ex, idx) => ({
+        ...ex,
+        order_index: idx,
+        onPlay: ex.video_url ? () => playVideo(ex) : null
+      }))}
+      prs={memberPrs}
+      onUpdateDay={() => {}}
+      onDeleteDay={() => {}}
+      onAddExercise={() => {}}
+      onUpdateExercise={() => {}}
+      onDeleteExercise={() => {}}
+      trainerId={null}
+      isEditing={false}
+    />
+  )
+
   return (
     <div className="space-y-4">
       {/* Header de la rutina */}
@@ -874,26 +908,38 @@ export function WorkoutViewer({ workoutId, memberPrs = [] }) {
         <p className="text-violet-400 text-sm mt-2">{days.length} días de entrenamiento</p>
       </div>
 
-      {/* Días */}
-      {days.map((day) => (
-        <WorkoutDayCard
-          key={day.id}
-          day={day}
-          exercises={(exercisesByDay[day.id] || []).map((ex, idx) => ({
-            ...ex,
-            order_index: idx,
-            onPlay: ex.video_url ? () => playVideo(ex) : null
-          }))}
-          prs={memberPrs}
-          onUpdateDay={() => {}}
-          onDeleteDay={() => {}}
-          onAddExercise={() => {}}
-          onUpdateExercise={() => {}}
-          onDeleteExercise={() => {}}
-          trainerId={null}
-          isEditing={false}
-        />
-      ))}
+      {highlightToday ? (
+        <>
+          {/* Entreno de hoy (o descanso) */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <Sun className="w-4 h-4 text-amber-400" />
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Entreno de hoy</h3>
+            </div>
+            {todayDay ? (
+              renderDayCard(todayDay)
+            ) : (
+              <div className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-[#2a2a2a] rounded-3xl p-6 text-center">
+                <Coffee className="w-10 h-10 mx-auto text-violet-400/60 mb-2" />
+                <p className="text-white font-semibold">Hoy descansas</p>
+                <p className="text-gray-500 text-sm mt-1">Tu rutina tiene {days.length} días y hoy toca recuperar. Nos vemos mañana.</p>
+              </div>
+            )}
+          </div>
+
+          {otherDays.length > 0 && (
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center gap-2 px-1">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Resto de la semana</h3>
+              </div>
+              {otherDays.map(renderDayCard)}
+            </div>
+          )}
+        </>
+      ) : (
+        days.map(renderDayCard)
+      )}
 
       {/* Modal de video */}
       {selectedVideo && (

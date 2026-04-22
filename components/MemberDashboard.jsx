@@ -993,9 +993,10 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                   </CardContent>
                 </Card>
 
-                <WorkoutViewer 
-                  workoutId={myWorkout.workout?.id} 
-                  memberPrs={myPrs} 
+                <WorkoutViewer
+                  workoutId={myWorkout.workout?.id}
+                  memberPrs={myPrs}
+                  highlightToday
                 />
 
                 {/* Workout Videos */}
