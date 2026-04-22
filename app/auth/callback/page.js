@@ -145,7 +145,7 @@ function AuthCallbackContent() {
         </div>
 
         <p className="text-gray-600 text-xs mt-6">
-          © 2025 NL VIP Club
+          © 2025 NL VIP Team
         </p>
       </div>
     </div>
@@ -171,7 +171,7 @@ function LoadingFallback() {
         </div>
 
         <p className="text-gray-600 text-xs mt-6">
-          © 2025 NL VIP Club
+          © 2025 NL VIP Team
         </p>
       </div>
     </div>

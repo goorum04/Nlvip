@@ -63,9 +63,9 @@ self.addEventListener('push', (event) => {
     data = { body: event.data ? event.data.text() : '' };
   }
 
-  const title = data.title || 'NL VIP Club';
+  const title = data.title || 'NL VIP Team';
   const options = {
-    body: data.body || 'Nueva notificación de NL VIP Club',
+    body: data.body || 'Nueva notificación de NL VIP Team',
     icon: data.icon || '/icons/icon-192x192.png',
     badge: '/icons/icon-72x72.png',
     vibrate: [100, 50, 100],

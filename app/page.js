@@ -169,7 +169,7 @@ export default function App() {
             <div className="absolute inset-0 bg-violet-500/20 blur-2xl rounded-full animate-pulse" />
             <img 
               src="/logo-nl-vip.jpg" 
-              alt="NL VIP CLUB" 
+              alt="NL VIP TEAM" 
               className="relative w-24 h-24 rounded-2xl shadow-2xl border border-white/5"
             />
           </div>
@@ -376,7 +376,7 @@ export default function App() {
           
           {/* Footer */}
           <p className="text-center text-gray-600 text-xs mt-6">
-            © 2025 NL VIP Club. Premium Fitness Experience.
+            © 2025 NL VIP Team. Premium Fitness Experience.
           </p>
         </div>
       </div>
@@ -394,7 +394,7 @@ export default function App() {
               <div className="absolute inset-0 bg-violet-500/20 blur-2xl rounded-full animate-pulse" />
               <img
                 src="/logo-nl-vip.jpg"
-                alt="NL VIP CLUB"
+                alt="NL VIP TEAM"
                 className="relative w-24 h-24 rounded-2xl shadow-2xl border border-white/5"
               />
             </div>

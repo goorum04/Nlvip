@@ -1,10 +1,10 @@
-# Política de Privacidad - NL VIP CLUB
+# Política de Privacidad - NL VIP TEAM
 
 **Última actualización:** Enero 2025
 
 ## 1. Introducción
 
-NL VIP CLUB ("nosotros", "nuestro" o "la App") se compromete a proteger la privacidad de nuestros usuarios. Esta Política de Privacidad explica cómo recopilamos, usamos, divulgamos y protegemos tu información cuando utilizas nuestra aplicación móvil.
+NL VIP TEAM ("nosotros", "nuestro" o "la App") se compromete a proteger la privacidad de nuestros usuarios. Esta Política de Privacidad explica cómo recopilamos, usamos, divulgamos y protegemos tu información cuando utilizas nuestra aplicación móvil.
 
 ## 2. Información que Recopilamos
 
@@ -106,9 +106,9 @@ Tus datos pueden ser procesados en servidores ubicados fuera de tu país. Nos as
 
 Si tienes preguntas sobre esta Política de Privacidad:
 
-**NL VIP CLUB**
+**NL VIP TEAM**
 Email: privacy@nlvipclub.com
 
 ---
 
-Al usar NL VIP CLUB, aceptas esta Política de Privacidad.
+Al usar NL VIP TEAM, aceptas esta Política de Privacidad.

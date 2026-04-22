@@ -181,7 +181,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
           if (!isThisConvOpen) {
             toast({ title: '💬 Nuevo mensaje', description: 'Has recibido un mensaje nuevo' })
             if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-              new Notification('NL VIP Club - Nuevo mensaje', {
+              new Notification('NL VIP Team - Nuevo mensaje', {
                 body: payload.new.text || 'Has recibido un mensaje',
                 icon: '/icons/icon-192x192.png'
               })

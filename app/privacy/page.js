@@ -1,14 +1,14 @@
 export const metadata = {
   title: 'Política de Privacidad — NL VIP TEAM',
-  title: 'Política de Privacidad — NL VIP Club',
-  description: 'Política de privacidad de la aplicación NL VIP Club',
+  title: 'Política de Privacidad — NL VIP Team',
+  description: 'Política de privacidad de la aplicación NL VIP Team',
 }
 
 export default function Privacy() {
   return (
     <main style={{ padding: '40px', maxWidth: '800px', margin: '0 auto', fontFamily: 'system-ui, sans-serif', lineHeight: '1.7', color: '#222' }}>
       <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Política de Privacidad</h1>
-      <p><strong>Aplicación:</strong> NL VIP Club</p>
+      <p><strong>Aplicación:</strong> NL VIP Team</p>
       <p><strong>Fecha de entrada en vigor:</strong> Enero 2025</p>
       <p><strong>Última actualización:</strong> Abril 2025</p>
       <p><strong>Desarrollador:</strong> NL VIP Nutrition S.L.</p>

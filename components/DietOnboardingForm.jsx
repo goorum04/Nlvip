@@ -612,7 +612,7 @@ export function DietOnboardingBanner({ requestId, memberId, memberName, onComple
               {firstName} relléname este formulario lo antes posible para que pueda crearte un programa nutricional adaptado a tus necesidades con comidas específicas y cantidades exactas.
             </p>
             <div className="flex flex-wrap gap-2 mb-4">
-              {['Comidas específicas con gramos', 'Adaptado a tus objetivos', 'Según tus preferencias', 'Formato NL VIP Club'].map(tag => (
+              {['Comidas específicas con gramos', 'Adaptado a tus objetivos', 'Según tus preferencias', 'Formato NL VIP Team'].map(tag => (
                 <span key={tag} className="px-2 py-1 bg-violet-500/20 border border-violet-500/30 rounded-full text-xs text-violet-300">
                   ✓ {tag}
                 </span>

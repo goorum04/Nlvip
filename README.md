@@ -1,4 +1,4 @@
-# 🖤✨ NL VIP CLUB — Gimnasio Premium
+# 🖤✨ NL VIP TEAM — Gimnasio Premium
 
 > Plataforma de gestión integral para gimnasios premium. PWA con roles de Administrador, Entrenador y Socio, impulsada por IA y diseño Black & Gold.
 
@@ -29,7 +29,7 @@
 
 ## Descripción general
 
-**NL VIP CLUB** es una aplicación web progresiva (PWA) de gestión premium para gimnasios. Ofrece un ecosistema completo donde administradores, entrenadores y socios interactúan en una plataforma privada y exclusiva.
+**NL VIP TEAM** es una aplicación web progresiva (PWA) de gestión premium para gimnasios. Ofrece un ecosistema completo donde administradores, entrenadores y socios interactúan en una plataforma privada y exclusiva.
 
 **Propuesta de valor:**
 - Gestión de rutinas y dietas personalizadas con generación por IA
@@ -682,7 +682,7 @@ Socio accede a su panel personalizado
 
 ## Licencia
 
-Proyecto privado — NL VIP CLUB © 2025. Todos los derechos reservados.
+Proyecto privado — NL VIP TEAM © 2025. Todos los derechos reservados.
 
 ---
 

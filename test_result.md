@@ -103,7 +103,7 @@
 #====================================================================================================
 
 user_problem_statement: |
-  App NL VIP CLUB lista para producción. Testing completo antes de publicar en App Store.
+  App NL VIP TEAM lista para producción. Testing completo antes de publicar en App Store.
   
   Funcionalidades a testear:
   - Login/Registro de usuarios
@@ -215,7 +215,7 @@ test_plan:
 agent_communication:
   - agent: "main"
     message: |
-      Testing completo de la app NL VIP CLUB antes de publicar en App Store.
+      Testing completo de la app NL VIP TEAM antes de publicar en App Store.
       
       Credenciales de prueba:
       - Socio: socio@demo.com / Demo1234!
@@ -231,7 +231,7 @@ agent_communication:
   
   - agent: "testing"
     message: |
-      ✅ TESTING COMPLETO EXITOSO - NL VIP CLUB
+      ✅ TESTING COMPLETO EXITOSO - NL VIP TEAM
       
       🔍 RESULTADOS DE TESTING:
       

@@ -63,7 +63,7 @@ async function initNativePush() {
         } else if (PUSH_DEBUG) {
           toast({
             title: '⚠️ Permiso push no concedido',
-            description: `Estado: ${currentStatus.receive}. Ve a Ajustes → NL VIP Club → Notificaciones.`,
+            description: `Estado: ${currentStatus.receive}. Ve a Ajustes → NL VIP Team → Notificaciones.`,
           })
         }
       }

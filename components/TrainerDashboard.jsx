@@ -102,7 +102,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
             description: 'Un socio ha rellenado el cuestionario nutricional. Puedes generar su dieta.'
           })
           if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-            new Notification('NL VIP Club', {
+            new Notification('NL VIP Team', {
               body: 'Un socio ha rellenado el cuestionario nutricional',
               icon: '/icons/icon-192x192.png'
             })
@@ -499,7 +499,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                 className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-violet-500/20"
               />
               <div>
-                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP Club</h1>
+                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP Team</h1>
                 <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Trainer Panel</p>
               </div>
             </div>

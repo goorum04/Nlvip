@@ -49,7 +49,7 @@ CÁLCULO DE MACROS:
 • Carbos: el resto de calorías
 `;
 
-const SYSTEM_PROMPT = `Eres el Asistente IA del gimnasio NL VIP CLUB. Tu trabajo es ayudar al administrador a gestionar el gimnasio mediante comandos de voz o texto.
+const SYSTEM_PROMPT = `Eres el Asistente IA del gimnasio NL VIP TEAM. Tu trabajo es ayudar al administrador a gestionar el gimnasio mediante comandos de voz o texto.
 
 IMPORTANTE:
 1. SIEMPRE usa las herramientas disponibles para obtener información o realizar acciones

@@ -28,7 +28,7 @@ export default function PremiumStitchCard({ name = "SOCIO VIP", plan = "PLATINUM
             <div className="p-2 bg-[#C9A24D]/10 rounded-xl border border-[#C9A24D]/20">
               <Sparkles className="w-5 h-5 text-[#C9A24D]" />
             </div>
-            <span className="text-xs font-bold tracking-[0.2em] text-[#C9A24D] uppercase">NL VIP CLUB</span>
+            <span className="text-xs font-bold tracking-[0.2em] text-[#C9A24D] uppercase">NL VIP TEAM</span>
           </div>
           <CreditCard className="w-6 h-6 text-white/20" />
         </div>

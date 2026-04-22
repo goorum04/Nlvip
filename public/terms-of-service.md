@@ -1,14 +1,14 @@
-# Términos y Condiciones de Uso - NL VIP CLUB
+# Términos y Condiciones de Uso - NL VIP TEAM
 
 **Última actualización:** Enero 2025
 
 ## 1. Aceptación de los Términos
 
-Al descargar, instalar o usar la aplicación NL VIP CLUB ("la App"), aceptas estos Términos y Condiciones. Si no estás de acuerdo, no utilices la App.
+Al descargar, instalar o usar la aplicación NL VIP TEAM ("la App"), aceptas estos Términos y Condiciones. Si no estás de acuerdo, no utilices la App.
 
 ## 2. Descripción del Servicio
 
-NL VIP CLUB es una aplicación de fitness que proporciona:
+NL VIP TEAM es una aplicación de fitness que proporciona:
 - Rutinas de entrenamiento personalizadas
 - Planes de alimentación y dietas
 - Seguimiento de progreso físico
@@ -22,7 +22,7 @@ NL VIP CLUB es una aplicación de fitness que proporciona:
 
 ### 3.1 Elegibilidad
 - Debes tener al menos 16 años de edad
-- Debes ser miembro activo del gimnasio NL VIP CLUB o tener un código de invitación válido
+- Debes ser miembro activo del gimnasio NL VIP TEAM o tener un código de invitación válido
 
 ### 3.2 Cuenta de Usuario
 - Eres responsable de mantener la confidencialidad de tu cuenta
@@ -84,7 +84,7 @@ Eres responsable del contenido que publicas. Nos reservamos el derecho de elimin
 ## 8. Propiedad Intelectual
 
 ### 8.1 Nuestra Propiedad
-- La App, su diseño, código y contenido son propiedad de NL VIP CLUB
+- La App, su diseño, código y contenido son propiedad de NL VIP TEAM
 - Las marcas, logos y nombres comerciales están protegidos
 
 ### 8.2 Licencia Limitada
@@ -150,15 +150,15 @@ Si alguna disposición es inválida, las demás permanecerán en vigor.
 
 ## 17. Acuerdo Completo
 
-Estos Términos, junto con la Política de Privacidad, constituyen el acuerdo completo entre tú y NL VIP CLUB.
+Estos Términos, junto con la Política de Privacidad, constituyen el acuerdo completo entre tú y NL VIP TEAM.
 
 ## 18. Contacto
 
 Para preguntas sobre estos Términos:
 
-**NL VIP CLUB**
+**NL VIP TEAM**
 Email: legal@nlvipclub.com
 
 ---
 
-Al usar NL VIP CLUB, confirmas que has leído, entendido y aceptado estos Términos y Condiciones.
+Al usar NL VIP TEAM, confirmas que has leído, entendido y aceptado estos Términos y Condiciones.

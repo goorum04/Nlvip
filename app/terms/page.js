@@ -8,12 +8,12 @@ export default function TermsOfService() {
         <div className="space-y-6 text-gray-300">
           <section>
             <h2 className="text-xl font-semibold text-white mb-2">1. Aceptación de los Términos</h2>
-            <p>Al acceder y utilizar NL VIP CLUB, aceptas estar sujeto a estos términos de servicio. Si no estás de acuerdo con alguna parte de estos términos, no debes utilizar nuestra aplicación.</p>
+            <p>Al acceder y utilizar NL VIP TEAM, aceptas estar sujeto a estos términos de servicio. Si no estás de acuerdo con alguna parte de estos términos, no debes utilizar nuestra aplicación.</p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-white mb-2">2. Descripción del Servicio</h2>
-            <p>NL VIP CLUB es una aplicación de fitness que proporciona:</p>
+            <p>NL VIP TEAM es una aplicación de fitness que proporciona:</p>
             <ul className="list-disc ml-6 mt-2 space-y-1">
               <li>Acceso a rutinas de entrenamiento personalizadas</li>
               <li>Planes de nutrición y dietas</li>
@@ -36,7 +36,7 @@ export default function TermsOfService() {
 
           <section>
             <h2 className="text-xl font-semibold text-white mb-2">4. Uso Aceptable</h2>
-            <p>Al usar NL VIP CLUB, te comprometes a:</p>
+            <p>Al usar NL VIP TEAM, te comprometes a:</p>
             <ul className="list-disc ml-6 mt-2 space-y-1">
               <li>No publicar contenido ofensivo, ilegal o inapropiado</li>
               <li>No acosar a otros usuarios</li>
@@ -48,7 +48,7 @@ export default function TermsOfService() {
 
           <section>
             <h2 className="text-xl font-semibold text-white mb-2">5. Contenido del Usuario</h2>
-            <p>Al publicar contenido (fotos, comentarios, etc.) en NL VIP CLUB:</p>
+            <p>Al publicar contenido (fotos, comentarios, etc.) en NL VIP TEAM:</p>
             <ul className="list-disc ml-6 mt-2 space-y-1">
               <li>Mantienes la propiedad de tu contenido</li>
               <li>Nos otorgas licencia para mostrar ese contenido en la plataforma</li>
@@ -70,7 +70,7 @@ export default function TermsOfService() {
 
           <section>
             <h2 className="text-xl font-semibold text-white mb-2">7. Propiedad Intelectual</h2>
-            <p>Todo el contenido de NL VIP CLUB (diseño, logos, textos, rutinas) está protegido por derechos de propiedad intelectual y no puede ser copiado o distribuido sin autorización.</p>
+            <p>Todo el contenido de NL VIP TEAM (diseño, logos, textos, rutinas) está protegido por derechos de propiedad intelectual y no puede ser copiado o distribuido sin autorización.</p>
           </section>
 
           <section>
@@ -86,7 +86,7 @@ export default function TermsOfService() {
 
           <section>
             <h2 className="text-xl font-semibold text-white mb-2">9. Limitación de Responsabilidad</h2>
-            <p>NL VIP CLUB se proporciona "tal cual". No garantizamos que el servicio sea ininterrumpido o libre de errores. No seremos responsables de daños indirectos derivados del uso de la aplicación.</p>
+            <p>NL VIP TEAM se proporciona "tal cual". No garantizamos que el servicio sea ininterrumpido o libre de errores. No seremos responsables de daños indirectos derivados del uso de la aplicación.</p>
           </section>
 
           <section>
@@ -102,7 +102,7 @@ export default function TermsOfService() {
         </div>
 
         <div className="mt-10 pt-6 border-t border-white/10">
-          <p className="text-gray-500 text-sm">© 2025 NL VIP CLUB. Todos los derechos reservados.</p>
+          <p className="text-gray-500 text-sm">© 2025 NL VIP TEAM. Todos los derechos reservados.</p>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.leonardos.app',
-  appName: 'NL VIP Club',
+  appName: 'NL VIP Team',
   webDir: 'out',
   plugins: {
     SplashScreen: {

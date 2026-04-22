@@ -862,7 +862,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                   className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-violet-500/20"
                 />
                 <div className="hidden sm:block">
-                  <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP Club</h1>
+                  <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP Team</h1>
                   <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Master Admin</p>
                 </div>
               </div>

@@ -5,7 +5,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Toaster } from '@/components/ui/toaster'
 
 export const metadata = {
-  title: 'NL VIP Club',
+  title: 'NL VIP Team',
   description: 'Premium Fitness Experience - Tu gimnasio en tu bolsillo',
   formatDetection: {
     telephone: false,
