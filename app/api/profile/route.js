@@ -40,16 +40,17 @@ export async function POST(request) {
             }
         }
 
-        // Never allow clients to promote themselves or change ownership fields.
-        // Only admins can change role/trainer_id.
+        // Fields that NOBODY can change via this endpoint (not even admins):
+        // - id: primary key, changing it would orphan related rows
+        // - email: managed by Supabase Auth, not by the profiles row
+        // - created_at: historical timestamp
+        const ALWAYS_FORBIDDEN = ['id', 'email', 'created_at']
+        for (const field of ALWAYS_FORBIDDEN) delete updates[field]
+
+        // Only admins can change role/trainer_id/premium status.
         const SELF_FORBIDDEN = ['role', 'trainer_id', 'is_premium', 'premium_until']
         if (!isAdmin) {
             for (const field of SELF_FORBIDDEN) delete updates[field]
-        }
-
-        // Never null out the email accidentally
-        if ('email' in updates && !updates.email) {
-            delete updates.email
         }
 
         const { data, error } = await supabaseAdmin
