@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { sendNativeApplePush } from '@/lib/apn'
 import { sendPushToUser } from '@/lib/webpush'
 
-export const dynamic = 'force-dynamic'
+export const dynamic = process.env.STATIC_EXPORT === 'true' ? 'force-static' : 'force-dynamic'
 
 // GET /api/cron/progress-reminders
 //
@@ -21,6 +21,11 @@ export const dynamic = 'force-dynamic'
 // same env var and pass it in the header.
 
 export async function GET(request) {
+  // En exportación estática (móvil), retornamos éxito sin ejecutar lógica de headers
+  if (process.env.STATIC_EXPORT === 'true') {
+    return NextResponse.json({ static: true })
+  }
+
   const auth = request.headers.get('authorization') || ''
   const secret = process.env.CRON_SECRET
   if (!secret || auth !== `Bearer ${secret}`) {
