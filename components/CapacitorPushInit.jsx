@@ -4,10 +4,8 @@ import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { toast } from '@/hooks/use-toast'
 
-// Enable verbose push diagnostics via a toast whenever we hit a milestone.
-// Users on TestFlight see the toasts and can screenshot them for us.
-// Set to false before GA if needed.
-const PUSH_DEBUG = true
+// Set to true to surface push registration milestones as toasts for debugging.
+const PUSH_DEBUG = false
 
 // ⚠️ IMPORTANT: Capacitor native plugin imports MUST be dynamic (inside useEffect).
 // Top-level static imports of @capacitor/push-notifications cause an immediate

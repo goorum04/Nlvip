@@ -586,8 +586,6 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
           return
         }
         const blob = new Blob(chunks, { type: mimeType || 'audio/webm' })
-        // Surface recording stats so we can tell if iOS MediaRecorder produced a valid file.
-        toast({ title: '🎤 Audio grabado', description: `${Math.round(blob.size / 1024)} KB — ${blob.type || 'sin tipo'}` })
         setAudioBlob(blob)
         stream.getTracks().forEach(track => track.stop())
       }
