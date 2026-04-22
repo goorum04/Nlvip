@@ -532,6 +532,46 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
   const handleAddProgress = async (e) => {
     e.preventDefault()
+
+    // Validar revisión completa: peso + todas las medidas + 3 fotos del día.
+    // Si falta algo, abortar y decirle exactamente qué le falta.
+    const requiredFields = {
+      'peso': parseFloat(newWeight) || null,
+      'pecho': parseFloat(newChest) || null,
+      'cintura': parseFloat(newWaist) || null,
+      'cadera': parseFloat(newHips) || null,
+      'brazo': parseFloat(newArms) || null,
+      'muslo': parseFloat(newLegs) || null,
+      'glúteo': parseFloat(newGlutes) || null,
+      'gemelo': parseFloat(newCalf) || null,
+    }
+    const missingMeasurements = Object.entries(requiredFields)
+      .filter(([, v]) => !v)
+      .map(([k]) => k)
+
+    const today = new Date().toISOString().split('T')[0]
+    const photosToday = (progressPhotos || []).filter(p => {
+      const d = p.date ? String(p.date).split('T')[0] : null
+      return d === today
+    })
+    const photoTypesToday = new Set(photosToday.map(p => p.photo_type))
+    const needsPhotoTypes = ['front', 'side', 'back'].filter(t => !photoTypesToday.has(t))
+
+    if (missingMeasurements.length > 0 || needsPhotoTypes.length > 0) {
+      const parts = []
+      if (missingMeasurements.length) parts.push(`Medidas: ${missingMeasurements.join(', ')}`)
+      if (needsPhotoTypes.length) {
+        const labels = { front: 'frente', side: 'lado', back: 'espalda' }
+        parts.push(`Fotos de hoy: ${needsPhotoTypes.map(t => labels[t]).join(', ')}`)
+      }
+      toast({
+        title: 'Falta información para la revisión',
+        description: parts.join(' · '),
+        variant: 'destructive',
+      })
+      return
+    }
+
     setLoading(true)
     try {
       const weightKg = parseFloat(newWeight) || null

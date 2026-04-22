@@ -26,7 +26,20 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
   const [availableDiets, setAvailableDiets] = useState([])
   const [showWorkoutDetail, setShowWorkoutDetail] = useState(false)
   const [assigning, setAssigning] = useState(false)
+  const [savingReminderFreq, setSavingReminderFreq] = useState(false)
   const { toast } = useToast()
+
+  const REMINDER_FREQUENCY_OPTIONS = [
+    { value: 'off', label: 'Sin recordatorio', days: null },
+    { value: '7', label: 'Semanal', days: 7 },
+    { value: '14', label: 'Cada 2 semanas', days: 14 },
+    { value: '21', label: 'Cada 3 semanas', days: 21 },
+    { value: '30', label: 'Mensual', days: 30 },
+  ]
+
+  const currentReminderValue = memberData?.progress_reminder_days
+    ? String(memberData.progress_reminder_days)
+    : 'off'
 
   useEffect(() => {
     if (member && isOpen) {
@@ -125,6 +138,35 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
       setAssigning(false)
+    }
+  }
+
+  const handleReminderFrequencyChange = async (value) => {
+    if (!member?.id) return
+    const option = REMINDER_FREQUENCY_OPTIONS.find(o => o.value === value)
+    if (!option) return
+    setSavingReminderFreq(true)
+    try {
+      const res = await authFetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: member.id,
+          updates: { progress_reminder_days: option.days },
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'No se pudo guardar')
+      setMemberData(prev => prev ? { ...prev, progress_reminder_days: option.days } : prev)
+      toast({
+        title: option.days
+          ? `Recordatorio ${option.label.toLowerCase()} activado`
+          : 'Recordatorio desactivado',
+      })
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setSavingReminderFreq(false)
     }
   }
 
@@ -257,6 +299,40 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                 Pedir revisión
               </Button>
             </div>
+
+            {/* Recordatorio automático de progreso */}
+            <Card className="bg-black/30 border-violet-500/20 rounded-2xl">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-white text-base flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-violet-400" />
+                  Recordatorio automático
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-xs text-gray-400">
+                  Avisa a este socio por notificación para que suba su revisión (3 fotos + todas las medidas) cada cierto tiempo. El aviso se envía por la mañana.
+                </p>
+                <Select
+                  value={currentReminderValue}
+                  onValueChange={handleReminderFrequencyChange}
+                  disabled={savingReminderFreq}
+                >
+                  <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white">
+                    <SelectValue placeholder="Frecuencia…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REMINDER_FREQUENCY_OPTIONS.map(o => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {memberData?.last_progress_reminder_at && (
+                  <p className="text-[11px] text-gray-500">
+                    Último aviso: {new Date(memberData.last_progress_reminder_at).toLocaleString()}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Rutina Asignada */}
             <Card className="bg-black/30 border-violet-500/20 rounded-2xl">

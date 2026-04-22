@@ -47,11 +47,16 @@ export async function POST(request) {
         const ALWAYS_FORBIDDEN = ['id', 'email', 'created_at']
         for (const field of ALWAYS_FORBIDDEN) delete updates[field]
 
-        // Only admins can change role/trainer_id/premium status.
-        const SELF_FORBIDDEN = ['role', 'trainer_id', 'is_premium', 'premium_until']
+        // Only admins can change role/trainer_id/premium status and the
+        // progress-reminder cadence (configured from the admin member panel).
+        const SELF_FORBIDDEN = ['role', 'trainer_id', 'is_premium', 'premium_until', 'progress_reminder_days']
         if (!isAdmin) {
             for (const field of SELF_FORBIDDEN) delete updates[field]
         }
+
+        // last_progress_reminder_at is only ever written by the cron job,
+        // never by any interactive caller (admin or member).
+        delete updates.last_progress_reminder_at
 
         const { data, error } = await supabaseAdmin
             .from('profiles')
