@@ -16,6 +16,10 @@ workflows:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         APP_STORE_APPLE_ID: "6759666320"
+        # Activa el early-return en rutas API dinámicas (p.ej. cron) para que
+        # Next.js no intente prerenderizar handlers que leen request.headers
+        # cuando se hace `output: 'export'`.
+        STATIC_EXPORT: "true"
       node: v20.11.0
       xcode: latest
       cocoapods: default
