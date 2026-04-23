@@ -351,7 +351,7 @@ export default function App() {
               />
             </div>
             <h1 className="text-4xl font-black text-white tracking-tighter text-center leading-none">
-              NL VIP <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">CLUB</span>
+              NL VIP <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">TEAM</span>
             </h1>
             <p className="text-gray-500 mt-2 font-medium uppercase tracking-[0.2em] text-[10px]">Premium Fitness Experience</p>
           </div>
