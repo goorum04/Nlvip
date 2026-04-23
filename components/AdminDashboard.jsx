@@ -111,15 +111,55 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const [selectedMemberForMacros, setSelectedMemberForMacros] = useState('')
   const [selectedTrainerForMacros, setSelectedTrainerForMacros] = useState('')
 
+  // In-app notice counter: cuántos cuestionarios nutricionales están
+  // esperando revisión del admin (status='submitted'). Alimenta el banner
+  // superior y los badges en los botones de navegación.
+  const pendingDietSubmissions = (dietRequests || []).filter(
+    r => r && r.status === 'submitted'
+  ).length
+
   useEffect(() => {
     loadData().catch(err => {
       console.error('Error loading dashboard data:', err)
-      toast({ 
-        title: 'Error de carga', 
+      toast({
+        title: 'Error de carga',
         description: 'Hubo un problema recuperando algunos datos. La interfaz podría estar incompleta.',
         variant: 'destructive'
       })
     })
+
+    // Realtime: socio envía el cuestionario nutricional → status pasa a
+    // 'submitted'. Refrescamos la lista y lanzamos un toast para que el
+    // admin se entere aunque esté en otra pestaña de la app.
+    const dietRequestsChannel = supabase
+      .channel('admin_diet_requests')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'diet_onboarding_requests',
+      }, async (payload) => {
+        loadDietRequests()
+        if (payload.eventType === 'UPDATE' && payload.new?.status === 'submitted') {
+          let memberName = 'Un socio'
+          try {
+            const { data: mp } = await supabase
+              .from('profiles')
+              .select('name, email')
+              .eq('id', payload.new.member_id)
+              .maybeSingle()
+            memberName = mp?.name || mp?.email?.split('@')[0] || memberName
+          } catch {}
+          toast({
+            title: '📋 Cuestionario recibido',
+            description: `${memberName} ha rellenado el formulario nutricional.`,
+          })
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(dietRequestsChannel)
+    }
   }, [])
 
   const loadData = async () => {
@@ -949,6 +989,33 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       />
 
       <main className="container mx-auto px-4 py-8 overflow-x-hidden">
+        {/* Aviso in-app: formularios nutricionales pendientes de revisión */}
+        {pendingDietSubmissions > 0 && activeTab !== 'diets' && (
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => setActiveTab('diets')}
+              className="w-full flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-violet-900/50 to-cyan-900/30 border border-violet-500/40 hover:from-violet-900/70 hover:to-cyan-900/50 transition-all text-left"
+            >
+              <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0 relative">
+                <ChefHat className="w-5 h-5 text-violet-300" />
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-pulse">
+                  {pendingDietSubmissions}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-bold text-sm">
+                  {pendingDietSubmissions === 1
+                    ? 'Tienes 1 cuestionario nutricional pendiente de revisar'
+                    : `Tienes ${pendingDietSubmissions} cuestionarios nutricionales pendientes de revisar`}
+                </p>
+                <p className="text-violet-300 text-xs mt-0.5">Toca para ir a Dietas y prepararles el plan.</p>
+              </div>
+              <ChevronDown className="w-4 h-4 text-violet-300 flex-shrink-0 rotate-[-90deg]" />
+            </button>
+          </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={(tab) => { setTabHistory(prev => [...prev, activeTab]); setActiveTab(tab) }} className="space-y-6">
           <div className="flex items-center gap-2 pb-2 flex-wrap">
 
@@ -1016,17 +1083,22 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
             {/* Menú ENTRENAMIENTOS */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${
-                    ['challenges', 'workouts', 'diets', 'recipes', 'calculator'].includes(activeTab) 
-                      ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent' 
+                <Button
+                  variant="outline"
+                  className={`relative border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${
+                    ['challenges', 'workouts', 'diets', 'recipes', 'calculator'].includes(activeTab)
+                      ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent'
                       : 'text-gray-300'
                   }`}
                 >
                   <Dumbbell className="w-4 h-4" />
                   Entrenamientos
                   <ChevronDown className="w-3 h-3" />
+                  {pendingDietSubmissions > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-pulse">
+                      {pendingDietSubmissions}
+                    </span>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-[#1a1a1a] border-violet-500/30 text-white min-w-[180px]">
@@ -1045,12 +1117,17 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                   Rutinas
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-violet-500/20" />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => setActiveTab('diets')}
                   className={`cursor-pointer gap-3 ${activeTab === 'diets' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
                 >
                   <Apple className="w-4 h-4" />
-                  Dietas
+                  <span className="flex-1">Dietas</span>
+                  {pendingDietSubmissions > 0 && (
+                    <span className="min-w-[20px] h-[20px] px-1.5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+                      {pendingDietSubmissions}
+                    </span>
+                  )}
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => setActiveTab('recipes')}
