@@ -31,7 +31,7 @@ import FoodTracker from './FoodTracker'
 import { AvatarBubble, ProfileModal } from './UserProfile'
 import { CycleModule } from './CycleModule'
 import { LifeStageSelector, PregnancyMode, PostpartumMode, LactationTracker } from './LifeStageModules'
-import { DietOnboardingBanner } from './DietOnboardingForm'
+import DietOnboardingForm, { DietOnboardingBanner } from './DietOnboardingForm'
 import { DietDailyView, DietWeeklyView } from './DietTabParts'
 import { SymptomsTracker } from './SymptomsTracker'
 import PRTracker from './PRTracker'
@@ -151,18 +151,20 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
     }
   }
 
-  // First-run landing: if a premium member has a pending diet onboarding
-  // and they haven't moved elsewhere yet, snap them to the Dieta tab so
-  // the questionnaire is the first thing they see after registering.
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false)
+  const [hasSkippedOnboarding, setHasSkippedOnboarding] = useState(false)
+
+  // First-run landing: if a premium member has a pending diet onboarding,
+  // show a pop-up modal so they fill it right away.
   useEffect(() => {
     if (autoJumpedToOnboardingRef.current) return
     if (!onboardingChecked) return
     if (!pendingOnboarding) return
     if (!hasPremium) return
-    if (activeTab !== 'activity') return
+    if (hasSkippedOnboarding) return
     autoJumpedToOnboardingRef.current = true
-    setActiveTab('diet')
-  }, [onboardingChecked, pendingOnboarding, hasPremium, activeTab])
+    setShowOnboardingModal(true)
+  }, [onboardingChecked, pendingOnboarding, hasPremium, hasSkippedOnboarding])
 
   useEffect(() => {
     loadData()
@@ -1069,7 +1071,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 requestId={pendingOnboarding.id}
                 memberId={user.id}
                 memberName={profile.name}
-                autoExpand={autoJumpedToOnboardingRef.current}
+                autoExpand={false}
                 onCompleted={() => {
                   setPendingOnboarding(null)
                   loadData()
@@ -1358,6 +1360,55 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
         adminId={gymAdmin?.id}
         adminName={gymAdmin?.name}
       />
+
+      {/* ONBOARDING MODAL */}
+      {showOnboardingModal && pendingOnboarding && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-lg my-auto pt-8 pb-8 animate-in fade-in zoom-in duration-300">
+            <Card className="bg-gradient-to-br from-violet-900/40 to-cyan-900/20 border-violet-500/50 rounded-[2.5rem] shadow-2xl shadow-violet-500/20 overflow-hidden">
+              <CardHeader className="text-center pb-2 bg-white/5 border-b border-white/5 mb-4">
+                <CardTitle className="text-white text-2xl font-black flex items-center justify-center gap-2">
+                  <Apple className="w-6 h-6 text-violet-400" />
+                  Paso Final: Tu Dieta
+                </CardTitle>
+                <CardDescription className="text-gray-300 mt-2 pb-2 px-4">
+                  Para crearte un plan nutricional adaptado a tus necesidades, necesito que rellenes este cuestionario.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <DietOnboardingForm
+                  requestId={pendingOnboarding.id}
+                  memberId={user.id}
+                  onComplete={() => {
+                    setPendingOnboarding(null)
+                    setShowOnboardingModal(false)
+                    loadData()
+                  }}
+                />
+                
+                <div className="mt-8 pt-4 border-t border-white/10 text-center">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => {
+                      toast({
+                        title: "⚠️ Atención",
+                        description: "Hasta que no rellenes este formulario completamente, no podré crearte una dieta ajustada a tus necesidades.",
+                        variant: "destructive",
+                        duration: 8000
+                      })
+                      setHasSkippedOnboarding(true)
+                      setShowOnboardingModal(false)
+                    }}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    Rellenar más tarde
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       <Toaster />
     </div>
