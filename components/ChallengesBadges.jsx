@@ -152,94 +152,108 @@ export function BadgesGallery({ userId }) {
   )
 }
 
-// Componente de Reto individual
-export function ChallengeCard({ challenge, participation, onJoin, onUpdateProgress }) {
-  const isJoined = !!participation
+// Tipos de reto: config visual
+const challengeTypeConfig = {
+  workouts: { icon: Dumbbell, label: 'Entrenamientos', unit: 'entrenos', gradient: 'from-violet-600 to-purple-500', glow: 'shadow-violet-500/30' },
+  weight:   { icon: Target,    label: 'Pérdida de peso', unit: 'kg',       gradient: 'from-cyan-500 to-blue-500',   glow: 'shadow-cyan-500/30'   },
+  consistency: { icon: Flame,  label: 'Constancia',      unit: 'días',     gradient: 'from-orange-500 to-red-500', glow: 'shadow-orange-500/30' },
+}
+
+// Tarjeta grande para reto ACEPTADO (en curso o completado)
+function ActiveChallengeCard({ challenge, participation }) {
   const progress = participation?.progress_value || 0
   const isCompleted = participation?.completed || false
   const percentage = Math.min((progress / challenge.target_value) * 100, 100)
-  
-  const typeIcons = {
-    workouts: Dumbbell,
-    weight: Target,
-    consistency: Flame
-  }
-  const TypeIcon = typeIcons[challenge.type] || Target
-
+  const cfg = challengeTypeConfig[challenge.type] || challengeTypeConfig.workouts
+  const TypeIcon = cfg.icon
   const daysLeft = Math.max(0, Math.ceil((new Date(challenge.end_date) - new Date()) / (1000 * 60 * 60 * 24)))
 
   return (
-    <Card className={`
-      bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl
-      ${isCompleted ? 'border-green-500/50 shadow-lg shadow-green-500/10' : ''}
-      transition-all hover:border-violet-500/30
-    `}>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className={`
-              w-12 h-12 rounded-2xl flex items-center justify-center
-              ${isCompleted 
-                ? 'bg-gradient-to-br from-green-500 to-emerald-400' 
-                : 'bg-gradient-to-br from-violet-500/20 to-cyan-500/10 border border-violet-500/20'
-              }
-            `}>
-              {isCompleted ? (
-                <CheckCircle2 className="w-6 h-6 text-white" />
-              ) : (
-                <TypeIcon className={`w-6 h-6 ${isJoined ? 'text-violet-400' : 'text-gray-500'}`} />
-              )}
-            </div>
-            <div>
-              <h3 className="font-bold text-white">{challenge.title}</h3>
-              <p className="text-xs text-gray-500 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {daysLeft > 0 ? `${daysLeft} días restantes` : 'Finalizado'}
-              </p>
-            </div>
+    <div className={`relative overflow-hidden rounded-3xl border ${
+      isCompleted
+        ? 'border-emerald-500/40 bg-gradient-to-br from-emerald-950/60 to-[#141414]'
+        : 'border-violet-500/20 bg-gradient-to-br from-[#1c1524] to-[#121212]'
+    } p-5 shadow-xl ${isCompleted ? 'shadow-emerald-500/10' : cfg.glow}`}>
+
+      {/* Glow blob de fondo */}
+      <div className={`absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl opacity-20 bg-gradient-to-br ${cfg.gradient}`} />
+
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4 relative">
+        <div className="flex items-center gap-3">
+          <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${isCompleted ? 'from-emerald-500 to-green-400' : cfg.gradient} flex items-center justify-center shadow-lg`}>
+            {isCompleted ? <CheckCircle2 className="w-6 h-6 text-white" /> : <TypeIcon className="w-6 h-6 text-white" />}
           </div>
-          
-          {isCompleted && (
-            <div className="bg-green-500/20 text-green-400 px-2 py-1 rounded-lg text-xs font-bold">
-              ✓ Completado
-            </div>
-          )}
+          <div>
+            <h3 className="font-black text-white text-base leading-tight">{challenge.title}</h3>
+            <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+              <Clock className="w-3 h-3" />
+              {daysLeft > 0 ? `${daysLeft} días restantes` : 'Finalizado'}
+            </p>
+          </div>
         </div>
-
-        <p className="text-gray-400 text-sm mb-4">{challenge.description}</p>
-
-        {isJoined ? (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Progreso</span>
-              <span className="text-violet-400 font-bold">
-                {progress} / {challenge.target_value}
-                {challenge.type === 'weight' ? ' kg' : challenge.type === 'consistency' ? ' días' : ' entrenos'}
-              </span>
-            </div>
-            <div className="relative h-3 bg-black/50 rounded-full overflow-hidden">
-              <div 
-                className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${
-                  isCompleted 
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-400' 
-                    : 'bg-gradient-to-r from-violet-500 to-cyan-500'
-                }`}
-                style={{ width: `${percentage}%` }}
-              />
-            </div>
-            <p className="text-center text-xs text-gray-500">{Math.round(percentage)}% completado</p>
-          </div>
+        {isCompleted ? (
+          <span className="text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full">✓ Completado</span>
         ) : (
-          <Button 
-            onClick={() => onJoin(challenge.id)}
-            className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-xl hover:opacity-90"
-          >
-            <Zap className="w-4 h-4 mr-2" />
-            Unirme al Reto
-          </Button>
+          <span className="text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30 px-2.5 py-1 rounded-full flex items-center gap-1">
+            <Flame className="w-3 h-3" /> En curso
+          </span>
         )}
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Progress */}
+      <div className="space-y-2 relative">
+        <div className="flex justify-between items-end">
+          <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Progreso</span>
+          <span className={`text-2xl font-black ${isCompleted ? 'text-emerald-400' : 'text-white'}`}>
+            {Math.round(percentage)}<span className="text-sm font-medium text-gray-500">%</span>
+          </span>
+        </div>
+        <div className="relative h-3 bg-white/5 rounded-full overflow-hidden">
+          <div
+            className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 bg-gradient-to-r ${isCompleted ? 'from-emerald-500 to-green-400' : cfg.gradient}`}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-xs text-gray-600">
+          <span>{progress} {cfg.unit}</span>
+          <span>Meta: {challenge.target_value} {cfg.unit}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Tarjeta compacta para reto DISPONIBLE (no aceptado)
+function AvailableChallengeCard({ challenge, onJoin }) {
+  const cfg = challengeTypeConfig[challenge.type] || challengeTypeConfig.workouts
+  const TypeIcon = cfg.icon
+  const daysLeft = Math.max(0, Math.ceil((new Date(challenge.end_date) - new Date()) / (1000 * 60 * 60 * 24)))
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-gradient-to-br from-[#1a1a1a] to-[#111] p-4 transition-all duration-300 hover:border-violet-500/30 hover:shadow-lg hover:shadow-violet-500/5 group">
+      <div className="flex items-center gap-4">
+        <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${cfg.gradient} flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity flex-shrink-0`}>
+          <TypeIcon className="w-5 h-5 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-bold text-white text-sm leading-tight truncate">{challenge.title}</h4>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Meta: <span className="text-gray-400">{challenge.target_value} {cfg.unit}</span>
+            <span className="mx-1.5">·</span>
+            <Clock className="w-3 h-3 inline -mt-0.5" /> {daysLeft}d
+          </p>
+        </div>
+        <Button
+          onClick={() => onJoin(challenge.id)}
+          size="sm"
+          className={`flex-shrink-0 bg-gradient-to-r ${cfg.gradient} text-white font-bold rounded-xl text-xs px-3 py-1.5 h-auto hover:opacity-90 hover:scale-105 transition-all shadow-lg`}
+        >
+          <Zap className="w-3 h-3 mr-1" /> Unirme
+        </Button>
+      </div>
+      <p className="text-xs text-gray-600 mt-2.5 leading-relaxed line-clamp-2">{challenge.description}</p>
+    </div>
   )
 }
 
@@ -250,13 +264,10 @@ export function ChallengesSection({ userId }) {
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadChallenges()
-  }, [userId])
+  useEffect(() => { loadChallenges() }, [userId])
 
   const loadChallenges = async () => {
     try {
-      // Cargar retos activos
       const { data: activeChall } = await supabase
         .from('challenges')
         .select('*')
@@ -264,7 +275,6 @@ export function ChallengesSection({ userId }) {
         .gte('end_date', new Date().toISOString().split('T')[0])
         .order('created_at', { ascending: false })
 
-      // Cargar participaciones del usuario
       const { data: parts } = await supabase
         .from('challenge_participants')
         .select('*')
@@ -286,75 +296,89 @@ export function ChallengesSection({ userId }) {
         member_id: userId,
         progress_value: 0
       }])
-
       if (error) throw error
-
-      toast({ title: '¡Te has unido al reto! 💪', description: 'A por todas, ¡tú puedes!' })
+      toast({ title: '¡Reto aceptado! 🔥', description: '¡A por todas, tú puedes!' })
       loadChallenges()
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     }
   }
 
-  const getParticipation = (challengeId) => 
-    participations.find(p => p.challenge_id === challengeId)
+  const getParticipation = (id) => participations.find(p => p.challenge_id === id)
 
   if (loading) {
     return (
       <div className="space-y-4">
-        {[1,2].map(i => (
-          <Card key={i} className="bg-[#1a1a1a] border-[#2a2a2a] rounded-3xl animate-pulse">
-            <CardContent className="p-5 h-40" />
-          </Card>
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-28 bg-[#1a1a1a] rounded-3xl animate-pulse border border-[#2a2a2a]" />
         ))}
       </div>
     )
   }
 
-  const activeParticipations = participations.filter(p => !p.completed)
-  const completedParticipations = participations.filter(p => p.completed)
+  const joinedChallenges = challenges.filter(c => !!getParticipation(c.id))
+  const availableChallenges = challenges.filter(c => !getParticipation(c.id))
+  const completedCount = participations.filter(p => p.completed).length
 
   return (
     <div className="space-y-6">
-      {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] rounded-2xl p-4 border border-[#2a2a2a] text-center">
-          <Target className="w-6 h-6 text-violet-400 mx-auto mb-1" />
-          <p className="text-2xl font-black text-white">{challenges.length}</p>
-          <p className="text-xs text-gray-500">Disponibles</p>
-        </div>
-        <div className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] rounded-2xl p-4 border border-[#2a2a2a] text-center">
-          <Flame className="w-6 h-6 text-orange-400 mx-auto mb-1" />
-          <p className="text-2xl font-black text-white">{activeParticipations.length}</p>
-          <p className="text-xs text-gray-500">En curso</p>
-        </div>
-        <div className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] rounded-2xl p-4 border border-[#2a2a2a] text-center">
-          <CheckCircle2 className="w-6 h-6 text-green-400 mx-auto mb-1" />
-          <p className="text-2xl font-black text-white">{completedParticipations.length}</p>
-          <p className="text-xs text-gray-500">Completados</p>
-        </div>
+
+      {/* Stats strip */}
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { icon: Target,       value: challenges.length,        label: 'Activos',    color: 'text-violet-400' },
+          { icon: Flame,        value: joinedChallenges.length,  label: 'En curso',   color: 'text-orange-400' },
+          { icon: CheckCircle2, value: completedCount,           label: 'Superados',  color: 'text-emerald-400' },
+        ].map(({ icon: Icon, value, label, color }) => (
+          <div key={label} className="rounded-2xl bg-white/[0.03] border border-white/5 p-3 text-center">
+            <Icon className={`w-5 h-5 ${color} mx-auto mb-1`} />
+            <p className="text-xl font-black text-white">{value}</p>
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider">{label}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Lista de retos */}
-      {challenges.length > 0 ? (
-        <div className="space-y-4">
-          {challenges.map(challenge => (
-            <ChallengeCard
-              key={challenge.id}
-              challenge={challenge}
-              participation={getParticipation(challenge.id)}
-              onJoin={joinChallenge}
-            />
-          ))}
+      {/* Mis retos en curso */}
+      {joinedChallenges.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-5 rounded-full bg-gradient-to-b from-orange-500 to-red-500" />
+            <h3 className="text-white font-black text-sm uppercase tracking-widest">Mis Retos</h3>
+            <span className="text-xs bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-full px-2 py-0.5 font-bold">{joinedChallenges.length}</span>
+          </div>
+          <div className="space-y-3">
+            {joinedChallenges.map(c => (
+              <ActiveChallengeCard key={c.id} challenge={c} participation={getParticipation(c.id)} />
+            ))}
+          </div>
         </div>
-      ) : (
-        <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
-          <CardContent className="p-8 text-center">
-            <Target className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-white font-bold text-lg mb-2">No hay retos activos</h3>
-            <p className="text-gray-500">Los entrenadores crearán nuevos retos pronto. ¡Mantente atento!</p>
-          </CardContent>
-        </Card>
+      )}
+
+      {/* Retos disponibles */}
+      {availableChallenges.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-5 rounded-full bg-gradient-to-b from-violet-500 to-cyan-500" />
+            <h3 className="text-white font-black text-sm uppercase tracking-widest">Disponibles</h3>
+            <span className="text-xs bg-violet-500/20 text-violet-400 border border-violet-500/30 rounded-full px-2 py-0.5 font-bold">{availableChallenges.length}</span>
+          </div>
+          <div className="space-y-2">
+            {availableChallenges.map(c => (
+              <AvailableChallengeCard key={c.id} challenge={c} onJoin={joinChallenge} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {challenges.length === 0 && (
+        <div className="rounded-3xl border border-white/5 bg-white/[0.02] p-10 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mx-auto mb-4">
+            <Target className="w-8 h-8 text-violet-500/50" />
+          </div>
+          <h3 className="text-white font-bold text-lg mb-1">No hay retos activos</h3>
+          <p className="text-gray-600 text-sm">El equipo pronto creará nuevos desafíos. ¡Mantente listo!</p>
+        </div>
       )}
     </div>
   )
