@@ -17,11 +17,11 @@ const schema = z.object({
     fat_g: z.number().optional()
   }).optional(),
   memberContext: z.object({
-    weight: z.number().optional(),
-    goal: z.string().optional(),
-    restrictions: z.string().optional(),
-    numMeals: z.number().optional()
-  }).optional()
+    weight: z.union([z.number(), z.string()]).optional().nullable(),
+    goal: z.string().optional().nullable(),
+    restrictions: z.string().optional().nullable(),
+    numMeals: z.union([z.number(), z.string()]).optional().nullable()
+  }).optional().nullable()
 })
 
 // POST /api/diet-onboarding/refine-draft

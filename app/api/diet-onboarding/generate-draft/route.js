@@ -8,7 +8,7 @@ import { DIET_TEMPLATE } from '@/lib/dietTemplate'
 const schema = z.object({
   requestId: z.string().uuid(),
   memberId: z.string().uuid(),
-  responses: z.record(z.string(), z.unknown())
+  responses: z.record(z.string(), z.unknown()).nullable().optional()
 })
 
 function getOpenAI() {
@@ -46,7 +46,8 @@ export async function POST(req) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
     }
-    const { requestId, memberId, responses } = parsed.data
+    const { requestId, memberId, responses: rawResponses } = parsed.data
+    const responses = rawResponses || {}
 
     // 1. Get member profile for macros calculation
     const { data: profile } = await supabase
