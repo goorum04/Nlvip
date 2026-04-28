@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,9 +8,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Sparkles, LoaderCircle as Loader2, ChevronDown, ChevronUp, Dumbbell, Save, RefreshCw } from 'lucide-react'
+import { Sparkles, LoaderCircle as Loader2, ChevronDown, ChevronUp, Save, RefreshCw, Settings2, User, Target, AlertTriangle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
 
 const EQUIPMENT_OPTIONS = [
   { value: 'cable', label: 'Cable / Polea' },
@@ -22,10 +23,90 @@ const EQUIPMENT_OPTIONS = [
   { value: 'peso_corporal', label: 'Peso corporal' },
 ]
 
+const GOAL_FROM_ONBOARDING = {
+  perder_grasa: 'definición',
+  mantenimiento: 'hipertrofia',
+  ganar_masa: 'hipertrofia'
+}
+
+const ONBOARDING_GOAL_LABEL = {
+  perder_grasa: 'Perder grasa',
+  mantenimiento: 'Mantenimiento',
+  ganar_masa: 'Ganar masa'
+}
+
+const SUPERSET_TAG_RE = /^\[(bi-serie|tri-serie):(\d+)\]\s*/i
+
+function parseExerciseGroup(ex) {
+  if (typeof ex.superset_group === 'number' && ex.superset_group > 0) {
+    return ex.superset_group
+  }
+  const desc = ex.notes || ex.description || ''
+  const m = desc.match(SUPERSET_TAG_RE)
+  return m ? parseInt(m[2], 10) : 0
+}
+
+function stripGroupTag(text) {
+  if (!text) return text
+  return text.replace(SUPERSET_TAG_RE, '').trim()
+}
+
 function RoutinePreview({ routine }) {
   const [expanded, setExpanded] = useState({})
-
   const toggle = (i) => setExpanded(prev => ({ ...prev, [i]: !prev[i] }))
+
+  const renderExerciseRows = (exercises) => {
+    if (!exercises?.length) return null
+    const groups = []
+    let currentGroup = null
+    exercises.forEach((ex, j) => {
+      const g = parseExerciseGroup(ex)
+      if (g && currentGroup && currentGroup.id === g) {
+        currentGroup.items.push({ ex, idx: j })
+      } else if (g) {
+        currentGroup = { id: g, items: [{ ex, idx: j }] }
+        groups.push(currentGroup)
+      } else {
+        groups.push({ id: 0, items: [{ ex, idx: j }] })
+        currentGroup = null
+      }
+    })
+
+    return groups.map((grp, gi) => {
+      const size = grp.items.length
+      const isSuperset = grp.id > 0 && size >= 2
+      const label = size >= 3 ? 'Tri-serie' : 'Bi-serie'
+      const wrapperCls = isSuperset
+        ? 'border border-amber-500/40 bg-amber-500/5 rounded-xl p-2 space-y-2'
+        : 'space-y-2'
+      return (
+        <div key={gi} className={wrapperCls}>
+          {isSuperset && (
+            <div className="flex items-center gap-2 px-1">
+              <span className="text-[10px] uppercase tracking-wide font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                {label}
+              </span>
+              <span className="text-xs text-amber-200/70">{size} ejercicios encadenados</span>
+            </div>
+          )}
+          {grp.items.map(({ ex, idx }) => (
+            <div key={idx} className="flex items-center gap-3 p-3 bg-black/30 rounded-xl border border-white/5">
+              <div className="w-6 h-6 rounded-md bg-violet-500/10 flex items-center justify-center text-violet-400 text-xs font-bold">
+                {idx + 1}
+              </div>
+              <div className="flex-1">
+                <p className="text-white text-sm font-medium">{ex.exercise_name}</p>
+                <p className="text-xs text-gray-500">{ex.sets}×{ex.reps} · {ex.rest_seconds}s descanso</p>
+                {stripGroupTag(ex.notes) && (
+                  <p className="text-xs text-violet-400 mt-0.5">{stripGroupTag(ex.notes)}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    })
+  }
 
   return (
     <div className="space-y-3">
@@ -49,18 +130,7 @@ function RoutinePreview({ routine }) {
           </CardHeader>
           {expanded[i] && (
             <CardContent className="pt-0 space-y-2">
-              {day.exercises?.map((ex, j) => (
-                <div key={j} className="flex items-center gap-3 p-3 bg-black/30 rounded-xl border border-white/5">
-                  <div className="w-6 h-6 rounded-md bg-violet-500/10 flex items-center justify-center text-violet-400 text-xs font-bold">
-                    {j + 1}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white text-sm font-medium">{ex.exercise_name}</p>
-                    <p className="text-xs text-gray-500">{ex.sets}×{ex.reps} · {ex.rest_seconds}s descanso</p>
-                    {ex.notes && <p className="text-xs text-violet-400 mt-0.5">{ex.notes}</p>}
-                  </div>
-                </div>
-              ))}
+              {renderExerciseRows(day.exercises)}
             </CardContent>
           )}
         </Card>
@@ -73,7 +143,14 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
   const [step, setStep] = useState('form') // 'form' | 'loading' | 'preview'
   const [generatedRoutine, setGeneratedRoutine] = useState(null)
   const [savedTemplateId, setSavedTemplateId] = useState(null)
+  const [replacedInfo, setReplacedInfo] = useState([])
   const { toast } = useToast()
+
+  const [members, setMembers] = useState([])
+  const [memberId, setMemberId] = useState('')
+  const [memberSummary, setMemberSummary] = useState(null) // { name, sex, goal, conditions }
+  const [memberLoading, setMemberLoading] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   const [criteria, setCriteria] = useState({
     days_per_week: '4',
@@ -81,8 +158,61 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
     level: 'intermedio',
     equipment: EQUIPMENT_OPTIONS.map(e => e.value),
     session_duration_min: '60',
-    notes: ''
+    notes: '',
+    allow_supersets: true
   })
+
+  // Load members on open
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    ;(async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, name, email, sex, role')
+        .eq('role', 'member')
+        .order('name')
+      if (!cancelled && data) setMembers(data)
+    })()
+    return () => { cancelled = true }
+  }, [open])
+
+  // Auto-load member context when memberId changes
+  useEffect(() => {
+    if (!memberId || memberId === '__none__') { setMemberSummary(null); return }
+    let cancelled = false
+    setMemberLoading(true)
+    ;(async () => {
+      const member = members.find(m => m.id === memberId)
+      const { data: onboarding } = await supabase
+        .from('diet_onboarding_requests')
+        .select('responses')
+        .eq('member_id', memberId)
+        .in('status', ['completed', 'reviewed'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (cancelled) return
+      const responses = onboarding?.responses || null
+      const goal = responses?.objetivo || null
+      const conditions = responses?.extras?.condicion_medica || ''
+      setMemberSummary({
+        name: member?.name || 'Socio',
+        sex: member?.sex || null,
+        rawGoal: goal,
+        goal: goal ? (GOAL_FROM_ONBOARDING[goal] || 'hipertrofia') : null,
+        conditions
+      })
+      setCriteria(prev => ({
+        ...prev,
+        goal: goal ? (GOAL_FROM_ONBOARDING[goal] || prev.goal) : prev.goal,
+        notes: conditions ? `Consideraciones del socio: ${conditions}` : prev.notes
+      }))
+      setMemberLoading(false)
+    })()
+    return () => { cancelled = true }
+  }, [memberId, members])
 
   const toggleEquipment = (value) => {
     setCriteria(prev => ({
@@ -106,6 +236,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           trainer_id: trainerId,
+          member_id: (memberId && memberId !== '__none__') ? memberId : null,
           criteria: {
             ...criteria,
             days_per_week: parseInt(criteria.days_per_week),
@@ -122,6 +253,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
 
       setGeneratedRoutine(data.preview)
       setSavedTemplateId(data.workout_template_id)
+      setReplacedInfo(Array.isArray(data.replaced) ? data.replaced : [])
       setStep('preview')
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -133,6 +265,10 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
     setStep('form')
     setGeneratedRoutine(null)
     setSavedTemplateId(null)
+    setReplacedInfo([])
+    setMemberId('')
+    setMemberSummary(null)
+    setShowAdvanced(false)
     onClose()
   }
 
@@ -141,6 +277,8 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
     onRoutineSaved?.()
     handleClose()
   }
+
+  const isFemale = memberSummary?.sex === 'female'
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -157,97 +295,186 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
           {/* PASO: FORMULARIO */}
           {step === 'form' && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-gray-400 text-sm">Días por semana</Label>
-                  <Select value={criteria.days_per_week} onValueChange={v => setCriteria(p => ({ ...p, days_per_week: v }))}>
-                    <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#1a1a1a] border-violet-500/20">
-                      {[2, 3, 4, 5, 6].map(n => (
-                        <SelectItem key={n} value={String(n)} className="text-white">{n} días</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-gray-400 text-sm">Duración sesión (min)</Label>
-                  <Input
-                    type="number"
-                    value={criteria.session_duration_min}
-                    onChange={e => setCriteria(p => ({ ...p, session_duration_min: e.target.value }))}
-                    className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
-                    min={30} max={120}
-                  />
-                </div>
-              </div>
-
+              {/* Selector de socio (paso 1, único campo obligatorio) */}
               <div>
-                <Label className="text-gray-400 text-sm">Objetivo</Label>
-                <Select value={criteria.goal} onValueChange={v => setCriteria(p => ({ ...p, goal: v }))}>
+                <Label className="text-gray-400 text-sm">Generar para socio</Label>
+                <Select value={memberId} onValueChange={setMemberId}>
                   <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1">
-                    <SelectValue />
+                    <SelectValue placeholder="Selecciona un socio o deja en blanco para genérica" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1a1a1a] border-violet-500/20">
-                    <SelectItem value="hipertrofia" className="text-white">Hipertrofia (volumen muscular)</SelectItem>
-                    <SelectItem value="fuerza" className="text-white">Fuerza</SelectItem>
-                    <SelectItem value="definición" className="text-white">Definición / tonificación</SelectItem>
-                    <SelectItem value="resistencia" className="text-white">Resistencia muscular</SelectItem>
+                  <SelectContent className="bg-[#1a1a1a] border-violet-500/20 max-h-72">
+                    <SelectItem value="__none__" className="text-white">
+                      Sin socio (rutina genérica)
+                    </SelectItem>
+                    {members.map(m => (
+                      <SelectItem key={m.id} value={m.id} className="text-white">
+                        {m.name || m.email}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div>
-                <Label className="text-gray-400 text-sm">Nivel</Label>
-                <Select value={criteria.level} onValueChange={v => setCriteria(p => ({ ...p, level: v }))}>
-                  <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#1a1a1a] border-violet-500/20">
-                    <SelectItem value="principiante" className="text-white">Principiante</SelectItem>
-                    <SelectItem value="intermedio" className="text-white">Intermedio</SelectItem>
-                    <SelectItem value="avanzado" className="text-white">Avanzado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-gray-400 text-sm mb-2 block">Equipamiento disponible</Label>
-                <div className="flex flex-wrap gap-2">
-                  {EQUIPMENT_OPTIONS.map(opt => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => toggleEquipment(opt.value)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${
-                        criteria.equipment.includes(opt.value)
-                          ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
-                          : 'bg-black/30 border-white/10 text-gray-500 hover:border-violet-500/30'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+              {/* Resumen autocalculado del socio */}
+              {memberId && memberId !== '__none__' && (
+                <div className="bg-violet-500/5 border border-violet-500/20 rounded-2xl p-4 space-y-2">
+                  {memberLoading ? (
+                    <div className="flex items-center gap-2 text-gray-400 text-sm">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Cargando datos del socio…
+                    </div>
+                  ) : memberSummary ? (
+                    <>
+                      <div className="flex items-center gap-2 text-white text-sm font-semibold">
+                        <User className="w-4 h-4 text-violet-300" /> {memberSummary.name}
+                        <span className="text-xs text-gray-400 font-normal">
+                          {memberSummary.sex === 'male' ? 'Hombre' : memberSummary.sex === 'female' ? 'Mujer' : 'Sexo no especificado'}
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-2 text-xs text-gray-300">
+                        <Target className="w-3.5 h-3.5 text-cyan-400 mt-0.5" />
+                        <span>
+                          <span className="text-gray-500">Objetivo: </span>
+                          {memberSummary.rawGoal ? `${ONBOARDING_GOAL_LABEL[memberSummary.rawGoal] || memberSummary.rawGoal} → ${memberSummary.goal}` : 'No registrado en onboarding'}
+                        </span>
+                      </div>
+                      {memberSummary.conditions ? (
+                        <div className="flex items-start gap-2 text-xs text-amber-200">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400 mt-0.5" />
+                          <span>
+                            <span className="text-gray-500">Consideraciones: </span>
+                            {memberSummary.conditions}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-500 pl-5">Sin lesiones / condiciones registradas.</div>
+                      )}
+                      {isFemale && (
+                        <div className="text-xs text-pink-300 pl-5 italic">No se incluirán ejercicios de pecho.</div>
+                      )}
+                    </>
+                  ) : null}
                 </div>
-              </div>
+              )}
 
-              <div>
-                <Label className="text-gray-400 text-sm">Notas adicionales (opcional)</Label>
-                <Textarea
-                  value={criteria.notes}
-                  onChange={e => setCriteria(p => ({ ...p, notes: e.target.value }))}
-                  placeholder="Ej: molestia en hombro derecho, evitar sentadilla, rutina para mujer..."
-                  className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1 text-sm min-h-[70px]"
-                />
-              </div>
-
+              {/* Botón principal */}
               <Button
                 onClick={generate}
                 className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-xl py-6 mt-2"
               >
                 <Sparkles className="w-5 h-5 mr-2" /> Generar Rutina
               </Button>
+
+              {/* Colapsable: ajustar parámetros */}
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(v => !v)}
+                className="w-full flex items-center justify-between text-xs text-gray-400 hover:text-violet-300 transition-colors py-2 px-1"
+              >
+                <span className="flex items-center gap-2">
+                  <Settings2 className="w-3.5 h-3.5" />
+                  Ajustar parámetros (opcional)
+                </span>
+                {showAdvanced ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+
+              {showAdvanced && (
+                <div className="space-y-4 pt-2 border-t border-white/5">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-gray-400 text-sm">Días por semana</Label>
+                      <Select value={criteria.days_per_week} onValueChange={v => setCriteria(p => ({ ...p, days_per_week: v }))}>
+                        <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#1a1a1a] border-violet-500/20">
+                          {[2, 3, 4, 5, 6].map(n => (
+                            <SelectItem key={n} value={String(n)} className="text-white">{n} días</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-gray-400 text-sm">Duración sesión (min)</Label>
+                      <Input
+                        type="number"
+                        value={criteria.session_duration_min}
+                        onChange={e => setCriteria(p => ({ ...p, session_duration_min: e.target.value }))}
+                        className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
+                        min={30} max={120}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-gray-400 text-sm">Objetivo</Label>
+                    <Select value={criteria.goal} onValueChange={v => setCriteria(p => ({ ...p, goal: v }))}>
+                      <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1a1a1a] border-violet-500/20">
+                        <SelectItem value="hipertrofia" className="text-white">Hipertrofia (volumen muscular)</SelectItem>
+                        <SelectItem value="fuerza" className="text-white">Fuerza</SelectItem>
+                        <SelectItem value="definición" className="text-white">Definición / tonificación</SelectItem>
+                        <SelectItem value="resistencia" className="text-white">Resistencia muscular</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-gray-400 text-sm">Nivel</Label>
+                    <Select value={criteria.level} onValueChange={v => setCriteria(p => ({ ...p, level: v }))}>
+                      <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1a1a1a] border-violet-500/20">
+                        <SelectItem value="principiante" className="text-white">Principiante</SelectItem>
+                        <SelectItem value="intermedio" className="text-white">Intermedio</SelectItem>
+                        <SelectItem value="avanzado" className="text-white">Avanzado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-gray-400 text-sm mb-2 block">Equipamiento disponible</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {EQUIPMENT_OPTIONS.map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => toggleEquipment(opt.value)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${
+                            criteria.equipment.includes(opt.value)
+                              ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
+                              : 'bg-black/30 border-white/10 text-gray-500 hover:border-violet-500/30'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-gray-400 text-sm">Notas adicionales (opcional)</Label>
+                    <Textarea
+                      value={criteria.notes}
+                      onChange={e => setCriteria(p => ({ ...p, notes: e.target.value }))}
+                      placeholder="Ej: molestia en hombro derecho, evitar sentadilla, rutina para mujer..."
+                      className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1 text-sm min-h-[70px]"
+                    />
+                  </div>
+
+                  <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={criteria.allow_supersets}
+                      onChange={e => setCriteria(p => ({ ...p, allow_supersets: e.target.checked }))}
+                      className="rounded border-violet-500/40 bg-black/50"
+                    />
+                    Permitir bi-series / tri-series cuando convenga
+                  </label>
+                </div>
+              )}
             </div>
           )}
 
@@ -269,6 +496,24 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
           {step === 'preview' && generatedRoutine && (
             <div className="space-y-4">
               <RoutinePreview routine={generatedRoutine} />
+
+              {replacedInfo.length > 0 && (
+                <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+                  <div className="flex items-center gap-1.5 font-semibold mb-1">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Ajustes automáticos al catálogo
+                  </div>
+                  <ul className="space-y-0.5 list-disc pl-4">
+                    {replacedInfo.slice(0, 5).map((r, i) => (
+                      <li key={i}>
+                        {r.dropped
+                          ? `"${r.original}" descartado (sin equivalente en catálogo)`
+                          : `"${r.original}" → "${r.replacement}"`}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-2">
                 <Button

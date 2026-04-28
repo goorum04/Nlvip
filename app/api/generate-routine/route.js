@@ -11,11 +11,13 @@ const criteriaSchema = z.object({
   level: z.enum(['principiante', 'intermedio', 'avanzado']),
   equipment: z.array(z.string()).optional(),
   session_duration_min: z.number().int().min(15).max(180).optional(),
-  notes: z.string().max(500).optional()
+  notes: z.string().max(500).optional(),
+  allow_supersets: z.boolean().optional()
 })
 
 const bodySchema = z.object({
   trainer_id: z.string().uuid().optional().nullable(),
+  member_id: z.string().uuid().optional().nullable(),
   criteria: criteriaSchema
 })
 
@@ -24,12 +26,14 @@ Tu tarea es generar una rutina de entrenamiento estructurada en formato JSON.
 
 REGLAS:
 1. Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown.
-2. Elige los ejercicios EXCLUSIVAMENTE de la lista de catálogo proporcionada.
-3. Usa el nombre exacto del ejercicio tal como aparece en el catálogo.
+2. Usa exclusivamente nombres LITERALES del catálogo de ejercicios proporcionado. No inventes variantes ni sustituyas con ejercicios que no aparezcan en el catálogo.
+3. El nombre del ejercicio debe coincidir EXACTAMENTE con el del catálogo (mayúsculas, tildes y espacios incluidos).
 4. Distribuye los grupos musculares inteligentemente para evitar sobreentrenar músculos sinérgicos en días consecutivos.
-5. Los ejercicios de PECHO (only_male: true) NO deben asignarse a rutinas generales — solo si el trainer lo indica explícitamente.
+5. Los ejercicios de PECHO solo se incluirán si el catálogo proporcionado contiene ejercicios de pecho. NUNCA asignes pecho si no aparece en el catálogo (las rutinas de mujeres no llevan pecho).
 6. Incluye entre 5 y 8 ejercicios por día según la duración indicada.
 7. Los valores de "reps" pueden ser: "10", "8-12", "15-20", "al fallo", "30s".
+8. Adapta la rutina a las condiciones médicas o lesiones indicadas. Evita ejercicios que las puedan agravar (p. ej., si hay problemas de rodilla evita Sentadilla en multipower, Zancadas y Sentadilla búlgara; si hay problemas lumbares evita Peso muerto rumano y Buenos días en polea baja; si hay problemas de hombro evita Press de hombros y elevaciones frontales pesadas). Sustitúyelos por alternativas equivalentes del catálogo.
+9. Si el socio quiere perder grasa o se trabaja resistencia, o si la duración es corta, o si el campo "permitir_supersets" es true, agrupa 2 o 3 ejercicios consecutivos como bi-serie o tri-serie. Para indicarlo añade un campo numérico "superset_group" (entero) en cada ejercicio: ejercicios con el mismo número pertenecen al mismo grupo. Usa 0 o null en ejercicios individuales. El descanso "rest_seconds" dentro del grupo será 0–15s; el descanso normal solo va en el último ejercicio del grupo.
 
 FORMATO JSON DE RESPUESTA:
 {
@@ -45,12 +49,60 @@ FORMATO JSON DE RESPUESTA:
           "sets": 4,
           "reps": "10-12",
           "rest_seconds": 90,
+          "superset_group": 0,
           "notes": "string o null"
         }
       ]
     }
   ]
 }`
+
+const GOAL_FROM_ONBOARDING = {
+  perder_grasa: 'definición',
+  mantenimiento: 'hipertrofia',
+  ganar_masa: 'hipertrofia'
+}
+
+const normalize = (s) => (s || '').toString().trim().toLowerCase()
+
+const STOPWORDS = new Set(['en', 'de', 'con', 'la', 'el', 'los', 'las', 'al', 'por', 'para', 'una', 'un', 'y', 'o', 'sobre'])
+
+function tokens(name) {
+  return normalize(name)
+    .replace(/[()]/g, ' ')
+    .split(/\s+/)
+    .filter(t => t && !STOPWORDS.has(t))
+}
+
+function bestCatalogMatch(proposedName, catalog, allowedMuscle = null) {
+  const propTokens = tokens(proposedName)
+  if (propTokens.length === 0) return null
+  let best = null
+  let bestScore = 0
+  for (const ex of catalog) {
+    if (allowedMuscle && ex.muscle_primary !== allowedMuscle) continue
+    const exTokens = tokens(ex.name)
+    const overlap = propTokens.filter(t => exTokens.includes(t)).length
+    const score = overlap / Math.max(propTokens.length, exTokens.length)
+    if (score > bestScore) {
+      bestScore = score
+      best = ex
+    }
+  }
+  return bestScore >= 0.4 ? best : null
+}
+
+const MUSCLES = ['espalda', 'pecho', 'hombros', 'bíceps', 'biceps', 'tríceps', 'triceps', 'cuádriceps', 'cuadriceps', 'femoral', 'glúteo', 'gluteo', 'gemelos', 'abdomen', 'lumbares']
+
+function muscleFromDayName(dayName) {
+  const n = normalize(dayName)
+  for (const m of MUSCLES) {
+    if (n.includes(m)) {
+      return m.replace('biceps', 'bíceps').replace('triceps', 'tríceps').replace('cuadriceps', 'cuádriceps').replace('gluteo', 'glúteo')
+    }
+  }
+  return null
+}
 
 export async function POST(request) {
   try {
@@ -71,18 +123,15 @@ export async function POST(request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
     }
-    const { trainer_id, criteria } = parsed.data
-    const { days_per_week, goal, level, equipment = [], session_duration_min = 60, notes = '' } = criteria
+    const { trainer_id, member_id, criteria } = parsed.data
+    const { days_per_week, goal, level, equipment = [], session_duration_min = 60, notes = '', allow_supersets = true } = criteria
 
-    // Cargar catálogo de ejercicios desde Supabase
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    // Only admins and trainers can generate routines. A trainer_id in the
-    // body must match the caller (or caller must be admin).
     const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '')
     if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     const { data: { user: caller }, error: authErr } = await supabase.auth.getUser(token)
@@ -101,6 +150,41 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No puedes asignar rutinas a otro entrenador' }, { status: 403 })
     }
 
+    let memberSex = null
+    let memberGoal = null
+    let memberConditions = null
+    let memberDislikes = null
+    let memberRestrictions = null
+
+    if (member_id) {
+      const { data: memberProfile } = await supabase
+        .from('profiles')
+        .select('sex')
+        .eq('id', member_id)
+        .maybeSingle()
+      memberSex = memberProfile?.sex || null
+
+      const { data: lastOnboarding } = await supabase
+        .from('diet_onboarding_requests')
+        .select('responses')
+        .eq('member_id', member_id)
+        .in('status', ['completed', 'reviewed'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      const responses = lastOnboarding?.responses || null
+      if (responses) {
+        memberGoal = responses.objetivo || null
+        memberConditions = responses?.extras?.condicion_medica || null
+        memberDislikes = responses?.extras?.no_me_gusta || null
+        memberRestrictions = Array.isArray(responses.restricciones)
+          ? responses.restricciones.join(', ')
+          : (responses.restricciones || null)
+      }
+    }
+
+    const allowChest = memberSex === 'male'
+
     const { data: catalog, error: catalogError } = await supabase
       .from('exercises')
       .select('id, name, muscle_primary, equipment, difficulty, default_sets, default_reps, default_rest_seconds, only_male')
@@ -114,11 +198,19 @@ export async function POST(request) {
       }, { status: 500 })
     }
 
-    // Formatear catálogo para el prompt (excluir pecho por defecto)
-    const catalogLines = catalog
-      .filter(e => !e.only_male)
+    const filteredCatalog = catalog.filter(e => allowChest ? true : !e.only_male)
+
+    const catalogLines = filteredCatalog
       .map(e => `- ${e.name} (músculo: ${e.muscle_primary}, equipo: ${e.equipment}, dificultad: ${e.difficulty}, series: ${e.default_sets}, reps: ${e.default_reps})`)
       .join('\n')
+
+    const memberContextLines = member_id ? [
+      `Sexo del socio: ${memberSex || 'no especificado'}`,
+      `Objetivo del socio (onboarding): ${memberGoal ? (GOAL_FROM_ONBOARDING[memberGoal] || memberGoal) : 'no especificado'}`,
+      `Condiciones médicas / lesiones: ${memberConditions || 'ninguna indicada'}`,
+      `Cosas que no le gustan: ${memberDislikes || 'ninguna indicada'}`,
+      `Restricciones / alergias: ${memberRestrictions || 'ninguna indicada'}`
+    ].join('\n') : 'Rutina genérica (sin socio asociado).'
 
     const userMessage = `Genera una rutina de entrenamiento con los siguientes criterios:
 - Días por semana: ${days_per_week}
@@ -127,13 +219,16 @@ export async function POST(request) {
 - Equipamiento disponible: ${equipment.length > 0 ? equipment.join(', ') : 'todo el equipamiento del catálogo'}
 - Duración aproximada por sesión: ${session_duration_min} minutos
 - Notas adicionales: ${notes || 'ninguna'}
+- Permitir bi-series / tri-series: ${allow_supersets ? 'sí' : 'no'}
 
-CATÁLOGO DE EJERCICIOS DISPONIBLES:
+CONTEXTO DEL SOCIO:
+${memberContextLines}
+
+CATÁLOGO DE EJERCICIOS DISPONIBLES (los ÚNICOS que puedes usar):
 ${catalogLines}
 
 Genera exactamente ${days_per_week} días. Responde solo con el JSON.`
 
-    // Llamar a OpenAI
     const openai = new OpenAI({ apiKey })
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -158,7 +253,61 @@ Genera exactamente ${days_per_week} días. Responde solo con el JSON.`
       return NextResponse.json({ error: 'Formato de rutina incorrecto. Inténtalo de nuevo.' }, { status: 400 })
     }
 
-    // Guardar en la base de datos
+    const catalogByName = new Map(filteredCatalog.map(e => [normalize(e.name), e]))
+    const catalogByMuscle = new Map()
+    for (const e of filteredCatalog) {
+      if (!catalogByMuscle.has(e.muscle_primary)) catalogByMuscle.set(e.muscle_primary, [])
+      catalogByMuscle.get(e.muscle_primary).push(e)
+    }
+
+    const replaced = []
+
+    for (const day of routineJson.days) {
+      if (!Array.isArray(day.exercises)) continue
+      const usedThisDay = new Set()
+      const newExercises = []
+      for (const ex of day.exercises) {
+        const proposed = ex.exercise_name || ''
+        const key = normalize(proposed)
+        if (catalogByName.has(key)) {
+          const canonical = catalogByName.get(key).name
+          ex.exercise_name = canonical
+          usedThisDay.add(normalize(canonical))
+          newExercises.push(ex)
+          continue
+        }
+
+        let replacement = bestCatalogMatch(proposed, filteredCatalog) || null
+        if (!replacement) {
+          const muscle = muscleFromDayName(day.day_name)
+          const candidates = muscle ? (catalogByMuscle.get(muscle) || []) : []
+          const filteredByEquip = equipment.length > 0
+            ? candidates.filter(c => equipment.includes(c.equipment))
+            : candidates
+          replacement = (filteredByEquip.find(c => !usedThisDay.has(normalize(c.name))))
+            || (candidates.find(c => !usedThisDay.has(normalize(c.name))))
+            || null
+        }
+
+        if (replacement && !usedThisDay.has(normalize(replacement.name))) {
+          replaced.push({ original: proposed, replacement: replacement.name, day: day.day_name })
+          ex.exercise_name = replacement.name
+          usedThisDay.add(normalize(replacement.name))
+          newExercises.push(ex)
+        } else {
+          replaced.push({ original: proposed, replacement: null, day: day.day_name, dropped: true })
+        }
+      }
+      day.exercises = newExercises
+    }
+
+    if (replaced.length > 0) {
+      Sentry.captureMessage('generate-routine: ejercicios fuera de catálogo reemplazados', {
+        level: 'warning',
+        extra: { replaced, member_id, trainer_id }
+      })
+    }
+
     const { data: template, error: templateError } = await supabase
       .from('workout_templates')
       .insert([{
@@ -185,15 +334,34 @@ Genera exactamente ${days_per_week} días. Responde solo con el JSON.`
       if (dayError) throw dayError
 
       if (day.exercises?.length > 0) {
-        const exercisesToInsert = day.exercises.map((ex, idx) => ({
-          workout_day_id: dayRow.id,
-          name: ex.exercise_name,
-          description: ex.notes || null,
-          sets: ex.sets,
-          reps: String(ex.reps),
-          rest_seconds: ex.rest_seconds,
-          order_index: idx
-        }))
+        const groupSizes = new Map()
+        for (const ex of day.exercises) {
+          const g = ex.superset_group
+          if (g && Number.isInteger(g) && g > 0) {
+            groupSizes.set(g, (groupSizes.get(g) || 0) + 1)
+          }
+        }
+        const tagFor = (g) => {
+          if (!g || !Number.isInteger(g) || g <= 0) return ''
+          const size = groupSizes.get(g) || 0
+          if (size < 2) return ''
+          const label = size >= 3 ? 'tri-serie' : 'bi-serie'
+          return `[${label}:${g}] `
+        }
+
+        const exercisesToInsert = day.exercises.map((ex, idx) => {
+          const tag = tagFor(ex.superset_group)
+          const desc = `${tag}${ex.notes || ''}`.trim()
+          return {
+            workout_day_id: dayRow.id,
+            name: ex.exercise_name,
+            description: desc.length > 0 ? desc : null,
+            sets: ex.sets,
+            reps: String(ex.reps),
+            rest_seconds: ex.rest_seconds,
+            order_index: idx
+          }
+        })
 
         const { error: exError } = await supabase
           .from('workout_exercises')
@@ -206,7 +374,8 @@ Genera exactamente ${days_per_week} días. Responde solo con el JSON.`
     return NextResponse.json({
       success: true,
       workout_template_id: template.id,
-      preview: routineJson
+      preview: routineJson,
+      replaced
     })
 
   } catch (error) {
