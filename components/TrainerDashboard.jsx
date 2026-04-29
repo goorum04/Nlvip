@@ -17,6 +17,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { getApiUrl, authFetch } from '@/lib/utils'
+import { calculateMacros as sharedCalculateMacros } from '@/lib/macroCalculator'
 import FloatingChat from './FloatingChat'
 import VideoUploader from './VideoUploader'
 import { VideoCard } from './VideoPlayer'
@@ -422,19 +423,24 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
   }
 
   const calculateMacros = () => {
-    const age = parseInt(macroAge), height = parseInt(macroHeight), weight = parseFloat(macroWeight)
-    if (!age || !height || !weight) {
+    const result = sharedCalculateMacros({
+      weight: macroWeight,
+      height: macroHeight,
+      age: macroAge,
+      sex: macroGender,
+      activity: macroActivity,
+      goal: macroGoal,
+    })
+    if (!result) {
       toast({ title: 'Error', description: 'Por favor completa todos los campos', variant: 'destructive' })
       return
     }
-    let bmr = macroGender === 'male' ? 10 * weight + 6.25 * height - 5 * age + 5 : 10 * weight + 6.25 * height - 5 * age - 161
-    const multipliers = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9 }
-    let tdee = bmr * multipliers[macroActivity]
-    if (macroGoal === 'cut') tdee *= 0.85
-    else if (macroGoal === 'bulk') tdee *= 1.15
-    const protein = weight * 1.8, fat = weight * 0.8
-    const carbs = (tdee - protein * 4 - fat * 9) / 4
-    setMacroResults({ calories: Math.round(tdee), protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat) })
+    setMacroResults({
+      calories: result.calories,
+      protein: result.protein_g,
+      carbs: result.carbs_g,
+      fat: result.fat_g,
+    })
   }
 
   const assignMacrosToMember = async () => {

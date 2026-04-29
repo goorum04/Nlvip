@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 import { DIET_TEMPLATE } from '@/lib/dietTemplate'
+import { calculateMacros, goalFromOnboarding, activityFromWorkIntensity } from '@/lib/macroCalculator'
 
 const schema = z.object({
   requestId: z.string().uuid(),
@@ -68,45 +69,23 @@ export async function POST(req) {
       : (profile?.email ? profile.email.split('@')[0] : 'Socio')
     const name = rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase()
 
-    // 2. Estimate body fat % using Deurenberg BMI-based formula
-    const height_m = height / 100
-    const bmi = weight / (height_m * height_m)
-    const isMale = sex !== 'mujer' && sex !== 'female'
-    const bfPercent = Math.max(5, Math.min(55,
-      (1.20 * bmi) + (0.23 * age) - (isMale ? 16.2 : 5.4)
-    ))
-    const leanMass = weight * (1 - bfPercent / 100)
-
-    // 3. Calculate base macros using lean mass and goal-specific protein multiplier
+    // 2. Macros: la utilidad compartida calcula TDEE = peso × 24 × actMult,
+    //    % grasa por Deurenberg, proteína 2.2-2.4 g/kg, grasa 0.9 g/kg, déficit
+    //    según % grasa para cut. La calculadora del Trainer/Admin usa exactamente
+    //    la misma utilidad → diet onboarding y calculadora coinciden siempre.
     const goal = responses.objetivo || profile?.goal || 'mantenimiento'
-    const isFatLoss = goal === 'perder_grasa' || goal === 'cut'
-    const isBulk = goal === 'ganar_masa' || goal === 'bulk'
-
-    // Protein: 2.4g/kg total weight for muscle gain, 2.2g/kg otherwise
-    const proteinFactor = isBulk ? 2.4 : 2.2
-    const protein_g = Math.round(weight * proteinFactor)
-
-    // Fat: 0.9g/kg total weight
-    const fat_g = Math.round(weight * 0.9)
-
-    // TDEE: weight × 24 × activity multiplier
-    const actMult = responses['Trabajo - Intensidad'] === 'alta' ? 1.6
-      : responses['Trabajo - Intensidad'] === 'muy_alta' ? 1.7 : 1.5
-    const tdee = Math.round(weight * 24 * actMult)
-
-    // Deficit/surplus based on body fat level
-    let calMult = 1.0
-    if (isFatLoss) {
-      if (bfPercent > 30) calMult = 0.78      // aggressive deficit for high BF
-      else if (bfPercent > 22) calMult = 0.82 // moderate-aggressive deficit
-      else calMult = 0.85                      // standard deficit
-    } else if (isBulk) {
-      calMult = 1.15
-    }
-    const calories = Math.round(tdee * calMult)
-    const carbs_g = Math.max(80, Math.round((calories - protein_g * 4 - fat_g * 9) / 4))
-
-    const macros = { calories, protein_g, carbs_g, fat_g }
+    const calculatorGoal = goalFromOnboarding(goal)
+    const calculatorActivity = activityFromWorkIntensity(responses['Trabajo - Intensidad'] || responses.intensidad_trabajo)
+    const computed = calculateMacros({
+      weight,
+      height,
+      age,
+      sex,
+      activity: calculatorActivity,
+      goal: calculatorGoal,
+    }) || { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, tdee: 0, bfPercent: 0 }
+    const { calories, protein_g, fat_g, carbs_g, tdee, bfPercent } = computed
+    const leanMass = weight * (1 - bfPercent / 100)
 
     const numMeals = parseInt(responses.num_comidas || responses['Comidas - Número']) || 5
     // Merge restrictions from form answers + saved profile allergies
