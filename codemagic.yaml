@@ -60,18 +60,18 @@ workflows:
       - name: Set marketing version and build number
         script: |
           cd ios/App
-          # Incrementar marketing version (1.33 → 1.34, etc.)
-          # Extrae la versión actual, incrementa el minor, y la establece
-          CURRENT_VERSION=$(agvtool what-marketing-version -terse)
-          MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
-          MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
-          PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
-          NEW_MINOR=$((MINOR + 1))
-          NEW_VERSION="$MAJOR.$NEW_MINOR.0"
+          # Marketing version basada en BUILD_NUMBER de Codemagic.
+          # Garantiza que siempre sea única y monótona creciente.
+          # Build 73 → 1.34, build 74 → 1.35, etc. Offset elegido para
+          # que el primer build después del fix (build 74+) produzca al
+          # menos 1.35, ya que App Store rechazó 1.33 y nunca aceptó 1.34
+          # debido al script roto anterior.
+          MARKETING_OFFSET=39
+          NEW_VERSION="1.$((BUILD_NUMBER - MARKETING_OFFSET))"
           agvtool new-marketing-version "$NEW_VERSION"
-          echo "Bumped version from $CURRENT_VERSION to $NEW_VERSION"
+          echo "Marketing version set to $NEW_VERSION (BUILD_NUMBER=$BUILD_NUMBER)"
 
-          # Usamos el número de build interno de Codemagic para asegurar que siempre sea único y mayor
+          # Build number único (siempre mayor)
           agvtool new-version -all $(($BUILD_NUMBER + 10))
 
       - name: Fetch signing files
