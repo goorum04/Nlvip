@@ -22,6 +22,7 @@ import FloatingChat from './FloatingChat'
 import VideoUploader from './VideoUploader'
 import { VideoCard } from './VideoPlayer'
 import { ProgressPhotoGallery } from './ProgressPhotos'
+import { MemberPhotosAndForm } from './MemberPhotosAndForm'
 import { RecipesManager } from './RecipesManager'
 import { FeedSection } from './FeedSection'
 import { AvatarBubble, ProfileModal } from './UserProfile'
@@ -626,7 +627,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                         </Button>
                       </div>
                     </DialogTrigger>
-                    <DialogContent className="bg-[#1a1a1a] border-[#2a2a2a] rounded-3xl max-w-lg">
+                    <DialogContent className="bg-[#1a1a1a] border-[#2a2a2a] rounded-3xl max-w-2xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <div className="flex items-center justify-between">
                           <div>
@@ -664,6 +665,9 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                             </SelectContent>
                           </Select>
                         </div>
+
+                        {/* Fotos de progreso + Cuestionario nutricional consolidados */}
+                        <MemberPhotosAndForm memberId={member.id} canDeletePhotos={false} />
                       </div>
                     </DialogContent>
                   </Dialog>
