@@ -29,7 +29,7 @@ REGLAS:
 2. Usa exclusivamente nombres LITERALES del catálogo de ejercicios proporcionado. No inventes variantes ni sustituyas con ejercicios que no aparezcan en el catálogo.
 3. El nombre del ejercicio debe coincidir EXACTAMENTE con el del catálogo (mayúsculas, tildes y espacios incluidos).
 4. Distribuye los grupos musculares inteligentemente para evitar sobreentrenar músculos sinérgicos en días consecutivos.
-5. Los ejercicios de PECHO solo se incluirán si el catálogo proporcionado contiene ejercicios de pecho. NUNCA asignes pecho si no aparece en el catálogo (las rutinas de mujeres no llevan pecho).
+5. Instrucción sobre PECHO: Si el socio es HOMBRE, SIEMPRE incluye ejercicios de pecho del catálogo. Si el socio es MUJER u OTRO, NUNCA incluyas pecho, aunque esté en el catálogo. Excepción: si las notas adicionales especifican "sin pecho" o una dolencia que lo justifique, respeta eso. El catálogo ya ha sido filtrado según el sexo del socio.
 6. Incluye entre 5 y 8 ejercicios por día según la duración indicada.
 7. Los valores de "reps" pueden ser: "10", "8-12", "15-20", "al fallo", "30s".
 8. Adapta la rutina a las condiciones médicas o lesiones indicadas. Evita ejercicios que las puedan agravar (p. ej., si hay problemas de rodilla evita Sentadilla en multipower, Zancadas y Sentadilla búlgara; si hay problemas lumbares evita Peso muerto rumano y Buenos días en polea baja; si hay problemas de hombro evita Press de hombros y elevaciones frontales pesadas). Sustitúyelos por alternativas equivalentes del catálogo.
