@@ -15,9 +15,8 @@ import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
 import { WorkoutViewer } from './WorkoutBuilder'
 import { DietViewer } from './DietBuilder'
-import { MemberPhotosAndForm } from './MemberPhotosAndForm'
 
-export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRefresh, onOpenChat, canDeletePhotos = true }) {
+export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRefresh, onOpenChat }) {
   const [loading, setLoading] = useState(true)
   const [memberData, setMemberData] = useState(null)
   const [assignedWorkout, setAssignedWorkout] = useState(null)
@@ -423,11 +422,6 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                 </div>
               </CardContent>
             </Card>
-
-            {/* Fotos de progreso + Cuestionario nutricional consolidados */}
-            {member?.id && (
-              <MemberPhotosAndForm memberId={member.id} canDeletePhotos={canDeletePhotos} />
-            )}
           </div>
         )}
 

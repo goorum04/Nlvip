@@ -27,6 +27,7 @@ import { AvatarBubble, ProfileModal } from './UserProfile'
 import FloatingChat from './FloatingChat'
 import FloatingAdminAssistant from './FloatingAdminAssistant'
 import { ProgressPhotoGallery } from './ProgressPhotos'
+import { MemberOnboardingResponses } from './MemberPhotosAndForm'
 import { FeedSection } from './FeedSection'
 import AIRoutineGenerator from './AIRoutineGenerator'
 import { getApiUrl, authFetch } from '@/lib/utils'
@@ -2087,6 +2088,10 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                       photos={memberProgressPhotos}
                       canDelete={true}
                     />
+
+                    <div className="mt-6">
+                      <MemberOnboardingResponses memberId={selectedMemberForPhotos.id} />
+                    </div>
                   </div>
                 )}
               </CardContent>
