@@ -231,7 +231,7 @@ Genera exactamente ${days_per_week} días. Responde solo con el JSON.`
 
     const openai = new OpenAI({ apiKey })
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userMessage }
