@@ -26,6 +26,7 @@ const DIET_MAP = {
   'mediterraneo': 'whole30',
   'sin_gluten': 'gluten free',
   'equilibrada': '',
+  'omnivoro': '',
   'ninguna': ''
 }
 
@@ -39,29 +40,33 @@ const INTOLERANCE_MAP = {
   'ninguna': ''
 }
 
-// Buscar recetas en Spoonacular para un slot específico
-async function searchSpoonacular(slot, config, diet, macros, intolerances, excludeIngredients) {
+function buildSpoonacularUrl({ slot, config, diet, macros, intolerances, excludeIngredients, includeIngredients }) {
   const targetCals = Math.round(macros.calories * config.percent)
   const targetProtein = Math.round(macros.protein * config.percent)
-  
+
   let url = `https://api.spoonacular.com/recipes/complexSearch?apiKey=${SPOONACULAR_KEY}`
   url += `&addRecipeInformation=true&addRecipeNutrition=true&fillIngredients=true&language=es&instructionsRequired=true`
-  url += `&number=10&sort=random`
+  url += `&number=20&sort=random`
   url += `&query=${encodeURIComponent(config.query)}`
   url += `&type=${encodeURIComponent(config.type)}`
   url += `&maxCalories=${Math.round(targetCals * 1.3)}`
   url += `&minCalories=${Math.round(targetCals * 0.5)}`
   url += `&minProtein=${Math.round(targetProtein * 0.5)}`
-  
+
   if (diet) url += `&diet=${encodeURIComponent(diet)}`
   if (intolerances) url += `&intolerances=${encodeURIComponent(intolerances)}`
   if (excludeIngredients) url += `&excludeIngredients=${encodeURIComponent(excludeIngredients)}`
+  if (includeIngredients) url += `&includeIngredients=${encodeURIComponent(includeIngredients)}`
+  return url
+}
 
-  try {
+// Buscar recetas en Spoonacular para un slot específico
+async function searchSpoonacular(slot, config, diet, macros, intolerances, excludeIngredients, includeIngredients = '') {
+  const fetchAndParse = async (url) => {
     const res = await fetch(url)
     if (!res.ok) {
       console.error(`Spoonacular error for ${slot}:`, res.status, await res.text())
-      return []
+      return null
     }
     const data = await res.json()
     return (data.results || []).map(r => {
@@ -81,10 +86,39 @@ async function searchSpoonacular(slot, config, diet, macros, intolerances, exclu
         category: slot
       }
     })
+  }
+
+  try {
+    let recipes = await fetchAndParse(buildSpoonacularUrl({ slot, config, diet, macros, intolerances, excludeIngredients, includeIngredients }))
+    // Fallback: if includeIngredients narrowed the results too much, retry without it
+    if (includeIngredients && (!recipes || recipes.length < 4)) {
+      const fallback = await fetchAndParse(buildSpoonacularUrl({ slot, config, diet, macros, intolerances, excludeIngredients, includeIngredients: '' }))
+      if (fallback && fallback.length > (recipes?.length || 0)) recipes = fallback
+    }
+    return recipes || []
   } catch (err) {
     console.error(`Spoonacular fetch error for ${slot}:`, err.message)
     return []
   }
+}
+
+// Score: weighted absolute distance per macro, normalised by target.
+// Lower is better. Protein has 1.5x weight (priority for fitness diets).
+function scoreRecipeAgainstTarget(recipe, target) {
+  const safe = (v) => Math.max(v, 1)
+  return (
+    Math.abs((recipe.calories || 0) - target.calories) / safe(target.calories)
+    + 1.5 * Math.abs((recipe.protein_g || 0) - target.protein) / safe(target.protein)
+    + 1.0 * Math.abs((recipe.carbs_g || 0) - target.carbs) / safe(target.carbs)
+    + 1.0 * Math.abs((recipe.fats_g || 0) - target.fat) / safe(target.fat)
+  )
+}
+
+function pickBestRecipe(candidates, target, recentlyUsed) {
+  if (!candidates?.length) return null
+  const allowed = candidates.filter(r => !recentlyUsed.has(r.spoonacular_id) && !recentlyUsed.has(r.title))
+  const pool = allowed.length > 0 ? allowed : candidates
+  return [...pool].sort((a, b) => scoreRecipeAgainstTarget(a, target) - scoreRecipeAgainstTarget(b, target))[0]
 }
 
 
@@ -158,15 +192,33 @@ export async function POST(req) {
       .maybeSingle()
 
     const responses = onboarding?.responses || {}
-    
+
     // Mapear preferencias a filtros de Spoonacular
     const spoonDiet = DIET_MAP[responses.preferencias] || ''
+
+    // restricciones: aceptar string CSV o array; ignorar "ninguna"; matching contra INTOLERANCE_MAP
+    const restrictionsText = Array.isArray(responses.restricciones)
+      ? responses.restricciones.join(',')
+      : (responses.restricciones || '')
+    const restrictionsLower = restrictionsText.toLowerCase()
     const spoonIntolerances = Object.entries(INTOLERANCE_MAP)
-      .filter(([key]) => (responses.restricciones || '').toLowerCase().includes(key))
+      .filter(([key]) => key !== 'ninguna' && restrictionsLower.includes(key))
       .map(([, val]) => val)
       .filter(Boolean)
       .join(',')
-    const excludeIngredients = responses.no_me_gusta || ''
+
+    const excludeIngredients = (responses.no_me_gusta || '').toString().trim()
+
+    // favoritos: pasarlos como includeIngredients (Spoonacular prioriza recetas con esos ingredientes)
+    const favoritesRaw = (responses.favoritos || '').toString().trim()
+    const includeIngredients = favoritesRaw
+      ? favoritesRaw
+          .split(/[,;\n]/)
+          .map(s => s.trim())
+          .filter(Boolean)
+          .slice(0, 5)
+          .join(',')
+      : ''
 
     const macros = {
       calories: diet.calories,
@@ -176,13 +228,13 @@ export async function POST(req) {
     }
 
     console.log(`[Recipe Plan] Generating for member ${memberId}`)
-    console.log(`[Recipe Plan] Diet: ${diet.calories}kcal | Pref: ${spoonDiet || 'none'} | Intol: ${spoonIntolerances || 'none'} | Exclude: ${excludeIngredients || 'none'}`)
+    console.log(`[Recipe Plan] Diet: ${diet.calories}kcal | Pref: ${spoonDiet || 'none'} | Intol: ${spoonIntolerances || 'none'} | Exclude: ${excludeIngredients || 'none'} | Include: ${includeIngredients || 'none'}`)
 
     // 3. Buscar recetas en Spoonacular para cada slot (en paralelo)
     const slotResults = {}
     await Promise.all(
       Object.entries(MEAL_SLOTS).map(async ([slot, config]) => {
-        const recipes = await searchSpoonacular(slot, config, spoonDiet, macros, spoonIntolerances, excludeIngredients)
+        const recipes = await searchSpoonacular(slot, config, spoonDiet, macros, spoonIntolerances, excludeIngredients, includeIngredients)
         slotResults[slot] = recipes
       })
     )
@@ -227,15 +279,51 @@ export async function POST(req) {
       plan = newPlan
     }
 
-    // 5. Recopilar todas las recetas únicas necesarias y guardarlas en batch
+    // 5. Recopilar las recetas: matching por macros del slot, sin repetir 2 días seguidos
     const selectedBySlotDay = []
+    const lastUsedBySlot = {}   // slot → spoonacular_id usado el día anterior
+    const dailyTotals = []      // for diagnostic logging
+
     for (let dayIndex = 1; dayIndex <= 7; dayIndex++) {
-      for (const [slot] of Object.entries(MEAL_SLOTS)) {
+      const dayTotal = { calories: 0, protein_g: 0, carbs_g: 0, fats_g: 0 }
+      for (const [slot, config] of Object.entries(MEAL_SLOTS)) {
         const candidates = slotResults[slot] || []
         if (candidates.length === 0) continue
-        const selected = candidates[Math.floor(Math.random() * candidates.length)]
+        const target = {
+          calories: macros.calories * config.percent,
+          protein: macros.protein * config.percent,
+          carbs: macros.carbs * config.percent,
+          fat: macros.fat * config.percent
+        }
+        const recent = new Set()
+        if (lastUsedBySlot[slot] != null) recent.add(lastUsedBySlot[slot])
+        const selected = pickBestRecipe(candidates, target, recent)
+        if (!selected) continue
         selectedBySlotDay.push({ dayIndex, slot, recipe: selected })
+        lastUsedBySlot[slot] = selected.spoonacular_id ?? selected.title
+        dayTotal.calories += selected.calories || 0
+        dayTotal.protein_g += selected.protein_g || 0
+        dayTotal.carbs_g += selected.carbs_g || 0
+        dayTotal.fats_g += selected.fats_g || 0
       }
+      dailyTotals.push(dayTotal)
+    }
+
+    // Diagnostic: per-day and weekly macro deviation vs target
+    const pct = (actual, target) => target > 0 ? Math.round(((actual - target) / target) * 100) : 0
+    for (let i = 0; i < dailyTotals.length; i++) {
+      const t = dailyTotals[i]
+      console.log(`[Recipe Plan] Day ${i + 1} actual: ${t.calories} kcal / ${t.protein_g} P / ${t.carbs_g} C / ${t.fats_g} F (target ${macros.calories}/${macros.protein}/${macros.carbs}/${macros.fat})`)
+    }
+    if (dailyTotals.length > 0) {
+      const weekAvg = dailyTotals.reduce((a, t) => ({
+        calories: a.calories + t.calories,
+        protein_g: a.protein_g + t.protein_g,
+        carbs_g: a.carbs_g + t.carbs_g,
+        fats_g: a.fats_g + t.fats_g
+      }), { calories: 0, protein_g: 0, carbs_g: 0, fats_g: 0 })
+      const n = dailyTotals.length
+      console.log(`[Recipe Plan] Week deviation: ${pct(weekAvg.calories / n, macros.calories)}% kcal, ${pct(weekAvg.protein_g / n, macros.protein)}% P, ${pct(weekAvg.carbs_g / n, macros.carbs)}% C, ${pct(weekAvg.fats_g / n, macros.fat)}% F`)
     }
 
     // Batch-check which recipes already exist
