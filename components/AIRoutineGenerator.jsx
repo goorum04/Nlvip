@@ -8,10 +8,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Sparkles, LoaderCircle as Loader2, ChevronDown, ChevronUp, Save, RefreshCw, Settings2, User, Target, AlertTriangle } from 'lucide-react'
+import { Sparkles, LoaderCircle as Loader2, ChevronDown, ChevronUp, Save, RefreshCw, Settings2, User, Target, AlertTriangle, Trash2, ArrowUp, ArrowDown, Plus, Link2, Link2Off } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
+import ExerciseCatalogPicker from './ExerciseCatalogPicker'
 
 const EQUIPMENT_OPTIONS = [
   { value: 'cable', label: 'Cable / Polea' },
@@ -67,12 +68,135 @@ function stripGroupTag(text) {
   return text.replace(SUPERSET_TAG_RE, '').trim()
 }
 
-function RoutinePreview({ routine }) {
-  const [expanded, setExpanded] = useState({})
+function nextSupersetId(routine) {
+  let max = 0
+  for (const day of routine.days || []) {
+    for (const ex of day.exercises || []) {
+      const g = parseExerciseGroup(ex)
+      if (g > max) max = g
+    }
+  }
+  return max + 1
+}
+
+function EditableExerciseRow({
+  exercise, idx, dayIdx, total, excludeOnlyMale, prevHasGroup, isInGroup,
+  onUpdate, onSwap, onRemove, onMove, onToggleSuperset
+}) {
+  return (
+    <div className="flex flex-col gap-2 p-3 bg-black/30 rounded-xl border border-white/5">
+      <div className="flex items-center gap-2">
+        <div className="w-6 h-6 rounded-md bg-violet-500/10 flex items-center justify-center text-violet-400 text-xs font-bold shrink-0">
+          {idx + 1}
+        </div>
+        <p className="flex-1 text-white text-sm font-medium leading-tight">{exercise.exercise_name}</p>
+        <ExerciseCatalogPicker
+          excludeOnlyMale={excludeOnlyMale}
+          triggerLabel="Cambiar"
+          triggerClassName="border-violet-500/30 text-violet-300 hover:bg-violet-500/10 rounded-lg whitespace-nowrap px-2 h-7 text-xs"
+          onSelect={(catalogEx) => onSwap(dayIdx, idx, catalogEx)}
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 pl-8">
+        <label className="flex flex-col gap-0.5">
+          <span className="text-[10px] text-gray-500 uppercase">Series</span>
+          <Input
+            type="number"
+            min={1}
+            max={20}
+            value={exercise.sets ?? ''}
+            onChange={e => onUpdate(dayIdx, idx, { sets: parseInt(e.target.value) || 1 })}
+            className="h-8 bg-black/50 border-violet-500/20 rounded-lg text-white text-sm"
+          />
+        </label>
+        <label className="flex flex-col gap-0.5">
+          <span className="text-[10px] text-gray-500 uppercase">Reps</span>
+          <Input
+            type="text"
+            value={exercise.reps ?? ''}
+            onChange={e => onUpdate(dayIdx, idx, { reps: e.target.value })}
+            placeholder="8-12"
+            className="h-8 bg-black/50 border-violet-500/20 rounded-lg text-white text-sm"
+          />
+        </label>
+        <label className="flex flex-col gap-0.5">
+          <span className="text-[10px] text-gray-500 uppercase">Descanso (s)</span>
+          <Input
+            type="number"
+            min={0}
+            max={600}
+            value={exercise.rest_seconds ?? ''}
+            onChange={e => onUpdate(dayIdx, idx, { rest_seconds: parseInt(e.target.value) || 0 })}
+            className="h-8 bg-black/50 border-violet-500/20 rounded-lg text-white text-sm"
+          />
+        </label>
+      </div>
+
+      <div className="flex items-center justify-between pl-8 gap-2">
+        {idx > 0 ? (
+          <button
+            type="button"
+            onClick={() => onToggleSuperset(dayIdx, idx)}
+            className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-lg border transition-all ${
+              isInGroup
+                ? 'bg-amber-500/15 border-amber-500/40 text-amber-200'
+                : 'bg-black/30 border-white/10 text-gray-400 hover:border-amber-500/30'
+            }`}
+          >
+            {isInGroup ? <Link2Off className="w-3 h-3" /> : <Link2 className="w-3 h-3" />}
+            {isInGroup ? 'Separar serie' : 'Encadenar con anterior'}
+          </button>
+        ) : (
+          <span className="text-[11px] text-gray-600 italic">Primer ejercicio</span>
+        )}
+
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            disabled={idx === 0}
+            onClick={() => onMove(dayIdx, idx, -1)}
+            className="h-7 w-7 text-gray-400 hover:text-violet-300 disabled:opacity-30"
+          >
+            <ArrowUp className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            disabled={idx === total - 1}
+            onClick={() => onMove(dayIdx, idx, 1)}
+            className="h-7 w-7 text-gray-400 hover:text-violet-300 disabled:opacity-30"
+          >
+            <ArrowDown className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            onClick={() => onRemove(dayIdx, idx)}
+            className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RoutinePreview({
+  routine, excludeOnlyMale,
+  onRoutineFieldChange, onUpdateExercise, onSwapExercise, onRemoveExercise,
+  onMoveExercise, onToggleSuperset, onAddExercise, onUpdateDayName
+}) {
+  const [expanded, setExpanded] = useState({ 0: true })
   const toggle = (i) => setExpanded(prev => ({ ...prev, [i]: !prev[i] }))
 
-  const renderExerciseRows = (exercises) => {
-    if (!exercises?.length) return null
+  const renderExerciseRows = (exercises, dayIdx) => {
+    if (!exercises?.length) return <p className="text-xs text-gray-500 italic px-1">Sin ejercicios. Añade uno con el botón inferior.</p>
     const groups = []
     let currentGroup = null
     exercises.forEach((ex, j) => {
@@ -105,20 +229,29 @@ function RoutinePreview({ routine }) {
               <span className="text-xs text-amber-200/70">{size} ejercicios encadenados</span>
             </div>
           )}
-          {grp.items.map(({ ex, idx }) => (
-            <div key={idx} className="flex items-center gap-3 p-3 bg-black/30 rounded-xl border border-white/5">
-              <div className="w-6 h-6 rounded-md bg-violet-500/10 flex items-center justify-center text-violet-400 text-xs font-bold">
-                {idx + 1}
-              </div>
-              <div className="flex-1">
-                <p className="text-white text-sm font-medium">{ex.exercise_name}</p>
-                <p className="text-xs text-gray-500">{ex.sets}×{ex.reps} · {ex.rest_seconds}s descanso</p>
-                {stripGroupTag(ex.notes) && (
-                  <p className="text-xs text-violet-400 mt-0.5">{stripGroupTag(ex.notes)}</p>
-                )}
-              </div>
-            </div>
-          ))}
+          {grp.items.map(({ ex, idx }) => {
+            const prevEx = idx > 0 ? exercises[idx - 1] : null
+            const prevGroup = prevEx ? parseExerciseGroup(prevEx) : 0
+            const myGroup = parseExerciseGroup(ex)
+            const isInGroup = myGroup > 0 && prevGroup === myGroup
+            return (
+              <EditableExerciseRow
+                key={idx}
+                exercise={ex}
+                idx={idx}
+                dayIdx={dayIdx}
+                total={exercises.length}
+                excludeOnlyMale={excludeOnlyMale}
+                prevHasGroup={prevGroup > 0}
+                isInGroup={isInGroup}
+                onUpdate={onUpdateExercise}
+                onSwap={onSwapExercise}
+                onRemove={onRemoveExercise}
+                onMove={onMoveExercise}
+                onToggleSuperset={onToggleSuperset}
+              />
+            )
+          })}
         </div>
       )
     })
@@ -126,27 +259,51 @@ function RoutinePreview({ routine }) {
 
   return (
     <div className="space-y-3">
-      <div className="bg-gradient-to-br from-violet-500/20 to-cyan-500/10 rounded-2xl p-4 border border-violet-500/20">
-        <h3 className="text-white font-bold text-lg">{routine.routine_name}</h3>
-        <p className="text-gray-400 text-sm mt-1">{routine.routine_description}</p>
-        <p className="text-violet-400 text-xs mt-2">{routine.days?.length} días de entrenamiento</p>
+      <div className="bg-gradient-to-br from-violet-500/20 to-cyan-500/10 rounded-2xl p-4 border border-violet-500/20 space-y-2">
+        <Input
+          value={routine.routine_name || ''}
+          onChange={e => onRoutineFieldChange('routine_name', e.target.value)}
+          className="bg-black/30 border-violet-500/20 rounded-lg text-white font-bold text-base"
+          placeholder="Nombre de la rutina"
+        />
+        <Textarea
+          value={routine.routine_description || ''}
+          onChange={e => onRoutineFieldChange('routine_description', e.target.value)}
+          rows={2}
+          className="bg-black/30 border-violet-500/20 rounded-lg text-gray-300 text-sm resize-none"
+          placeholder="Descripción breve"
+        />
+        <p className="text-violet-400 text-xs">{routine.days?.length} días de entrenamiento · editable</p>
       </div>
 
       {routine.days?.map((day, i) => (
         <Card key={i} className="bg-[#1a1a1a] border-violet-500/20 rounded-2xl overflow-hidden">
           <CardHeader className="pb-2 cursor-pointer" onClick={() => toggle(i)}>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold text-sm">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold text-sm shrink-0">
                 {day.day_number}
               </div>
-              <h4 className="flex-1 text-white font-semibold text-sm">{day.day_name}</h4>
-              <span className="text-xs text-gray-500 mr-1">{day.exercises?.length} ejercicios</span>
+              <Input
+                value={day.day_name}
+                onClick={e => e.stopPropagation()}
+                onChange={e => onUpdateDayName(i, e.target.value)}
+                className="flex-1 h-8 bg-transparent border-transparent hover:border-violet-500/20 focus:border-violet-500/40 text-white font-semibold text-sm rounded-lg px-2"
+              />
+              <span className="text-xs text-gray-500 mr-1">{day.exercises?.length}</span>
               {expanded[i] ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
             </div>
           </CardHeader>
           {expanded[i] && (
             <CardContent className="pt-0 space-y-2">
-              {renderExerciseRows(day.exercises)}
+              {renderExerciseRows(day.exercises, i)}
+              <div className="flex justify-center pt-1">
+                <ExerciseCatalogPicker
+                  excludeOnlyMale={excludeOnlyMale}
+                  triggerLabel="Añadir ejercicio"
+                  triggerClassName="border-dashed border-violet-500/30 text-violet-300 hover:bg-violet-500/10 rounded-xl px-3"
+                  onSelect={(catalogEx) => onAddExercise(i, catalogEx)}
+                />
+              </div>
             </CardContent>
           )}
         </Card>
@@ -160,6 +317,8 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
   const [generatedRoutine, setGeneratedRoutine] = useState(null)
   const [savedTemplateId, setSavedTemplateId] = useState(null)
   const [replacedInfo, setReplacedInfo] = useState([])
+  const [saving, setSaving] = useState(false)
+  const [lastNotes, setLastNotes] = useState('')
   const { toast } = useToast()
 
   const [members, setMembers] = useState([])
@@ -253,6 +412,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
         ? `Consideraciones del socio: ${memberConditions}`
         : ''
       const mergedNotes = [memberNotes, trainerNotes].filter(Boolean).join('\n').slice(0, 500)
+      setLastNotes(mergedNotes)
 
       const res = await authFetch('/api/generate-routine', {
         method: 'POST',
@@ -276,7 +436,6 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
       }
 
       setGeneratedRoutine(data.preview)
-      setSavedTemplateId(data.workout_template_id)
       setReplacedInfo(Array.isArray(data.replaced) ? data.replaced : [])
       setStep('preview')
     } catch (error) {
@@ -293,13 +452,136 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
     setMemberId('')
     setMemberSummary(null)
     setShowAdvanced(false)
+    setSaving(false)
+    setLastNotes('')
     onClose()
   }
 
-  const handleSaved = () => {
-    toast({ title: '¡Rutina guardada!', description: 'Ya aparece en tu lista de rutinas.' })
-    onRoutineSaved?.()
-    handleClose()
+  const updateRoutineField = (field, value) => {
+    setGeneratedRoutine(prev => prev ? { ...prev, [field]: value } : prev)
+  }
+
+  const updateDayName = (dayIdx, name) => {
+    setGeneratedRoutine(prev => {
+      if (!prev) return prev
+      const days = prev.days.map((d, i) => i === dayIdx ? { ...d, day_name: name } : d)
+      return { ...prev, days }
+    })
+  }
+
+  const updateExercise = (dayIdx, exIdx, patch) => {
+    setGeneratedRoutine(prev => {
+      if (!prev) return prev
+      const days = prev.days.map((d, i) => {
+        if (i !== dayIdx) return d
+        const exercises = d.exercises.map((ex, j) => j === exIdx ? { ...ex, ...patch } : ex)
+        return { ...d, exercises }
+      })
+      return { ...prev, days }
+    })
+  }
+
+  const swapExercise = (dayIdx, exIdx, catalogEx) => {
+    updateExercise(dayIdx, exIdx, { exercise_name: catalogEx.name })
+  }
+
+  const removeExercise = (dayIdx, exIdx) => {
+    setGeneratedRoutine(prev => {
+      if (!prev) return prev
+      const days = prev.days.map((d, i) => {
+        if (i !== dayIdx) return d
+        const exercises = d.exercises.filter((_, j) => j !== exIdx)
+        return { ...d, exercises }
+      })
+      return { ...prev, days }
+    })
+  }
+
+  const moveExercise = (dayIdx, exIdx, dir) => {
+    setGeneratedRoutine(prev => {
+      if (!prev) return prev
+      const days = prev.days.map((d, i) => {
+        if (i !== dayIdx) return d
+        const exercises = [...d.exercises]
+        const target = exIdx + dir
+        if (target < 0 || target >= exercises.length) return d
+        ;[exercises[exIdx], exercises[target]] = [exercises[target], exercises[exIdx]]
+        return { ...d, exercises }
+      })
+      return { ...prev, days }
+    })
+  }
+
+  const addExercise = (dayIdx, catalogEx) => {
+    setGeneratedRoutine(prev => {
+      if (!prev) return prev
+      const newEx = {
+        exercise_name: catalogEx.name,
+        sets: catalogEx.default_sets || 4,
+        reps: String(catalogEx.default_reps || '10-12'),
+        rest_seconds: catalogEx.default_rest_seconds || 90,
+        superset_group: 0,
+        notes: ''
+      }
+      const days = prev.days.map((d, i) => {
+        if (i !== dayIdx) return d
+        return { ...d, exercises: [...d.exercises, newEx] }
+      })
+      return { ...prev, days }
+    })
+  }
+
+  const toggleSuperset = (dayIdx, exIdx) => {
+    setGeneratedRoutine(prev => {
+      if (!prev || exIdx === 0) return prev
+      const days = prev.days.map((d, i) => {
+        if (i !== dayIdx) return d
+        const exercises = [...d.exercises]
+        const myGroup = parseExerciseGroup(exercises[exIdx])
+        const prevGroup = parseExerciseGroup(exercises[exIdx - 1])
+        const isInGroup = myGroup > 0 && prevGroup === myGroup
+        if (isInGroup) {
+          exercises[exIdx] = { ...exercises[exIdx], superset_group: 0 }
+        } else {
+          let groupId = prevGroup
+          if (!groupId) {
+            groupId = nextSupersetId(prev)
+            exercises[exIdx - 1] = { ...exercises[exIdx - 1], superset_group: groupId }
+          }
+          exercises[exIdx] = { ...exercises[exIdx], superset_group: groupId }
+        }
+        return { ...d, exercises }
+      })
+      return { ...prev, days }
+    })
+  }
+
+  const handleSaved = async () => {
+    if (!generatedRoutine) return
+    setSaving(true)
+    try {
+      const res = await authFetch('/api/save-routine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trainer_id: trainerId,
+          member_id: (memberId && memberId !== '__none__') ? memberId : null,
+          notes: lastNotes,
+          routine: generatedRoutine
+        })
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error al guardar la rutina')
+      }
+      setSavedTemplateId(data.workout_template_id)
+      toast({ title: '¡Rutina guardada!', description: 'Ya aparece en tu lista de rutinas.' })
+      onRoutineSaved?.(data.workout_template_id)
+      handleClose()
+    } catch (error) {
+      toast({ title: 'Error al guardar', description: error.message, variant: 'destructive' })
+      setSaving(false)
+    }
   }
 
   const isFemale = memberSummary?.sex === 'female'
@@ -524,7 +806,18 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
           {/* PASO: PREVIEW */}
           {step === 'preview' && generatedRoutine && (
             <div className="space-y-4">
-              <RoutinePreview routine={generatedRoutine} />
+              <RoutinePreview
+                routine={generatedRoutine}
+                excludeOnlyMale={isFemale}
+                onRoutineFieldChange={updateRoutineField}
+                onUpdateExercise={updateExercise}
+                onSwapExercise={swapExercise}
+                onRemoveExercise={removeExercise}
+                onMoveExercise={moveExercise}
+                onToggleSuperset={toggleSuperset}
+                onAddExercise={addExercise}
+                onUpdateDayName={updateDayName}
+              />
 
               {replacedInfo.length > 0 && (
                 <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
@@ -554,20 +847,26 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
                 <Button
                   variant="outline"
                   onClick={() => setStep('form')}
+                  disabled={saving}
                   className="flex-1 border-gray-600 text-gray-400 hover:bg-gray-800 rounded-xl"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" /> Regenerar
                 </Button>
                 <Button
                   onClick={handleSaved}
+                  disabled={saving}
                   className="flex-1 bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-xl"
                 >
-                  <Save className="w-4 h-4 mr-2" /> Usar esta Rutina
+                  {saving ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Guardando…</>
+                  ) : (
+                    <><Save className="w-4 h-4 mr-2" /> Aceptar y guardar</>
+                  )}
                 </Button>
               </div>
 
               <p className="text-center text-xs text-gray-600 pt-1">
-                Las rutinas generadas tienen carácter orientativo. Consulta con un profesional antes de iniciar cualquier programa de entrenamiento.
+                Edita lo que necesites antes de aceptar. Las rutinas generadas tienen carácter orientativo.
               </p>
             </div>
           )}

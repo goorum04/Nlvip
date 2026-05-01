@@ -4,6 +4,13 @@ import * as Sentry from '@sentry/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
+import {
+  INJURY_BLOCKED_MUSCLES,
+  INJURY_SAFE_FALLBACK,
+  INJURY_LABELS_ES,
+  detectInjuries,
+  getBlockedMuscles
+} from '@/lib/injuryValidation'
 
 const criteriaSchema = z.object({
   days_per_week: z.number().int().min(1).max(7),
@@ -98,48 +105,6 @@ function bestCatalogMatch(proposedName, catalog, allowedMuscle = null) {
 }
 
 const MUSCLES = ['espalda', 'pecho', 'hombros', 'bíceps', 'biceps', 'tríceps', 'triceps', 'cuádriceps', 'cuadriceps', 'femoral', 'glúteo', 'gluteo', 'gemelos', 'abdomen', 'lumbares']
-
-const INJURY_PATTERNS = {
-  shoulder: /\b(hombro|hombros|shoulder|shoulders|manguito|rotador|rotadores|acromion|deltoid(?:e|es)?)\b/i,
-  knee: /\b(rodilla|rodillas|knee|knees|menisco|meniscos|ligamento.{0,20}rodilla)\b/i,
-  lumbar: /\b(lumbar|lumbares|espalda baja|hernia(?:.{0,20}disc)?|ci[áa]tica|lower back)\b/i,
-  elbow: /\b(codo|codos|elbow|elbows|epicondil(?:itis|algia)?|tendinitis.{0,15}codo)\b/i,
-  wrist: /\b(mu[ñn]eca|mu[ñn]ecas|wrist|wrists|carpo|t[úu]nel carpiano)\b/i
-}
-
-const INJURY_BLOCKED_MUSCLES = {
-  shoulder: ['pecho', 'hombros'],
-  knee: ['cuádriceps', 'femoral'],
-  lumbar: ['lumbares', 'femoral'],
-  elbow: ['tríceps', 'bíceps'],
-  wrist: []
-}
-
-const INJURY_SAFE_FALLBACK = {
-  shoulder: ['espalda', 'bíceps', 'tríceps', 'abdomen', 'gemelos'],
-  knee: ['espalda', 'pecho', 'hombros', 'bíceps', 'tríceps', 'abdomen', 'glúteo'],
-  lumbar: ['pecho', 'hombros', 'bíceps', 'tríceps', 'cuádriceps', 'abdomen', 'gemelos'],
-  elbow: ['espalda', 'pecho', 'hombros', 'cuádriceps', 'femoral', 'glúteo', 'abdomen', 'gemelos'],
-  wrist: ['cuádriceps', 'femoral', 'glúteo', 'gemelos', 'abdomen']
-}
-
-const INJURY_LABELS_ES = {
-  shoulder: 'hombro',
-  knee: 'rodilla',
-  lumbar: 'zona lumbar',
-  elbow: 'codo',
-  wrist: 'muñeca'
-}
-
-function detectInjuries(...sources) {
-  const text = sources.filter(Boolean).join(' ')
-  if (!text.trim()) return new Set()
-  const found = new Set()
-  for (const [zone, regex] of Object.entries(INJURY_PATTERNS)) {
-    if (regex.test(text)) found.add(zone)
-  }
-  return found
-}
 
 function muscleFromDayName(dayName) {
   const n = normalize(dayName)
@@ -260,10 +225,7 @@ export async function POST(request) {
     ].join('\n') : 'Rutina genérica (sin socio asociado).'
 
     const injuries = detectInjuries(notes, memberConditions)
-    const blockedMuscles = new Set()
-    for (const zone of injuries) {
-      for (const m of (INJURY_BLOCKED_MUSCLES[zone] || [])) blockedMuscles.add(m)
-    }
+    const blockedMuscles = getBlockedMuscles(injuries)
     const injuryRestrictionBlock = injuries.size > 0
       ? `RESTRICCIONES OBLIGATORIAS DETECTADAS (PRIORIDAD ABSOLUTA):
 ${[...injuries].map(z => `- Lesión / dolor de ${INJURY_LABELS_ES[z]}: NO incluyas ningún ejercicio cuyo músculo primario sea ${INJURY_BLOCKED_MUSCLES[z].length ? INJURY_BLOCKED_MUSCLES[z].map(m => `"${m}"`).join(' ni ') : '(sin restricción por grupo)'}.`).join('\n')}
@@ -447,72 +409,8 @@ Genera exactamente ${days_per_week} días. Responde solo con el JSON.`
       })
     }
 
-    const { data: template, error: templateError } = await supabase
-      .from('workout_templates')
-      .insert([{
-        trainer_id: trainer_id,
-        name: routineJson.routine_name,
-        description: routineJson.routine_description
-      }])
-      .select()
-      .single()
-
-    if (templateError) throw templateError
-
-    for (const day of routineJson.days) {
-      const { data: dayRow, error: dayError } = await supabase
-        .from('workout_days')
-        .insert([{
-          workout_template_id: template.id,
-          day_number: day.day_number,
-          name: day.day_name
-        }])
-        .select()
-        .single()
-
-      if (dayError) throw dayError
-
-      if (day.exercises?.length > 0) {
-        const groupSizes = new Map()
-        for (const ex of day.exercises) {
-          const g = ex.superset_group
-          if (g && Number.isInteger(g) && g > 0) {
-            groupSizes.set(g, (groupSizes.get(g) || 0) + 1)
-          }
-        }
-        const tagFor = (g) => {
-          if (!g || !Number.isInteger(g) || g <= 0) return ''
-          const size = groupSizes.get(g) || 0
-          if (size < 2) return ''
-          const label = size >= 3 ? 'tri-serie' : 'bi-serie'
-          return `[${label}:${g}] `
-        }
-
-        const exercisesToInsert = day.exercises.map((ex, idx) => {
-          const tag = tagFor(ex.superset_group)
-          const desc = `${tag}${ex.notes || ''}`.trim()
-          return {
-            workout_day_id: dayRow.id,
-            name: ex.exercise_name,
-            description: desc.length > 0 ? desc : null,
-            sets: ex.sets,
-            reps: String(ex.reps),
-            rest_seconds: ex.rest_seconds,
-            order_index: idx
-          }
-        })
-
-        const { error: exError } = await supabase
-          .from('workout_exercises')
-          .insert(exercisesToInsert)
-
-        if (exError) throw exError
-      }
-    }
-
     return NextResponse.json({
       success: true,
-      workout_template_id: template.id,
       preview: routineJson,
       replaced
     })
