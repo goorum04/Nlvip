@@ -318,6 +318,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
   const [savedTemplateId, setSavedTemplateId] = useState(null)
   const [replacedInfo, setReplacedInfo] = useState([])
   const [saving, setSaving] = useState(false)
+  const [lastNotes, setLastNotes] = useState('')
   const { toast } = useToast()
 
   const [members, setMembers] = useState([])
@@ -411,6 +412,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
         ? `Consideraciones del socio: ${memberConditions}`
         : ''
       const mergedNotes = [memberNotes, trainerNotes].filter(Boolean).join('\n').slice(0, 500)
+      setLastNotes(mergedNotes)
 
       const res = await authFetch('/api/generate-routine', {
         method: 'POST',
@@ -451,6 +453,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
     setMemberSummary(null)
     setShowAdvanced(false)
     setSaving(false)
+    setLastNotes('')
     onClose()
   }
 
@@ -563,6 +566,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
         body: JSON.stringify({
           trainer_id: trainerId,
           member_id: (memberId && memberId !== '__none__') ? memberId : null,
+          notes: lastNotes,
           routine: generatedRoutine
         })
       })

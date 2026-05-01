@@ -4,6 +4,11 @@ import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 import { persistRoutine } from '@/lib/routinePersistence'
+import {
+  detectInjuries,
+  getBlockedMuscles,
+  describeInjuries
+} from '@/lib/injuryValidation'
 
 const exerciseSchema = z.object({
   exercise_name: z.string().min(1),
@@ -29,6 +34,7 @@ const routineSchema = z.object({
 const bodySchema = z.object({
   trainer_id: z.string().uuid().optional().nullable(),
   member_id: z.string().uuid().optional().nullable(),
+  notes: z.string().max(500).optional().nullable(),
   routine: routineSchema
 })
 
@@ -46,7 +52,7 @@ export async function POST(request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
     }
-    const { trainer_id, member_id, routine } = parsed.data
+    const { trainer_id, member_id, routine, notes = '' } = parsed.data
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -74,15 +80,17 @@ export async function POST(request) {
 
     const { data: catalog, error: catalogError } = await supabase
       .from('exercises')
-      .select('name')
+      .select('name, muscle_primary')
       .eq('is_global', true)
     if (catalogError) throw catalogError
 
-    const catalogSet = new Set((catalog || []).map(e => e.name.trim().toLowerCase()))
+    const normalize = s => (s || '').toString().trim().toLowerCase()
+    const catalogByName = new Map((catalog || []).map(e => [normalize(e.name), e]))
+
     const invalid = []
     for (const day of routine.days) {
       for (const ex of day.exercises) {
-        if (!catalogSet.has(ex.exercise_name.trim().toLowerCase())) {
+        if (!catalogByName.has(normalize(ex.exercise_name))) {
           invalid.push({ day: day.day_name, name: ex.exercise_name })
         }
       }
@@ -95,6 +103,47 @@ export async function POST(request) {
         },
         { status: 400 }
       )
+    }
+
+    let memberConditions = null
+    if (member_id) {
+      const { data: lastOnboarding } = await supabase
+        .from('diet_onboarding_requests')
+        .select('responses')
+        .eq('member_id', member_id)
+        .in('status', ['completed', 'reviewed'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      memberConditions = lastOnboarding?.responses?.extras?.condicion_medica || null
+    }
+
+    const injuries = detectInjuries(notes, memberConditions)
+    const blockedMuscles = getBlockedMuscles(injuries)
+    if (blockedMuscles.size > 0) {
+      const blocked = []
+      for (const day of routine.days) {
+        for (const ex of day.exercises) {
+          const cat = catalogByName.get(normalize(ex.exercise_name))
+          if (cat && blockedMuscles.has(cat.muscle_primary)) {
+            blocked.push({
+              day: day.day_name,
+              name: ex.exercise_name,
+              muscle: cat.muscle_primary
+            })
+          }
+        }
+      }
+      if (blocked.length > 0) {
+        return NextResponse.json(
+          {
+            error: `No se puede guardar: hay ejercicios incompatibles con la lesión de ${describeInjuries(injuries)} indicada en las notas (${blocked.map(b => `"${b.name}" — ${b.muscle}`).join(', ')}). Elimínalos o sustitúyelos antes de guardar.`,
+            blocked,
+            injuries: [...injuries]
+          },
+          { status: 400 }
+        )
+      }
     }
 
     const template = await persistRoutine(supabase, {
