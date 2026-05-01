@@ -37,6 +37,22 @@ const ONBOARDING_GOAL_LABEL = {
 
 const SUPERSET_TAG_RE = /^\[(bi-serie|tri-serie):(\d+)\]\s*/i
 
+const INJURY_REASON_LABEL = {
+  shoulder: 'lesión de hombro',
+  knee: 'lesión de rodilla',
+  lumbar: 'lesión lumbar',
+  elbow: 'lesión de codo',
+  wrist: 'lesión de muñeca'
+}
+
+function formatInjuryReason(reason) {
+  if (!reason || typeof reason !== 'string' || !reason.startsWith('injury:')) return null
+  const zones = reason.slice('injury:'.length).split(',').filter(Boolean)
+  const labels = zones.map(z => INJURY_REASON_LABEL[z] || z).filter(Boolean)
+  if (labels.length === 0) return null
+  return `reemplazado por ${labels.join(' y ')} detectada en las notas`
+}
+
 function parseExerciseGroup(ex) {
   if (typeof ex.superset_group === 'number' && ex.superset_group > 0) {
     return ex.superset_group
@@ -150,6 +166,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
   const [memberId, setMemberId] = useState('')
   const [memberSummary, setMemberSummary] = useState(null) // { name, sex, goal, conditions }
   const [memberLoading, setMemberLoading] = useState(false)
+  const [memberConditions, setMemberConditions] = useState('')
   const [showAdvanced, setShowAdvanced] = useState(false)
 
   const [criteria, setCriteria] = useState({
@@ -179,7 +196,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
 
   // Auto-load member context when memberId changes
   useEffect(() => {
-    if (!memberId || memberId === '__none__') { setMemberSummary(null); return }
+    if (!memberId || memberId === '__none__') { setMemberSummary(null); setMemberConditions(''); return }
     let cancelled = false
     setMemberLoading(true)
     ;(async () => {
@@ -204,10 +221,10 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
         goal: goal ? (GOAL_FROM_ONBOARDING[goal] || 'hipertrofia') : null,
         conditions
       })
+      setMemberConditions(conditions || '')
       setCriteria(prev => ({
         ...prev,
-        goal: goal ? (GOAL_FROM_ONBOARDING[goal] || prev.goal) : prev.goal,
-        notes: conditions ? `Consideraciones del socio: ${conditions}` : prev.notes
+        goal: goal ? (GOAL_FROM_ONBOARDING[goal] || prev.goal) : prev.goal
       }))
       setMemberLoading(false)
     })()
@@ -231,6 +248,12 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
 
     setStep('loading')
     try {
+      const trainerNotes = (criteria.notes || '').trim()
+      const memberNotes = memberConditions
+        ? `Consideraciones del socio: ${memberConditions}`
+        : ''
+      const mergedNotes = [memberNotes, trainerNotes].filter(Boolean).join('\n').slice(0, 500)
+
       const res = await authFetch('/api/generate-routine', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -239,6 +262,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
           member_id: (memberId && memberId !== '__none__') ? memberId : null,
           criteria: {
             ...criteria,
+            notes: mergedNotes,
             days_per_week: parseInt(criteria.days_per_week),
             session_duration_min: parseInt(criteria.session_duration_min)
           }
@@ -462,6 +486,11 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
                       placeholder="Ej: molestia en hombro derecho, evitar sentadilla, rutina para mujer..."
                       className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1 text-sm min-h-[70px]"
                     />
+                    {memberConditions && (
+                      <p className="text-xs text-cyan-400/80 mt-1">
+                        Se añadirán automáticamente las consideraciones del socio: "{memberConditions}"
+                      </p>
+                    )}
                   </div>
 
                   <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
@@ -504,13 +533,19 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
                     Ajustes automáticos al catálogo
                   </div>
                   <ul className="space-y-0.5 list-disc pl-4">
-                    {replacedInfo.slice(0, 5).map((r, i) => (
-                      <li key={i}>
-                        {r.dropped
-                          ? `"${r.original}" descartado (sin equivalente en catálogo)`
-                          : `"${r.original}" → "${r.replacement}"`}
-                      </li>
-                    ))}
+                    {replacedInfo.slice(0, 5).map((r, i) => {
+                      const reasonText = formatInjuryReason(r.reason)
+                      return (
+                        <li key={i}>
+                          {r.dropped
+                            ? `"${r.original}" descartado (sin equivalente en catálogo)`
+                            : `"${r.original}" → "${r.replacement}"`}
+                          {reasonText && (
+                            <span className="text-cyan-300/80"> · {reasonText}</span>
+                          )}
+                        </li>
+                      )
+                    })}
                   </ul>
                 </div>
               )}

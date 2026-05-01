@@ -29,10 +29,15 @@ REGLAS:
 2. Usa exclusivamente nombres LITERALES del catálogo de ejercicios proporcionado. No inventes variantes ni sustituyas con ejercicios que no aparezcan en el catálogo.
 3. El nombre del ejercicio debe coincidir EXACTAMENTE con el del catálogo (mayúsculas, tildes y espacios incluidos).
 4. Distribuye los grupos musculares inteligentemente para evitar sobreentrenar músculos sinérgicos en días consecutivos.
-5. Instrucción sobre PECHO: Si el socio es HOMBRE, SIEMPRE incluye ejercicios de pecho del catálogo. Si el socio es MUJER u OTRO, NUNCA incluyas pecho, aunque esté en el catálogo. Excepción: si las notas adicionales especifican "sin pecho" o una dolencia que lo justifique, respeta eso. El catálogo ya ha sido filtrado según el sexo del socio.
-6. Incluye entre 5 y 8 ejercicios por día según la duración indicada.
-7. Los valores de "reps" pueden ser: "10", "8-12", "15-20", "al fallo", "30s".
-8. Adapta la rutina a las condiciones médicas o lesiones indicadas. Evita ejercicios que las puedan agravar (p. ej., si hay problemas de rodilla evita Sentadilla en multipower, Zancadas y Sentadilla búlgara; si hay problemas lumbares evita Peso muerto rumano y Buenos días en polea baja; si hay problemas de hombro evita Press de hombros y elevaciones frontales pesadas). Sustitúyelos por alternativas equivalentes del catálogo.
+5. PRIORIDAD ABSOLUTA — LESIONES Y CONDICIONES MÉDICAS: si las notas adicionales o las condiciones médicas indicadas mencionan dolor, molestia o lesión en cualquier zona, esta restricción tiene prioridad sobre cualquier otra regla, incluida la regla 6 sobre pecho. Si en el bloque "RESTRICCIONES OBLIGATORIAS DETECTADAS" aparecen grupos musculares vetados, NO incluyas NINGÚN ejercicio cuyo músculo primario esté en esa lista, aunque el catálogo lo permita. Adapta la rutina evitando ejercicios que puedan agravar la lesión y sustitúyelos por alternativas equivalentes del catálogo. Guía orientativa:
+   - Lesión / dolor de HOMBRO: evita TODOS los press de pecho (banca, inclinado, declinado, en máquina, en Smith), aperturas, fondos, pull-overs, press de hombros y elevaciones frontales/laterales pesadas. El press de pecho carga el hombro como estabilizador y es contraindicado.
+   - Lesión / dolor de RODILLA: evita Sentadilla en multipower, Zancadas, Sentadilla búlgara y prensas pesadas con recorrido completo.
+   - Lesión / dolor LUMBAR: evita Peso muerto rumano, Buenos días en polea baja, hiperextensiones cargadas y remos con barra libre.
+   - Lesión / dolor de CODO: evita extensiones de tríceps pesadas, press francés y curls con barra recta. Prefiere variantes en máquina o con mancuernas.
+   - Lesión / dolor de MUÑECA: prefiere mancuernas y máquinas; evita ejercicios con barra recta que fuercen extensión de muñeca.
+6. PECHO por sexo (solo aplica si NO hay lesiones que afecten al hombro/codo/muñeca/pecho): si el socio es HOMBRE, SIEMPRE incluye ejercicios de pecho del catálogo; si es MUJER u OTRO, NUNCA incluyas pecho aunque esté en el catálogo. El catálogo ya ha sido filtrado según el sexo del socio. Esta regla queda anulada por la regla 5.
+7. Incluye entre 5 y 8 ejercicios por día según la duración indicada.
+8. Los valores de "reps" pueden ser: "10", "8-12", "15-20", "al fallo", "30s".
 9. Si el socio quiere perder grasa o se trabaja resistencia, o si la duración es corta, o si el campo "permitir_supersets" es true, agrupa 2 o 3 ejercicios consecutivos como bi-serie o tri-serie. Para indicarlo añade un campo numérico "superset_group" (entero) en cada ejercicio: ejercicios con el mismo número pertenecen al mismo grupo. Usa 0 o null en ejercicios individuales. El descanso "rest_seconds" dentro del grupo será 0–15s; el descanso normal solo va en el último ejercicio del grupo.
 
 FORMATO JSON DE RESPUESTA:
@@ -93,6 +98,48 @@ function bestCatalogMatch(proposedName, catalog, allowedMuscle = null) {
 }
 
 const MUSCLES = ['espalda', 'pecho', 'hombros', 'bíceps', 'biceps', 'tríceps', 'triceps', 'cuádriceps', 'cuadriceps', 'femoral', 'glúteo', 'gluteo', 'gemelos', 'abdomen', 'lumbares']
+
+const INJURY_PATTERNS = {
+  shoulder: /\b(hombro|hombros|shoulder|shoulders|manguito|rotador|rotadores|acromion|deltoid(?:e|es)?)\b/i,
+  knee: /\b(rodilla|rodillas|knee|knees|menisco|meniscos|ligamento.{0,20}rodilla)\b/i,
+  lumbar: /\b(lumbar|lumbares|espalda baja|hernia(?:.{0,20}disc)?|ci[áa]tica|lower back)\b/i,
+  elbow: /\b(codo|codos|elbow|elbows|epicondil(?:itis|algia)?|tendinitis.{0,15}codo)\b/i,
+  wrist: /\b(mu[ñn]eca|mu[ñn]ecas|wrist|wrists|carpo|t[úu]nel carpiano)\b/i
+}
+
+const INJURY_BLOCKED_MUSCLES = {
+  shoulder: ['pecho', 'hombros'],
+  knee: ['cuádriceps', 'femoral'],
+  lumbar: ['lumbares', 'femoral'],
+  elbow: ['tríceps', 'bíceps'],
+  wrist: []
+}
+
+const INJURY_SAFE_FALLBACK = {
+  shoulder: ['espalda', 'bíceps', 'tríceps', 'abdomen', 'gemelos'],
+  knee: ['espalda', 'pecho', 'hombros', 'bíceps', 'tríceps', 'abdomen', 'glúteo'],
+  lumbar: ['pecho', 'hombros', 'bíceps', 'tríceps', 'cuádriceps', 'abdomen', 'gemelos'],
+  elbow: ['espalda', 'pecho', 'hombros', 'cuádriceps', 'femoral', 'glúteo', 'abdomen', 'gemelos'],
+  wrist: ['cuádriceps', 'femoral', 'glúteo', 'gemelos', 'abdomen']
+}
+
+const INJURY_LABELS_ES = {
+  shoulder: 'hombro',
+  knee: 'rodilla',
+  lumbar: 'zona lumbar',
+  elbow: 'codo',
+  wrist: 'muñeca'
+}
+
+function detectInjuries(...sources) {
+  const text = sources.filter(Boolean).join(' ')
+  if (!text.trim()) return new Set()
+  const found = new Set()
+  for (const [zone, regex] of Object.entries(INJURY_PATTERNS)) {
+    if (regex.test(text)) found.add(zone)
+  }
+  return found
+}
 
 function muscleFromDayName(dayName) {
   const n = normalize(dayName)
@@ -212,6 +259,19 @@ export async function POST(request) {
       `Restricciones / alergias: ${memberRestrictions || 'ninguna indicada'}`
     ].join('\n') : 'Rutina genérica (sin socio asociado).'
 
+    const injuries = detectInjuries(notes, memberConditions)
+    const blockedMuscles = new Set()
+    for (const zone of injuries) {
+      for (const m of (INJURY_BLOCKED_MUSCLES[zone] || [])) blockedMuscles.add(m)
+    }
+    const injuryRestrictionBlock = injuries.size > 0
+      ? `RESTRICCIONES OBLIGATORIAS DETECTADAS (PRIORIDAD ABSOLUTA):
+${[...injuries].map(z => `- Lesión / dolor de ${INJURY_LABELS_ES[z]}: NO incluyas ningún ejercicio cuyo músculo primario sea ${INJURY_BLOCKED_MUSCLES[z].length ? INJURY_BLOCKED_MUSCLES[z].map(m => `"${m}"`).join(' ni ') : '(sin restricción por grupo)'}.`).join('\n')}
+Si vas a incluir un ejercicio dudoso, descártalo y elige otro del catálogo de un grupo muscular seguro.
+
+`
+      : ''
+
     const userMessage = `Genera una rutina de entrenamiento con los siguientes criterios:
 - Días por semana: ${days_per_week}
 - Objetivo: ${goal}
@@ -224,7 +284,7 @@ export async function POST(request) {
 CONTEXTO DEL SOCIO:
 ${memberContextLines}
 
-CATÁLOGO DE EJERCICIOS DISPONIBLES (los ÚNICOS que puedes usar):
+${injuryRestrictionBlock}CATÁLOGO DE EJERCICIOS DISPONIBLES (los ÚNICOS que puedes usar):
 ${catalogLines}
 
 Genera exactamente ${days_per_week} días. Responde solo con el JSON.`
@@ -301,10 +361,89 @@ Genera exactamente ${days_per_week} días. Responde solo con el JSON.`
       day.exercises = newExercises
     }
 
+    if (injuries.size > 0) {
+      const injuryReason = `injury:${[...injuries].join(',')}`
+      const safeMuscles = new Set()
+      for (const zone of injuries) {
+        for (const m of (INJURY_SAFE_FALLBACK[zone] || [])) safeMuscles.add(m)
+      }
+      const isSafeExercise = (ex) => ex && !blockedMuscles.has(ex.muscle_primary)
+      const usedAcrossWeek = new Set()
+      for (const day of routineJson.days) {
+        if (!Array.isArray(day.exercises)) continue
+        for (const ex of day.exercises) {
+          const cat = catalogByName.get(normalize(ex.exercise_name))
+          if (cat) usedAcrossWeek.add(normalize(cat.name))
+        }
+      }
+
+      const pickSafeReplacement = (usedThisDay, preferredEquipment) => {
+        const candidates = []
+        for (const muscle of safeMuscles) {
+          for (const c of (catalogByMuscle.get(muscle) || [])) {
+            if (!isSafeExercise(c)) continue
+            if (usedThisDay.has(normalize(c.name))) continue
+            candidates.push(c)
+          }
+        }
+        const matchEquip = candidates.find(c =>
+          (!preferredEquipment || c.equipment === preferredEquipment) &&
+          !usedAcrossWeek.has(normalize(c.name))
+        )
+        if (matchEquip) return matchEquip
+        const fresh = candidates.find(c => !usedAcrossWeek.has(normalize(c.name)))
+        if (fresh) return fresh
+        return candidates[0] || null
+      }
+
+      for (const day of routineJson.days) {
+        if (!Array.isArray(day.exercises)) continue
+        const usedThisDay = new Set()
+        const filtered = []
+        for (const ex of day.exercises) {
+          const cat = catalogByName.get(normalize(ex.exercise_name))
+          if (cat && isSafeExercise(cat)) {
+            usedThisDay.add(normalize(cat.name))
+            filtered.push(ex)
+            continue
+          }
+          const original = ex.exercise_name
+          const preferredEquip = cat?.equipment || null
+          const replacement = pickSafeReplacement(usedThisDay, preferredEquip)
+          if (replacement) {
+            ex.exercise_name = replacement.name
+            usedThisDay.add(normalize(replacement.name))
+            usedAcrossWeek.add(normalize(replacement.name))
+            replaced.push({ original, replacement: replacement.name, day: day.day_name, reason: injuryReason })
+            filtered.push(ex)
+          } else {
+            replaced.push({ original, replacement: null, day: day.day_name, dropped: true, reason: injuryReason })
+          }
+        }
+
+        while (filtered.length < 3) {
+          const replacement = pickSafeReplacement(usedThisDay, null)
+          if (!replacement) break
+          usedThisDay.add(normalize(replacement.name))
+          usedAcrossWeek.add(normalize(replacement.name))
+          filtered.push({
+            exercise_name: replacement.name,
+            sets: replacement.default_sets || 3,
+            reps: String(replacement.default_reps || '10-12'),
+            rest_seconds: replacement.default_rest_seconds || 60,
+            superset_group: 0,
+            notes: null
+          })
+        }
+
+        day.exercises = filtered
+      }
+    }
+
     if (replaced.length > 0) {
       Sentry.captureMessage('generate-routine: ejercicios fuera de catálogo reemplazados', {
         level: 'warning',
-        extra: { replaced, member_id, trainer_id }
+        extra: { replaced, member_id, trainer_id, injuries: [...injuries] }
       })
     }
 
