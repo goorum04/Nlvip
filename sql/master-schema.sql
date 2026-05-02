@@ -251,7 +251,8 @@ CREATE TABLE IF NOT EXISTS trainer_notices (
     trainer_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
     member_id UUID REFERENCES profiles(id) ON DELETE CASCADE, -- NULL si es para todos
     title TEXT NOT NULL,
-    content TEXT NOT NULL,
+    message TEXT NOT NULL,
+    priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('low','normal','high')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
