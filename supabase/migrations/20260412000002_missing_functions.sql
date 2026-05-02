@@ -337,7 +337,8 @@ BEGIN
 END;
 $$;
 
--- BUG FIX: original used column 'message' but trainer_notices has 'content'
+-- The real column in trainer_notices is "message"; superseded by
+-- 20260502000001_fix_rpc_create_notice.sql which fixes the body.
 CREATE OR REPLACE FUNCTION rpc_create_notice(p_title TEXT, p_message TEXT, p_priority TEXT DEFAULT 'normal', p_member_id UUID DEFAULT NULL)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -347,7 +348,7 @@ AS $$
 DECLARE v_notice_id UUID;
 BEGIN
   IF NOT is_admin() THEN RAISE EXCEPTION 'Solo administradores pueden usar esta función'; END IF;
-  INSERT INTO trainer_notices (trainer_id, member_id, title, content, priority)
+  INSERT INTO trainer_notices (trainer_id, member_id, title, message, priority)
   VALUES (auth.uid(), p_member_id, p_title, p_message, p_priority)
   RETURNING id INTO v_notice_id;
   RETURN jsonb_build_object('success', true, 'notice_id', v_notice_id, 'is_global', p_member_id IS NULL, 'title', p_title);
