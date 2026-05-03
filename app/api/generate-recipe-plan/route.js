@@ -133,7 +133,9 @@ async function translateAndAdaptRecipe(openai, recipe) {
   const ingredients = recipe.ingredients || ''
   const instructions = recipe.instructions || ''
 
-  const prompt = `Traduce esta receta al español natural (España) y adapta el nombre para un gimnasio fitness. 
+  const prompt = `Traduce esta receta al español natural (España). 
+El nombre debe ser apetecible y profesional, adecuado para un estilo de vida saludable y deportivo, pero evita usar la palabra "fitness" o "fit" en el título a menos que sea estrictamente necesario o natural para el plato.
+
 Receta original: "${recipe.title}"
 Ingredientes original: ${ingredients}
 Instrucciones original: ${instructions}
