@@ -107,8 +107,15 @@ const AudioPlayer = ({ path }) => {
   )
 }
 
-export default function FloatingChat({ userId, userRole, trainerId, trainerName, members }) {
+export default function FloatingChat({ userId, userRole, trainerId, trainerName, members, hasPremium = false }) {
   const { toast } = useToast()
+  const canSend = hasPremium || userRole === 'trainer' || userRole === 'admin'
+  const blockNonPremium = () => {
+    toast({
+      title: '🔒 Función Premium',
+      description: 'Necesitas un código de invitación para acceder a esta función.',
+    })
+  }
   const [isOpen, setIsOpen] = useState(false)
   const [activeConversation, setActiveConversation] = useState(null)
   const [conversations, setConversations] = useState({ trainer: null, admin: null })
@@ -444,6 +451,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   }
 
   const handleImageSelect = (e) => {
+    if (!canSend) { e.target.value = ''; blockNonPremium(); return }
     const file = e.target.files[0]
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
@@ -457,8 +465,9 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
 
   const handleSend = async (e) => {
     if (e) e.preventDefault()
+    if (!canSend) { blockNonPremium(); return }
     if (!newMessage.trim() && !audioBlob && !imageFile) return
-    
+
     if (!activeConversation) {
       alert('Error: No hay una conversación activa. Por favor, espera a que el chat cargue o refresca la página.')
       return
@@ -555,6 +564,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       if (e.cancelable) e.preventDefault()
       e.stopPropagation()
     }
+    if (!canSend) { blockNonPremium(); return }
 
     try {
       stopRequestedRef.current = false
@@ -849,6 +859,14 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
           <div className="p-4 bg-zinc-950 border-t border-white/5">
             {view === 'list' ? (
               <p className="text-xs text-zinc-500 text-center py-2">Selecciona un socio para comenzar a chatear</p>
+            ) : !canSend ? (
+              <div className="flex items-center gap-3 bg-violet-500/10 border border-violet-500/20 rounded-2xl px-4 py-3">
+                <Shield className="w-5 h-5 text-violet-400 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm text-violet-300 font-semibold">🔒 Función Premium</p>
+                  <p className="text-xs text-zinc-400">Solo los socios premium pueden enviar mensajes.</p>
+                </div>
+              </div>
             ) : (
               <div className="flex flex-col gap-2">
                 {audioBlob && (
@@ -941,9 +959,11 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                 </form>
               </div>
             )}
-            <p className="text-[10px] text-zinc-600 mt-2 text-center">
-              {userRole === 'admin' ? 'Pulsa el icono de audio para enviar mensajes de voz' : 'Puedes usar el micrófono para dictar texto'}
-            </p>
+            {canSend && (
+              <p className="text-[10px] text-zinc-600 mt-2 text-center">
+                {userRole === 'admin' ? 'Pulsa el icono de audio para enviar mensajes de voz' : 'Puedes usar el micrófono para dictar texto'}
+              </p>
+            )}
           </div>
         </div>
       )}
