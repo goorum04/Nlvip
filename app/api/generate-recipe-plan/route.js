@@ -1,5 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import OpenAI from 'openai'
+
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) throw new Error('OPENAI_API_KEY no está configurada')
+  return new OpenAI({ apiKey })
+}
 
 function getSupabase() {
   return createClient(
@@ -121,6 +128,58 @@ function pickBestRecipe(candidates, target, recentlyUsed) {
   return [...pool].sort((a, b) => scoreRecipeAgainstTarget(a, target) - scoreRecipeAgainstTarget(b, target))[0]
 }
 
+// Traducir y adaptar una receta de Spoonacular al español usando GPT
+async function translateAndAdaptRecipe(openai, recipe) {
+  const ingredients = recipe.ingredients || ''
+  const instructions = recipe.instructions || ''
+
+  const prompt = `Traduce esta receta al español natural (España) y adapta el nombre para un gimnasio fitness. 
+Receta original: "${recipe.title}"
+Ingredientes original: ${ingredients}
+Instrucciones original: ${instructions}
+Categoría objetivo: ${recipe.category}
+
+Responde SOLO con JSON válido:
+{
+  "nombre": "nombre de la receta en español",
+  "descripcion": "descripción apetitosa de 1-2 frases en español",  
+  "ingredientes": ["ingrediente 1 con cantidad", "ingrediente 2 con cantidad"],
+  "instrucciones": ["Paso 1: ...", "Paso 2: ...", "Paso 3: ..."],
+  "consejo": "consejo opcional de preparación o variación"
+}`
+
+  try {
+    const res = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 800,
+      temperature: 0.4
+    })
+
+    const content = res.choices[0]?.message?.content || ''
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      const translated = JSON.parse(jsonMatch[0])
+      return {
+        ...recipe,
+        title: translated.nombre || recipe.title,
+        description: translated.descripcion || `Receta personalizada: ${translated.nombre || recipe.title}`,
+        ingredients: Array.isArray(translated.ingredientes) ? translated.ingredientes.join('\n') : translated.ingredientes || recipe.ingredients,
+        instructions: Array.isArray(translated.instrucciones) ? translated.instrucciones.join('\n') : translated.instrucciones || recipe.instructions,
+        consejo: translated.consejo || null
+      }
+    }
+  } catch (err) {
+    console.error('Error translating recipe:', err.message)
+  }
+
+  // Fallback if translation fails
+  return {
+    ...recipe,
+    description: `Receta personalizada: ${recipe.title}`
+  }
+}
+
 
 // Guardar receta en recipe_catalog (FK de member_recipe_plan_items) y devolver el ID
 async function saveRecipeToDB(recipe, supabase) {
@@ -161,6 +220,7 @@ async function saveRecipeToDB(recipe, supabase) {
 
 export async function POST(req) {
   const supabase = getSupabase()
+  const openai = getOpenAIClient()
   try {
     const { memberId, dietId, trainerId } = await req.json()
 
@@ -307,6 +367,36 @@ export async function POST(req) {
         dayTotal.fats_g += selected.fats_g || 0
       }
       dailyTotals.push(dayTotal)
+    }
+
+    // --- TRADUCCIÓN ---
+    // Traducir solo las recetas únicas seleccionadas para ahorrar tokens y tiempo
+    const uniqueRecipesToTranslate = []
+    const seenRecipeIds = new Set()
+    
+    for (const item of selectedBySlotDay) {
+      const id = item.recipe.spoonacular_id ?? item.recipe.title
+      if (!seenRecipeIds.has(id)) {
+        uniqueRecipesToTranslate.push(item.recipe)
+        seenRecipeIds.add(id)
+      }
+    }
+
+    console.log(`[Recipe Plan] Translating ${uniqueRecipesToTranslate.length} unique recipes...`)
+    
+    // Traducir en paralelo
+    const translatedMap = new Map()
+    await Promise.all(uniqueRecipesToTranslate.map(async (recipe) => {
+      const translated = await translateAndAdaptRecipe(openai, recipe)
+      translatedMap.set(recipe.spoonacular_id ?? recipe.title, translated)
+    }))
+
+    // Reemplazar recetas en selectedBySlotDay con sus versiones traducidas
+    for (const item of selectedBySlotDay) {
+      const id = item.recipe.spoonacular_id ?? item.recipe.title
+      if (translatedMap.has(id)) {
+        item.recipe = translatedMap.get(id)
+      }
     }
 
     // Diagnostic: per-day and weekly macro deviation vs target
