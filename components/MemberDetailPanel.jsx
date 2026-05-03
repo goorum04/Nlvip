@@ -194,16 +194,24 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
   const handleAssignDiet = async (dietId) => {
     setAssigning(true)
     try {
+      const assignerId = (await supabase.auth.getUser()).data.user?.id
       const { error } = await supabase
         .from('member_diets')
         .upsert([{
           member_id: member.id,
           diet_template_id: dietId,
-          assigned_by: (await supabase.auth.getUser()).data.user?.id
+          assigned_by: assignerId
         }], { onConflict: 'member_id' })
 
       if (error) throw error
       toast({ title: '¡Dieta asignada!' })
+
+      fetch('/api/generate-recipe-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: member.id, dietId, trainerId: assignerId })
+      }).catch(e => console.warn('Recipe plan generation failed:', e))
+
       loadMemberData()
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })

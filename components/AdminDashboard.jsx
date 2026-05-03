@@ -900,6 +900,13 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       if (assignError) throw assignError
 
       toast({ title: '¡Macros asignados!', description: `Se ha creado y asignado la dieta a ${member?.name}` })
+
+      fetch('/api/generate-recipe-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: selectedMemberForMacros, dietId: diet.id, trainerId: selectedTrainerForMacros })
+      }).catch(e => console.warn('Recipe plan generation failed:', e))
+
       setSelectedMemberForMacros('')
       setSelectedTrainerForMacros('')
       setMacroResults(null)
