@@ -1352,13 +1352,14 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
       )}
 
       {/* Floating Chat */}
-      <FloatingChat 
+      <FloatingChat
         userId={user.id}
         userRole="member"
         trainerId={myTrainer?.id}
         trainerName={myTrainer?.name}
         adminId={gymAdmin?.id}
         adminName={gymAdmin?.name}
+        hasPremium={hasPremium}
       />
 
       {/* ONBOARDING MODAL */}
