@@ -102,7 +102,7 @@ export async function POST(req) {
 
     // 7. Also generate recipe plan
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/generate-recipe-plan`, {
+      await fetch(new URL('/api/generate-recipe-plan', req.url).toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
