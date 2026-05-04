@@ -56,6 +56,23 @@ export async function POST(req) {
       url: url || '/',
     })
 
+    // Persist as an aviso so the recipient sees it in the Avisos tab,
+    // not only as a transient device push.
+    const { error: insertError } = await supabaseAdmin
+      .from('trainer_notices')
+      .insert({
+        trainer_id: user.id,
+        member_id: targetUserId,
+        title,
+        message: body,
+        priority: 'normal',
+      })
+
+    if (insertError) {
+      console.error('notifications/send insert error:', insertError)
+      return NextResponse.json({ success: true, warning: 'push_sent_notice_failed' })
+    }
+
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('notifications/send error:', err)
