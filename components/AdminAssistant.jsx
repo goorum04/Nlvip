@@ -535,6 +535,8 @@ export default function AdminAssistant({ userId, onClose }) {
   const mediaRecorderRef = useRef(null)
   const timerRef = useRef(null)
   const stopRequestedRef = useRef(false)
+  const transcriptRef = useRef('')
+  const handleSendRef = useRef(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -547,9 +549,10 @@ export default function AdminAssistant({ userId, onClose }) {
 
       recognition.onresult = (event) => {
         let fullTranscript = ''
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        for (let i = 0; i < event.results.length; i++) {
           fullTranscript += event.results[i][0].transcript
         }
+        transcriptRef.current = fullTranscript
         setInput(fullTranscript)
       }
 
@@ -598,8 +601,12 @@ export default function AdminAssistant({ userId, onClose }) {
         const blob = new Blob(chunks, { type: mimeType || 'audio/webm' })
         setAudioBlob(blob)
         stream.getTracks().forEach(track => track.stop())
-        // Auto-send when released
-        handleSend(null, blob)
+        // Use ref to avoid stale closure: handleSendRef always points to the latest handleSend
+        // Pass the live transcript so it never reads a stale `input` state.
+        const send = handleSendRef.current
+        if (send) {
+          send(transcriptRef.current, blob)
+        }
       }
 
       mediaRecorderRef.current.start()
@@ -609,6 +616,7 @@ export default function AdminAssistant({ userId, onClose }) {
       timerRef.current = setInterval(() => setRecordingDuration(p => p + 1), 1000)
 
       // 2. Transcription logic (while holding)
+      transcriptRef.current = ''
       if (recognitionRef.current) {
         setInput('')
         try {
@@ -658,9 +666,9 @@ export default function AdminAssistant({ userId, onClose }) {
   }
 
   const handleSend = async (textOverride, audioBlobOverride) => {
-    const text = textOverride || input
+    let text = (typeof textOverride === 'string' ? textOverride : '') || input || ''
     const audioToUpload = audioBlobOverride || audioBlob
-    
+
     if (!text.trim() && !audioToUpload) return
     if (isLoading) return
 
@@ -683,10 +691,35 @@ export default function AdminAssistant({ userId, onClose }) {
         audioPath = data.path
       }
 
-      const userMessage = { 
-        role: 'user', 
+      // 2. If we have audio but no usable transcript (e.g. iOS where Web Speech
+      // is unreliable), fall back to server-side Whisper transcription.
+      if (audioToUpload && !text.trim()) {
+        try {
+          const fd = new FormData()
+          const fileName = `audio.${(audioToUpload.type || '').includes('mp4') ? 'mp4' : 'webm'}`
+          fd.append('audio', audioToUpload, fileName)
+          const tr = await fetch(getApiUrl() + '/api/transcribe-audio', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${session?.access_token}` },
+            body: fd
+          })
+          const trJson = await tr.json().catch(() => ({}))
+          if (tr.ok && trJson?.text) {
+            text = trJson.text
+          }
+        } catch (err) {
+          console.warn('Whisper transcription failed:', err)
+        }
+      }
+
+      if (!text.trim()) {
+        throw new Error('No se pudo transcribir el audio. Inténtalo de nuevo o escribe el mensaje.')
+      }
+
+      const userMessage = {
+        role: 'user',
         content: text,
-        audio_path: audioPath 
+        audio_path: audioPath
       }
       
       setMessages(prev => [...prev, userMessage])
@@ -745,6 +778,12 @@ export default function AdminAssistant({ userId, onClose }) {
       setIsLoading(false)
     }
   }
+
+  // Keep ref pointing at the latest handleSend so MediaRecorder.onstop (which
+  // captures a stale function) can invoke the up-to-date version.
+  useEffect(() => {
+    handleSendRef.current = handleSend
+  })
 
   const handleConfirm = async () => {
     if (!pendingToolCalls.length) return
