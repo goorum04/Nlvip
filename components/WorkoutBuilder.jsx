@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Plus, Trash2, Video, Upload, LoaderCircle as Loader2, ChevronDown, ChevronUp,
-  Dumbbell, Calendar, Play, GripVertical, Save, X, Eye, BookOpen, Search, Coffee, Sun
+  Dumbbell, Calendar, Play, GripVertical, Save, X, Eye, BookOpen, Search, Coffee, Sun, HeartPulse
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import ExerciseCatalogPicker from './ExerciseCatalogPicker'
@@ -756,6 +756,15 @@ export function WorkoutViewer({ workoutId, memberPrs = [], highlightToday = fals
         <h2 className="text-xl font-bold text-white mb-1">{workout.name}</h2>
         {workout.description && (
           <p className="text-gray-400 text-sm">{workout.description}</p>
+        )}
+        {workout.medical_rationale && (
+          <div className="mt-3 flex items-start gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3">
+            <HeartPulse className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-emerald-100/90 whitespace-pre-line">
+              <p className="font-semibold text-emerald-200 mb-1">Por qué esta rutina es buena para ti</p>
+              {workout.medical_rationale}
+            </div>
+          </div>
         )}
         <p className="text-violet-400 text-sm mt-2">{days.length} días de entrenamiento</p>
       </div>

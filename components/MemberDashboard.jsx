@@ -425,7 +425,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const loadMyWorkout = async () => {
     const { data } = await supabase
       .from('member_workouts')
-      .select(`*, workout:workout_templates!member_workouts_workout_template_id_fkey(id, name, description, workout_videos(*))`)
+      .select(`*, workout:workout_templates!member_workouts_workout_template_id_fkey(id, name, description, medical_rationale, workout_videos(*))`)
       .eq('member_id', user.id)
       .maybeSingle()
 

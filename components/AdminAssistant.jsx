@@ -8,7 +8,7 @@ import {
   Mic, MicOff, Send, Bot, User, LoaderCircle as Loader2, CircleCheckBig as CheckCircle2, CircleX as XCircle, X,
   Volume2, VolumeX, Sparkles, TriangleAlert as AlertTriangle, Zap, Crown, WandSparkles as Wand2,
   ChefHat, Flame, Beef, Wheat, Droplets, Clock, ChartBar as BarChart3, Info,
-  Play, Pause, Dumbbell, ChevronDown
+  Play, Pause, Dumbbell, ChevronDown, HeartPulse
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { getApiUrl } from '@/lib/utils'
@@ -324,7 +324,7 @@ function RoutineCard({ routineData, replaced = [], injuries = [], memberName }) 
   const [openDay, setOpenDay] = useState(null)
   if (!routineData?.days?.length) return null
 
-  const { routine_name, routine_description, days } = routineData
+  const { routine_name, routine_description, days, medical_rationale } = routineData
   const totalExercises = days.reduce((acc, d) => acc + (d.exercises?.length || 0), 0)
   const supersetCount = days.reduce((acc, d) => {
     const groups = new Set()
@@ -388,6 +388,16 @@ function RoutineCard({ routineData, replaced = [], injuries = [], memberName }) 
                 {replaced.length > 0 && (
                   <p>{replaced.length} ejercicio(s) sustituido(s) por catálogo o seguridad.</p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {medical_rationale && (
+            <div className="mt-3 flex items-start gap-2 bg-emerald-400/15 border border-emerald-300/30 rounded-xl p-2.5">
+              <HeartPulse className="w-4 h-4 text-emerald-200 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-emerald-100 whitespace-pre-line">
+                <p className="font-semibold text-emerald-200 mb-1">Por qué esta rutina es buena {memberName ? `para ${memberName}` : 'para esta persona'}</p>
+                {medical_rationale}
               </div>
             </div>
           )}
