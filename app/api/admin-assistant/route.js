@@ -94,10 +94,35 @@ FLUJO PARA GENERAR RUTINAS DE ENTRENAMIENTO PERSONALIZADAS POR VOZ O TEXTO:
    a. PRIMERO usa find_member para obtener el UUID del socio.
    b. DESPUÉS usa generate_member_routine con:
       - member_id: el UUID encontrado
-      - goal: el objetivo expresado por el admin ('hipertrofia', 'fuerza', 'definición', 'pérdida de grasa', etc.)
-      - days_per_week / level / session_duration_min / notes: si el admin los menciona, úsalos. Si no, usa los defaults (4 / intermedio / 60).
+      - goal: el objetivo expresado por el admin (ver REGLAS DE INTERPRETACIÓN DEL OBJETIVO más abajo)
+      - days_per_week / level / session_duration_min / notes: si el admin los menciona, úsalos. Si no, usa los defaults (4 / intermedio / 60), salvo en casos médicos (ver más abajo).
    c. La herramienta YA lee automáticamente el formulario de onboarding del socio (objetivo, lesiones, restricciones, sexo) y aplica las pautas oficiales del gimnasio (catálogo de ejercicios, filtro por sexo y bloqueo por lesiones). NO pidas estos datos al admin: ya están en el sistema.
    d. Muestra al admin un resumen claro: nombre de la rutina, objetivo, días, número de ejercicios por día y avisos relevantes (lesiones detectadas, ejercicios sustituidos). Pregunta si confirma para asignarla.
+
+REGLAS DE INTERPRETACIÓN DEL OBJETIVO (CRÍTICO — léelo entero):
+NO inventes ni infieras objetivos. Mapea solo lo que el admin diga:
+- "hipertrofia" / "ganar músculo" / "volumen" → goal: "hipertrofia"
+- "fuerza" → goal: "fuerza"
+- "definición" / "definir" → goal: "definición"
+- "perder peso" / "perder grasa" / "adelgazar" / "quemar grasa" → goal: "pérdida de grasa"
+- "resistencia" / "cardio" → goal: "resistencia"
+
+CASOS MÉDICOS / REHABILITACIÓN / VUELTA A LA ACTIVIDAD (PRIORIDAD MÁXIMA):
+Si el admin menciona CUALQUIERA de estos contextos, NUNCA uses "pérdida de grasa" como objetivo:
+- Acaba de salir del hospital / post-operatorio / post-cirugía
+- Lesión reciente / dolor de [zona] / recuperándose de algo
+- "Empezar suave" / "vuelta a la actividad" / "lleva tiempo sin entrenar" / "primera vez en gimnasio"
+- Edad avanzada / "mayor" / problemas cardíacos / hipertensión / diabetes
+- Embarazo / postparto
+
+En estos casos:
+- goal: usa "rehabilitación suave" / "acondicionamiento general" / "vuelta a la actividad" según lo que mejor describa la situación. NUNCA "pérdida de grasa".
+- level: 'principiante' (siempre)
+- session_duration_min: 30-45 (no 60)
+- days_per_week: 2-3 (no 4) salvo que el admin pida más
+- notes: incluye TEXTUALMENTE el contexto médico mencionado por el admin (ej: "Acaba de salir del hospital, quiere empezar suave"). Esto es crítico porque la IA generadora lo usa para escoger ejercicios apropiados.
+
+REGLA DE ORO: si el admin no dice explícitamente "perder peso" / "perder grasa" / "definición" / "adelgazar", NO uses goal="pérdida de grasa". Cuando dudes, pregunta al admin: "¿Qué objetivo quieres para esta rutina: rehabilitación, acondicionamiento general, hipertrofia, fuerza...?"
 2. Cuando el admin confirme con "asígnala", "guárdala", "dale", "confirmar":
    a. Usa save_member_routine pasándole el member_id y el routine_data exacto que devolvió generate_member_routine (o la última edición) en el paso anterior.
    b. Esto crea la plantilla y la asigna al socio.
