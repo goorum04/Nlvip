@@ -157,7 +157,7 @@ export async function POST(request) {
       for (const toolCall of toolCallsToExecute) {
         try {
           const args = typeof toolCall.args === 'string' ? JSON.parse(toolCall.args) : toolCall.args
-          const result = await executeTool(toolCall.name, args)
+          const result = await executeTool(toolCall.name, args, adminToken)
           results[toolCall.id] = result
         } catch (err) {
           errors.push({ id: toolCall.id, name: toolCall.name, error: err.message })
@@ -211,7 +211,7 @@ export async function POST(request) {
       for (const call of autoExecute) {
         try {
           const args = JSON.parse(call.function.arguments || '{}')
-          toolResults[call.id] = await executeTool(call.function.name, args)
+          toolResults[call.id] = await executeTool(call.function.name, args, adminToken)
         } catch (err) {
           toolResults[call.id] = { success: false, error: err.message }
         }
@@ -251,7 +251,7 @@ export async function POST(request) {
           for (const call of newAutoExecute) {
             try {
               const args = JSON.parse(call.function.arguments || '{}')
-              toolResults[call.id] = await executeTool(call.function.name, args)
+              toolResults[call.id] = await executeTool(call.function.name, args, adminToken)
             } catch (err) {
               toolResults[call.id] = { success: false, error: err.message }
             }
