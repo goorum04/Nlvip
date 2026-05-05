@@ -86,6 +86,23 @@ FLUJO PARA GENERAR/CREAR DIETAS PERSONALIZADAS CON IA:
    a. Busca al socio con find_member
    b. Usa apply_full_member_plan (esto asigna dieta + rutina + macros)
 
+FLUJO PARA GENERAR RUTINAS DE ENTRENAMIENTO PERSONALIZADAS POR VOZ O TEXTO:
+1. Cuando el admin diga cosas como:
+   - "genera una rutina de hipertrofia para [nombre]"
+   - "créale una rutina de fuerza a [nombre], 4 días"
+   - "hazle una rutina para perder grasa a [nombre] teniendo en cuenta su formulario"
+   a. PRIMERO usa find_member para obtener el UUID del socio.
+   b. DESPUÉS usa generate_member_routine con:
+      - member_id: el UUID encontrado
+      - goal: el objetivo expresado por el admin ('hipertrofia', 'fuerza', 'definición', 'pérdida de grasa', etc.)
+      - days_per_week / level / session_duration_min / notes: si el admin los menciona, úsalos. Si no, usa los defaults (4 / intermedio / 60).
+   c. La herramienta YA lee automáticamente el formulario de onboarding del socio (objetivo, lesiones, restricciones, sexo) y aplica las pautas oficiales del gimnasio (catálogo de ejercicios, filtro por sexo y bloqueo por lesiones). NO pidas estos datos al admin: ya están en el sistema.
+   d. Muestra al admin un resumen claro: nombre de la rutina, objetivo, días, número de ejercicios por día y avisos relevantes (lesiones detectadas, ejercicios sustituidos). Pregunta si confirma para asignarla.
+2. Cuando el admin confirme con "asígnala", "guárdala", "dale", "confirmar":
+   a. Usa save_member_routine pasándole el member_id y el routine_data exacto que devolvió generate_member_routine en el paso anterior.
+   b. Esto crea la plantilla y la asigna al socio.
+3. NO uses save_member_routine sin haber generado antes una rutina con generate_member_routine en el mismo hilo.
+
 CUANDO GENERES O HABLES DE DIETAS, USA ESTAS REGLAS DEL GIMNASIO:
 ${DIET_RULES}
 
@@ -176,7 +193,7 @@ export async function POST(request) {
       const readOnlyTools = [
         'find_member', 'get_member_summary', 'get_gym_dashboard', 'list_trainers',
         'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity',
-        'list_members', 'generate_ai_diet_from_recipes'
+        'list_members', 'generate_ai_diet_from_recipes', 'generate_member_routine'
       ]
       const autoExecute = []
       const needsConfirmation = []

@@ -4,11 +4,11 @@ import { useState, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { 
+import {
   Mic, MicOff, Send, Bot, User, LoaderCircle as Loader2, CircleCheckBig as CheckCircle2, CircleX as XCircle, X,
   Volume2, VolumeX, Sparkles, TriangleAlert as AlertTriangle, Zap, Crown, WandSparkles as Wand2,
   ChefHat, Flame, Beef, Wheat, Droplets, Clock, ChartBar as BarChart3, Info,
-  Play, Pause
+  Play, Pause, Dumbbell, ChevronDown
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { getApiUrl } from '@/lib/utils'
@@ -319,6 +319,126 @@ function DietCard({ dietData }) {
   )
 }
 
+// Tarjeta visual para una rutina generada con IA
+function RoutineCard({ routineData, replaced = [], injuries = [], memberName }) {
+  const [openDay, setOpenDay] = useState(null)
+  if (!routineData?.days?.length) return null
+
+  const { routine_name, routine_description, days } = routineData
+  const totalExercises = days.reduce((acc, d) => acc + (d.exercises?.length || 0), 0)
+  const supersetCount = days.reduce((acc, d) => {
+    const groups = new Set()
+    for (const ex of (d.exercises || [])) {
+      if (ex.superset_group && ex.superset_group > 0) groups.add(ex.superset_group)
+    }
+    return acc + groups.size
+  }, 0)
+
+  return (
+    <div className="w-full mt-2 space-y-3 animate-in slide-in-from-bottom-4 duration-500">
+      <div className="relative overflow-hidden rounded-2xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 opacity-90" />
+        <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+        <div className="relative p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <Dumbbell className="w-5 h-5 text-white" />
+                <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Rutina IA</span>
+              </div>
+              <h3 className="text-lg font-bold text-white truncate">{routine_name}</h3>
+              {memberName && (
+                <p className="text-sm text-white/70">Para {memberName}</p>
+              )}
+              {routine_description && (
+                <p className="text-xs text-white/60 mt-1 line-clamp-2">{routine_description}</p>
+              )}
+            </div>
+            <div className="text-right shrink-0">
+              <div className="text-2xl font-black text-white">{days.length}</div>
+              <div className="text-xs text-white/70">días/sem</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="bg-white/10 backdrop-blur rounded-xl p-2 text-center">
+              <Zap className="w-4 h-4 text-amber-300 mx-auto mb-0.5" />
+              <div className="text-sm font-bold text-white">{totalExercises}</div>
+              <div className="text-[10px] text-white/60">Ejercicios</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur rounded-xl p-2 text-center">
+              <Flame className="w-4 h-4 text-rose-300 mx-auto mb-0.5" />
+              <div className="text-sm font-bold text-white">{supersetCount}</div>
+              <div className="text-[10px] text-white/60">Bi/tri-series</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur rounded-xl p-2 text-center">
+              <Clock className="w-4 h-4 text-cyan-300 mx-auto mb-0.5" />
+              <div className="text-sm font-bold text-white">{Math.round(totalExercises / Math.max(days.length, 1))}</div>
+              <div className="text-[10px] text-white/60">Ej./día</div>
+            </div>
+          </div>
+
+          {(injuries.length > 0 || replaced.length > 0) && (
+            <div className="mt-3 flex items-start gap-2 bg-amber-400/15 border border-amber-300/30 rounded-xl p-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-200 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-amber-100 space-y-0.5">
+                {injuries.length > 0 && (
+                  <p><strong>Lesiones detectadas:</strong> {injuries.join(', ')}. Se han evitado ejercicios contraindicados.</p>
+                )}
+                {replaced.length > 0 && (
+                  <p>{replaced.length} ejercicio(s) sustituido(s) por catálogo o seguridad.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {days.map((day, idx) => {
+          const isOpen = openDay === idx
+          return (
+            <div key={idx} className="bg-gradient-to-r from-violet-500/15 to-indigo-500/10 backdrop-blur border border-violet-400/20 rounded-2xl overflow-hidden transition-all duration-300">
+              <button
+                type="button"
+                onClick={() => setOpenDay(isOpen ? null : idx)}
+                className="w-full p-3 flex items-center gap-3 text-left"
+              >
+                <div className="w-10 h-10 rounded-xl bg-violet-500/30 border border-violet-300/30 flex items-center justify-center text-white font-bold text-sm">
+                  D{day.day_number ?? idx + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{day.day_name}</p>
+                  <p className="text-[11px] text-white/60">{day.exercises?.length || 0} ejercicios</p>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-white/70 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isOpen && (
+                <div className="border-t border-white/10 px-3 pb-3 pt-2 space-y-1.5">
+                  {(day.exercises || []).map((ex, eIdx) => {
+                    const ssLabel = ex.superset_group && ex.superset_group > 0 ? `BS${ex.superset_group}` : null
+                    return (
+                      <div key={eIdx} className="flex items-center gap-2 bg-black/20 rounded-lg px-2.5 py-1.5">
+                        <span className="text-[10px] text-white/40 w-5 shrink-0">{eIdx + 1}.</span>
+                        <span className="flex-1 text-sm text-white/90 truncate">{ex.exercise_name}</span>
+                        {ssLabel && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-fuchsia-500/30 text-fuchsia-100 border border-fuchsia-400/30">{ssLabel}</span>
+                        )}
+                        <span className="text-xs text-white/70 shrink-0 tabular-nums">{ex.sets}×{ex.reps}</span>
+                        <span className="text-[10px] text-white/40 shrink-0 tabular-nums">{ex.rest_seconds}s</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // Componente del plan de ejecución - Premium
 function ExecutionPlan({ plan, onConfirm, onCancel, isExecuting }) {
   return (
@@ -589,18 +709,27 @@ export default function AdminAssistant({ userId, onClose }) {
 
       if (data.message) {
         let extractedDietData = null
+        let extractedRoutine = null
         if (data.toolResults) {
           for (const result of Object.values(data.toolResults)) {
-            if (result?.diet_generated && result?.diet_data) {
+            if (!extractedDietData && result?.diet_generated && result?.diet_data) {
               extractedDietData = result.diet_data
-              break
+            }
+            if (!extractedRoutine && result?.routine_generated && result?.routine_data) {
+              extractedRoutine = {
+                routine_data: result.routine_data,
+                replaced: result.replaced || [],
+                injuries: result.injuries || [],
+                member_name: result.member_name || null
+              }
             }
           }
         }
         setMessages(prev => [...prev, {
           role: 'assistant',
           content: data.message,
-          diet_data: extractedDietData
+          diet_data: extractedDietData,
+          routine: extractedRoutine
         }])
         speak(data.message)
       }
@@ -754,6 +883,14 @@ export default function AdminAssistant({ userId, onClose }) {
                   />
                   {msg.role === 'assistant' && msg.diet_data && (
                     <DietCard dietData={msg.diet_data} />
+                  )}
+                  {msg.role === 'assistant' && msg.routine && (
+                    <RoutineCard
+                      routineData={msg.routine.routine_data}
+                      replaced={msg.routine.replaced}
+                      injuries={msg.routine.injuries}
+                      memberName={msg.routine.member_name}
+                    />
                   )}
                   {msg.role === 'assistant' && (
                     <p style={{ fontSize: '11px', color: '#888', marginTop: '8px', marginBottom: '8px', paddingLeft: '8px' }}>
