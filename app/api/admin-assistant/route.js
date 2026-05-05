@@ -99,9 +99,23 @@ FLUJO PARA GENERAR RUTINAS DE ENTRENAMIENTO PERSONALIZADAS POR VOZ O TEXTO:
    c. La herramienta YA lee automáticamente el formulario de onboarding del socio (objetivo, lesiones, restricciones, sexo) y aplica las pautas oficiales del gimnasio (catálogo de ejercicios, filtro por sexo y bloqueo por lesiones). NO pidas estos datos al admin: ya están en el sistema.
    d. Muestra al admin un resumen claro: nombre de la rutina, objetivo, días, número de ejercicios por día y avisos relevantes (lesiones detectadas, ejercicios sustituidos). Pregunta si confirma para asignarla.
 2. Cuando el admin confirme con "asígnala", "guárdala", "dale", "confirmar":
-   a. Usa save_member_routine pasándole el member_id y el routine_data exacto que devolvió generate_member_routine en el paso anterior.
+   a. Usa save_member_routine pasándole el member_id y el routine_data exacto que devolvió generate_member_routine (o la última edición) en el paso anterior.
    b. Esto crea la plantilla y la asigna al socio.
 3. NO uses save_member_routine sin haber generado antes una rutina con generate_member_routine en el mismo hilo.
+
+EDICIÓN DE LA RUTINA ANTES DE ASIGNARLA:
+Tras generar la rutina con generate_member_routine, el admin puede pedir cambios. Tienes 4 herramientas que NO guardan nada, solo transforman el preview en memoria:
+- swap_routine_exercise: "cambia X por Y", "sustituye X por Y" → reemplaza un ejercicio por otro del catálogo.
+- remove_routine_exercise: "quita X", "elimina X", "borra X" → elimina un ejercicio del día.
+- add_routine_exercise: "añade X", "mete X", "pon X el día N" → añade un ejercicio del catálogo.
+- modify_routine_exercise: "cambia las series de X a 4", "sube las reps de X a 12", "ajusta el descanso de X a 120s" → cambia sets/reps/descanso.
+
+REGLAS IMPORTANTES PARA LA EDICIÓN:
+1. Pasa SIEMPRE el routine_data completo de la última versión (la devuelta por generate_member_routine o por la última herramienta de edición). NO inventes el routine_data ni lo simplifiques.
+2. Identifica el día por su number 1-based (ej: "día 2" → day_index: 2). Si el admin no dice día y la rutina tiene varios, pregúntale a qué día se refiere.
+3. Usa nombres parciales si hace falta (la búsqueda es case-insensitive y por substring).
+4. Tras cada edición, muestra al admin un resumen breve de la rutina actualizada y pregunta si quiere otro cambio o si ya la asigna.
+5. Cuando el admin diga "asígnala" / "dale", llama a save_member_routine con el routine_data MÁS RECIENTE (el devuelto por la última edición).
 
 CUANDO GENERES O HABLES DE DIETAS, USA ESTAS REGLAS DEL GIMNASIO:
 ${DIET_RULES}
@@ -193,7 +207,8 @@ export async function POST(request) {
       const readOnlyTools = [
         'find_member', 'get_member_summary', 'get_gym_dashboard', 'list_trainers',
         'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity',
-        'list_members', 'generate_ai_diet_from_recipes', 'generate_member_routine'
+        'list_members', 'generate_ai_diet_from_recipes', 'generate_member_routine',
+        'swap_routine_exercise', 'remove_routine_exercise', 'add_routine_exercise', 'modify_routine_exercise'
       ]
       const autoExecute = []
       const needsConfirmation = []
