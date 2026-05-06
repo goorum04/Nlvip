@@ -145,7 +145,8 @@ Tras generar la rutina con generate_member_routine, el admin puede pedir cambios
 - swap_routine_exercise: "cambia X por Y", "sustituye X por Y" → reemplaza un ejercicio por otro del catálogo.
 - remove_routine_exercise: "quita X", "elimina X", "borra X" → elimina un ejercicio del día.
 - add_routine_exercise: "añade X", "mete X", "pon X el día N" → añade un ejercicio del catálogo.
-- modify_routine_exercise: "cambia las series de X a 4", "sube las reps de X a 12", "ajusta el descanso de X a 120s" → cambia sets/reps/descanso.
+- modify_routine_exercise: "cambia las series de X a 4", "sube las reps de X a 12", "ajusta el descanso de X a 120s" → cambia sets/reps/descanso de UN ejercicio concreto.
+- modify_routine_day: "que el día 4 sea de fuerza", "menos reps y más peso en el día 2", "sube las series del día 1 a 4", "el día 3 con 8-12 reps" → cambia sets/reps/descanso de TODOS los ejercicios de un día. Cuando el admin diga un objetivo (fuerza/hipertrofia/definición/resistencia) para un día concreto, mapea al rango: fuerza→4-5 series 4-6 reps 120-180s; hipertrofia→3-4 series 8-12 reps 60-90s; definición→3-4 series 10-15 reps 45-60s; resistencia→2-3 series 15-20 reps 30-45s. Frases tipo "menos reps y más peso" = fuerza (4-6 reps).
 
 REGLAS IMPORTANTES PARA LA EDICIÓN:
 1. Pasa SIEMPRE el routine_data completo de la última versión (la devuelta por generate_member_routine o por la última herramienta de edición). NO inventes el routine_data ni lo simplifiques.
@@ -245,7 +246,8 @@ export async function POST(request) {
         'find_member', 'get_member_summary', 'get_gym_dashboard', 'list_trainers',
         'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity',
         'list_members', 'generate_ai_diet_from_recipes', 'generate_member_routine',
-        'swap_routine_exercise', 'remove_routine_exercise', 'add_routine_exercise', 'modify_routine_exercise'
+        'swap_routine_exercise', 'remove_routine_exercise', 'add_routine_exercise',
+        'modify_routine_exercise', 'modify_routine_day'
       ]
       const autoExecute = []
       const needsConfirmation = []
