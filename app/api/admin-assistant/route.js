@@ -225,7 +225,7 @@ export async function POST(request) {
 
     // Llamada normal al asistente
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         ...messages
@@ -278,7 +278,7 @@ export async function POST(request) {
         }))
 
         const followUpResponse = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
+          model: 'gpt-4o',
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
             ...messages,
@@ -318,7 +318,7 @@ export async function POST(request) {
             }))
 
             const finalResponse = await openai.chat.completions.create({
-              model: 'gpt-4o-mini',
+              model: 'gpt-4o',
               messages: [
                 { role: 'system', content: SYSTEM_PROMPT },
                 ...messages,
