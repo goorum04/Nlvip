@@ -427,12 +427,16 @@ function RoutineCard({ routineData, replaced = [], injuries = [], memberName }) 
                 <div className="border-t border-white/10 px-3 pb-3 pt-2 space-y-1.5">
                   {(day.exercises || []).map((ex, eIdx) => {
                     const ssLabel = ex.superset_group && ex.superset_group > 0 ? `BS${ex.superset_group}` : null
+                    const dropsetN = Number.isInteger(ex.dropset) && ex.dropset > 0 ? ex.dropset : 0
                     return (
                       <div key={eIdx} className="flex items-center gap-2 bg-black/20 rounded-lg px-2.5 py-1.5">
                         <span className="text-[10px] text-white/40 w-5 shrink-0">{eIdx + 1}.</span>
                         <span className="flex-1 text-sm text-white/90 truncate">{ex.exercise_name}</span>
                         {ssLabel && (
                           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-fuchsia-500/30 text-fuchsia-100 border border-fuchsia-400/30">{ssLabel}</span>
+                        )}
+                        {dropsetN > 0 && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-500/30 text-orange-100 border border-orange-400/30">DS×{dropsetN}</span>
                         )}
                         <span className="text-xs text-white/70 shrink-0 tabular-nums">{ex.sets}×{ex.reps}</span>
                         <span className="text-[10px] text-white/40 shrink-0 tabular-nums">{ex.rest_seconds}s</span>

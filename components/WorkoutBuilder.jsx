@@ -140,8 +140,15 @@ function ExerciseItem({ exercise, onUpdate, onDelete, trainerId, isEditing, prs 
             {exercise.order_index + 1}
           </div>
           <div className="flex-1">
-            <p className="text-white font-bold">{exercise.name}</p>
-            <p className="text-xs text-gray-500">{exercise.sets}x{exercise.reps} • {exercise.rest_seconds}s descanso</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-white font-bold">{exercise.name}</p>
+              {Number.isInteger(exercise.dropset_drops) && exercise.dropset_drops > 0 && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-400/30 uppercase tracking-wider">
+                  Dropset ×{exercise.dropset_drops}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-500">{exercise.sets}x{exercise.reps} • {exercise.rest_seconds}s descanso{Number.isInteger(exercise.dropset_drops) && exercise.dropset_drops > 0 ? ` · al fallo + ${exercise.dropset_drops} drops sin descanso` : ''}</p>
           </div>
           {exercise.video_url && onPlay && (
             <Button
