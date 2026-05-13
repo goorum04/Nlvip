@@ -17,10 +17,11 @@ function getOpenAI() {
 }
 
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY no está configurado')
+  }
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, serviceKey)
 }
 
 // Interpreta el estilo de vida del socio para guiar a la IA con instrucciones

@@ -161,7 +161,6 @@ ${DIET_RULES}
 Responde siempre de forma amigable y profesional. Si algo falla, explica el problema de forma sencilla.`
 
 export async function POST(request) {
-  const supabaseAdmin = getSupabaseAdmin()
   const openai = getOpenAI()
   try {
     // 1. Rate Limiting (Más amplio para el chat del asistente)
@@ -181,10 +180,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
+    const supabaseAdmin = getSupabaseAdmin()
 
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(adminToken)
     if (authError || !user) {
