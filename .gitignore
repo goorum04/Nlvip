@@ -21,7 +21,7 @@ node_modules/
 
 # Next.js
 /.next/
-# /out/ - Habilitado para Capacitor (el build estático debe subirse a GitHub)
+/out/
 next-env.d.ts
 *.tsbuildinfo
 
@@ -45,6 +45,13 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 dump.rdb
+Logs
+build_log.txt
+build_output.txt
+vercel_status.txt
+
+# Ad-hoc diffs / patches
+*.patch
 
 # System files
 .DS_Store
