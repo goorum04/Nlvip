@@ -133,20 +133,30 @@ async function translateAndAdaptRecipe(openai, recipe) {
   const ingredients = recipe.ingredients || ''
   const instructions = recipe.instructions || ''
 
-  const prompt = `Traduce esta receta al español natural (España). 
+  const servings = recipe.servings || 1
+  const prompt = `Traduce esta receta al español natural (España).
 El nombre debe ser apetecible y profesional, adecuado para un estilo de vida saludable y deportivo, pero evita usar la palabra "fitness" o "fit" en el título a menos que sea estrictamente necesario o natural para el plato.
 
 Receta original: "${recipe.title}"
 Ingredientes original: ${ingredients}
 Instrucciones original: ${instructions}
+Porciones: ${servings}
 Categoría objetivo: ${recipe.category}
+
+Calcula también los macronutrientes POR PORCIÓN basándote en los ingredientes listados (usa tablas nutricionales estándar).
 
 Responde SOLO con JSON válido:
 {
   "nombre": "nombre de la receta en español",
-  "descripcion": "descripción apetitosa de 1-2 frases en español",  
+  "descripcion": "descripción apetitosa de 1-2 frases en español",
   "ingredientes": ["ingrediente 1 con cantidad", "ingrediente 2 con cantidad"],
   "instrucciones": ["Paso 1: ...", "Paso 2: ...", "Paso 3: ..."],
+  "macros_por_porcion": {
+    "calorias": número,
+    "proteinas_g": número,
+    "carbohidratos_g": número,
+    "grasas_g": número
+  },
   "consejo": "consejo opcional de preparación o variación"
 }`
 
@@ -154,7 +164,7 @@ Responde SOLO con JSON válido:
     const res = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 800,
+      max_tokens: 1000,
       temperature: 0.4
     })
 
@@ -162,13 +172,19 @@ Responde SOLO con JSON válido:
     const jsonMatch = content.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
       const translated = JSON.parse(jsonMatch[0])
+      const gptMacros = translated.macros_por_porcion
       return {
         ...recipe,
         title: translated.nombre || recipe.title,
         description: translated.descripcion || `Receta personalizada: ${translated.nombre || recipe.title}`,
         ingredients: Array.isArray(translated.ingredientes) ? translated.ingredientes.join('\n') : translated.ingredientes || recipe.ingredients,
         instructions: Array.isArray(translated.instrucciones) ? translated.instrucciones.join('\n') : translated.instrucciones || recipe.instructions,
-        consejo: translated.consejo || null
+        consejo: translated.consejo || null,
+        // Use GPT-calculated macros (ingredient-based) as primary, Spoonacular as fallback
+        calories: gptMacros?.calorias ?? recipe.calories,
+        protein_g: gptMacros?.proteinas_g ?? recipe.protein_g,
+        carbs_g: gptMacros?.carbohidratos_g ?? recipe.carbs_g,
+        fats_g: gptMacros?.grasas_g ?? recipe.fats_g,
       }
     }
   } catch (err) {
@@ -198,7 +214,7 @@ async function saveRecipeToDB(recipe, supabase) {
     .from('recipe_catalog')
     .insert({
       title: recipe.title,
-      description: `Receta personalizada: ${recipe.title}`,
+      description: recipe.description || `Receta personalizada: ${recipe.title}`,
       ingredients: recipe.ingredients ? recipe.ingredients.split('\n') : [],
       instructions: recipe.instructions ? recipe.instructions.split('\n') : [],
       calories: recipe.calories,
@@ -437,7 +453,7 @@ export async function POST(req) {
     if (missingRecipes.length > 0) {
       const toInsert = missingRecipes.map(r => ({
         title: r.title,
-        description: `Receta personalizada: ${r.title}`,
+        description: r.description || `Receta personalizada: ${r.title}`,
         ingredients: r.ingredients ? r.ingredients.split('\n') : [],
         instructions: r.instructions ? r.instructions.split('\n') : [],
         calories: r.calories,

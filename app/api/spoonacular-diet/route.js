@@ -88,25 +88,36 @@ async function translateAndAdaptRecipe(openai, recipe, targetCategory) {
   const fat = macros?.find(n => n.name === 'Fat')?.amount || 0
   const fiber = macros?.find(n => n.name === 'Fiber')?.amount || 0
 
-  const prompt = `Traduce esta receta al español natural (España) y adapta el nombre para un gimnasio fitness. 
+  const servings = recipe.servings || 1
+  const prompt = `Traduce esta receta al español natural (España) y adapta el nombre para un gimnasio fitness.
 Receta original: "${recipe.title}"
 Ingredientes: ${ingredients}
 Instrucciones: ${instructions}
+Porciones: ${servings}
 Categoría objetivo: ${targetCategory}
+
+Calcula los macronutrientes POR PORCIÓN basándote en los ingredientes listados (usa tablas nutricionales estándar).
 
 Responde SOLO con JSON válido:
 {
   "nombre": "nombre de la receta en español",
-  "descripcion": "descripción apetitosa de 1-2 frases en español",  
+  "descripcion": "descripción apetitosa de 1-2 frases en español",
   "ingredientes": ["ingrediente 1 con cantidad", "ingrediente 2 con cantidad"],
   "instrucciones": ["Paso 1: ...", "Paso 2: ...", "Paso 3: ..."],
+  "macros_por_porcion": {
+    "calorias": número,
+    "proteinas_g": número,
+    "carbohidratos_g": número,
+    "grasas_g": número,
+    "fibra_g": número
+  },
   "consejo": "consejo opcional de preparación o variación"
 }`
 
   const res = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [{ role: 'user', content: prompt }],
-    max_tokens: 600,
+    max_tokens: 900,
     temperature: 0.4
   })
 
@@ -125,6 +136,9 @@ Responde SOLO con JSON válido:
     }
   }
 
+  // Use GPT-calculated macros (from ingredients) as primary source.
+  // Spoonacular values are a fallback in case GPT didn't return them.
+  const gptMacros = translated.macros_por_porcion
   return {
     nombre: translated.nombre || recipe.title,
     descripcion: translated.descripcion || '',
@@ -135,11 +149,11 @@ Responde SOLO con JSON válido:
     ingredientes: translated.ingredientes || [ingredients],
     instrucciones: translated.instrucciones || ['Preparar los ingredientes', 'Cocinar según indicaciones', 'Servir caliente'],
     macros_por_porcion: {
-      calorias: Math.round(calories / (recipe.servings || 1)),
-      proteinas_g: Math.round(protein / (recipe.servings || 1)),
-      carbohidratos_g: Math.round(carbs / (recipe.servings || 1)),
-      grasas_g: Math.round(fat / (recipe.servings || 1)),
-      fibra_g: Math.round(fiber / (recipe.servings || 1)),
+      calorias: gptMacros?.calorias ?? Math.round(calories),
+      proteinas_g: gptMacros?.proteinas_g ?? Math.round(protein),
+      carbohidratos_g: gptMacros?.carbohidratos_g ?? Math.round(carbs),
+      grasas_g: gptMacros?.grasas_g ?? Math.round(fat),
+      fibra_g: gptMacros?.fibra_g ?? Math.round(fiber),
     },
     imagen_url: recipe.image || null,
     spoonacular_id: recipe.id,
