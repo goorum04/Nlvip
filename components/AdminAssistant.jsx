@@ -509,7 +509,7 @@ function ExecutionPlan({ plan, onConfirm, onCancel, isExecuting }) {
   )
 }
 
-export default function AdminAssistant({ userId, onClose }) {
+export default function AdminAssistant({ userId, onClose, onInputReady }) {
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
   const [audioBlob, setAudioBlob] = useState(null)
@@ -794,6 +794,12 @@ export default function AdminAssistant({ userId, onClose }) {
   useEffect(() => {
     handleSendRef.current = handleSend
   })
+
+  // Expose setInput and handleSend to parent components (e.g. AdminCommandCenter)
+  // so they can pre-fill or send prompts programmatically.
+  useEffect(() => {
+    if (onInputReady) onInputReady(setInput, (text) => handleSendRef.current?.(text))
+  }, [onInputReady])
 
   const handleConfirm = async () => {
     if (!pendingToolCalls.length) return

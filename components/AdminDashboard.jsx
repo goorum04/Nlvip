@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { RecipesManager } from './RecipesManager'
 import AdminAssistant from './AdminAssistant'
+import AdminCommandCenter from './AdminCommandCenter'
 import { AdminUsersTab } from './AdminUsersTab'
 import { AdminContentTab } from './AdminContentTab'
 import { AdminCodesTab } from './AdminCodesTab'
@@ -119,6 +120,16 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const pendingDietSubmissions = (dietRequests || []).filter(
     r => r && r.status === 'submitted'
   ).length
+
+  const membersWithoutWorkout = useMemo(() => {
+    const assigned = new Set((allAssignments?.workouts || []).map(a => a.member_id))
+    return (members || []).filter(m => !assigned.has(m.id))
+  }, [members, allAssignments])
+
+  const membersWithoutDiet = useMemo(() => {
+    const assigned = new Set((allAssignments?.diets || []).map(a => a.member_id))
+    return (members || []).filter(m => !assigned.has(m.id))
+  }, [members, allAssignments])
 
   useEffect(() => {
     loadData().catch(err => {
@@ -1214,9 +1225,23 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
 
           </div>
 
-          {/* Asistente IA */}
+          {/* Centro de Mando */}
           <TabsContent value="assistant" className="space-y-4">
-            <AdminAssistant userId={user.id} voiceTrigger={voiceTrigger} />
+            <AdminCommandCenter
+              userId={user.id}
+              voiceTrigger={voiceTrigger}
+              members={members}
+              allAssignments={allAssignments}
+              workoutTemplates={workoutTemplates}
+              dietTemplates={dietTemplates}
+              trainers={trainers}
+              pendingDietSubmissions={pendingDietSubmissions}
+              membersWithoutWorkout={membersWithoutWorkout}
+              membersWithoutDiet={membersWithoutDiet}
+              dietRequests={dietRequests}
+              onNavigate={(tab) => { setTabHistory(prev => [...prev, activeTab]); setActiveTab(tab) }}
+              onSelectMember={(member) => { setSelectedMember(member); setShowMemberDetail(true) }}
+            />
           </TabsContent>
 
           {/* Entrenadores */}
