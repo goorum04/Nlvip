@@ -509,7 +509,7 @@ function ExecutionPlan({ plan, onConfirm, onCancel, isExecuting }) {
   )
 }
 
-export default function AdminAssistant({ userId, onClose }) {
+export default function AdminAssistant({ userId, onClose, onInputReady }) {
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
   const [audioBlob, setAudioBlob] = useState(null)
@@ -795,6 +795,12 @@ export default function AdminAssistant({ userId, onClose }) {
     handleSendRef.current = handleSend
   })
 
+  // Expose setInput and handleSend to parent components (e.g. AdminCommandCenter)
+  // so they can pre-fill or send prompts programmatically.
+  useEffect(() => {
+    if (onInputReady) onInputReady(setInput, (text) => handleSendRef.current?.(text))
+  }, [onInputReady])
+
   const handleConfirm = async () => {
     if (!pendingToolCalls.length) return
     setIsExecuting(true)
@@ -841,12 +847,12 @@ export default function AdminAssistant({ userId, onClose }) {
   }
 
   const quickCommands = [
-    { icon: '📊', text: 'Resumen del gym', command: 'Dime el resumen del gimnasio' },
-    { icon: '🔍', text: 'Buscar socio', command: 'Busca al socio Said' },
-    { icon: '📢', text: 'Crear aviso', command: 'Crea un aviso para todos' },
-    { icon: '👥', text: 'Ver socios', command: 'Lista todos los socios' },
-    { icon: '🍽️', text: 'Dieta con IA', command: 'Ponle una dieta alta en proteínas para perder grasa a Said, sin gluten' },
-    { icon: '👟', text: 'Ver actividad', command: 'Ver actividad física del socio Said' }
+    { icon: '📊', text: 'Resumen del gym', command: 'Dime el resumen del gimnasio', fill: false },
+    { icon: '👥', text: 'Ver socios sin plan', command: 'Lista los socios que no tienen rutina asignada', fill: false },
+    { icon: '🔍', text: 'Buscar socio', command: 'Busca al socio ', fill: true },
+    { icon: '💪', text: 'Asignar rutina', command: 'Asigna la rutina al socio ', fill: true },
+    { icon: '🍽️', text: 'Asignar dieta', command: 'Asigna la dieta al socio ', fill: true },
+    { icon: '🔑', text: 'Crear código', command: 'Crea un código de invitación', fill: false },
   ]
 
   return (
@@ -909,17 +915,35 @@ export default function AdminAssistant({ userId, onClose }) {
       <div className="flex-1 bg-gradient-to-b from-[#0a0a0a] to-[#111] border-x border-violet-500/10 overflow-hidden flex flex-col">
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-4">
-              <div className="relative mb-6">
+            <div className="h-full flex flex-col items-center justify-center text-center px-4 py-6">
+              <div className="relative mb-4">
                 <div className="absolute inset-0 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-full blur-2xl opacity-20"></div>
-                <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-violet-500/10 to-cyan-500/10 border border-white/10 flex items-center justify-center">
-                  <Sparkles className="w-10 h-10 text-violet-400/50" />
+                <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-violet-500/10 to-cyan-500/10 border border-white/10 flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-violet-400/50" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">¿En qué puedo ayudarte?</h3>
-              <p className="text-gray-500 mb-8 max-w-sm">
-                Gestiona socios, crea avisos, genera dietas y más usando comandos de voz o texto.
+              <h3 className="text-lg font-semibold text-white mb-1">¿En qué puedo ayudarte?</h3>
+              <p className="text-gray-500 mb-6 text-sm max-w-sm">
+                Acciones rápidas o escribe/di lo que necesitas.
               </p>
+              <div className="grid grid-cols-2 gap-2 w-full max-w-sm">
+                {quickCommands.map((cmd) => (
+                  <button
+                    key={cmd.text}
+                    onClick={() => {
+                      if (cmd.fill) {
+                        setInput(cmd.command)
+                      } else {
+                        handleSend(cmd.command)
+                      }
+                    }}
+                    className="flex items-center gap-2 px-3 py-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all text-left group"
+                  >
+                    <span className="text-xl flex-shrink-0">{cmd.icon}</span>
+                    <span className="text-xs text-gray-300 group-hover:text-white font-medium leading-tight">{cmd.text}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           ) : (
             <>
