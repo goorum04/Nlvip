@@ -114,6 +114,25 @@ function ExerciseVideoUploader({ onVideoUploaded, existingVideo, trainerId }) {
 }
 
 
+// --- Dropset helpers ---
+// Dropsets are stored as a [dropset:12,10,8] prefix in the description field,
+// where the numbers are the reps for each successive drop (first = main set).
+function parseDropset(description = '') {
+  const match = description.match(/^\[dropset:([^\]]+)\]/)
+  if (!match) return null
+  return match[1].split(',').map(s => s.trim()).filter(Boolean)
+}
+
+function stripDropsetTag(description = '') {
+  return description.replace(/^\[dropset:[^\]]+\]\s*/, '')
+}
+
+function encodeDropset(description = '', drops) {
+  const base = stripDropsetTag(description)
+  if (!drops || drops.length === 0) return base
+  return `[dropset:${drops.join(',')}]${base ? ' ' + base : ''}`
+}
+
 // Componente para un ejercicio individual
 function ExerciseItem({ exercise, onUpdate, onDelete, trainerId, isEditing, prs = [], onPlay }) {
   const [localExercise, setLocalExercise] = useState(exercise)
@@ -128,20 +147,81 @@ function ExerciseItem({ exercise, onUpdate, onDelete, trainerId, isEditing, prs 
     onUpdate(updated)
   }
 
+  // Dropset state derived from description
+  const dropsetDrops = parseDropset(localExercise.description)
+  const isDropset = !!dropsetDrops
+
+  const toggleDropset = () => {
+    if (isDropset) {
+      // Remove dropset tag, keep rest of description
+      handleChange('description', stripDropsetTag(localExercise.description))
+    } else {
+      // Enable dropset: initialise with 2 drops based on current reps
+      const initialDrops = [localExercise.reps || '12', '10', '8']
+      handleChange('description', encodeDropset(localExercise.description, initialDrops))
+    }
+  }
+
+  const updateDrop = (index, value) => {
+    const drops = [...dropsetDrops]
+    drops[index] = value
+    const newDesc = encodeDropset(stripDropsetTag(localExercise.description), drops)
+    handleChange('description', newDesc)
+  }
+
+  const addDrop = () => {
+    if (dropsetDrops.length >= 4) return
+    const drops = [...dropsetDrops, '6']
+    const newDesc = encodeDropset(stripDropsetTag(localExercise.description), drops)
+    handleChange('description', newDesc)
+  }
+
+  const removeDrop = (index) => {
+    const drops = dropsetDrops.filter((_, i) => i !== index)
+    if (drops.length < 2) {
+      // Fewer than 2 drops → disable dropset entirely
+      handleChange('description', stripDropsetTag(localExercise.description))
+    } else {
+      const newDesc = encodeDropset(stripDropsetTag(localExercise.description), drops)
+      handleChange('description', newDesc)
+    }
+  }
+
   if (!isEditing) {
     // Buscar si hay un PR para este ejercicio
     const pr = prs?.find(p => p.exercise_name.toLowerCase() === exercise.name.toLowerCase())
     const suggestedWeight = pr ? (parseFloat(pr.estimated_1rm) * 0.75).toFixed(1) : null
+    const dropsetDrops = parseDropset(exercise.description)
 
     return (
-      <div className="flex flex-col gap-2 p-4 bg-black/30 rounded-2xl border border-white/5 hover:border-violet-500/20 transition-all">
+      <div className={`flex flex-col gap-2 p-4 rounded-2xl border transition-all ${dropsetDrops ? 'bg-orange-500/5 border-orange-500/20 hover:border-orange-500/40' : 'bg-black/30 border-white/5 hover:border-violet-500/20'}`}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-400 text-sm font-bold">
             {exercise.order_index + 1}
           </div>
           <div className="flex-1">
-            <p className="text-white font-bold">{exercise.name}</p>
-            <p className="text-xs text-gray-500">{exercise.sets}x{exercise.reps} • {exercise.rest_seconds}s descanso</p>
+            <div className="flex items-center gap-2">
+              <p className="text-white font-bold">{exercise.name}</p>
+              {dropsetDrops && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 font-black uppercase tracking-wider">
+                  Dropset
+                </span>
+              )}
+            </div>
+            {dropsetDrops ? (
+              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                <span className="text-xs text-gray-400">{exercise.sets} series •</span>
+                {dropsetDrops.map((reps, i) => (
+                  <span key={i} className="flex items-center gap-1">
+                    <span className="text-xs font-bold text-orange-300">{reps} reps</span>
+                    {i < dropsetDrops.length - 1 && <span className="text-orange-500/60 text-xs">→</span>}
+                  </span>
+                ))}
+                <span className="text-xs text-gray-500">• {exercise.rest_seconds}s descanso</span>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500">{exercise.sets}x{exercise.reps} • {exercise.rest_seconds}s descanso</p>
+            )}
           </div>
           {exercise.video_url && onPlay && (
             <Button
@@ -235,9 +315,74 @@ function ExerciseItem({ exercise, onUpdate, onDelete, trainerId, isEditing, prs 
             </div>
           </div>
 
+          {/* Dropset toggle */}
+          <div className={`rounded-xl border transition-all ${isDropset ? 'border-orange-500/40 bg-orange-500/5' : 'border-white/5 bg-transparent'}`}>
+            <button
+              type="button"
+              onClick={toggleDropset}
+              className="w-full flex items-center justify-between px-3 py-2.5 text-left"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-white">Dropset</span>
+                <span className="text-[10px] text-gray-500">reducir peso entre series sin descanso</span>
+              </div>
+              <div className={`w-10 h-5 rounded-full transition-all flex items-center px-0.5 ${isDropset ? 'bg-orange-500' : 'bg-white/10'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isDropset ? 'translate-x-5' : 'translate-x-0'}`} />
+              </div>
+            </button>
+
+            {isDropset && (
+              <div className="px-3 pb-3 space-y-2">
+                <p className="text-[11px] text-orange-400/80 font-medium">Reps por cada serie (reduce el peso en cada →)</p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {dropsetDrops.map((reps, i) => (
+                    <div key={i} className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 bg-black/50 border border-orange-500/30 rounded-lg overflow-hidden">
+                        <Input
+                          type="text"
+                          value={reps}
+                          onChange={(e) => updateDrop(i, e.target.value)}
+                          className="w-14 h-8 bg-transparent border-0 text-orange-300 text-center text-sm font-bold focus:ring-0 p-1"
+                          placeholder="10"
+                        />
+                        {dropsetDrops.length > 2 && (
+                          <button
+                            type="button"
+                            onClick={() => removeDrop(i)}
+                            className="px-1.5 h-8 text-gray-500 hover:text-red-400 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                      {i < dropsetDrops.length - 1 && (
+                        <span className="text-orange-500/60 text-sm font-bold">→</span>
+                      )}
+                    </div>
+                  ))}
+                  {dropsetDrops.length < 4 && (
+                    <button
+                      type="button"
+                      onClick={addDrop}
+                      className="flex items-center gap-1 h-8 px-2 rounded-lg border border-dashed border-orange-500/30 text-orange-400/60 hover:text-orange-400 hover:border-orange-500/60 transition-all text-xs font-bold"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Drop
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <Textarea
-            value={localExercise.description || ''}
-            onChange={(e) => handleChange('description', e.target.value)}
+            value={stripDropsetTag(localExercise.description || '')}
+            onChange={(e) => {
+              const newDesc = isDropset
+                ? encodeDropset(e.target.value, dropsetDrops)
+                : e.target.value
+              handleChange('description', newDesc)
+            }}
             placeholder="Instrucciones o notas (opcional)"
             className="bg-black/50 border-violet-500/20 rounded-xl text-white text-sm min-h-[60px]"
           />
