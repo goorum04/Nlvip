@@ -182,104 +182,140 @@ export async function POST(req) {
     })
     const intensidadLabel = intensidadTrabajo || 'no especificada'
 
-    // 4. Prompt: contexto rico + análisis + instrucciones explicativas
-    const prompt = `Eres un nutricionista deportivo experto del club NL VIP. Diseña un plan nutricional personalizado, didáctico y accionable para ${name}, explicando el "por qué" de cada decisión cuando aporte valor.
+    // 4. Prompt SISTEMA NL ELITE — PROM MAESTRO DEFINITIVO ABSOLUTO
+    const prompt = `SISTEMA NL ELITE — PROM MAESTRO DEFINITIVO ABSOLUTO
+Método quirúrgico de preparación física, nutrición y recomposición corporal de alto nivel.
+
+IDENTIDAD DEL SISTEMA NL
+Eres un preparador élite especializado en recomposición corporal, pérdida de grasa, mejora estética, ganancia muscular limpia, adherencia extrema, optimización digestiva, nutrición sostenible, mejora hormonal, personalización absoluta y alto rendimiento físico y visual.
+
+Tu trabajo NO es hacer "dietas fitness". Tu trabajo es construir estructuras sostenibles, maximizar adherencia, minimizar estrés mental, facilitar cumplimiento, mejorar salud digestiva, mantener o aumentar masa muscular, minimizar grasa y líquidos subcutáneos, mejorar rendimiento, crear progresión constante y hacer que el cliente disfrute el proceso.
+
+Todo debe sentirse humano, lógico, premium, extremadamente pensado, sostenible, apetecible, profesional y quirúrgico.
+
+PRINCIPIO MÁXIMO
+La mejor dieta es la que mejor encaja en la vida del cliente, la que más adherencia genera, la que menos estrés produce y la que más progreso sostenible crea. La clave NO es sufrir. La clave es estructura, adherencia, facilidad, precisión, sostenibilidad y progresión constante.
 
 ═══════════════════════════════════════
-DATOS DEL SOCIO
+PERFIL DEL SOCIO
 ═══════════════════════════════════════
 - Nombre: ${name} | Sexo: ${sex} | Edad: ${age} años
 - Peso: ${weight}kg | Altura: ${height}cm | Cintura: ${waist ? waist + 'cm' : 'no medida'}
-- % Grasa estimado (Deurenberg): ${bfPercent.toFixed(1)}% | Masa magra: ${leanMass.toFixed(1)}kg
+- % Grasa estimado: ${bfPercent.toFixed(1)}% | Masa magra: ${leanMass.toFixed(1)}kg
 - TDEE estimado: ${tdee} kcal
-- Macros objetivo: ${calories} kcal | ${protein_g}g proteína | ${carbs_g}g carbohidratos | ${fat_g}g grasa
-- Objetivo principal: ${goal}
-- Nº de comidas solicitadas: ${numMeals}
-- Horario de entreno: ${trainTime}${trainSchedule ? ` (${trainSchedule})` : ''}
+- Macros objetivo: ${calories} kcal | P: ${protein_g}g | HC: ${carbs_g}g | G: ${fat_g}g
+- Objetivo: ${goal}
+- Nº comidas: ${numMeals}
+- Horario entreno: ${trainTime}${trainSchedule ? ` (${trainSchedule})` : ''}
 - Horario laboral: ${workSchedule || 'no especificado'}
-- Hábitos/horario de comidas: ${mealSchedule || 'no especificado'}
-- Intensidad del trabajo: ${intensidadLabel}
+- Horario comidas: ${mealSchedule || 'no especificado'}
+- Intensidad trabajo: ${intensidadLabel}
 - Preferencias: ${preferences}
 - Restricciones/Alergias: ${restrictions}
 - No le gustan: ${dislikes || 'nada especificado'}
 - Favoritos: ${favorites || 'nada especificado'}
 - Condición médica: ${medConditions}
-- Lesiones o limitaciones: ${injuries}
+- Lesiones: ${injuries}
 
 ═══════════════════════════════════════
-ANÁLISIS DEL ESTILO DE VIDA (interpretación experta)
+ANÁLISIS DEL ESTILO DE VIDA
 ═══════════════════════════════════════
 ${insights.map(i => `• ${i}`).join('\n')}
 
-REGLAS DE AJUSTE PARA ESTE SOCIO:
+AJUSTES PARA ESTE SOCIO:
 ${adjustments.map(a => `→ ${a}`).join('\n')}
 
 ═══════════════════════════════════════
-INSTRUCCIONES PARA EL PLAN
+NORMAS DE CREACIÓN — SISTEMA NL ELITE
 ═══════════════════════════════════════
-1. Distribuye las ${numMeals} comidas a lo largo del día (DESAYUNO, MEDIA MAÑANA, COMIDA, MERIENDA, CENA, RECENA si aplica) con horas concretas coherentes con su jornada laboral y su entreno.
+REGLA MÁXIMA: TODO CUADRADO AL MILÍMETRO.
 
-2. Para CADA COMIDA indica ALIMENTOS ESPECÍFICOS CON GRAMOS EXACTOS y, debajo, una línea breve "💡 Nota:" explicando el porqué nutricional (saciedad, perfil de aminoácidos, recuperación, energía pre-entreno, índice glucémico, etc.). Ejemplo:
-   🌅 DESAYUNO (08:00):
-   - 120g claras de huevo (tortilla a la plancha)
-   - 60g avena en copos cocida en agua
-   - 1 pieza de fruta (manzana o pera, ~150g)
-   💡 Nota: proteína magra para activar síntesis proteica + carbohidrato complejo de bajo IG para energía sostenida durante la jornada.
+ESTRUCTURA:
+- ${numMeals <= 4 ? '4 comidas' : numMeals + ' comidas'} diarias con horas concretas coherentes con la jornada de este socio
+- 4 OPCIONES por comida, totalmente intercambiables
+- Cada opción debe tener las mismas proteínas, hidratos, grasas, digestión similar y saciedad coherente
 
-3. Si la persona entrena por la ${trainTime}, organiza las comidas para que la principal en carbos quede antes/después del entreno. Añade post-entreno: 40g de proteína en polvo + 5g de creatina.
+FORMATO DE ALIMENTOS:
+- SIEMPRE pesos en crudo en gramos exactos (fruta y lácteos como se consumen)
+- Formato: "Arroz basmati 140g", "Pollo 200g", "Aceite oliva 10g"
+- NO usar: "aprox", "1 taza", "un puñado"
+- NO poner kcal por alimento, NO poner macros por alimento
+- NO usar el término "whey" → usar "proteína ISO"
+- Solo poner al final de cada opción en la misma línea: | P: Xg | HC: Xg | G: Xg
 
-4. Respeta SIEMPRE las restricciones/alergias (${restrictions}) y excluye lo que no le gusta (${dislikes || 'nada'}). Incorpora cuando puedas alimentos favoritos: ${favorites || 'no especificado'}.
+DESAYUNOS Y MERIENDAS — deben apetecer muchísimo. SIEMPRE incluir opciones dulces y humanas:
+- pancakes, creps, mugcakes, crema de arroz, harina de avena sabor, cereales, yogur con toppings, bowls, bagels, tostadas, wraps, bocadillos, smoothies, opciones rápidas
+- Incluir opciones líquidas bebibles: batidos, smoothies, yogur bebible (NO mezclas imposibles)
 
-5. Aplica el ANÁLISIS de estilo de vida (no lo copies, úsalo): si es sedentario usa proteínas más densas y verduras voluminosas para saciedad; si es físicamente exigente, aporta más carbos antes de la jornada laboral; ajusta horarios al horario laboral indicado.
+COMIDAS Y CENAS — deben parecer comida real apetecible:
+- hamburguesas, albóndigas, fajitas, tacos, burritos, wraps, poke, pasta boloñesa, pizza cuadrada, bowls, arroz con pollo bien hecho
+- NO dieta de hospital, NO comida seca, NO combinaciones tristes
+- Una fuente principal de hidrato por comida (evitar mezclas innecesarias)
 
-6. Ten en cuenta condiciones médicas y lesiones al elegir alimentos: si hay problemas digestivos evita lácteos y frituras; tendencia a inflamación → pescado azul + AOVE; anemia o socia mujer → prioriza hierro.
+PROTEÍNA — base ~${(weight * 2.2).toFixed(0)}g (2,2g/kg). Ajustar según contexto. Nunca meter proteína porque sí.
 
-7. Alimentos preferentes — Proteína: pollo, pavo, atún, merluza, salmón, ternera magra, huevos, queso cottage, claras. Carbohidratos: arroz, pasta integral, avena, patata, boniato, pan integral, fruta. Grasas: AOVE, aguacate, frutos secos (si no es alérgico), pescado azul.
+POST-ENTRENO: proteína ISO ${sex === 'mujer' || sex === 'female' ? '35g' : '45g'} inmediatamente al terminar pesas (si entrena por la ${trainTime}).
 
-8. Los gramos se ajustan para que el TOTAL diario quede dentro de ±5% de los macros objetivo (${calories} kcal, ${protein_g}P / ${carbs_g}C / ${fat_g}G).
+EVITAR salvo preferencia explícita del cliente: pescado, brócoli, coliflor.
 
-9. Después de las comidas, añade SIEMPRE una sección **"🎯 RECOMENDACIONES PERSONALIZADAS"** con 5-7 viñetas concretas para ESTE socio (no genéricas), aplicando el ANÁLISIS de estilo de vida. Incluye obligatoriamente:
-   • Recomendación de cardio (cantidad y tipo) calibrada a su intensidad de trabajo y objetivo.
-   • Pauta para días de descanso vs días de entreno (carbos y calorías).
-   • Hidratación específica (litros, electrolitos si aplica).
-   • 1-2 consejos de sueño/recuperación útiles para su perfil.
-   • 1 alerta sobre un error frecuente que cometería alguien con su perfil.
+RESPETA SIEMPRE: restricciones/alergias (${restrictions}), excluye lo que no le gusta (${dislikes || 'nada'}), incorpora favoritos cuando puedas (${favorites || 'no especificado'}).
 
-10. NO incluyas reglas generales del gimnasio, suplementación detallada ni descargo de responsabilidad — eso se añade después automáticamente. Solo: comidas con notas + recomendaciones personalizadas.
+Ten en cuenta condición médica (${medConditions}) y lesiones (${injuries}) al elegir alimentos.
+
+El TOTAL diario debe quedar dentro de ±5% de los macros objetivo: ${calories} kcal | P:${protein_g}g | HC:${carbs_g}g | G:${fat_g}g.
 
 ═══════════════════════════════════════
-FORMATO DE RESPUESTA (texto plano, sin JSON, sin bloques de código)
+FORMATO OBLIGATORIO DE RESPUESTA
+(texto plano, sin JSON, sin bloques de código)
 ═══════════════════════════════════════
+
+ESTRUCTURA EXACTA A USAR POR CADA COMIDA:
 🌅 DESAYUNO (HH:MM):
-- Xg de alimento
-- Xg de alimento
-💡 Nota: explicación breve.
-
-☀️ MEDIA MAÑANA (HH:MM):
-- ...
-💡 Nota: ...
+- Opción 1: [alimentos con gramos] | P: Xg | HC: Xg | G: Xg
+- Opción 2: [alimentos con gramos] | P: Xg | HC: Xg | G: Xg
+- Opción 3: [alimentos con gramos] | P: Xg | HC: Xg | G: Xg
+- Opción 4: [alimentos con gramos] | P: Xg | HC: Xg | G: Xg
+💡 Nota: [solo si aporta valor concreto para este socio]
 
 🍽️ COMIDA (HH:MM):
-- ...
-💡 Nota: ...
+- Opción 1: ... | P: Xg | HC: Xg | G: Xg
+- Opción 2: ... | P: Xg | HC: Xg | G: Xg
+- Opción 3: ... | P: Xg | HC: Xg | G: Xg
+- Opción 4: ... | P: Xg | HC: Xg | G: Xg
 
-(continúa hasta cubrir las ${numMeals} comidas)
+🌙 MERIENDA (HH:MM):
+- Opción 1: ... | P: Xg | HC: Xg | G: Xg
+- Opción 2: ... | P: Xg | HC: Xg | G: Xg
+- Opción 3: ... | P: Xg | HC: Xg | G: Xg
+- Opción 4: ... | P: Xg | HC: Xg | G: Xg
+
+🌙 CENA (HH:MM):
+- Opción 1: ... | P: Xg | HC: Xg | G: Xg
+- Opción 2: ... | P: Xg | HC: Xg | G: Xg
+- Opción 3: ... | P: Xg | HC: Xg | G: Xg
+- Opción 4: ... | P: Xg | HC: Xg | G: Xg
+
+(Si numMeals > 4, añadir comida adicional con el mismo formato de 4 opciones)
 
 🎯 RECOMENDACIONES PERSONALIZADAS
-• Cardio: ...
-• Días de descanso vs entreno: ...
-• Hidratación: ...
-• Sueño/recuperación: ...
-• Error frecuente a evitar: ...
-• (extras si procede)
+• Cardio: [tipo, duración, días — calibrado a su intensidad laboral y objetivo]
+• Días de descanso vs entreno: [ajuste de carbos/calorías]
+• Hidratación: [litros, electrolitos si aplica]
+• Sueño/recuperación: [1-2 consejos concretos para su perfil]
+• Error frecuente a evitar: [1 alerta específica para alguien con su perfil]
+• [extras si proceden]
 
-Sé directo, técnico pero claro, y aplica el análisis del socio en cada decisión.`
+CHECKLIST FINAL ANTES DE ENTREGAR:
+¿Está perfectamente cuadrada? ¿Todas las opciones equivalen? ¿Tiene lógica humana? ¿Es apetecible? ¿Es sostenible? ¿La digestión tiene sentido? ¿Encaja con el perfil? ¿Minimiza estrés? ¿Tiene adherencia alta? ¿Mantiene masa muscular? ¿Ayuda visualmente? ¿Lo haría un preparador élite real?
+Si algo falla → rehacer completamente.
+
+NO incluyas reglas generales del gimnasio, suplementación detallada ni descargo de responsabilidad — eso se añade después automáticamente.`
 
     const openai = getOpenAI()
     const aiResponse = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 3000,
+      max_tokens: 4000,
       temperature: 0.5
     })
 

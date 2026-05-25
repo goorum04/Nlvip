@@ -14,40 +14,45 @@ const getSupabaseAdmin = () => createClient(
 const getOpenAI = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 const DIET_RULES = `
-REGLAS DEL PROGRAMA NUTRICIONAL NL VIP:
+SISTEMA NL ELITE — REGLAS DEL PROGRAMA NUTRICIONAL:
+
+METODOLOGÍA:
+• Recomposición corporal, adherencia extrema, sostenibilidad, precisión quirúrgica
+• La mejor dieta es la que el cliente puede mantener durante meses
+• TODO cuadrado al milímetro. 4 comidas + 4 opciones intercambiables por comida
+• Pesos siempre en crudo. Solo macros al final de cada opción: P: | HC: | G:
 
 REGLAS GENERALES:
-• Verdura o Ensalada: al gusto con moderación
 • Aliño: AOVE solo si se especifica. Si no: limón, lima, especias, sal, vinagre
 • Arroces y Pastas: tomate tamizado o rallado (no frito)
-• Post-Entrenamiento: 40gr de proteína inmediatamente al terminar
+• Post-Entrenamiento: proteína ISO inmediatamente al terminar (35g mujeres / 45g hombres)
+• NO usar término "whey" → usar "proteína ISO"
 
-SUPLEMENTACIÓN BÁSICA:
-• Omega 3: 1 en desayuno
-• Multivitamínico: 1 en desayuno, 1 en cena
-• Pre-entreno: 15 min antes de entrenar
-• Creatina: 1gr por cada 10kg de peso (diario)
-• Post-entreno: 40gr proteína
+SUPLEMENTACIÓN HOMBRES (después desayuno):
+• Omega 3 → 2 perlas | Multivitamínico → 1 | D3K2 → 1 | Androbull → 2 tomas (desayuno/cena)
+
+SUPLEMENTACIÓN MUJERES (después desayuno):
+• Omega 3 → 3 cápsulas | Multivitamínico → 1 | D3K2 → 1 | Maca → 1
+
+INTRA-ENTRENO: Cell Pro + Creatina (1g/10kg, TODOS los días) + BCAA + Glutamina 10g
+PRE-CAMA: Ashwagandha + Magnesio bisglicinato
+SITUACIONAL: Carblocker (comida libre) | Termogénico+Diurético (definición, máx 2 meses)
 
 OBSERVACIONES:
 • Sal: OBLIGATORIA en todas las comidas
-• Bebidas zero: máximo 1-2 al día
-• Cafés/infusiones: máximo 2 al día, sin leche
-• Edulcorante: preferir Stevia
-• Comida libre: UNA por semana
+• Bebidas zero: máximo 1-2 al día | Cafés: máximo 2 al día, sin leche
+• Edulcorante: prioridad Stevia, si no Sacarina | Evitar azúcar
+• Comida libre: UNA por semana sustituyendo la que toque
 
 FLUIDOS:
 • Agua: 4-6 litros al día
 • NO beber durante las comidas (30 min antes o después)
 
 CÁLCULO DE MACROS:
-• Pérdida grasa: TDEE - 15%
-• Mantenimiento: TDEE
-• Volumen: TDEE + 15%
-• Proteína: 2.2-2.4g por kg de peso (dependiendo de la masa muscular)
-• Grasa: 0.8-1g por kg
-• Carbos: el resto de calorías
+• Pérdida grasa: TDEE - 15% | Mantenimiento: TDEE | Volumen: TDEE + 15%
+• Proteína: ~2,2g/kg | Grasa: 0,9g/kg | Carbos: el resto de calorías
 `;
+
 
 const SYSTEM_PROMPT = `Eres el Asistente IA del gimnasio NL VIP TEAM. Tu trabajo es ayudar al administrador a gestionar el gimnasio mediante comandos de voz o texto.
 
