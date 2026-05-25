@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
-import { Users, Key, Shield, LogOut, UserPlus, Code, Plus, Calculator, Send, Loader2, UtensilsCrossed, Bot, Dumbbell, Apple, Target, Trophy, Camera, Eye, TrendingUp, Settings, ChevronDown, Link, FileCheck, MessageSquare, Trash2, Search, Flame, Clock, Edit2, Mic, ChefHat, Sparkles } from 'lucide-react'
+import { Users, Key, Shield, LogOut, UserPlus, Code, Plus, Calculator, Send, Loader2, UtensilsCrossed, Bot, Dumbbell, Apple, Target, Trophy, TrendingUp, Settings, ChevronDown, Link, FileCheck, MessageSquare, Trash2, Search, Flame, Clock, Edit2, Mic, ChefHat, Sparkles } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { RecipesManager } from './RecipesManager'
@@ -27,8 +27,6 @@ import { DietBuilder } from './DietBuilder'
 import { AvatarBubble, ProfileModal } from './UserProfile'
 import FloatingChat from './FloatingChat'
 import FloatingAdminAssistant from './FloatingAdminAssistant'
-import { ProgressPhotoGallery } from './ProgressPhotos'
-import { MemberOnboardingResponses } from './MemberPhotosAndForm'
 import { FeedSection } from './FeedSection'
 import AIRoutineGenerator from './AIRoutineGenerator'
 import { getApiUrl, authFetch } from '@/lib/utils'
@@ -48,6 +46,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const [loading, setLoading] = useState(false)
   const [selectedMember, setSelectedMember] = useState(null)
   const [showMemberDetail, setShowMemberDetail] = useState(false)
+  const [memberDetailTab, setMemberDetailTab] = useState('form')
   const [showWorkoutBuilder, setShowWorkoutBuilder] = useState(false)
   const [showDietBuilder, setShowDietBuilder] = useState(false)
   const [editingWorkout, setEditingWorkout] = useState(null)
@@ -60,8 +59,6 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const [dietTemplates, setDietTemplates] = useState([])
   const [challenges, setChallenges] = useState([])
   const [challengeParticipants, setChallengeParticipants] = useState({})
-  const [memberProgressPhotos, setMemberProgressPhotos] = useState([])
-  const [selectedMemberForPhotos, setSelectedMemberForPhotos] = useState(null)
   const [dietRequests, setDietRequests] = useState([])
   const [selectedRequestAnswers, setSelectedRequestAnswers] = useState(null)
   const [dietDraft, setDietDraft] = useState(null)
@@ -249,17 +246,13 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
     }
   }
 
-  // Load progress photos for a member (ADMIN ONLY)
-  const loadMemberProgressPhotos = async (memberId) => {
-    const { data } = await supabase
-      .from('progress_photos')
-      .select('*')
-      .eq('member_id', memberId)
-      .order('date', { ascending: false })
-    if (data) setMemberProgressPhotos(data)
+  const openMemberPanel = (member, tab = 'form') => {
+    setSelectedMember(member)
+    setMemberDetailTab(tab)
+    setShowMemberDetail(true)
   }
 
-  // Create workout template
+// Create workout template
   const handleCreateWorkout = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -1071,39 +1064,19 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
               </TabsTrigger>
             </TabsList>
 
-            {/* Menú SOCIOS */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${
-                    ['members', 'progress'].includes(activeTab) 
-                      ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent' 
-                      : 'text-gray-300'
-                  }`}
-                >
-                  <Users className="w-4 h-4" />
-                  Socios
-                  <ChevronDown className="w-3 h-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-[#1a1a1a] border-violet-500/30 text-white min-w-[180px]">
-                <DropdownMenuItem 
-                  onClick={() => setActiveTab('members')}
-                  className={`cursor-pointer gap-3 ${activeTab === 'members' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
-                >
-                  <Users className="w-4 h-4" />
-                  Lista de Socios
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setActiveTab('progress')}
-                  className={`cursor-pointer gap-3 ${activeTab === 'progress' ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-violet-500/10'}`}
-                >
-                  <Camera className="w-4 h-4" />
-                  Fotos de Progreso
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Botón SOCIOS */}
+            <Button
+              variant="outline"
+              onClick={() => setActiveTab('members')}
+              className={`border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${
+                activeTab === 'members'
+                  ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent'
+                  : 'text-gray-300'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Socios
+            </Button>
 
             {/* Menú ENTRENAMIENTOS */}
             <DropdownMenu>
@@ -1240,7 +1213,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
               membersWithoutDiet={membersWithoutDiet}
               dietRequests={dietRequests}
               onNavigate={(tab) => { setTabHistory(prev => [...prev, activeTab]); setActiveTab(tab) }}
-              onSelectMember={(member) => { setSelectedMember(member); setShowMemberDetail(true) }}
+              onSelectMember={(member) => openMemberPanel(member, 'form')}
             />
           </TabsContent>
 
@@ -1454,57 +1427,75 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
               <CardContent>
                 <div className="space-y-3">
                   {(members || []).map((member) => (
-                    <div 
-                      key={member.id} 
-                      className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-violet-500/10 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all"
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-violet-500/10 hover:border-violet-500/20 transition-all"
                     >
-                      <div 
-                        className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
-                        onClick={() => {
-                          setSelectedMember(member)
-                          setShowMemberDetail(true)
-                        }}
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold flex-shrink-0">
                           {member.name?.charAt(0)}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-white hover:text-violet-400 transition-colors truncate">{member.name}</p>
-                          <p className="text-sm text-gray-400 truncate mb-2">{member.email}</p>
-                          
-                          <div className="flex items-center gap-2">
-                             <Select 
-                              value={member.trainer_members?.[0]?.trainer_id || member.trainer_members?.[0]?.trainer?.id || ""} 
-                              onValueChange={(val) => handleAssignTrainerToMember(member.id, val)}
-                              disabled={loading}
-                            >
-                              <SelectTrigger className="h-7 bg-violet-500/10 border-violet-500/20 text-[10px] text-violet-300 w-[180px] rounded-lg">
-                                <SelectValue placeholder="Sin entrenador" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {trainers.map(t => (
-                                  <SelectItem key={t.id} value={t.id} className="text-xs">{t.name} ({t.role === 'admin' ? 'Admin' : 'Coach'})</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                          <p className="font-semibold text-white truncate">{member.name}</p>
+                          <p className="text-sm text-gray-400 truncate mb-1">{member.email}</p>
+                          <Select
+                            value={member.trainer_members?.[0]?.trainer_id || member.trainer_members?.[0]?.trainer?.id || ""}
+                            onValueChange={(val) => handleAssignTrainerToMember(member.id, val)}
+                            disabled={loading}
+                          >
+                            <SelectTrigger className="h-7 bg-violet-500/10 border-violet-500/20 text-[10px] text-violet-300 w-[180px] rounded-lg">
+                              <SelectValue placeholder="Sin entrenador" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {trainers.map(t => (
+                                <SelectItem key={t.id} value={t.id} className="text-xs">{t.name} ({t.role === 'admin' ? 'Admin' : 'Coach'})</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <div className="text-right">
-                          <div className="text-sm text-gray-400">
-                            {new Date(member.created_at).toLocaleDateString()}
-                          </div>
-                          <p className="text-xs text-violet-400 mt-1">Click para ver detalles →</p>
-                        </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-500/10"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteMember(member.id)
-                          }}
+                          className="h-9 w-9 text-gray-300 hover:text-violet-300 hover:bg-violet-500/10 text-base"
+                          onClick={() => openMemberPanel(member, 'form')}
+                          title="Formulario"
+                        >
+                          📋
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 text-gray-300 hover:text-cyan-300 hover:bg-cyan-500/10 text-base"
+                          onClick={() => openMemberPanel(member, 'photos')}
+                          title="Fotos y Medidas"
+                        >
+                          📸
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 text-gray-300 hover:text-violet-300 hover:bg-violet-500/10 text-base"
+                          onClick={() => openMemberPanel(member, 'workout')}
+                          title="Rutina"
+                        >
+                          💪
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 text-gray-300 hover:text-green-300 hover:bg-green-500/10 text-base"
+                          onClick={() => openMemberPanel(member, 'diet')}
+                          title="Dieta"
+                        >
+                          🥗
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 text-gray-400 hover:text-red-500 hover:bg-red-500/10"
+                          onClick={() => handleDeleteMember(member.id)}
                           title="Eliminar socio"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -2048,87 +2039,6 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
             </Card>
           </TabsContent>
 
-          {/* FOTOS DE PROGRESO - SOLO ADMIN */}
-          <TabsContent value="progress" className="space-y-4">
-            <Card className="bg-[#1a1a1a] border-violet-500/20">
-              <CardHeader>
-                <CardTitle className="text-violet-400 flex items-center gap-2">
-                  <Camera className="w-5 h-5" />
-                  Fotos de Progreso de Socios
-                  <span className="text-xs bg-violet-500/20 px-2 py-1 rounded-full text-violet-300">Solo Admin</span>
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Solo tú como administrador puedes ver las fotos de progreso de todos los socios
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {!selectedMemberForPhotos ? (
-                  <div className="space-y-3">
-                    <p className="text-gray-400 text-sm mb-4">Selecciona un socio para ver sus fotos de progreso:</p>
-                    {members.map(member => (
-                      <button
-                        key={member.id}
-                        onClick={() => {
-                          setSelectedMemberForPhotos(member)
-                          loadMemberProgressPhotos(member.id)
-                        }}
-                        className="w-full flex items-center justify-between p-4 bg-black/50 rounded-2xl border border-violet-500/10 hover:border-violet-500/30 transition-all"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-cyan-500/10 flex items-center justify-center text-violet-400 font-bold">
-                            {member.name?.charAt(0)}
-                          </div>
-                          <div className="text-left">
-                            <p className="font-semibold text-white">{member.name}</p>
-                            <p className="text-xs text-gray-500">{member.email}</p>
-                          </div>
-                        </div>
-                        <Eye className="w-5 h-5 text-violet-400" />
-                      </button>
-                    ))}
-                    {members.length === 0 && (
-                      <div className="text-center py-8">
-                        <Users className="w-12 h-12 mx-auto text-violet-400/20 mb-2" />
-                        <p className="text-gray-400">No hay socios registrados</p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        setSelectedMemberForPhotos(null)
-                        setMemberProgressPhotos([])
-                      }}
-                      className="mb-4 text-violet-400 hover:text-cyan-400"
-                    >
-                      ← Volver a la lista
-                    </Button>
-                    
-                    <div className="flex items-center gap-3 mb-4 p-3 bg-black/50 rounded-xl border border-violet-500/20">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold">
-                        {selectedMemberForPhotos.name?.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-white">{selectedMemberForPhotos.name}</p>
-                        <p className="text-xs text-gray-400">{memberProgressPhotos.length} fotos de progreso</p>
-                      </div>
-                    </div>
-                    
-                    <ProgressPhotoGallery
-                      photos={memberProgressPhotos}
-                      canDelete={true}
-                    />
-
-                    <div className="mt-6">
-                      <MemberOnboardingResponses memberId={selectedMemberForPhotos.id} />
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* Rutinas y Dietas Asignadas */}
           <TabsContent value="assignments" className="space-y-4">
@@ -2615,6 +2525,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
         }}
         trainers={trainers}
         onRefresh={loadMembers}
+        initialTab={memberDetailTab}
       />
 
       <FloatingChat
