@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -62,6 +62,13 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const [dietRequests, setDietRequests] = useState([])
   const [selectedRequestAnswers, setSelectedRequestAnswers] = useState(null)
   const [dietDraft, setDietDraft] = useState(null)
+  const [draftCorrection, setDraftCorrection] = useState('')
+  const [draftCorrectionHistory, setDraftCorrectionHistory] = useState([])
+  const [refining, setRefining] = useState(false)
+  const [isRecordingCorrection, setIsRecordingCorrection] = useState(false)
+  const correctionRecognitionRef = useRef(null)
+  const correctionTranscriptRef = useRef('')
+  const dietDraftRef = useRef(null)
 
   // Workout builder assistant state
   const [showAIGenerator, setShowAIGenerator] = useState(false)
@@ -331,6 +338,80 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
     } finally {
       setLoading(false)
     }
+  }
+
+  // Keep ref in sync so voice callbacks don't have stale dietDraft
+  useEffect(() => { dietDraftRef.current = dietDraft }, [dietDraft])
+
+  const handleRefineDraft = async (correctionText) => {
+    const text = (correctionText || draftCorrection).trim()
+    if (!text || !dietDraftRef.current) return
+    setRefining(true)
+    try {
+      const draft = dietDraftRef.current
+      const res = await authFetch('/api/diet-onboarding/refine-draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          originalDraft: draft.fullDietContent,
+          correction: text,
+          macros: draft.macros,
+          memberContext: {
+            weight: draft.responses?.['Medida - Peso'],
+            goal: draft.responses?.objetivo,
+            restrictions: draft.responses?.restricciones,
+            numMeals: draft.responses?.num_comidas || draft.responses?.['Comidas - Número']
+          }
+        })
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Error al refinar')
+      setDietDraft(prev => ({ ...prev, fullDietContent: result.updatedDietContent }))
+      setDraftCorrectionHistory(prev => [...prev, text])
+      setDraftCorrection('')
+      correctionTranscriptRef.current = ''
+      toast({ title: '✅ Corrección aplicada', description: 'El borrador ha sido actualizado.' })
+    } catch (error) {
+      toast({ title: 'Error al corregir', description: error.message, variant: 'destructive' })
+    } finally {
+      setRefining(false)
+    }
+  }
+
+  const toggleVoiceCorrection = () => {
+    if (isRecordingCorrection) {
+      correctionRecognitionRef.current?.stop()
+      setIsRecordingCorrection(false)
+      return
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      toast({ title: 'Voz no disponible', description: 'Tu navegador no soporta reconocimiento de voz', variant: 'destructive' })
+      return
+    }
+    correctionTranscriptRef.current = ''
+    setDraftCorrection('')
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'es-ES'
+    recognition.interimResults = true
+    recognition.continuous = true
+    recognition.onresult = (event) => {
+      let transcript = ''
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript
+      }
+      correctionTranscriptRef.current = transcript
+      setDraftCorrection(transcript)
+    }
+    recognition.onend = () => {
+      setIsRecordingCorrection(false)
+      const text = correctionTranscriptRef.current.trim()
+      if (text) handleRefineDraft(text)
+    }
+    recognition.onerror = () => setIsRecordingCorrection(false)
+    correctionRecognitionRef.current = recognition
+    recognition.start()
+    setIsRecordingCorrection(true)
   }
 
   const handleAssignDraftDiet = async () => {
@@ -2441,7 +2522,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       </main>
 
       {/* Diet Validation Modal */}
-      <Dialog open={dietDraft !== null} onOpenChange={(val) => !val && setDietDraft(null)}>
+      <Dialog open={dietDraft !== null} onOpenChange={(val) => { if (!val) { setDietDraft(null); setDraftCorrectionHistory([]); setDraftCorrection('') } }}>
         <DialogContent className="bg-[#1a1a1a] border-violet-500/20 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
@@ -2458,7 +2539,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
               <div className="grid grid-cols-4 gap-4">
                 <div>
                   <Label className="text-gray-400">Calorías (kcal)</Label>
-                  <Input 
+                  <Input
                     type="number"
                     className="bg-black/50 border-[#2a2a2a] text-white"
                     value={dietDraft.macros.calories}
@@ -2467,7 +2548,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                 </div>
                 <div>
                   <Label className="text-gray-400">Proteínas (g)</Label>
-                  <Input 
+                  <Input
                     type="number"
                     className="bg-black/50 border-[#2a2a2a] text-white"
                     value={dietDraft.macros.protein_g}
@@ -2476,7 +2557,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                 </div>
                 <div>
                   <Label className="text-gray-400">Carbohidratos (g)</Label>
-                  <Input 
+                  <Input
                     type="number"
                     className="bg-black/50 border-[#2a2a2a] text-white"
                     value={dietDraft.macros.carbs_g}
@@ -2485,7 +2566,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                 </div>
                 <div>
                   <Label className="text-gray-400">Grasas (g)</Label>
-                  <Input 
+                  <Input
                     type="number"
                     className="bg-black/50 border-[#2a2a2a] text-white"
                     value={dietDraft.macros.fat_g}
@@ -2496,18 +2577,79 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
 
               <div>
                 <Label className="text-gray-400 mb-2 block">Menú Diario Propuesto</Label>
-                <Textarea 
+                <Textarea
                   className="w-full bg-black/50 border-[#2a2a2a] text-gray-200 h-[400px] font-mono text-sm leading-relaxed"
                   value={dietDraft.fullDietContent}
                   onChange={(e) => setDietDraft({ ...dietDraft, fullDietContent: e.target.value })}
                 />
               </div>
 
+              {/* Corrección por voz o texto */}
+              <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-violet-400" />
+                  <span className="text-violet-300 text-sm font-semibold">Corregir con IA</span>
+                  {isRecordingCorrection && (
+                    <span className="ml-auto flex items-center gap-1.5 text-red-400 text-xs animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                      Escuchando...
+                    </span>
+                  )}
+                </div>
+
+                {draftCorrectionHistory.length > 0 && (
+                  <div className="space-y-1 max-h-24 overflow-y-auto">
+                    {draftCorrectionHistory.map((msg, i) => (
+                      <div key={i} className="text-xs text-gray-400 bg-white/5 rounded-lg px-3 py-1.5 flex items-start gap-2">
+                        <span className="text-violet-400 shrink-0">✓</span>
+                        <span>{msg}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className={`h-10 w-10 shrink-0 rounded-xl transition-all ${
+                      isRecordingCorrection
+                        ? 'bg-red-500 text-white animate-pulse hover:bg-red-600'
+                        : 'border border-violet-500/30 text-violet-400 hover:bg-violet-500/10'
+                    }`}
+                    onClick={toggleVoiceCorrection}
+                    disabled={refining}
+                    title={isRecordingCorrection ? 'Detener grabación' : 'Hablar corrección'}
+                  >
+                    <Mic className="w-4 h-4" />
+                  </Button>
+                  <Input
+                    placeholder='Ej: "cambia el pollo por pavo" o "sube la proteína del desayuno"'
+                    className="bg-black/50 border-[#2a2a2a] text-white text-sm flex-1"
+                    value={draftCorrection}
+                    onChange={(e) => setDraftCorrection(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleRefineDraft()}
+                    disabled={refining || isRecordingCorrection}
+                  />
+                  <Button
+                    onClick={() => handleRefineDraft()}
+                    disabled={refining || !draftCorrection.trim() || isRecordingCorrection}
+                    className="bg-violet-600 hover:bg-violet-500 text-white shrink-0"
+                  >
+                    {refining ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Pulsa el micrófono y habla, o escribe y presiona Enter. La IA actualizará el menú manteniendo los macros.
+                </p>
+              </div>
+
               <div className="flex gap-4 pt-4">
-                <Button variant="outline" className="w-1/3 border-[#2a2a2a] text-white" onClick={() => setDietDraft(null)}>
+                <Button variant="outline" className="w-1/3 border-[#2a2a2a] text-white" onClick={() => { setDietDraft(null); setDraftCorrectionHistory([]); setDraftCorrection('') }}>
                   Cancelar
                 </Button>
-                <Button 
+                <Button
                   disabled={loading}
                   className="w-2/3 bg-gradient-to-r from-violet-600 to-cyan-600 font-bold"
                   onClick={handleAssignDraftDiet}
