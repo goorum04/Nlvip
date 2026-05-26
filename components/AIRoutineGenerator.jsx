@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Sparkles, LoaderCircle as Loader2, ChevronDown, ChevronUp, Save, RefreshCw, Settings2, User, Target, AlertTriangle, Trash2, ArrowUp, ArrowDown, Plus, Link2, Link2Off } from 'lucide-react'
+import { Sparkles, LoaderCircle as Loader2, ChevronDown, ChevronUp, Save, RefreshCw, Settings2, User, Target, AlertTriangle, Trash2, ArrowUp, ArrowDown, Plus, Link2, Link2Off, Mic } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
@@ -319,6 +319,13 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
   const [replacedInfo, setReplacedInfo] = useState([])
   const [saving, setSaving] = useState(false)
   const [lastNotes, setLastNotes] = useState('')
+  const [routineCorrection, setRoutineCorrection] = useState('')
+  const [routineCorrectionHistory, setRoutineCorrectionHistory] = useState([])
+  const [refiningRoutine, setRefiningRoutine] = useState(false)
+  const [isRecordingRoutine, setIsRecordingRoutine] = useState(false)
+  const routineCorrectionRecognitionRef = useRef(null)
+  const routineCorrectionTranscriptRef = useRef('')
+  const generatedRoutineRef = useRef(null)
   const { toast } = useToast()
 
   const [members, setMembers] = useState([])
@@ -444,6 +451,8 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
     }
   }
 
+  useEffect(() => { generatedRoutineRef.current = generatedRoutine }, [generatedRoutine])
+
   const handleClose = () => {
     setStep('form')
     setGeneratedRoutine(null)
@@ -454,7 +463,69 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
     setShowAdvanced(false)
     setSaving(false)
     setLastNotes('')
+    setRoutineCorrection('')
+    setRoutineCorrectionHistory([])
     onClose()
+  }
+
+  const handleRefineRoutine = async (correctionText) => {
+    const text = (correctionText || routineCorrection).trim()
+    if (!text || !generatedRoutineRef.current) return
+    setRefiningRoutine(true)
+    try {
+      const res = await authFetch('/api/refine-routine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ routine: generatedRoutineRef.current, correction: text })
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Error al refinar')
+      setGeneratedRoutine(result.updatedRoutine)
+      setRoutineCorrectionHistory(prev => [...prev, text])
+      setRoutineCorrection('')
+      routineCorrectionTranscriptRef.current = ''
+      toast({ title: '✅ Corrección aplicada', description: 'La rutina ha sido actualizada.' })
+    } catch (error) {
+      toast({ title: 'Error al corregir', description: error.message, variant: 'destructive' })
+    } finally {
+      setRefiningRoutine(false)
+    }
+  }
+
+  const toggleVoiceRoutineCorrection = () => {
+    if (isRecordingRoutine) {
+      routineCorrectionRecognitionRef.current?.stop()
+      setIsRecordingRoutine(false)
+      return
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      toast({ title: 'Voz no disponible', description: 'Tu navegador no soporta reconocimiento de voz', variant: 'destructive' })
+      return
+    }
+    routineCorrectionTranscriptRef.current = ''
+    setRoutineCorrection('')
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'es-ES'
+    recognition.interimResults = true
+    recognition.continuous = true
+    recognition.onresult = (event) => {
+      let transcript = ''
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript
+      }
+      routineCorrectionTranscriptRef.current = transcript
+      setRoutineCorrection(transcript)
+    }
+    recognition.onend = () => {
+      setIsRecordingRoutine(false)
+      const text = routineCorrectionTranscriptRef.current.trim()
+      if (text) handleRefineRoutine(text)
+    }
+    recognition.onerror = () => setIsRecordingRoutine(false)
+    routineCorrectionRecognitionRef.current = recognition
+    recognition.start()
+    setIsRecordingRoutine(true)
   }
 
   const updateRoutineField = (field, value) => {
@@ -842,6 +913,65 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
                   </ul>
                 </div>
               )}
+
+              {/* Corrección por voz o texto */}
+              <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-violet-400" />
+                  <span className="text-violet-300 text-sm font-semibold">Corregir con IA</span>
+                  {isRecordingRoutine && (
+                    <span className="ml-auto flex items-center gap-1.5 text-red-400 text-xs animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                      Escuchando...
+                    </span>
+                  )}
+                </div>
+                {routineCorrectionHistory.length > 0 && (
+                  <div className="space-y-1 max-h-20 overflow-y-auto">
+                    {routineCorrectionHistory.map((msg, i) => (
+                      <div key={i} className="text-xs text-gray-400 bg-white/5 rounded-lg px-3 py-1.5 flex items-start gap-2">
+                        <span className="text-violet-400 shrink-0">✓</span>
+                        <span>{msg}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className={`h-10 w-10 shrink-0 rounded-xl transition-all ${
+                      isRecordingRoutine
+                        ? 'bg-red-500 text-white animate-pulse hover:bg-red-600'
+                        : 'border border-violet-500/30 text-violet-400 hover:bg-violet-500/10'
+                    }`}
+                    onClick={toggleVoiceRoutineCorrection}
+                    disabled={refiningRoutine}
+                    title={isRecordingRoutine ? 'Detener grabación' : 'Hablar corrección'}
+                  >
+                    <Mic className="w-4 h-4" />
+                  </Button>
+                  <Input
+                    placeholder='Ej: "cambia el press banca por press inclinado en el día 1"'
+                    className="bg-black/50 border-[#2a2a2a] text-white text-sm flex-1"
+                    value={routineCorrection}
+                    onChange={(e) => setRoutineCorrection(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleRefineRoutine()}
+                    disabled={refiningRoutine || isRecordingRoutine}
+                  />
+                  <Button
+                    onClick={() => handleRefineRoutine()}
+                    disabled={refiningRoutine || !routineCorrection.trim() || isRecordingRoutine}
+                    className="bg-violet-600 hover:bg-violet-500 text-white shrink-0"
+                  >
+                    {refiningRoutine ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Pulsa el micrófono y habla, o escribe y presiona Enter. La IA aplicará la corrección manteniendo la estructura.
+                </p>
+              </div>
 
               <div className="flex gap-3 pt-2">
                 <Button
