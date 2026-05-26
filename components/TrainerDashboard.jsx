@@ -386,15 +386,27 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
 
   const handleAssignDiet = async (memberId, templateId) => {
     try {
+      const { data: existingDiet } = await supabase
+        .from('member_diets')
+        .select('id')
+        .eq('member_id', memberId)
+        .maybeSingle()
+      const isFirstDiet = !existingDiet
+
       const { error } = await supabase.from('member_diets').upsert({ member_id: memberId, diet_template_id: templateId, assigned_by: user.id }, { onConflict: 'member_id' })
       if (error) throw error
-      toast({ title: '¡Dieta asignada!' })
+      toast({
+        title: '¡Dieta asignada!',
+        description: isFirstDiet ? 'Generando plan de recetas personalizado...' : undefined
+      })
 
-      fetch('/api/generate-recipe-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId, dietId: templateId, trainerId: user.id })
-      }).catch(e => console.warn('Recipe plan generation failed:', e))
+      if (isFirstDiet) {
+        fetch('/api/generate-recipe-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ memberId, dietId: templateId, trainerId: user.id })
+        }).catch(e => console.warn('Recipe plan generation failed:', e))
+      }
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     }
@@ -477,6 +489,14 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
 
       if (dietError) throw dietError
 
+      // Check if this is the first diet assignment
+      const { data: existingMemberDiet } = await supabase
+        .from('member_diets')
+        .select('id')
+        .eq('member_id', selectedMemberForMacros)
+        .maybeSingle()
+      const isFirstDiet = !existingMemberDiet
+
       // Assign to member
       const { error: assignError } = await supabase.from('member_diets').upsert([{
         member_id: selectedMemberForMacros,
@@ -486,13 +506,20 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
 
       if (assignError) throw assignError
 
-      toast({ title: '¡Macros asignados!', description: `Se ha creado y asignado la dieta a ${member?.name}` })
+      toast({
+        title: '¡Macros asignados!',
+        description: isFirstDiet
+          ? `Dieta creada para ${member?.name}. Generando plan de recetas...`
+          : `Se ha creado y asignado la dieta a ${member?.name}`
+      })
 
-      fetch('/api/generate-recipe-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId: selectedMemberForMacros, dietId: diet.id, trainerId: user.id })
-      }).catch(e => console.warn('Recipe plan generation failed:', e))
+      if (isFirstDiet) {
+        fetch('/api/generate-recipe-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ memberId: selectedMemberForMacros, dietId: diet.id, trainerId: user.id })
+        }).catch(e => console.warn('Recipe plan generation failed:', e))
+      }
 
       setSelectedMemberForMacros('')
       setMacroResults(null)

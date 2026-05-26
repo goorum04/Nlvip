@@ -975,6 +975,14 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       
       if (dietError) throw dietError
 
+      // Check if this is the first diet assignment
+      const { data: existingMemberDiet } = await supabase
+        .from('member_diets')
+        .select('id')
+        .eq('member_id', selectedMemberForMacros)
+        .maybeSingle()
+      const isFirstDiet = !existingMemberDiet
+
       // Assign to member
       const { error: assignError } = await supabase.from('member_diets').upsert([{
         member_id: selectedMemberForMacros,
@@ -984,13 +992,20 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
 
       if (assignError) throw assignError
 
-      toast({ title: '¡Macros asignados!', description: `Se ha creado y asignado la dieta a ${member?.name}` })
+      toast({
+        title: '¡Macros asignados!',
+        description: isFirstDiet
+          ? `Dieta creada para ${member?.name}. Generando plan de recetas...`
+          : `Se ha creado y asignado la dieta a ${member?.name}`
+      })
 
-      fetch('/api/generate-recipe-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId: selectedMemberForMacros, dietId: diet.id, trainerId: selectedTrainerForMacros })
-      }).catch(e => console.warn('Recipe plan generation failed:', e))
+      if (isFirstDiet) {
+        fetch('/api/generate-recipe-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ memberId: selectedMemberForMacros, dietId: diet.id, trainerId: selectedTrainerForMacros })
+        }).catch(e => console.warn('Recipe plan generation failed:', e))
+      }
 
       setSelectedMemberForMacros('')
       setSelectedTrainerForMacros('')
