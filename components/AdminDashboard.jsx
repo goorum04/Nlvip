@@ -1429,77 +1429,83 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                   {(members || []).map((member) => (
                     <div
                       key={member.id}
-                      className="flex items-center justify-between p-4 bg-black/50 rounded-lg border border-violet-500/10 hover:border-violet-500/20 transition-all"
+                      className="p-4 bg-black/50 rounded-lg border border-violet-500/10 hover:border-violet-500/20 transition-all space-y-2"
                     >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold flex-shrink-0">
-                          {member.name?.charAt(0)}
+                      {/* Fila superior: info + botones */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold flex-shrink-0">
+                            {member.name?.charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-white">{member.name}</p>
+                            <p className="text-sm text-gray-400 truncate">{member.email}</p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-white truncate">{member.name}</p>
-                          <p className="text-sm text-gray-400 truncate mb-1">{member.email}</p>
-                          <Select
-                            value={member.trainer_members?.[0]?.trainer_id || member.trainer_members?.[0]?.trainer?.id || ""}
-                            onValueChange={(val) => handleAssignTrainerToMember(member.id, val)}
-                            disabled={loading}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9 text-gray-300 hover:text-violet-300 hover:bg-violet-500/10 text-base"
+                            onClick={() => openMemberPanel(member, 'form')}
+                            title="Formulario"
                           >
-                            <SelectTrigger className="h-7 bg-violet-500/10 border-violet-500/20 text-[10px] text-violet-300 w-[180px] rounded-lg">
-                              <SelectValue placeholder="Sin entrenador" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {trainers.map(t => (
-                                <SelectItem key={t.id} value={t.id} className="text-xs">{t.name} ({t.role === 'admin' ? 'Admin' : 'Coach'})</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            📋
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9 text-gray-300 hover:text-cyan-300 hover:bg-cyan-500/10 text-base"
+                            onClick={() => openMemberPanel(member, 'photos')}
+                            title="Fotos y Medidas"
+                          >
+                            📸
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9 text-gray-300 hover:text-violet-300 hover:bg-violet-500/10 text-base"
+                            onClick={() => openMemberPanel(member, 'workout')}
+                            title="Rutina"
+                          >
+                            💪
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9 text-gray-300 hover:text-green-300 hover:bg-green-500/10 text-base"
+                            onClick={() => openMemberPanel(member, 'diet')}
+                            title="Dieta"
+                          >
+                            🥗
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9 text-gray-400 hover:text-red-500 hover:bg-red-500/10"
+                            onClick={() => handleDeleteMember(member.id)}
+                            title="Eliminar socio"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-9 w-9 text-gray-300 hover:text-violet-300 hover:bg-violet-500/10 text-base"
-                          onClick={() => openMemberPanel(member, 'form')}
-                          title="Formulario"
+                      {/* Fila inferior: selector de entrenador */}
+                      <div className="pl-13">
+                        <Select
+                          value={member.trainer_members?.[0]?.trainer_id || member.trainer_members?.[0]?.trainer?.id || ""}
+                          onValueChange={(val) => handleAssignTrainerToMember(member.id, val)}
+                          disabled={loading}
                         >
-                          📋
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-9 w-9 text-gray-300 hover:text-cyan-300 hover:bg-cyan-500/10 text-base"
-                          onClick={() => openMemberPanel(member, 'photos')}
-                          title="Fotos y Medidas"
-                        >
-                          📸
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-9 w-9 text-gray-300 hover:text-violet-300 hover:bg-violet-500/10 text-base"
-                          onClick={() => openMemberPanel(member, 'workout')}
-                          title="Rutina"
-                        >
-                          💪
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-9 w-9 text-gray-300 hover:text-green-300 hover:bg-green-500/10 text-base"
-                          onClick={() => openMemberPanel(member, 'diet')}
-                          title="Dieta"
-                        >
-                          🥗
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-9 w-9 text-gray-400 hover:text-red-500 hover:bg-red-500/10"
-                          onClick={() => handleDeleteMember(member.id)}
-                          title="Eliminar socio"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                          <SelectTrigger className="h-7 bg-violet-500/10 border-violet-500/20 text-[10px] text-violet-300 w-[180px] rounded-lg">
+                            <SelectValue placeholder="Sin entrenador" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trainers.map(t => (
+                              <SelectItem key={t.id} value={t.id} className="text-xs">{t.name} ({t.role === 'admin' ? 'Admin' : 'Coach'})</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   ))}
