@@ -32,9 +32,11 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
     }
 
-    const { requestId, memberId, responses, macros, fullDietContent } = await req.json()
+    const body = await req.json()
+    const { requestId, memberId, macros, fullDietContent } = body
+    const responses = body.responses ?? {}
 
-    if (!requestId || !memberId || !responses || !macros || !fullDietContent) {
+    if (!requestId || !memberId || !macros || !fullDietContent) {
       return NextResponse.json({ error: 'Datos incompletos para completar asignación' }, { status: 400 })
     }
 

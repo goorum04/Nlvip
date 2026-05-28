@@ -329,7 +329,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       setDietDraft({
         requestId: request.id,
         memberId: request.member_id,
-        responses: request.responses,
+        responses: request.responses ?? {},
         macros: result.macros,
         fullDietContent: result.fullDietContent
       })
