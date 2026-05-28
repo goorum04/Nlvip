@@ -11,7 +11,7 @@ import {
     Apple, Plus, Trash2, Clock, UtensilsCrossed,
     Flame, Target, Zap, Star, Save, X, ChevronRight,
     ChevronLeft, Info, LoaderCircle as Loader2,
-    Sparkles, Lightbulb, BookOpen, Pill, Eye, Droplet
+    Sparkles, Lightbulb, BookOpen, Pill, Eye, Droplet, Footprints
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { parseDietContent } from '@/lib/dietContentParser'
@@ -461,14 +461,17 @@ export function DietViewer({ dietId }) {
                 </div>
             )}
 
-            {/* Template sections (general rules, supplementation, observations, fluids) */}
-            {sections && (sections.generalRules || sections.supplementation || sections.observations || sections.fluids) && (
+            {/* Template sections (general rules, supplementation, activity, observations, fluids) */}
+            {sections && (sections.generalRules || sections.supplementation || sections.activity || sections.observations || sections.fluids) && (
                 <div className="space-y-3">
                     {sections.generalRules && (
                         <DietSectionCard icon={BookOpen} title="Reglas generales" color="violet" body={sections.generalRules} />
                     )}
                     {sections.supplementation && (
                         <DietSectionCard icon={Pill} title="Suplementación" color="blue" body={sections.supplementation} />
+                    )}
+                    {sections.activity && (
+                        <DietSectionCard icon={Footprints} title="Actividad Diaria" color="green" body={sections.activity} />
                     )}
                     {sections.observations && (
                         <DietSectionCard icon={Eye} title="Observaciones" color="amber" body={sections.observations} />
@@ -507,6 +510,7 @@ export function DietViewer({ dietId }) {
 const SECTION_COLORS = {
     violet: { bg: 'bg-violet-500/10', border: 'border-violet-500/20', icon: 'text-violet-400' },
     blue: { bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: 'text-blue-400' },
+    green: { bg: 'bg-green-500/10', border: 'border-green-500/20', icon: 'text-green-400' },
     amber: { bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: 'text-amber-400' },
     cyan: { bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', icon: 'text-cyan-400' }
 }

@@ -286,7 +286,7 @@ HIDRATOS: usar una fuente principal por comida. Evitar mezclas innecesarias.
 
 EN DEFINICIONES EXTREMAS: simplificar comidas, reducir opciones, usar alimentos más digestivos, quitar alimentos que empeoren piel o retención. Reducir lácteos, pan, pasta, comidas elaboradas. Priorizar arroz, crema arroz, tortitas arroz, patata. En definiciones muy extremas: menos variedad, más precisión, más control digestivo y visual.
 
-PROTEÍNA — base ~${(weight * 2.2).toFixed(0)}g (2,2g/kg). Ajustar según contexto. Nunca meter proteína porque sí.
+PROTEÍNA — base ~${(weight * 2.4).toFixed(0)}g (2,4g/kg). Ajustar según contexto. Nunca meter proteína porque sí.
 
 POST-ENTRENO: proteína ISO ${sex === 'mujer' || sex === 'female' ? '35g' : '45g'} inmediatamente al terminar pesas (si entrena por la ${trainTime}).
 
