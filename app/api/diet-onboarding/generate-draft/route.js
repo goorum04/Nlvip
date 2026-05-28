@@ -367,8 +367,14 @@ NO incluyas suplementación detallada ni descargo de responsabilidad — eso se 
 
     const mealsText = aiResponse.choices[0]?.message?.content || ''
 
-    // 5. Build the full diet using the NL VIP template
-    const fullDietContent = DIET_TEMPLATE.generateFullDiet(macros, mealsText)
+    // 5. Build the full diet using the NL VIP template (fluidos personalizados)
+    const fullDietContent = DIET_TEMPLATE.generateFullDiet(macros, mealsText, {
+      weight,
+      sex,
+      goal,
+      activityLevel: calculatorActivity,
+      trainTime,
+    })
 
     // Devolvemos el texto generado sin guardarlo en BBDD
     return NextResponse.json({
