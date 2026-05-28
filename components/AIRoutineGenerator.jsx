@@ -317,6 +317,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
   const [generatedRoutine, setGeneratedRoutine] = useState(null)
   const [savedTemplateId, setSavedTemplateId] = useState(null)
   const [replacedInfo, setReplacedInfo] = useState([])
+  const [routineRationale, setRoutineRationale] = useState('')
   const [saving, setSaving] = useState(false)
   const [lastNotes, setLastNotes] = useState('')
   const [routineCorrection, setRoutineCorrection] = useState('')
@@ -444,6 +445,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
 
       setGeneratedRoutine(data.preview)
       setReplacedInfo(Array.isArray(data.replaced) ? data.replaced : [])
+      setRoutineRationale(data.rationale || '')
       setStep('preview')
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -458,6 +460,7 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
     setGeneratedRoutine(null)
     setSavedTemplateId(null)
     setReplacedInfo([])
+    setRoutineRationale('')
     setMemberId('')
     setMemberSummary(null)
     setShowAdvanced(false)
@@ -889,6 +892,17 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
                 onAddExercise={addExercise}
                 onUpdateDayName={updateDayName}
               />
+
+              {routineRationale && (
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span className="text-amber-300 text-sm font-semibold">Por qué la IA ha elegido esto</span>
+                  </div>
+                  <p className="text-xs text-amber-200/60">Explicación interna solo para ti. El socio no la verá ni la recibirá.</p>
+                  <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{routineRationale}</div>
+                </div>
+              )}
 
               {replacedInfo.length > 0 && (
                 <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
