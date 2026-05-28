@@ -123,7 +123,29 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
   const [photoPreviews, setPhotoPreviews] = useState({ front: null, side: null, back: null })
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
+  const [validationError, setValidationError] = useState(null)
   const { toast } = useToast()
+
+  const validateForm = () => {
+    const missing = []
+    const measureLabels = {
+      peso: 'Peso (kg)',
+      altura: 'Altura (cm)',
+      cintura: 'Cintura (cm)',
+      pecho: 'Pecho (cm)',
+      biceps: 'Bíceps (cm)',
+      cadera: 'Cadera (cm)',
+      muslo: 'Muslo (cm)',
+      gluteo: 'Glúteo (cm)',
+      gemelo: 'Gemelo (cm)',
+    }
+    for (const [key, label] of Object.entries(measureLabels)) {
+      if (!measurements[key] || parseFloat(measurements[key]) <= 0) {
+        missing.push(label)
+      }
+    }
+    return missing
+  }
 
   const handlePhotoSelect = (type, file) => {
     if (!file) return
@@ -170,6 +192,12 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
   }
 
   const handleSubmit = async () => {
+    const missing = validateForm()
+    if (missing.length > 0) {
+      setValidationError(missing)
+      return
+    }
+    setValidationError(null)
     setSubmitting(true)
     try {
       // Upload photos to Supabase storage if provided
@@ -417,7 +445,16 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
               </div>
             ))}
           </div>
-          <Button onClick={() => setStep(s => s + 1)} className="w-full bg-violet-600 text-white">Continuar →</Button>
+          <Button
+            onClick={() => {
+              if (!measurements.peso || parseFloat(measurements.peso) <= 0 || !measurements.altura || parseFloat(measurements.altura) <= 0) {
+                toast({ title: 'Medidas incompletas', description: 'Peso y altura son imprescindibles para calcular tus macros.', variant: 'destructive' })
+                return
+              }
+              setStep(s => s + 1)
+            }}
+            className="w-full bg-violet-600 text-white"
+          >Continuar →</Button>
         </div>
       )}
 
@@ -535,6 +572,34 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
             </div>
           </div>
 
+          {validationError && (
+            <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 space-y-2">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-amber-300 font-semibold text-sm">Completa el formulario para continuar</p>
+                  <p className="text-amber-200/70 text-xs mt-1 leading-relaxed">
+                    Para poder hacerte la dieta más personalizada posible necesitamos todos tus datos.
+                    Puedes cerrar y retomarlo más tarde, pero hasta que no lo completes no estarán disponibles todas las funciones.
+                  </p>
+                  <ul className="mt-2 space-y-0.5">
+                    {validationError.map(field => (
+                      <li key={field} className="text-xs text-amber-300/80">• {field}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setValidationError(null); setStep(6) }}
+                className="text-amber-400 text-xs hover:text-amber-300 w-full mt-1"
+              >
+                Volver a completar las medidas →
+              </Button>
+            </div>
+          )}
+
           <Button
             onClick={handleSubmit}
             disabled={submitting}
@@ -612,6 +677,7 @@ export function DietOnboardingBanner({ requestId, memberId, memberName, onComple
             </h3>
             <p className="text-gray-300 text-sm mb-4">
               {firstName} relléname este formulario lo antes posible para que pueda crearte un programa nutricional adaptado a tus necesidades con comidas específicas y cantidades exactas.
+              {' '}Mientras no lo completes, no podrás acceder al plan de nutrición personalizado.
             </p>
             <div className="flex flex-wrap gap-2 mb-4">
               {['Comidas específicas con gramos', 'Adaptado a tus objetivos', 'Según tus preferencias', 'Formato NL VIP Team'].map(tag => (
