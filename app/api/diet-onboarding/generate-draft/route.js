@@ -376,12 +376,50 @@ NO incluyas suplementación detallada ni descargo de responsabilidad — eso se 
       trainTime,
     })
 
-    // Devolvemos el texto generado sin guardarlo en BBDD
+    // 6. Explicación SOLO para el admin/preparador de por qué la IA ha tomado
+    //    cada decisión. Llamada SEPARADA (no toca el prompt de la dieta) y nunca
+    //    se incluye en fullDietContent → el socio jamás la recibe ni la ve.
+    let rationale = ''
+    try {
+      const rationalePrompt = `Eres un preparador físico de élite. Acabas de diseñar la siguiente dieta para un socio.
+Explica de forma BREVE y PROFESIONAL a OTRO ENTRENADOR/ADMINISTRADOR (uso interno, el socio NUNCA verá esto) por qué has tomado las decisiones clave.
+
+PERFIL: ${name}, ${sex}, ${age} años, ${weight}kg. Objetivo: ${goal}. ${numMeals} comidas/día.
+Macros objetivo: ${calories} kcal | P:${protein_g}g | HC:${carbs_g}g | G:${fat_g}g.
+Restricciones/alergias: ${restrictions}. No le gusta: ${dislikes || 'nada'}. Favoritos: ${favorites || 'nada'}.
+Entreno: ${trainTime}. Condición médica: ${medConditions}. Lesiones: ${injuries}.
+
+DIETA GENERADA:
+${mealsText}
+
+Devuelve 4-7 puntos concisos (máximo ~2 frases cada uno) explicando:
+- Por qué ese reparto de macros y calorías para su objetivo
+- Por qué la distribución y el timing de comidas (sobre todo en torno al entreno)
+- Decisiones de alimentos según restricciones, gustos, condición médica y lesiones
+- Cualquier ajuste especial (sexo, % graso, adherencia)
+
+Escribe SOLO los puntos, en español, empezando cada uno con "• ". Sin título ni despedida.`
+
+      const rationaleResponse = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: rationalePrompt }],
+        max_tokens: 600,
+        temperature: 0.4
+      })
+      rationale = rationaleResponse.choices[0]?.message?.content?.trim() || ''
+    } catch (rationaleErr) {
+      // No bloqueante: si falla, devolvemos la dieta igualmente sin explicación.
+      console.warn('diet-onboarding/generate-draft rationale error:', rationaleErr.message)
+    }
+
+    // Devolvemos el texto generado sin guardarlo en BBDD.
+    // `rationale` es solo para el admin: no se persiste con la dieta del socio.
     return NextResponse.json({
       success: true,
       message: 'Borrador generado con éxito.',
       macros,
-      fullDietContent
+      fullDietContent,
+      rationale
     })
 
   } catch (error) {

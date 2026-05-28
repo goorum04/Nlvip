@@ -360,7 +360,8 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
         memberId: request.member_id,
         responses: request.responses ?? {},
         macros: result.macros,
-        fullDietContent: result.fullDietContent
+        fullDietContent: result.fullDietContent,
+        rationale: result.rationale || ''
       })
     } catch (error) {
       toast({ title: 'Error calculando borrador IA', description: error.message, variant: 'destructive' })
@@ -2608,6 +2609,17 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                   />
                 </div>
               </div>
+
+              {dietDraft.rationale && (
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span className="text-amber-300 text-sm font-semibold">Por qué la IA ha elegido esto</span>
+                  </div>
+                  <p className="text-xs text-amber-200/60">Explicación interna solo para ti. El socio no la verá ni la recibirá.</p>
+                  <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{dietDraft.rationale}</div>
+                </div>
+              )}
 
               <div>
                 <Label className="text-gray-400 mb-2 block">Menú Diario Propuesto</Label>
