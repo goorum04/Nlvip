@@ -85,9 +85,9 @@ export async function POST(req) {
       // Non-blocking
     }
 
-    // Notify admin: socio ha completado el cuestionario
+    // Notify admin + trainer: socio ha completado el cuestionario
     try {
-      // Obtener nombre del socio
+      // Nombre del socio
       const { data: memberProfile } = await supabaseAdmin
         .from('profiles')
         .select('name, email')
@@ -95,7 +95,7 @@ export async function POST(req) {
         .single()
       const memberName = memberProfile?.name || memberProfile?.email?.split('@')[0] || 'Un socio'
 
-      // Obtener admin
+      // Admin
       const { data: adminProfile } = await supabaseAdmin
         .from('profiles')
         .select('id')
@@ -103,19 +103,60 @@ export async function POST(req) {
         .limit(1)
         .single()
 
+      // Trainer que asignó el cuestionario
+      const { data: requestData } = await supabaseAdmin
+        .from('diet_onboarding_requests')
+        .select('requested_by')
+        .eq('id', requestId)
+        .single()
+      const trainerId = requestData?.requested_by
+
+      const adminPayload = {
+        title: '📋 Cuestionario completado',
+        body: `${memberName} ha rellenado el formulario nutricional. ¡Ya puedes preparar su plan!`,
+        url: '/admin/nutrition',
+      }
+
+      // Push al admin
       if (adminProfile?.id) {
-        const notifPayload = {
-          title: '📋 Cuestionario completado',
-          body: `${memberName} ha rellenado el formulario nutricional. ¡Ya puedes preparar su plan!`,
-          url: '/admin/nutrition',
-        }
-        // Push nativo (iOS)
-        await sendNativeApplePush(supabaseAdmin, adminProfile.id, notifPayload)
-        // Web Push (PWA)
-        await sendPushToUser(supabaseAdmin, adminProfile.id, { ...notifPayload, icon: '/icons/icon-192x192.png' })
+        await sendNativeApplePush(supabaseAdmin, adminProfile.id, adminPayload)
+        await sendPushToUser(supabaseAdmin, adminProfile.id, { ...adminPayload, icon: '/icons/icon-192x192.png' })
+      }
+
+      // Push al trainer (si es distinto del admin)
+      if (trainerId && trainerId !== adminProfile?.id) {
+        const trainerPayload = { ...adminPayload, url: '/diets' }
+        await sendNativeApplePush(supabaseAdmin, trainerId, trainerPayload)
+        await sendPushToUser(supabaseAdmin, trainerId, { ...trainerPayload, icon: '/icons/icon-192x192.png' })
+      }
+
+      // Registros in-app persistentes
+      const notifRows = []
+      if (adminProfile?.id) {
+        notifRows.push({
+          user_id: adminProfile.id,
+          title: adminPayload.title,
+          body: adminPayload.body,
+          type: 'diet_submission',
+          reference_id: requestId,
+          url: adminPayload.url,
+        })
+      }
+      if (trainerId && trainerId !== adminProfile?.id) {
+        notifRows.push({
+          user_id: trainerId,
+          title: adminPayload.title,
+          body: adminPayload.body,
+          type: 'diet_submission',
+          reference_id: requestId,
+          url: '/diets',
+        })
+      }
+      if (notifRows.length > 0) {
+        await supabaseAdmin.from('notifications').insert(notifRows)
       }
     } catch (notifErr) {
-      console.warn('[Push] Error notificando admin:', notifErr.message)
+      console.warn('[Push] Error notificando admin/trainer:', notifErr.message)
     }
 
     return NextResponse.json({

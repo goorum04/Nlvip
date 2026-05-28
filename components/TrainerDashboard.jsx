@@ -49,7 +49,26 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
   const [draftCorrection, setDraftCorrection] = useState('')
   const [draftCorrectionHistory, setDraftCorrectionHistory] = useState([])
   const [refining, setRefining] = useState(false)
+  const [unreadNotifications, setUnreadNotifications] = useState([])
   const { toast } = useToast()
+
+  const loadNotifications = async () => {
+    const { data } = await supabase
+      .from('notifications')
+      .select('id, title, body, created_at')
+      .is('read_at', null)
+      .eq('type', 'diet_submission')
+      .order('created_at', { ascending: false })
+      .limit(20)
+    setUnreadNotifications(data || [])
+  }
+
+  const markNotificationsRead = async () => {
+    if (unreadNotifications.length === 0) return
+    const ids = unreadNotifications.map(n => n.id)
+    await supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('id', ids)
+    setUnreadNotifications([])
+  }
 
   const [newWorkoutName, setNewWorkoutName] = useState('')
   const [newWorkoutDesc, setNewWorkoutDesc] = useState('')
@@ -113,8 +132,16 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
       })
       .subscribe()
 
+    const notificationsChannel = supabase
+      .channel(`trainer_notifications_${user.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => {
+        loadNotifications()
+      })
+      .subscribe()
+
     return () => {
       supabase.removeChannel(dietRequestsChannel)
+      supabase.removeChannel(notificationsChannel)
     }
   }, [])
 
@@ -125,7 +152,8 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
       loadDietTemplates(),
       loadNotices(),
       loadChallenges(),
-      loadDietRequests()
+      loadDietRequests(),
+      loadNotifications()
     ])
   }
 
@@ -574,7 +602,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
       />
 
       <main className="container mx-auto px-4 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); if (tab === 'diets') markNotificationsRead() }} className="space-y-6">
           {activeTab !== 'members' && (
             <button
               onClick={() => setActiveTab('members')}
@@ -604,6 +632,11 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                 >
                   <tab.icon className="w-4 h-4 mr-2" />
                   {tab.label}
+                  {tab.value === 'diets' && unreadNotifications.length > 0 && (
+                    <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+                      {unreadNotifications.length}
+                    </span>
+                  )}
                 </TabsTrigger>
               ))}
             </TabsList>

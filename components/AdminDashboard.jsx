@@ -125,6 +125,26 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
     r => r && r.status === 'submitted'
   ).length
 
+  const [unreadNotifications, setUnreadNotifications] = useState([])
+
+  const loadNotifications = async () => {
+    const { data } = await supabase
+      .from('notifications')
+      .select('id, title, body, created_at')
+      .is('read_at', null)
+      .eq('type', 'diet_submission')
+      .order('created_at', { ascending: false })
+      .limit(20)
+    setUnreadNotifications(data || [])
+  }
+
+  const markNotificationsRead = async () => {
+    if (unreadNotifications.length === 0) return
+    const ids = unreadNotifications.map(n => n.id)
+    await supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('id', ids)
+    setUnreadNotifications([])
+  }
+
   const membersWithoutWorkout = useMemo(() => {
     const assigned = new Set((allAssignments?.workouts || []).map(a => a.member_id))
     return (members || []).filter(m => !assigned.has(m.id))
@@ -174,8 +194,16 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       })
       .subscribe()
 
+    const notificationsChannel = supabase
+      .channel('admin_notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => {
+        loadNotifications()
+      })
+      .subscribe()
+
     return () => {
       supabase.removeChannel(dietRequestsChannel)
+      supabase.removeChannel(notificationsChannel)
     }
   }, [])
 
@@ -191,7 +219,8 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       loadWorkoutTemplates(),
       loadDietTemplates(),
       loadChallenges(),
-      loadDietRequests()
+      loadDietRequests(),
+      loadNotifications()
     ])
   }
 
@@ -1093,7 +1122,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
           <div className="mb-6">
             <button
               type="button"
-              onClick={() => setActiveTab('diets')}
+              onClick={() => { setActiveTab('diets'); markNotificationsRead() }}
               className="w-full flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-violet-900/50 to-cyan-900/30 border border-violet-500/40 hover:from-violet-900/70 hover:to-cyan-900/50 transition-all text-left"
             >
               <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0 relative">
@@ -1103,10 +1132,15 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white font-bold text-sm">
+                <p className="text-white font-bold text-sm flex items-center gap-2 flex-wrap">
                   {pendingDietSubmissions === 1
                     ? 'Tienes 1 cuestionario nutricional pendiente de revisar'
                     : `Tienes ${pendingDietSubmissions} cuestionarios nutricionales pendientes de revisar`}
+                  {unreadNotifications.length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                      {unreadNotifications.length} nuevo{unreadNotifications.length > 1 ? 's' : ''}
+                    </span>
+                  )}
                 </p>
                 <p className="text-violet-300 text-xs mt-0.5">Toca para ir a Dietas y prepararles el plan.</p>
               </div>
@@ -1115,7 +1149,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
           </div>
         )}
 
-        <Tabs value={activeTab} onValueChange={(tab) => { setTabHistory(prev => [...prev, activeTab]); setActiveTab(tab) }} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={(tab) => { setTabHistory(prev => [...prev, activeTab]); setActiveTab(tab); if (tab === 'diets') markNotificationsRead() }} className="space-y-6">
           <div className="flex items-center gap-2 pb-2 flex-wrap">
 
             {/* Botón Atrás */}
