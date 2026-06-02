@@ -612,99 +612,27 @@ export function TrainerRecipePlanEditor({ memberId, memberName, trainerId }) {
   const generatePlan = async () => {
     setGenerating(true)
     try {
-      // Obtener dieta asignada al socio
       const { data: memberDiet } = await supabase
         .from('member_diets')
-        .select('*, diet:diet_templates(*)')
+        .select('diet_template_id')
         .eq('member_id', memberId)
         .single()
 
-      if (!memberDiet?.diet) {
+      if (!memberDiet?.diet_template_id) {
         toast({ title: 'Error', description: 'El socio no tiene dieta asignada', variant: 'destructive' })
-        setGenerating(false)
         return
       }
 
-      // Calcular lunes de esta semana
-      const today = new Date()
-      const monday = new Date(today)
-      monday.setDate(today.getDate() - today.getDay() + 1)
-      const weekStart = monday.toISOString().split('T')[0]
+      const res = await fetch('/api/generate-recipe-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId, dietId: memberDiet.diet_template_id, trainerId })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error generando plan')
 
-      // Archivar plan anterior si existe
-      if (plan) {
-        await supabase
-          .from('member_recipe_plans')
-          .update({ status: 'archived', updated_at: new Date().toISOString() })
-          .eq('id', plan.id)
-      }
-
-      // Crear nuevo plan
-      const { data: newPlan, error: planError } = await supabase
-        .from('member_recipe_plans')
-        .insert([{
-          member_id: memberId,
-          trainer_id: trainerId,
-          diet_template_id: memberDiet.diet.id,
-          week_start: weekStart,
-          target_calories: memberDiet.diet.calories,
-          target_protein_g: memberDiet.diet.protein_g,
-          target_carbs_g: memberDiet.diet.carbs_g,
-          target_fat_g: memberDiet.diet.fat_g,
-          status: 'active'
-        }])
-        .select()
-        .single()
-
-      if (planError) throw planError
-
-      // Obtener recetas de la dieta
-      const { data: dietRecipes } = await supabase
-        .from('diet_recipes')
-        .select('*, recipe:recipes(*)')
-        .eq('diet_template_id', memberDiet.diet.id)
-
-      // Organizar recetas por categoría
-      const recipesBySlot = {
-        breakfast: (dietRecipes || []).filter(dr => dr.recipe?.category === 'breakfast').map(dr => dr.recipe),
-        lunch: (dietRecipes || []).filter(dr => dr.recipe?.category === 'lunch').map(dr => dr.recipe),
-        dinner: (dietRecipes || []).filter(dr => dr.recipe?.category === 'dinner').map(dr => dr.recipe),
-        snack: (dietRecipes || []).filter(dr => dr.recipe?.category === 'snack').map(dr => dr.recipe)
-      }
-
-      // Si faltan recetas en alguna categoría, usar globales
-      for (const slot of Object.keys(recipesBySlot)) {
-        if (recipesBySlot[slot].length === 0) {
-          const globalRecipes = recipes.filter(r => r.category === slot)
-          recipesBySlot[slot] = globalRecipes
-        }
-      }
-
-      // Generar items para 7 días
-      const newItems = []
-      for (let day = 1; day <= 7; day++) {
-        for (const [slot, slotRecipes] of Object.entries(recipesBySlot)) {
-          if (slotRecipes.length > 0) {
-            // Seleccionar receta aleatoria (en producción usar lógica de macros)
-            const randomRecipe = slotRecipes[Math.floor(Math.random() * slotRecipes.length)]
-            newItems.push({
-              plan_id: newPlan.id,
-              day_index: day,
-              meal_slot: slot,
-              recipe_id: randomRecipe.id
-            })
-          }
-        }
-      }
-
-      // Insertar items
-      if (newItems.length > 0) {
-        await supabase.from('member_recipe_plan_items').insert(newItems)
-      }
-
-      toast({ title: '¡Plan generado!', description: `Plan semanal creado con ${newItems.length} comidas` })
+      toast({ title: '¡Plan generado!', description: data.message })
       loadPlan()
-
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
