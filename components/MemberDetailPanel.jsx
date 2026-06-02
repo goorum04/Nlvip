@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dumbbell, Heart,
-  LoaderCircle as Loader2, ChevronRight, MessageSquare, Bell, ChevronDown, ChevronUp
+  LoaderCircle as Loader2, ChevronRight, MessageSquare, Bell, ChevronDown, ChevronUp, RefreshCw
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
@@ -29,6 +29,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
   const [showWorkoutDetail, setShowWorkoutDetail] = useState(false)
   const [showDietContent, setShowDietContent] = useState(false)
   const [assigning, setAssigning] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
   const [savingReminderFreq, setSavingReminderFreq] = useState(false)
   const [activeTab, setActiveTab] = useState(initialTab)
   const [memberProgressPhotos, setMemberProgressPhotos] = useState([])
@@ -193,6 +194,29 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
       setAssigning(false)
+    }
+  }
+
+  const handleRegeneratePlan = async () => {
+    if (!assignedDiet) {
+      toast({ title: 'Error', description: 'El socio no tiene dieta asignada', variant: 'destructive' })
+      return
+    }
+    setRegenerating(true)
+    try {
+      const assignerId = (await supabase.auth.getUser()).data.user?.id
+      const res = await fetch('/api/generate-recipe-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: member.id, dietId: assignedDiet.id, trainerId: assignerId })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error generando plan')
+      toast({ title: '¡Plan generado!', description: data.message })
+    } catch (error) {
+      toast({ title: 'Error al generar plan', description: error.message, variant: 'destructive' })
+    } finally {
+      setRegenerating(false)
     }
   }
 
@@ -460,6 +484,16 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                             </div>
                           )}
                         </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full border-violet-500/30 text-violet-300 hover:bg-violet-500/10 gap-2"
+                        onClick={handleRegeneratePlan}
+                        disabled={regenerating || !assignedDiet}
+                      >
+                        {regenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                        {regenerating ? 'Generando recetas...' : 'Regenerar plan de recetas'}
+                      </Button>
                       </div>
                     ) : (
                       <p className="text-gray-500 text-sm">Sin dieta asignada</p>
