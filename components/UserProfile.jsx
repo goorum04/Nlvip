@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { User, Camera as CameraIcon, Save, Trash2, LoaderCircle as Loader2, X, TriangleAlert as AlertTriangle } from 'lucide-react'
+import { User, Camera as CameraIcon, Save, Trash2, LoaderCircle as Loader2, X, TriangleAlert as AlertTriangle, KeyRound, ChevronDown, ChevronUp } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
 
@@ -75,6 +75,10 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
   const { toast } = useToast()
 
   // Form states
@@ -226,6 +230,31 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault()
+    if (newPassword.length < 8) {
+      toast({ title: 'Error', description: 'La contraseña debe tener al menos 8 caracteres', variant: 'destructive' })
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: 'Error', description: 'Las contraseñas no coinciden', variant: 'destructive' })
+      return
+    }
+    setChangingPassword(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) throw error
+      toast({ title: '¡Contraseña actualizada!', description: 'Tu contraseña ha sido cambiada correctamente.' })
+      setNewPassword('')
+      setConfirmPassword('')
+      setShowChangePassword(false)
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setChangingPassword(false)
     }
   }
 
@@ -451,6 +480,60 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
               <><Save className="w-4 h-4 mr-2" /> Guardar Cambios</>
             )}
           </Button>
+
+          {/* Change Password Section */}
+          <div className="pt-4 border-t border-white/10">
+            <button
+              type="button"
+              onClick={() => { setShowChangePassword(!showChangePassword); setNewPassword(''); setConfirmPassword('') }}
+              className="w-full flex items-center justify-between text-gray-300 hover:text-white text-sm font-medium py-1 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-violet-400" />
+                Cambiar contraseña
+              </span>
+              {showChangePassword ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+
+            {showChangePassword && (
+              <form onSubmit={handleChangePassword} className="mt-4 space-y-3">
+                <div>
+                  <Label className="text-gray-300 text-sm">Nueva contraseña</Label>
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Mínimo 8 caracteres"
+                    minLength={8}
+                    required
+                    className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-300 text-sm">Confirmar contraseña</Label>
+                  <Input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repite la contraseña"
+                    required
+                    className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={changingPassword}
+                  className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white font-bold rounded-xl py-5"
+                >
+                  {changingPassword ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Guardando...</>
+                  ) : (
+                    <><KeyRound className="w-4 h-4 mr-2" /> Guardar nueva contraseña</>
+                  )}
+                </Button>
+              </form>
+            )}
+          </div>
 
           {/* Delete Account Section */}
           <div className="pt-4 border-t border-red-500/20">

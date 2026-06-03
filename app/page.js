@@ -43,6 +43,10 @@ export default function App() {
   const [invitationCode, setInvitationCode] = useState('')
   const [preparingAccount, setPreparingAccount] = useState(false)
   const [profileLoadFailed, setProfileLoadFailed] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotSent, setForgotSent] = useState(false)
+  const [forgotLoading, setForgotLoading] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -220,6 +224,22 @@ export default function App() {
     }
   }
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault()
+    setForgotLoading(true)
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: window.location.origin + '/auth/callback?type=recovery'
+      })
+      if (error) throw error
+      setForgotSent(true)
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setForgotLoading(false)
+    }
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setUser(null)
@@ -376,37 +396,92 @@ export default function App() {
 
                 {/* Login Form */}
                 <TabsContent value="login" className="space-y-5 mt-6">
-                  <form onSubmit={handleLogin} className="space-y-5">
-                    <div className="space-y-2">
-                      <Label className="text-gray-300 text-sm font-medium">Email</Label>
-                      <Input
-                        type="email"
-                        placeholder="tu@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
-                      />
+                  {!showForgotPassword ? (
+                    <form onSubmit={handleLogin} className="space-y-5">
+                      <div className="space-y-2">
+                        <Label className="text-gray-300 text-sm font-medium">Email</Label>
+                        <Input
+                          type="email"
+                          placeholder="tu@email.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                          className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-gray-300 text-sm font-medium">Contraseña</Label>
+                        <Input
+                          type="password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => { setShowForgotPassword(true); setForgotSent(false); setForgotEmail('') }}
+                          className="text-xs text-violet-400 hover:text-violet-300 transition-colors mt-1 block"
+                        >
+                          ¿Olvidaste tu contraseña?
+                        </button>
+                      </div>
+                      <Button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full h-12 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white font-bold rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-300 hover:scale-[1.02]"
+                      >
+                        {loading ? 'Entrando...' : 'Entrar'}
+                      </Button>
+                    </form>
+                  ) : forgotSent ? (
+                    <div className="space-y-5 text-center">
+                      <div className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-6">
+                        <p className="text-white font-medium mb-1">Revisa tu correo</p>
+                        <p className="text-gray-400 text-sm">Te enviamos un enlace a <span className="text-violet-300">{forgotEmail}</span> para restablecer tu contraseña.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setShowForgotPassword(false); setForgotSent(false) }}
+                        className="text-sm text-gray-400 hover:text-white transition-colors"
+                      >
+                        ← Volver al login
+                      </button>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-gray-300 text-sm font-medium">Contraseña</Label>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
-                      />
-                    </div>
-                    <Button 
-                      type="submit" 
-                      disabled={loading}
-                      className="w-full h-12 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white font-bold rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-300 hover:scale-[1.02]"
-                    >
-                      {loading ? 'Entrando...' : 'Entrar'}
-                    </Button>
-                  </form>
+                  ) : (
+                    <form onSubmit={handleForgotPassword} className="space-y-5">
+                      <div>
+                        <p className="text-white font-medium mb-1">Recuperar contraseña</p>
+                        <p className="text-gray-400 text-sm">Introduce tu email y te enviaremos un enlace para crear una nueva contraseña.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-gray-300 text-sm font-medium">Email</Label>
+                        <Input
+                          type="email"
+                          placeholder="tu@email.com"
+                          value={forgotEmail}
+                          onChange={(e) => setForgotEmail(e.target.value)}
+                          required
+                          className="bg-white/5 border-white/10 rounded-xl h-12 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        disabled={forgotLoading}
+                        className="w-full h-12 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white font-bold rounded-xl shadow-lg shadow-violet-500/25 transition-all duration-300"
+                      >
+                        {forgotLoading ? 'Enviando...' : 'Enviar enlace'}
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotPassword(false)}
+                        className="text-sm text-gray-400 hover:text-white transition-colors block text-center w-full"
+                      >
+                        ← Volver al login
+                      </button>
+                    </form>
+                  )}
 
 {/* Botones de demo eliminados - Credenciales disponibles para el administrador */}
                 </TabsContent>
