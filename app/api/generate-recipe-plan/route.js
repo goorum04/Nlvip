@@ -47,9 +47,42 @@ const INTOLERANCE_MAP = {
   'ninguna': ''
 }
 
-function buildSpoonacularUrl({ slot, config, diet, macros, intolerances, excludeIngredients, includeIngredients }) {
-  const targetCals = Math.round(macros.calories * config.percent)
-  const targetProtein = Math.round(macros.protein * config.percent)
+// Extract per-meal macro targets from the diet content markdown table.
+// Returns { breakfast, lunch, dinner, snack } each with { calories, protein, carbs, fat }
+// or null if no distribution table is found.
+function parseMealMacrosFromContent(content) {
+  if (!content) return null
+
+  const tableMatch = content.match(/\|\s*Comida\s*\|[^\n]+\n\|[-|\s]+\n((?:\|[^\n]+\n?)+)/i)
+  if (!tableMatch) return null
+
+  const rows = tableMatch[1].split('\n').filter(r => r.trim().startsWith('|'))
+  const parsed = {}
+
+  for (const row of rows) {
+    const cells = row.split('|').map(c => c.trim()).filter(Boolean)
+    if (cells.length < 5) continue
+    const key = cells[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+    const calories = parseFloat(cells[1].replace(/[^\d.]/g, '')) || 0
+    const protein  = parseFloat(cells[2].replace(/[^\d.]/g, '')) || 0
+    const carbs    = parseFloat(cells[3].replace(/[^\d.]/g, '')) || 0
+    const fat      = parseFloat(cells[4].replace(/[^\d.]/g, '')) || 0
+    if (calories > 0) parsed[key] = { calories, protein, carbs, fat }
+  }
+
+  if (Object.keys(parsed).length === 0) return null
+
+  return {
+    breakfast: parsed['desayuno']  || null,
+    lunch:     parsed['almuerzo']  || null,
+    dinner:    parsed['cena']      || null,
+    snack:     parsed['merienda']  || parsed['media manana'] || parsed['snack'] || null
+  }
+}
+
+function buildSpoonacularUrl({ config, slotTarget, spoonDiet, intolerances, excludeIngredients, includeIngredients }) {
+  const targetCals    = Math.round(slotTarget.calories)
+  const targetProtein = Math.round(slotTarget.protein)
 
   let url = `https://api.spoonacular.com/recipes/complexSearch?apiKey=${SPOONACULAR_KEY}`
   url += `&addRecipeInformation=true&addRecipeNutrition=true&fillIngredients=true&instructionsRequired=true`
@@ -60,15 +93,15 @@ function buildSpoonacularUrl({ slot, config, diet, macros, intolerances, exclude
   url += `&minCalories=${Math.round(targetCals * 0.5)}`
   url += `&minProtein=${Math.round(targetProtein * 0.5)}`
 
-  if (diet) url += `&diet=${encodeURIComponent(diet)}`
-  if (intolerances) url += `&intolerances=${encodeURIComponent(intolerances)}`
+  if (spoonDiet)          url += `&diet=${encodeURIComponent(spoonDiet)}`
+  if (intolerances)       url += `&intolerances=${encodeURIComponent(intolerances)}`
   if (excludeIngredients) url += `&excludeIngredients=${encodeURIComponent(excludeIngredients)}`
   if (includeIngredients) url += `&includeIngredients=${encodeURIComponent(includeIngredients)}`
   return url
 }
 
 // Buscar recetas en Spoonacular para un slot específico
-async function searchSpoonacular(slot, config, diet, macros, intolerances, excludeIngredients, includeIngredients = '') {
+async function searchSpoonacular(slot, config, slotTarget, spoonDiet, intolerances, excludeIngredients, includeIngredients = '') {
   const fetchAndParse = async (url) => {
     const res = await fetch(url)
     if (!res.ok) {
@@ -96,10 +129,10 @@ async function searchSpoonacular(slot, config, diet, macros, intolerances, exclu
   }
 
   try {
-    let recipes = await fetchAndParse(buildSpoonacularUrl({ slot, config, diet, macros, intolerances, excludeIngredients, includeIngredients }))
+    let recipes = await fetchAndParse(buildSpoonacularUrl({ config, slotTarget, spoonDiet, intolerances, excludeIngredients, includeIngredients }))
     // Fallback: if includeIngredients narrowed the results too much, retry without it
     if (includeIngredients && (!recipes || recipes.length < 4)) {
-      const fallback = await fetchAndParse(buildSpoonacularUrl({ slot, config, diet, macros, intolerances, excludeIngredients, includeIngredients: '' }))
+      const fallback = await fetchAndParse(buildSpoonacularUrl({ config, slotTarget, spoonDiet, intolerances, excludeIngredients, includeIngredients: '' }))
       if (fallback && fallback.length > (recipes?.length || 0)) recipes = fallback
     }
     return recipes || []
@@ -289,14 +322,32 @@ export async function POST(req) {
       fat: diet.fat_g
     }
 
+    // Build per-slot macro targets: use values from diet content table if available,
+    // otherwise fall back to daily totals × slot percentage.
+    const perMealFromContent = parseMealMacrosFromContent(diet.content)
+    const slotTargets = {}
+    for (const [slot, config] of Object.entries(MEAL_SLOTS)) {
+      slotTargets[slot] = perMealFromContent?.[slot] || {
+        calories: macros.calories * config.percent,
+        protein:  macros.protein  * config.percent,
+        carbs:    macros.carbs    * config.percent,
+        fat:      macros.fat      * config.percent
+      }
+    }
+
     console.log(`[Recipe Plan] Generating for member ${memberId}`)
-    console.log(`[Recipe Plan] Diet: ${diet.calories}kcal | Pref: ${spoonDiet || 'none'} | Intol: ${spoonIntolerances || 'none'} | Exclude: ${excludeIngredients || 'none'} | Include: ${includeIngredients || 'none'}`)
+    console.log(`[Recipe Plan] Diet: ${diet.calories}kcal | Macro source: ${perMealFromContent ? 'per-meal table' : 'daily %'} | Pref: ${spoonDiet || 'none'} | Intol: ${spoonIntolerances || 'none'} | Exclude: ${excludeIngredients || 'none'} | Include: ${includeIngredients || 'none'}`)
+    if (perMealFromContent) {
+      for (const [slot, t] of Object.entries(slotTargets)) {
+        console.log(`[Recipe Plan] ${slot}: ${t.calories}kcal P:${t.protein}g C:${t.carbs}g F:${t.fat}g`)
+      }
+    }
 
     // 3. Buscar recetas en Spoonacular para cada slot (en paralelo)
     const slotResults = {}
     await Promise.all(
       Object.entries(MEAL_SLOTS).map(async ([slot, config]) => {
-        const recipes = await searchSpoonacular(slot, config, spoonDiet, macros, spoonIntolerances, excludeIngredients, includeIngredients)
+        const recipes = await searchSpoonacular(slot, config, slotTargets[slot], spoonDiet, spoonIntolerances, excludeIngredients, includeIngredients)
         slotResults[slot] = recipes
       })
     )
@@ -348,15 +399,10 @@ export async function POST(req) {
 
     for (let dayIndex = 1; dayIndex <= 7; dayIndex++) {
       const dayTotal = { calories: 0, protein_g: 0, carbs_g: 0, fats_g: 0 }
-      for (const [slot, config] of Object.entries(MEAL_SLOTS)) {
+      for (const [slot] of Object.entries(MEAL_SLOTS)) {
         const candidates = slotResults[slot] || []
         if (candidates.length === 0) continue
-        const target = {
-          calories: macros.calories * config.percent,
-          protein: macros.protein * config.percent,
-          carbs: macros.carbs * config.percent,
-          fat: macros.fat * config.percent
-        }
+        const target = slotTargets[slot]
         const recent = new Set()
         if (lastUsedBySlot[slot] != null) recent.add(lastUsedBySlot[slot])
         const selected = pickBestRecipe(candidates, target, recent)
@@ -405,7 +451,7 @@ export async function POST(req) {
     const pct = (actual, target) => target > 0 ? Math.round(((actual - target) / target) * 100) : 0
     for (let i = 0; i < dailyTotals.length; i++) {
       const t = dailyTotals[i]
-      console.log(`[Recipe Plan] Day ${i + 1} actual: ${t.calories} kcal / ${t.protein_g} P / ${t.carbs_g} C / ${t.fats_g} F (target ${macros.calories}/${macros.protein}/${macros.carbs}/${macros.fat})`)
+      console.log(`[Recipe Plan] Day ${i + 1} actual: ${t.calories} kcal / ${t.protein_g} P / ${t.carbs_g} C / ${t.fats_g} F (daily target ${macros.calories}/${macros.protein}/${macros.carbs}/${macros.fat})`)
     }
     if (dailyTotals.length > 0) {
       const weekAvg = dailyTotals.reduce((a, t) => ({
