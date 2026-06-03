@@ -242,18 +242,19 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
     if (data) setDietTemplates(data)
   }
   
-  // Load all diet requests (including processed)
+  // Load diet requests that the member has actually submitted (not just pending)
   const loadDietRequests = async () => {
     const { data } = await supabase
       .from('diet_onboarding_requests')
       .select('*, member:profiles!diet_onboarding_requests_member_id_fkey(name, email)')
+      .in('status', ['submitted', 'completed', 'reviewed'])
       .order('created_at', { ascending: false })
-      
+
     if (data) {
       // Show only the latest form per member to prevent duplicates
       const uniqueRequests = []
       const seenMembers = new Set()
-      
+
       for (const req of data) {
         if (!seenMembers.has(req.member_id)) {
           seenMembers.add(req.member_id)
@@ -1888,21 +1889,21 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
 
           {/* DIETAS */}
           <TabsContent value="diets" className="space-y-4">
-            {/* Solicitudes Pendientes */}
-            {dietRequests.length > 0 && (
+            {/* Cuestionarios enviados por socios (submitted) — necesitan generación de dieta */}
+            {(dietRequests || []).some(r => r.status === 'submitted') && (
               <Card className="bg-gradient-to-br from-violet-900/40 to-cyan-900/20 border-violet-500/40 shadow-xl shadow-violet-500/10">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <ChefHat className="w-5 h-5 text-violet-400" />
-                    Solicitudes de Dieta ({dietRequests.length})
+                    Cuestionarios enviados ({(dietRequests || []).filter(r => r.status === 'submitted').length})
                   </CardTitle>
                   <CardDescription className="text-gray-400">
-                    Cuestionarios rellenados por los socios para generar sus planes.
+                    Socios que ya rellenaron el cuestionario. Genera su plan con IA.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {(dietRequests || []).map(req => (
-                    <div key={req.id} className="p-4 bg-black/60 rounded-2xl border border-violet-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  {(dietRequests || []).filter(r => r.status === 'submitted').map(req => (
+                    <div key={req.id} className="p-4 bg-black/60 rounded-2xl border border-amber-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400 font-bold">
                           {req.member?.name?.[0] || 'M'}
@@ -1910,8 +1911,8 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                         <div>
                           <p className="text-white font-bold text-sm">{req.member?.name || 'Usuario desconocido'}</p>
                           <p className="text-gray-500 text-xs">{req.member?.email || 'Sin email'}</p>
-                          <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded ${req.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400 animate-pulse'}`}>
-                            {req.status === 'completed' ? 'Procesado' : 'Pendiente'}
+                          <span className="text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 animate-pulse">
+                            Pendiente de revisión
                           </span>
                         </div>
                       </div>
@@ -1936,8 +1937,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                             </div>
                           </DialogContent>
                         </Dialog>
-                        
-                        <Button 
+                        <Button
                           size="sm"
                           disabled={loading}
                           onClick={() => handleGenerateDietFromRequest(req)}
@@ -1945,6 +1945,66 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                         >
                           {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Bot className="w-4 h-4 mr-1" />}
                           Generar con IA
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Cuestionarios completados (dieta ya generada) */}
+            {(dietRequests || []).some(r => r.status === 'completed' || r.status === 'reviewed') && (
+              <Card className="bg-[#1a1a1a] border-green-500/20">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <ChefHat className="w-5 h-5 text-green-400" />
+                    Procesados ({(dietRequests || []).filter(r => r.status === 'completed' || r.status === 'reviewed').length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {(dietRequests || []).filter(r => r.status === 'completed' || r.status === 'reviewed').map(req => (
+                    <div key={req.id} className="p-4 bg-black/60 rounded-2xl border border-green-500/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 font-bold">
+                          {req.member?.name?.[0] || 'M'}
+                        </div>
+                        <div>
+                          <p className="text-white font-bold text-sm">{req.member?.name || 'Usuario desconocido'}</p>
+                          <p className="text-gray-500 text-xs">{req.member?.email || 'Sin email'}</p>
+                          <span className="text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">Procesado</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="border-green-500/30 text-green-300 hover:bg-green-500/10">
+                              <FileCheck className="w-4 h-4 mr-2" /> Ver Respuestas
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="bg-[#1a1a1a] border-violet-500/30 text-white max-w-md max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Cuestionario de {req.member?.name}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 mt-4">
+                              {Object.entries(req.responses || {}).map(([key, value]) => (
+                                <div key={key} className="border-b border-white/5 pb-2">
+                                  <p className="text-[10px] text-violet-400 uppercase font-bold">{key.replace(/_/g, ' ')}</p>
+                                  <p className="text-sm text-gray-200 mt-1">{String(value)}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={loading}
+                          onClick={() => handleGenerateDietFromRequest(req)}
+                          className="border-green-500/30 text-green-300 hover:bg-green-500/10"
+                        >
+                          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Bot className="w-4 h-4 mr-1" />}
+                          Regenerar
                         </Button>
                       </div>
                     </div>

@@ -40,30 +40,51 @@ const flattenResponses = (responses) => {
 
 // Solo cuestionario nutricional. Para usar en el tab Fotos de Progreso
 // donde las fotos ya se muestran por separado.
+const STATUS_LABEL = {
+  pending: 'Esperando al socio',
+  submitted: 'Enviado · Pendiente revisión',
+  completed: 'Procesado',
+  reviewed: 'Revisado',
+}
+
+const STATUS_CLASS = {
+  pending: 'bg-gray-500/20 text-gray-400',
+  submitted: 'bg-amber-500/20 text-amber-400',
+  completed: 'bg-green-500/20 text-green-400',
+  reviewed: 'bg-green-500/20 text-green-400',
+}
+
 export function MemberOnboardingResponses({ memberId, defaultOpen = false }) {
   const [onboarding, setOnboarding] = useState(null)
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(defaultOpen)
 
-  useEffect(() => {
+  const load = async () => {
     if (!memberId) return
+    setLoading(true)
+    const { data } = await supabase
+      .from('diet_onboarding_requests')
+      .select('responses, status, created_at, completed_at')
+      .eq('member_id', memberId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    setOnboarding(data || null)
+    setLoading(false)
+  }
+
+  useEffect(() => {
     let cancelled = false
-    const load = async () => {
-      setLoading(true)
-      const { data } = await supabase
-        .from('diet_onboarding_requests')
-        .select('responses, status, created_at')
-        .eq('member_id', memberId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+    const run = async () => {
+      await load()
       if (cancelled) return
-      setOnboarding(data || null)
-      setLoading(false)
     }
-    load()
+    run()
     return () => { cancelled = true }
   }, [memberId])
+
+  const statusLabel = onboarding?.status ? (STATUS_LABEL[onboarding.status] || onboarding.status) : null
+  const statusClass = onboarding?.status ? (STATUS_CLASS[onboarding.status] || 'bg-gray-500/20 text-gray-400') : null
 
   return (
     <Card className="bg-black/30 border-violet-500/20 rounded-2xl">
@@ -72,17 +93,22 @@ export function MemberOnboardingResponses({ memberId, defaultOpen = false }) {
           <span className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-violet-400" />
             Cuestionario nutricional
-            {onboarding?.status && (
-              <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded ${
-                onboarding.status === 'completed' || onboarding.status === 'reviewed'
-                  ? 'bg-green-500/20 text-green-400'
-                  : 'bg-amber-500/20 text-amber-400'
-              }`}>
-                {onboarding.status}
+            {statusLabel && (
+              <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded ${statusClass}`}>
+                {statusLabel}
               </span>
             )}
           </span>
-          {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+          <span className="flex items-center gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); load() }}
+              className="text-gray-600 hover:text-gray-400 transition-colors p-1"
+              title="Actualizar"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+            </button>
+            {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+          </span>
         </CardTitle>
       </CardHeader>
       {open && (
@@ -91,13 +117,21 @@ export function MemberOnboardingResponses({ memberId, defaultOpen = false }) {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 text-violet-500 animate-spin" />
             </div>
-          ) : !onboarding?.responses ? (
-            <p className="text-gray-500 text-sm">Este socio aún no ha rellenado el cuestionario nutricional.</p>
+          ) : !onboarding ? (
+            <p className="text-gray-500 text-sm">No hay ningún cuestionario creado para este socio.</p>
+          ) : !onboarding.responses ? (
+            <div className="space-y-2">
+              <p className="text-gray-500 text-sm">El socio aún no ha enviado sus respuestas.</p>
+              <p className="text-[11px] text-gray-600">
+                El cuestionario fue solicitado el {new Date(onboarding.created_at).toLocaleString()}.
+                El socio debe abrirlo en su app y pulsar &quot;¡Solicitar mi plan!&quot;.
+              </p>
+            </div>
           ) : (
             <div className="space-y-3">
-              {onboarding.created_at && (
+              {onboarding.completed_at && (
                 <p className="text-[11px] text-gray-500">
-                  Enviado: {new Date(onboarding.created_at).toLocaleString()}
+                  Enviado: {new Date(onboarding.completed_at).toLocaleString()}
                 </p>
               )}
               <div className="space-y-2">

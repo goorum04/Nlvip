@@ -38,7 +38,7 @@ export async function POST(req) {
 
     // Update the request with answers and set status to 'submitted'
     // Status 'submitted' means it's waiting for Admin review
-    const { error } = await supabaseAdmin
+    const { data: updatedRows, error } = await supabaseAdmin
       .from('diet_onboarding_requests')
       .update({
         responses,
@@ -46,8 +46,13 @@ export async function POST(req) {
         completed_at: new Date().toISOString()
       })
       .eq('id', requestId)
+      .select('id')
 
     if (error) throw error
+    if (!updatedRows || updatedRows.length === 0) {
+      console.error('[diet-onboarding/submit] No row matched requestId:', requestId, 'for member:', memberId)
+      return NextResponse.json({ error: 'No se encontró el formulario. Recarga la app y vuelve a intentarlo.' }, { status: 404 })
+    }
 
     // Persist health & measurement data to member profile so the AI always has it
     const weightKg = parseFloat(responses['Medida - Peso']) || null
