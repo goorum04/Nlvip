@@ -402,6 +402,8 @@ export default function App() {
                         <Label className="text-gray-300 text-sm font-medium">Email</Label>
                         <Input
                           type="email"
+                          name="email"
+                          autoComplete="email"
                           placeholder="tu@email.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
@@ -413,6 +415,8 @@ export default function App() {
                         <Label className="text-gray-300 text-sm font-medium">Contraseña</Label>
                         <Input
                           type="password"
+                          name="password"
+                          autoComplete="current-password"
                           placeholder="••••••••"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
@@ -493,6 +497,8 @@ export default function App() {
                       <Label className="text-gray-300 text-sm font-medium">Nombre Completo</Label>
                       <Input
                         type="text"
+                        name="name"
+                        autoComplete="name"
                         placeholder="Juan Pérez"
                         value={regName}
                         onChange={(e) => setRegName(e.target.value)}
@@ -504,6 +510,8 @@ export default function App() {
                       <Label className="text-gray-300 text-sm font-medium">Email</Label>
                       <Input
                         type="email"
+                        name="email"
+                        autoComplete="email"
                         placeholder="tu@email.com"
                         value={regEmail}
                         onChange={(e) => setRegEmail(e.target.value)}
@@ -515,6 +523,8 @@ export default function App() {
                       <Label className="text-gray-300 text-sm font-medium">Contraseña</Label>
                       <Input
                         type="password"
+                        name="password"
+                        autoComplete="new-password"
                         placeholder="Mínimo 8 caracteres"
                         value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}

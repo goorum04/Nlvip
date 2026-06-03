@@ -501,6 +501,8 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                   <Label className="text-gray-300 text-sm">Nueva contraseña</Label>
                   <Input
                     type="password"
+                    name="new-password"
+                    autoComplete="new-password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Mínimo 8 caracteres"
@@ -513,6 +515,8 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                   <Label className="text-gray-300 text-sm">Confirmar contraseña</Label>
                   <Input
                     type="password"
+                    name="confirm-password"
+                    autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Repite la contraseña"
