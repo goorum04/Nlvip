@@ -18,10 +18,10 @@ function getSupabase() {
 const SPOONACULAR_KEY = process.env.SPOONACULAR_API_KEY
 
 const MEAL_SLOTS = {
-  breakfast: { percent: 0.25, query: 'desayuno saludable', type: 'breakfast' },
-  lunch:     { percent: 0.35, query: 'comida saludable',     type: 'main course' },
-  dinner:    { percent: 0.30, query: 'cena saludable',    type: 'main course' },
-  snack:     { percent: 0.10, query: 'snack saludable',     type: 'snack' }
+  breakfast: { percent: 0.25, query: 'healthy breakfast', type: 'breakfast' },
+  lunch:     { percent: 0.35, query: 'healthy lunch',     type: 'main course' },
+  dinner:    { percent: 0.30, query: 'healthy dinner',    type: 'main course' },
+  snack:     { percent: 0.10, query: 'healthy snack',     type: 'snack' }
 }
 
 // Mapeo de preferencias del formulario a parámetros de Spoonacular
@@ -52,7 +52,7 @@ function buildSpoonacularUrl({ slot, config, diet, macros, intolerances, exclude
   const targetProtein = Math.round(macros.protein * config.percent)
 
   let url = `https://api.spoonacular.com/recipes/complexSearch?apiKey=${SPOONACULAR_KEY}`
-  url += `&addRecipeInformation=true&addRecipeNutrition=true&fillIngredients=true&language=es&instructionsRequired=true`
+  url += `&addRecipeInformation=true&addRecipeNutrition=true&fillIngredients=true&instructionsRequired=true`
   url += `&number=20&sort=random`
   url += `&query=${encodeURIComponent(config.query)}`
   url += `&type=${encodeURIComponent(config.type)}`
