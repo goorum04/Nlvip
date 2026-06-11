@@ -30,6 +30,21 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Demasiadas peticiones. Espera un momento.' }, { status: 429 })
     }
 
+    // Auth: solo admin/trainer pueden refinar rutinas (consume OpenAI).
+    const supabase = getSupabase()
+    const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const { data: { user: caller }, error: authErr } = await supabase.auth.getUser(token)
+    if (authErr || !caller) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', caller.id)
+      .maybeSingle()
+    if (!['admin', 'trainer'].includes(callerProfile?.role)) {
+      return NextResponse.json({ error: 'Prohibido' }, { status: 403 })
+    }
+
     const parsed = schema.safeParse(await req.json())
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
@@ -37,7 +52,6 @@ export async function POST(req) {
     const { routine, correction } = parsed.data
 
     // Fetch exercise catalog for valid substitutions
-    const supabase = getSupabase()
     const { data: exercises } = await supabase
       .from('exercises')
       .select('name, muscle_primary, equipment')

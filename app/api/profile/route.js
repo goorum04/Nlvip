@@ -49,7 +49,10 @@ export async function POST(request) {
 
         // Only admins can change role/trainer_id/premium status and the
         // progress-reminder cadence (configured from the admin member panel).
-        const SELF_FORBIDDEN = ['role', 'trainer_id', 'is_premium', 'premium_until', 'progress_reminder_days']
+        // NOTE: la columna real de premium en la BBDD es `has_premium`
+        // (ver redeem-premium-code y sql/PRODUCCION-PREMIUM.sql). Sin ella aquí,
+        // un socio podía auto-concederse premium con updates:{has_premium:true}.
+        const SELF_FORBIDDEN = ['role', 'trainer_id', 'has_premium', 'is_premium', 'premium_until', 'progress_reminder_days']
         if (!isAdmin) {
             for (const field of SELF_FORBIDDEN) delete updates[field]
         }

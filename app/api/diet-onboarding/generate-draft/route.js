@@ -89,13 +89,24 @@ function buildLifestyleAnalysis({ intensidadTrabajo, trainTime, trainSchedule, w
 export async function POST(req) {
   const supabase = getSupabase()
   try {
-    // Rate limiting: Más flexible para generar planes de dieta
-    const identifier = getIdentifier(req)
-    const isAuth = req.headers.get('authorization')
-    let baseLimit = 50 // Subimos de 10 a 50
-    // Si hay token, asumimos que puede ser admin y damos margen
-    if (isAuth) baseLimit = 200
+    // Auth: solo admin/trainer pueden generar borradores de dieta (consume OpenAI
+    // y accede al perfil del socio). Mismo patrón que /api/generate-routine.
+    const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const { data: { user: caller }, error: authErr } = await supabase.auth.getUser(token)
+    if (authErr || !caller) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', caller.id)
+      .maybeSingle()
+    if (!['admin', 'trainer'].includes(callerProfile?.role)) {
+      return NextResponse.json({ error: 'Prohibido' }, { status: 403 })
+    }
 
+    // Rate limiting: límite por usuario autenticado (staff verificado arriba)
+    const identifier = getIdentifier(req)
+    const baseLimit = 200
     const limit = await checkRateLimit(identifier, baseLimit, 60_000)
     if (!limit.success) {
       return NextResponse.json(
