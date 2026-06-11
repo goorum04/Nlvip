@@ -84,6 +84,76 @@ function buildLifestyleAnalysis({ intensidadTrabajo, trainTime, trainSchedule, w
   return { insights, adjustments }
 }
 
+// Recoge historial nutricional del socio para contextualizar la generación:
+// dieta anterior asignada, tendencia del peso y adherencia al entrenamiento.
+// Cada consulta va envuelta en try/catch independiente para que un fallo parcial
+// nunca bloquee la generación (mismo patrón que gatherMemberTrainingContext).
+async function gatherMemberDietContext(supabase, member_id) {
+  const ctx = { previousDiet: null, weightTrend: null, adherence: null }
+  if (!member_id) return ctx
+
+  // 1. Dieta actualmente asignada (member_diets es UNIQUE por socio)
+  try {
+    const { data: assigned } = await supabase
+      .from('member_diets')
+      .select('assigned_at, diet_templates(name, calories, protein_g, carbs_g, fat_g)')
+      .eq('member_id', member_id)
+      .maybeSingle()
+    const d = assigned?.diet_templates
+    if (d) {
+      const when = assigned.assigned_at
+        ? new Date(assigned.assigned_at).toLocaleDateString('es-ES')
+        : 'fecha desconocida'
+      ctx.previousDiet =
+        `Dieta actual asignada: "${d.name}" (${when}) — ${d.calories || '?'} kcal | P:${d.protein_g || '?'}g | HC:${d.carbs_g || '?'}g | G:${d.fat_g || '?'}g.`
+    }
+  } catch (e) {
+    console.warn('gatherMemberDietContext previousDiet error:', e.message)
+  }
+
+  // 2. Tendencia del peso (últimas 8 semanas — registros de progress_records)
+  try {
+    const since = new Date(Date.now() - 56 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const { data: records } = await supabase
+      .from('progress_records')
+      .select('date, weight_kg')
+      .eq('member_id', member_id)
+      .gte('date', since)
+      .not('weight_kg', 'is', null)
+      .order('date', { ascending: true })
+    if (Array.isArray(records) && records.length >= 2) {
+      const first = records[0]
+      const last = records[records.length - 1]
+      const diff = (Number(last.weight_kg) - Number(first.weight_kg)).toFixed(1)
+      const sign = Number(diff) > 0 ? '+' : ''
+      ctx.weightTrend =
+        `Peso inicial (${first.date}): ${first.weight_kg} kg → Peso actual (${last.date}): ${last.weight_kg} kg (${sign}${diff} kg, ${records.length} mediciones).`
+    } else if (Array.isArray(records) && records.length === 1) {
+      ctx.weightTrend = `Último peso registrado (${records[0].date}): ${records[0].weight_kg} kg.`
+    }
+  } catch (e) {
+    console.warn('gatherMemberDietContext weightTrend error:', e.message)
+  }
+
+  // 3. Adherencia al entrenamiento (últimas 4 semanas)
+  try {
+    const since = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString()
+    const { count } = await supabase
+      .from('workout_checkins')
+      .select('id', { count: 'exact', head: true })
+      .eq('member_id', member_id)
+      .gte('checked_in_at', since)
+    if (typeof count === 'number') {
+      const perWeek = (count / 4).toFixed(1)
+      ctx.adherence = `${count} entrenos registrados en las últimas 4 semanas (~${perWeek} sesiones/semana).`
+    }
+  } catch (e) {
+    console.warn('gatherMemberDietContext adherence error:', e.message)
+  }
+
+  return ctx
+}
+
 // POST /api/diet-onboarding/generate-draft
 // Llama a OpenAI y genera el borrador de la dieta, pero no lo guarda en BBDD.
 export async function POST(req) {
@@ -122,12 +192,15 @@ export async function POST(req) {
     const { requestId, memberId, responses: rawResponses } = parsed.data
     const responses = rawResponses || {}
 
-    // 1. Get member profile for macros calculation
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('name, email, weight_kg, height_cm, age, sex, goal, activity_level, allergies, injuries, medical_conditions')
-      .eq('id', memberId)
-      .single()
+    // 1. Get member profile for macros calculation + diet history context (fail-safe)
+    const [{ data: profile }, dietContext] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('name, email, weight_kg, height_cm, age, sex, goal, activity_level, allergies, injuries, medical_conditions')
+        .eq('id', memberId)
+        .single(),
+      gatherMemberDietContext(supabase, memberId)
+    ])
 
     // Use questionnaire measurements first, fall back to profile, then defaults
     const weight = parseFloat(responses['Medida - Peso']) || profile?.weight_kg || 75
@@ -193,7 +266,39 @@ export async function POST(req) {
     })
     const intensidadLabel = intensidadTrabajo || 'no especificada'
 
-    // 4. Prompt SISTEMA NL ELITE — PROM MAESTRO DEFINITIVO ABSOLUTO
+    // 4. Historial del socio — bloque condicional para contextualizar a la IA
+    const historyParts = []
+    if (dietContext.previousDiet) {
+      historyParts.push(`• Dieta anterior: ${dietContext.previousDiet}`)
+      historyParts.push(`  → Introduce variedad respecto a esa dieta: nuevas fuentes de proteína, hidratos y grasas para evitar monotonía. Mantén el mismo nivel calórico y proteico salvo que la tendencia del peso indique ajuste.`)
+    }
+    if (dietContext.weightTrend) {
+      historyParts.push(`• Evolución del peso: ${dietContext.weightTrend}`)
+      // Give the AI an interpretive hint based on goal vs trend
+      const isGaining = dietContext.weightTrend.includes('+') && !dietContext.weightTrend.includes('-0') && !dietContext.weightTrend.includes('+0')
+      const isLosing = dietContext.weightTrend.match(/\(-[\d]/)
+      if ((goal === 'perder_grasa' || goal === 'cut' || goal === 'fat_loss') && isGaining) {
+        historyParts.push(`  → El socio está GANANDO peso con objetivo de definición: considera distribuir hidratos más estrictamente al peri-entreno y revisar el déficit.`)
+      } else if ((goal === 'ganar_masa' || goal === 'bulk' || goal === 'muscle_gain') && isLosing) {
+        historyParts.push(`  → El socio está PERDIENDO peso con objetivo de volumen: incrementa carbohidratos complejos, especialmente post-entreno y en la comida principal.`)
+      } else if (dietContext.weightTrend) {
+        historyParts.push(`  → Evolución coherente con el objetivo. Mantén la estructura.`)
+      }
+    }
+    if (dietContext.adherence) {
+      historyParts.push(`• Adherencia al entrenamiento: ${dietContext.adherence}`)
+      const sessionsPerWeek = parseFloat(dietContext.adherence.match(/~([\d.]+)/)?.[1] || '0')
+      if (sessionsPerWeek < 2) {
+        historyParts.push(`  → Adherencia BAJA: prioriza comidas sencillas y rápidas de preparar. Reduce la complejidad culinaria para facilitar el cumplimiento.`)
+      } else if (sessionsPerWeek >= 4) {
+        historyParts.push(`  → Adherencia ALTA: el socio entrena con consistencia. Puedes añadir peri-entreno preciso (pre + post) y timing más detallado.`)
+      }
+    }
+    const historyBlock = historyParts.length > 0
+      ? `\n═══════════════════════════════════════\nHISTORIAL DEL SOCIO (usa esto para personalizar y progresar)\n═══════════════════════════════════════\n${historyParts.join('\n')}\n`
+      : ''
+
+    // 6. Prompt SISTEMA NL ELITE — PROM MAESTRO DEFINITIVO ABSOLUTO
     const prompt = `SISTEMA NL ELITE — PROM MAESTRO DEFINITIVO ABSOLUTO
 Método quirúrgico de preparación física, nutrición y recomposición corporal de alto nivel.
 
@@ -261,7 +366,7 @@ ${insights.map(i => `• ${i}`).join('\n')}
 
 AJUSTES PARA ESTE SOCIO:
 ${adjustments.map(a => `→ ${a}`).join('\n')}
-
+${historyBlock}
 ═══════════════════════════════════════
 NORMAS DE CREACIÓN — SISTEMA NL ELITE
 ═══════════════════════════════════════
@@ -392,14 +497,21 @@ NO incluyas suplementación detallada ni descargo de responsabilidad — eso se 
     //    se incluye en fullDietContent → el socio jamás la recibe ni la ve.
     let rationale = ''
     try {
+      const rationaleHistoryParts = []
+      if (dietContext.previousDiet) rationaleHistoryParts.push(`Dieta anterior: ${dietContext.previousDiet}`)
+      if (dietContext.weightTrend) rationaleHistoryParts.push(`Evolución del peso: ${dietContext.weightTrend}`)
+      if (dietContext.adherence) rationaleHistoryParts.push(`Adherencia: ${dietContext.adherence}`)
+      const rationaleHistoryBlock = rationaleHistoryParts.length > 0
+        ? `\nHISTORIAL:\n${rationaleHistoryParts.map(p => `- ${p}`).join('\n')}\n`
+        : ''
+
       const rationalePrompt = `Eres un preparador físico de élite. Acabas de diseñar la siguiente dieta para un socio.
 Explica de forma BREVE y PROFESIONAL a OTRO ENTRENADOR/ADMINISTRADOR (uso interno, el socio NUNCA verá esto) por qué has tomado las decisiones clave.
 
 PERFIL: ${name}, ${sex}, ${age} años, ${weight}kg. Objetivo: ${goal}. ${numMeals} comidas/día.
 Macros objetivo: ${calories} kcal | P:${protein_g}g | HC:${carbs_g}g | G:${fat_g}g.
 Restricciones/alergias: ${restrictions}. No le gusta: ${dislikes || 'nada'}. Favoritos: ${favorites || 'nada'}.
-Entreno: ${trainTime}. Condición médica: ${medConditions}. Lesiones: ${injuries}.
-
+Entreno: ${trainTime}. Condición médica: ${medConditions}. Lesiones: ${injuries}.${rationaleHistoryBlock}
 DIETA GENERADA:
 ${mealsText}
 
@@ -407,7 +519,7 @@ Devuelve 4-7 puntos concisos (máximo ~2 frases cada uno) explicando:
 - Por qué ese reparto de macros y calorías para su objetivo
 - Por qué la distribución y el timing de comidas (sobre todo en torno al entreno)
 - Decisiones de alimentos según restricciones, gustos, condición médica y lesiones
-- Cualquier ajuste especial (sexo, % graso, adherencia)
+- Cualquier ajuste especial (sexo, % graso, adherencia, cambios respecto a la dieta anterior si la había)
 
 Escribe SOLO los puntos, en español, empezando cada uno con "• ". Sin título ni despedida.`
 
