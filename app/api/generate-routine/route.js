@@ -61,7 +61,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No puedes asignar rutinas a otro entrenador' }, { status: 403 })
     }
 
-    const { routine, replaced, rationale } = await generateRoutineForMember({
+    const { routine, replaced, rationale, volumeWarnings } = await generateRoutineForMember({
       supabase,
       member_id,
       trainer_id,
@@ -72,7 +72,8 @@ export async function POST(request) {
       success: true,
       preview: routine,
       replaced,
-      rationale
+      rationale,
+      volumeWarnings
     })
 
   } catch (error) {
