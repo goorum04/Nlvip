@@ -1,0 +1,106 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'>
+<title>NL VIP Club — Informe de mejoras</title>
+<style>
+body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;max-width:780px;margin:40px auto;padding:0 24px;color:#1a1a1a;line-height:1.6}
+h1{color:#0f172a;border-bottom:3px solid #d4af37;padding-bottom:12px}
+h2{color:#0f172a;margin-top:36px;border-left:4px solid #d4af37;padding-left:12px}
+h3{color:#334155}
+table{border-collapse:collapse;width:100%;margin:16px 0}
+td{border:1px solid #cbd5e1;padding:8px 12px}
+tr:first-child td{background:#0f172a;color:#fff;font-weight:600}
+hr{border:none;border-top:1px solid #e2e8f0;margin:28px 0}
+code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:0.9em}
+ul,ol{padding-left:24px}
+@media print{body{margin:0;max-width:none}}
+</style></head><body><h1>NL VIP Club — Informe de mejoras implementadas</h1>
+
+<strong>Fecha:</strong> 11 de junio de 2026
+
+<hr>
+
+<h2>Resumen ejecutivo</h2>
+
+<p>Se ha realizado una auditoría completa de la aplicación y se han implementado mejoras en tres áreas: <strong>seguridad</strong> (se han cerrado tres fallos graves), <strong>generación de rutinas con IA</strong> y <strong>generación de dietas con IA</strong> (ambas ahora son mucho más personalizadas). Todos los cambios están en producción y verificados.</p>
+
+<hr>
+
+<h2>1. Seguridad — fallos graves corregidos</h2>
+
+<h3>1.1. Cualquiera podía hacerse premium gratis ❌ → ✅ Corregido</h3>
+
+<p>Existía un fallo que permitía a cualquier socio activarse el premium él mismo desde la app, sin pagar ni canjear ningún código. Ya está cerrado: solo un administrador puede conceder premium.</p>
+
+<h3>1.2. Las herramientas de IA estaban abiertas a cualquiera ❌ → ✅ Corregido</h3>
+
+<p>Los generadores de dietas y rutinas (que tienen un coste real porque usan ChatGPT) se podían usar sin ser entrenador ni administrador. Cualquier persona que conociera la dirección podía:</p>
+
+<ul><li>Generar dietas y rutinas a costa de la cuenta de OpenAI del club</li>
+<li>Ver datos personales de los socios (peso, lesiones, condiciones médicas)</li>
+</ul>
+<p>Ahora solo los entrenadores y administradores pueden usar estas herramientas.</p>
+
+<h3>1.3. Cualquier socio podía manipular los códigos de invitación ❌ → ✅ Corregido</h3>
+
+<p>Un fallo en la base de datos permitía a cualquier usuario registrado modificar los códigos premium: por ejemplo, resetear el contador de usos de un código para reutilizarlo infinitas veces, o cambiar a qué entrenador pertenecía. Se ha eliminado directamente de la base de datos de producción y se ha comprobado que ya no existe.</p>
+
+<hr>
+
+<h2>2. Rutinas con IA — ahora mucho más inteligentes</h2>
+
+<p>Antes, la IA generaba cada rutina "desde cero", como si no conociera al socio. Ahora, al generar una rutina, la IA tiene en cuenta automáticamente:</p>
+
+<table><tr><td>Qué mira ahora</td><td>Para qué sirve</td></tr>
+<tr><td>Su rutina actual</td><td>No repite lo mismo y hace progresar al socio</td></tr>
+<tr><td>Sus marcas y pesos registrados</td><td>Sabe cuánto levanta en cada ejercicio</td></tr>
+<tr><td>Cuánto entrena realmente</td><td>Si viene 2 veces por semana, no le planifica como si viniera 6</td></tr>
+<tr><td>Su edad</td><td>A partir de 55 años prioriza máquinas y evita cargas máximas</td></tr>
+<tr><td>Sus lesiones (mejorado)</td><td>Ver detalle abajo</td></tr>
+<tr><td>El volumen de entrenamiento</td><td>Avisa al entrenador si la rutina carga demasiado un músculo</td></tr>
+</table>
+<strong>Detalle de lesiones:</strong> la IA ahora detecta muchas más formas de describir una lesión ("manguito rotador", "ciática", "menisco", "túnel carpiano", "epicondilitis"...) y, además, evita los ejercicios que tocan la zona lesionada de forma <strong>indirecta</strong>, no solo los que la trabajan directamente.
+
+<hr>
+
+<h2>3. Dietas con IA — ahora con memoria</h2>
+
+<p>Igual que las rutinas, la IA de dietas ahora conoce al socio antes de generar:</p>
+
+<table><tr><td>Qué mira ahora</td><td>Para qué sirve</td></tr>
+<tr><td>Su dieta anterior</td><td>La nueva dieta varía los alimentos para que no coma siempre lo mismo</td></tr>
+<tr><td>Su evolución de peso (últimas 8 semanas)</td><td>Si quiere perder grasa pero está subiendo de peso, ajusta la estrategia automáticamente (y al revés en volumen)</td></tr>
+<tr><td>Su constancia en el gimnasio</td><td>Si entrena poco → comidas simples y fáciles de cumplir. Si entrena mucho → comidas más precisas alrededor del entreno</td></tr>
+</table>
+<strong>Importante:</strong> el cálculo de proteínas y calorías <strong>no se ha tocado</strong>. Sigue siendo exactamente el mismo método de siempre (proteína 2,2–2,4 g/kg).
+
+<hr>
+
+<h2>4. Limpieza de la base de datos</h2>
+
+<ul><li>Se ha verificado el estado real de las políticas de seguridad de la base de datos en producción: aparte del fallo de los códigos (punto 1.3, ya corregido), el resto estaba correcto.</li>
+<li>El repositorio contenía decenas de scripts antiguos de base de datos, algunos peligrosos si se ejecutaran por error (podían borrar datos o abrir agujeros de seguridad). Se han marcado claramente con avisos de "NO EJECUTAR" para evitar accidentes futuros.</li>
+</ul>
+<hr>
+
+<h2>5. Garantía de estabilidad</h2>
+
+<p>Todas las mejoras están construidas "a prueba de fallos": si algún dato del socio no está disponible (no tiene rutina anterior, nunca ha registrado su peso, etc.), la aplicación funciona <strong>exactamente igual que antes</strong>. Nada de lo que ya funcionaba puede romperse por estos cambios. La aplicación se ha compilado y verificado correctamente antes de cada publicación.</p>
+
+<hr>
+
+<h2>⚠️ Acción pendiente — requiere al dueño de la cuenta (5 minutos)</h2>
+
+<p>Por precaución, hay que <strong>renovar las claves de acceso a la base de datos</strong>, ya que estuvieron expuestas en versiones antiguas del código. Mientras no se haga, alguien que hubiera obtenido las claves antiguas podría acceder a los datos.</p>
+
+<strong>Cómo hacerlo:</strong>
+
+<ol><li>Entrar en el panel de <strong>Supabase</strong> → Settings → API → <strong>Regenerate keys</strong></li>
+<li>Copiar las dos claves nuevas (<code>service_role</code> y <code>anon</code>)</li>
+<li>Entrar en <strong>Vercel</strong> → Settings → Environment Variables y actualizar:</li>
+</ol>   - <code>SUPABASE_SERVICE_ROLE_KEY</code>
+<p>   - <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></p>
+<ol><li>Redesplegar la aplicación</li>
+</ol>
+<hr>
+
+<em>Documento generado tras la auditoría y mejoras de junio de 2026.</em>
+</body></html>
