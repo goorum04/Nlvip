@@ -782,8 +782,12 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
         setPendingToolCalls(data.toolCalls)
       }
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: `Lo siento, hubo un error: ${error.message}` }])
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      const isNetworkError = error.message === 'Load failed' || error.message === 'Failed to fetch' || error.message === 'Network request failed'
+      const userMessage = isNetworkError
+        ? 'Sin conexión con el servidor. Comprueba tu internet e inténtalo de nuevo en unos segundos.'
+        : `Lo siento, hubo un error: ${error.message}`
+      setMessages(prev => [...prev, { role: 'assistant', content: userMessage }])
+      toast({ title: isNetworkError ? 'Sin conexión' : 'Error', description: isNetworkError ? 'Comprueba tu conexión a internet' : error.message, variant: 'destructive' })
     } finally {
       setIsLoading(false)
     }
@@ -833,7 +837,8 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
         variant: data.success ? 'default' : 'destructive'
       })
     } catch (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      const isNetworkError = error.message === 'Load failed' || error.message === 'Failed to fetch' || error.message === 'Network request failed'
+      toast({ title: isNetworkError ? 'Sin conexión' : 'Error', description: isNetworkError ? 'Comprueba tu conexión a internet' : error.message, variant: 'destructive' })
     } finally {
       setIsExecuting(false)
     }
