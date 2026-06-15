@@ -118,7 +118,10 @@ function ChatMessage({ message, isUser, isLoading, audioPath }) {
 // Tarjeta para dietas generadas con el SISTEMA NL ELITE (fullDietContent + macros)
 function NLEliteDietPreview({ dietData }) {
   const [showFull, setShowFull] = useState(false)
-  const { macros, member_name, tipo_dieta, fullDietContent } = dietData
+  const { macros, member_name, tipo_dieta, mealsText, fullDietContent } = dietData
+  // El admin ve mealsText (incluye el checklist de verificación interna).
+  // El socio recibe fullDietContent (sin checklist) al guardarse en BD.
+  const previewContent = mealsText || fullDietContent
 
   return (
     <div className="w-full mt-2 space-y-3 animate-in slide-in-from-bottom-4 duration-500">
@@ -160,10 +163,10 @@ function NLEliteDietPreview({ dietData }) {
         </div>
       </div>
 
-      {fullDietContent && (
+      {previewContent && (
         <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl overflow-hidden">
           <div className={`p-4 relative ${showFull ? '' : 'max-h-52 overflow-hidden'}`}>
-            <pre className="text-xs text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">{fullDietContent}</pre>
+            <pre className="text-xs text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">{previewContent}</pre>
             {!showFull && (
               <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#111] to-transparent pointer-events-none" />
             )}
