@@ -902,16 +902,22 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
       })
 
       const data = await response.json()
-      const resultMessage = data.success ? '✅ ¡Acciones ejecutadas correctamente!' : '❌ Algunas acciones fallaron'
+      // Mostrar errores específicos si los hay para facilitar diagnóstico
+      let resultMessage = data.success ? '✅ ¡Acciones ejecutadas correctamente!' : '❌ Algunas acciones fallaron'
+      if (!data.success && data.errors?.length) {
+        const errorDetail = data.errors.map(e => `• ${e.name}: ${e.error}`).join('\n')
+        resultMessage = `❌ Algunas acciones fallaron:\n${errorDetail}`
+      }
       setMessages(prev => [...prev, { role: 'assistant', content: resultMessage }])
       speak(data.success ? 'Listo, acciones ejecutadas' : 'Hubo algunos errores')
 
       // Si se guardó una dieta NL Elite, disparar la generación del plan de recetas
       // desde el cliente (los fetch internos servidor→servidor fallan en Vercel).
-      if (data.success && data.toolResults) {
+      const toolResultsMap = data.toolResults || data.results || {}
+      if (data.success && toolResultsMap) {
         const saveDietCall = toolsToExecute.find(tc => tc.name === 'save_ai_diet')
         if (saveDietCall) {
-          const saveResult = data.toolResults[saveDietCall.id]
+          const saveResult = toolResultsMap[saveDietCall.id]
           const saveArgs = typeof saveDietCall.args === 'string'
             ? JSON.parse(saveDietCall.args)
             : saveDietCall.args
