@@ -44,6 +44,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const [allAssignments, setAllAssignments] = useState([])
   const [trainingVideos, setTrainingVideos] = useState([])
   const [loading, setLoading] = useState(false)
+  const [generatingDietId, setGeneratingDietId] = useState(null)
   const [selectedMember, setSelectedMember] = useState(null)
   const [showMemberDetail, setShowMemberDetail] = useState(false)
   const [memberDetailTab, setMemberDetailTab] = useState('form')
@@ -341,7 +342,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   }
 
   const handleGenerateDietFromRequest = async (request) => {
-    setLoading(true)
+    setGeneratingDietId(request.id)
     try {
       const res = await authFetch('/api/diet-onboarding/generate-draft', {
         method: 'POST',
@@ -354,7 +355,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || 'Error al generar borrador')
-      
+
       setDietDraft({
         requestId: request.id,
         memberId: request.member_id,
@@ -366,7 +367,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
     } catch (error) {
       toast({ title: 'Error calculando borrador IA', description: error.message, variant: 'destructive' })
     } finally {
-      setLoading(false)
+      setGeneratingDietId(null)
     }
   }
 
@@ -1937,13 +1938,13 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                           </DialogContent>
                         </Dialog>
                         
-                        <Button 
+                        <Button
                           size="sm"
-                          disabled={loading}
+                          disabled={generatingDietId === req.id}
                           onClick={() => handleGenerateDietFromRequest(req)}
                           className="bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-lg shadow-cyan-500/20"
                         >
-                          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Bot className="w-4 h-4 mr-1" />}
+                          {generatingDietId === req.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Bot className="w-4 h-4 mr-1" />}
                           Generar con IA
                         </Button>
                       </div>
