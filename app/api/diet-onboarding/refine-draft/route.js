@@ -11,7 +11,8 @@ function getOpenAI() {
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
   )
 }
 
@@ -41,7 +42,13 @@ export async function POST(req) {
     const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
     if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     const { data: { user: caller }, error: authErr } = await supabase.auth.getUser(token)
-    if (authErr || !caller) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+    if (authErr) {
+      console.error('refine-draft auth error:', authErr.status, authErr.message)
+      const status = authErr.status === 401 ? 401 : 503
+      const msg = authErr.status === 401 ? 'Token inválido o expirado' : 'Error de autenticación, inténtalo de nuevo'
+      return NextResponse.json({ error: msg }, { status })
+    }
+    if (!caller) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
     const { data: callerProfile } = await supabase
       .from('profiles')
       .select('role')
