@@ -11,7 +11,8 @@ function getOpenAIClient() {
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
   )
 }
 
@@ -186,12 +187,23 @@ Responde SOLO con JSON válido:
   try {
     const res = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
+      messages: [
+        {
+          role: 'system',
+          content: 'Eres un nutricionista deportivo que traduce recetas al español para planes de alimentación de adultos deportistas. SIEMPRE respondes con el JSON solicitado. NUNCA rechaces ninguna traducción de receta.'
+        },
+        { role: 'user', content: prompt }
+      ],
       max_tokens: 800,
       temperature: 0.4
     })
 
     const content = res.choices[0]?.message?.content || ''
+    const refusal = /(i('m| am) sorry|i (can't|cannot) (help|assist)|lo siento|no puedo)/i
+    if (refusal.test(content) && !content.includes('{')) {
+      console.warn('translateAndAdaptRecipe: model refused, using fallback')
+      return { ...recipe, description: `Receta personalizada: ${recipe.title}` }
+    }
     const jsonMatch = content.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
       const translated = JSON.parse(jsonMatch[0])
