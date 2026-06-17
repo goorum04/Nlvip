@@ -399,15 +399,23 @@ export async function POST(req) {
 
     for (let dayIndex = 1; dayIndex <= 7; dayIndex++) {
       const dayTotal = { calories: 0, protein_g: 0, carbs_g: 0, fats_g: 0 }
+      // Evita que dos comidas del MISMO día sean la misma receta (típico en
+      // comida/cena, que comparten type='main course' y objetivos de macros
+      // casi iguales). Acumula lo ya usado hoy y se lo pasa a pickBestRecipe.
+      const usedTodayKeys = new Set()
       for (const [slot] of Object.entries(MEAL_SLOTS)) {
         const candidates = slotResults[slot] || []
         if (candidates.length === 0) continue
         const target = slotTargets[slot]
-        const recent = new Set()
-        if (lastUsedBySlot[slot] != null) recent.add(lastUsedBySlot[slot])
+        const recent = new Set(usedTodayKeys)          // no repetir dentro del día
+        if (lastUsedBySlot[slot] != null) recent.add(lastUsedBySlot[slot])  // ni en el mismo hueco día a día
         const selected = pickBestRecipe(candidates, target, recent)
         if (!selected) continue
         selectedBySlotDay.push({ dayIndex, slot, recipe: selected })
+        // Marcar la receta como usada hoy por id y por título (pickBestRecipe
+        // comprueba ambos), para cubrir el caso de pools distintos por hueco.
+        if (selected.spoonacular_id != null) usedTodayKeys.add(selected.spoonacular_id)
+        if (selected.title) usedTodayKeys.add(selected.title)
         lastUsedBySlot[slot] = selected.spoonacular_id ?? selected.title
         dayTotal.calories += selected.calories || 0
         dayTotal.protein_g += selected.protein_g || 0

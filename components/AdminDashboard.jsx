@@ -343,13 +343,13 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const handleGenerateDietFromRequest = async (request) => {
     setLoading(true)
     try {
-      const res = await fetch(getApiUrl() + '/api/diet-onboarding/generate-draft', {
+      const res = await authFetch('/api/diet-onboarding/generate-draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          requestId: request.id, 
-          memberId: request.member_id, 
-          responses: request.responses 
+        body: JSON.stringify({
+          requestId: request.id,
+          memberId: request.member_id,
+          responses: request.responses
         })
       })
       const result = await res.json()

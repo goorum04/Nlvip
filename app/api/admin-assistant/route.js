@@ -239,7 +239,7 @@ export async function POST(request) {
       tools: TOOLS_DEFINITIONS,
       tool_choice: 'auto',
       temperature: 0.7,
-      max_tokens: 1000
+      max_tokens: 4000
     })
 
     const assistantMessage = response.choices[0].message

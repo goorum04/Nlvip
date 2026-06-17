@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
-import { getApiUrl, authFetch } from '@/lib/utils'
+import { authFetch } from '@/lib/utils'
 import { calculateMacros as sharedCalculateMacros } from '@/lib/macroCalculator'
 import FloatingChat from './FloatingChat'
 import VideoUploader from './VideoUploader'
@@ -321,13 +321,13 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
   const handleGenerateDietFromRequest = async (request) => {
     setLoading(true)
     try {
-      const res = await fetch(getApiUrl() + '/api/diet-onboarding/generate-draft', {
+      const res = await authFetch('/api/diet-onboarding/generate-draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          requestId: request.id, 
-          memberId: request.member_id, 
-          responses: request.responses 
+        body: JSON.stringify({
+          requestId: request.id,
+          memberId: request.member_id,
+          responses: request.responses
         })
       })
       const result = await res.json()
@@ -353,7 +353,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
     setRefining(true)
     const correctionText = draftCorrection.trim()
     try {
-      const res = await fetch(getApiUrl() + '/api/diet-onboarding/refine-draft', {
+      const res = await authFetch('/api/diet-onboarding/refine-draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

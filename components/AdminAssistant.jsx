@@ -115,10 +115,86 @@ function ChatMessage({ message, isUser, isLoading, audioPath }) {
   )
 }
 
+// Tarjeta para dietas generadas con el SISTEMA NL ELITE (fullDietContent + macros)
+function NLEliteDietPreview({ dietData }) {
+  const [showFull, setShowFull] = useState(false)
+  const { macros, member_name, tipo_dieta, mealsText, fullDietContent } = dietData
+  // El admin ve mealsText (incluye el checklist de verificación interna).
+  // El socio recibe fullDietContent (sin checklist) al guardarse en BD.
+  const previewContent = mealsText || fullDietContent
+
+  return (
+    <div className="w-full mt-2 space-y-3 animate-in slide-in-from-bottom-4 duration-500">
+      <div className="relative overflow-hidden rounded-2xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 opacity-90" />
+        <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+        <div className="relative p-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <ChefHat className="w-5 h-5 text-white" />
+                <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">SISTEMA NL ELITE</span>
+              </div>
+              <h3 className="text-lg font-bold text-white">{member_name || 'Socio'}</h3>
+              <p className="text-sm text-white/70">{tipo_dieta}</p>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-black text-white">{macros?.calories?.toLocaleString()}</div>
+              <div className="text-xs text-white/70">kcal/día</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="bg-white/10 backdrop-blur rounded-xl p-2 text-center">
+              <Beef className="w-4 h-4 text-red-300 mx-auto mb-0.5" />
+              <div className="text-sm font-bold text-white">{macros?.protein_g}g</div>
+              <div className="text-[10px] text-white/60">Proteína</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur rounded-xl p-2 text-center">
+              <Wheat className="w-4 h-4 text-amber-300 mx-auto mb-0.5" />
+              <div className="text-sm font-bold text-white">{macros?.carbs_g}g</div>
+              <div className="text-[10px] text-white/60">Carbos</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur rounded-xl p-2 text-center">
+              <Droplets className="w-4 h-4 text-sky-300 mx-auto mb-0.5" />
+              <div className="text-sm font-bold text-white">{macros?.fat_g}g</div>
+              <div className="text-[10px] text-white/60">Grasas</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {previewContent && (
+        <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl overflow-hidden">
+          <div className={`p-4 relative ${showFull ? '' : 'max-h-52 overflow-hidden'}`}>
+            <pre className="text-xs text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">{previewContent}</pre>
+            {!showFull && (
+              <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#111] to-transparent pointer-events-none" />
+            )}
+          </div>
+          <button
+            onClick={() => setShowFull(p => !p)}
+            className="w-full py-2 text-xs text-violet-400 hover:text-violet-300 border-t border-white/10 transition-colors"
+          >
+            {showFull ? '▲ Mostrar menos' : '▼ Ver dieta completa'}
+          </button>
+        </div>
+      )}
+
+      <div className="flex items-center justify-center gap-2 py-1">
+        <Sparkles className="w-3 h-3 text-violet-400" />
+        <span className="text-[10px] text-gray-600">Generado con SISTEMA NL ELITE · GPT-4o</span>
+      </div>
+    </div>
+  )
+}
+
 // Componente visual para mostrar un plan de dieta generado con IA
 function DietCard({ dietData }) {
   const [expanded, setExpanded] = useState(null)
-  if (!dietData?.comidas) return null
+  if (!dietData) return null
+  // Formato NL Elite: tiene fullDietContent en lugar de comidas
+  if (dietData.fullDietContent) return <NLEliteDietPreview dietData={dietData} />
+  if (!dietData.comidas) return null
 
   const { macros_diarios, tipo_dieta, goal_display, member_name, notas, comidas } = dietData
 
@@ -782,8 +858,12 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
         setPendingToolCalls(data.toolCalls)
       }
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: `Lo siento, hubo un error: ${error.message}` }])
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      const isNetworkError = error.message === 'Load failed' || error.message === 'Failed to fetch' || error.message === 'Network request failed'
+      const userMessage = isNetworkError
+        ? 'Sin conexión con el servidor. Comprueba tu internet e inténtalo de nuevo en unos segundos.'
+        : `Lo siento, hubo un error: ${error.message}`
+      setMessages(prev => [...prev, { role: 'assistant', content: userMessage }])
+      toast({ title: isNetworkError ? 'Sin conexión' : 'Error', description: isNetworkError ? 'Comprueba tu conexión a internet' : error.message, variant: 'destructive' })
     } finally {
       setIsLoading(false)
     }
@@ -822,9 +902,37 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
       })
 
       const data = await response.json()
-      const resultMessage = data.success ? '✅ ¡Acciones ejecutadas correctamente!' : '❌ Algunas acciones fallaron'
+      // Mostrar errores específicos si los hay para facilitar diagnóstico
+      let resultMessage = data.success ? '✅ ¡Acciones ejecutadas correctamente!' : '❌ Algunas acciones fallaron'
+      if (!data.success && data.errors?.length) {
+        const errorDetail = data.errors.map(e => `• ${e.name}: ${e.error}`).join('\n')
+        resultMessage = `❌ Algunas acciones fallaron:\n${errorDetail}`
+      }
       setMessages(prev => [...prev, { role: 'assistant', content: resultMessage }])
       speak(data.success ? 'Listo, acciones ejecutadas' : 'Hubo algunos errores')
+
+      // Si se guardó una dieta NL Elite, disparar la generación del plan de recetas
+      // desde el cliente (los fetch internos servidor→servidor fallan en Vercel).
+      const toolResultsMap = data.toolResults || data.results || {}
+      if (data.success && toolResultsMap) {
+        const saveDietCall = toolsToExecute.find(tc => tc.name === 'save_ai_diet')
+        if (saveDietCall) {
+          const saveResult = toolResultsMap[saveDietCall.id]
+          const saveArgs = typeof saveDietCall.args === 'string'
+            ? JSON.parse(saveDietCall.args)
+            : saveDietCall.args
+          const memberId = saveArgs?.member_id
+          const dietId = saveResult?.template_id
+          if (memberId && dietId) {
+            fetch(getApiUrl() + '/api/generate-recipe-plan', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+              body: JSON.stringify({ memberId, dietId }),
+            }).catch(e => console.warn('Recipe plan generation failed:', e))
+          }
+        }
+      }
+
       setPendingPlan(null)
       setPendingToolCalls([])
       toast({
@@ -833,7 +941,8 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
         variant: data.success ? 'default' : 'destructive'
       })
     } catch (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      const isNetworkError = error.message === 'Load failed' || error.message === 'Failed to fetch' || error.message === 'Network request failed'
+      toast({ title: isNetworkError ? 'Sin conexión' : 'Error', description: isNetworkError ? 'Comprueba tu conexión a internet' : error.message, variant: 'destructive' })
     } finally {
       setIsExecuting(false)
     }

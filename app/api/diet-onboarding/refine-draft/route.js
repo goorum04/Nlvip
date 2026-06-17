@@ -1,10 +1,19 @@
 import OpenAI from 'openai'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 
 function getOpenAI() {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
 }
 
 const schema = z.object({
@@ -28,6 +37,27 @@ const schema = z.object({
 // Allows trainer to ask the AI to correct/refine the diet draft via chat
 export async function POST(req) {
   try {
+    // Auth: solo admin/trainer pueden refinar borradores de dieta (consume OpenAI).
+    const supabase = getSupabase()
+    const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const { data: { user: caller }, error: authErr } = await supabase.auth.getUser(token)
+    if (authErr) {
+      console.error('refine-draft auth error:', authErr.status, authErr.message)
+      const status = authErr.status === 401 ? 401 : 503
+      const msg = authErr.status === 401 ? 'Token inválido o expirado' : 'Error de autenticación, inténtalo de nuevo'
+      return NextResponse.json({ error: msg }, { status })
+    }
+    if (!caller) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', caller.id)
+      .maybeSingle()
+    if (!['admin', 'trainer'].includes(callerProfile?.role)) {
+      return NextResponse.json({ error: 'Prohibido' }, { status: 403 })
+    }
+
     const limit = await checkRateLimit(getIdentifier(req), 20, 60_000)
     if (!limit.success) {
       return NextResponse.json(
