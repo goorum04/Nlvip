@@ -151,9 +151,19 @@ export async function POST(request) {
       routine
     })
 
+    if (member_id) {
+      await supabase
+        .from('member_workouts')
+        .upsert(
+          [{ member_id, workout_template_id: template.id, assigned_by: trainer_id || caller.id }],
+          { onConflict: 'member_id' }
+        )
+    }
+
     return NextResponse.json({
       success: true,
-      workout_template_id: template.id
+      workout_template_id: template.id,
+      assigned: !!member_id
     })
 
   } catch (error) {

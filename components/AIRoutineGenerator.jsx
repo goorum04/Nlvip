@@ -649,7 +649,12 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
         throw new Error(data.error || 'Error al guardar la rutina')
       }
       setSavedTemplateId(data.workout_template_id)
-      toast({ title: '¡Rutina guardada!', description: 'Ya aparece en tu lista de rutinas.' })
+      toast({
+        title: '¡Rutina guardada!',
+        description: data.assigned
+          ? 'Rutina generada y asignada al socio correctamente.'
+          : 'Ya aparece en tu lista de rutinas.'
+      })
       onRoutineSaved?.(data.workout_template_id)
       handleClose()
     } catch (error) {
