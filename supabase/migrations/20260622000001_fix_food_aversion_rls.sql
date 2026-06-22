@@ -19,15 +19,9 @@
 --        because the SECURITY DEFINER RPCs handle writes.
 -- =========================================================================
 
--- 1. Revoke write access from anon
-REVOKE INSERT ON public.member_food_aversions FROM anon;
-REVOKE EXECUTE ON FUNCTION public.rpc_add_food_aversion(UUID, TEXT, TEXT) FROM anon;
-REVOKE EXECUTE ON FUNCTION public.rpc_get_food_aversions(UUID) FROM anon;
-REVOKE EXECUTE ON FUNCTION public.rpc_list_food_aversions(UUID) FROM anon;
-REVOKE EXECUTE ON FUNCTION public.rpc_remove_food_aversion(UUID, TEXT) FROM anon;
-
--- Also revoke SELECT from anon — aversions are personal health data
-REVOKE SELECT ON public.member_food_aversions FROM anon;
+-- 1. Revocar TODOS los permisos de anon (SELECT e INSERT del grant original +
+--    cualquier otro privilegio heredado del esquema público)
+REVOKE ALL PRIVILEGES ON public.member_food_aversions FROM anon;
 
 -- 2. Enable RLS
 ALTER TABLE public.member_food_aversions ENABLE ROW LEVEL SECURITY;
