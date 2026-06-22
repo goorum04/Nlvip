@@ -37,6 +37,13 @@ ALTER TABLE public.member_food_aversions ENABLE ROW LEVEL SECURITY;
 --    access. The SECURITY DEFINER RPCs bypass RLS so they still work for
 --    any caller with a valid JWT that the app passes.
 
+-- Idempotente: eliminar políticas previas si ya existieran, para que la
+-- migración pueda reaplicarse sin fallar a medias.
+DROP POLICY IF EXISTS "food_aversions_staff_select"  ON public.member_food_aversions;
+DROP POLICY IF EXISTS "food_aversions_member_select"  ON public.member_food_aversions;
+DROP POLICY IF EXISTS "food_aversions_staff_insert"  ON public.member_food_aversions;
+DROP POLICY IF EXISTS "food_aversions_staff_delete"  ON public.member_food_aversions;
+
 -- Admin/trainer can read all aversions
 CREATE POLICY "food_aversions_staff_select"
   ON public.member_food_aversions FOR SELECT
