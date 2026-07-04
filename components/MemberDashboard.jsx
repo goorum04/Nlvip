@@ -20,7 +20,8 @@ import { getApiUrl } from '@/lib/utils'
 import FloatingChat from './FloatingChat'
 import ImageUploader from './ImageUploader'
 import VideoPlayer, { VideoCard } from './VideoPlayer'
-import { ProgressPhotoUploader, ProgressPhotoGallery } from './ProgressPhotos'
+import { ProgressPhotoGallery } from './ProgressPhotos'
+import { CheckInForm } from './CheckInForm'
 import { useFileUpload, useSignedUrl, generateFileId, getFileExtension } from '@/hooks/useStorage'
 import { ChallengesSection, BadgesGallery } from './ChallengesBadges'
 import ProgressCharts from './ProgressCharts'
@@ -83,24 +84,13 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
   // UI states
   const [selectedVideo, setSelectedVideo] = useState(null)
-  const [showPhotoUploader, setShowPhotoUploader] = useState(false)
+  const [showCheckInForm, setShowCheckInForm] = useState(false)
   const [postImage, setPostImage] = useState(null)
 
   // Feed form
   const [newPostContent, setNewPostContent] = useState('')
   const [commentingPost, setCommentingPost] = useState(null)
   const [newComment, setNewComment] = useState('')
-
-  // Progress form
-  const [newWeight, setNewWeight] = useState('')
-  const [newChest, setNewChest] = useState('')
-  const [newWaist, setNewWaist] = useState('')
-  const [newHips, setNewHips] = useState('')
-  const [newArms, setNewArms] = useState('')
-  const [newLegs, setNewLegs] = useState('')
-  const [newGlutes, setNewGlutes] = useState('')
-  const [newCalf, setNewCalf] = useState('')
-  const [progressNotes, setProgressNotes] = useState('')
 
   // Macro calculator removed - only trainers/admins can calculate macros
 
@@ -548,83 +538,6 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   }
 
   const isLikedByMe = (post) => post.feed_likes?.some(like => like.user_id === user.id)
-
-  const handleAddProgress = async (e) => {
-    e.preventDefault()
-
-    // Validar revisión completa: peso + todas las medidas + 3 fotos del día.
-    // Si falta algo, abortar y decirle exactamente qué le falta.
-    const requiredFields = {
-      'peso': parseFloat(newWeight) || null,
-      'pecho': parseFloat(newChest) || null,
-      'cintura': parseFloat(newWaist) || null,
-      'cadera': parseFloat(newHips) || null,
-      'brazo': parseFloat(newArms) || null,
-      'muslo': parseFloat(newLegs) || null,
-      'glúteo': parseFloat(newGlutes) || null,
-      'gemelo': parseFloat(newCalf) || null,
-    }
-    const missingMeasurements = Object.entries(requiredFields)
-      .filter(([, v]) => !v)
-      .map(([k]) => k)
-
-    const today = new Date().toISOString().split('T')[0]
-    const photosToday = (progressPhotos || []).filter(p => {
-      const d = p.date ? String(p.date).split('T')[0] : null
-      return d === today
-    })
-    const photoTypesToday = new Set(photosToday.map(p => p.photo_type))
-    const needsPhotoTypes = ['front', 'side', 'back'].filter(t => !photoTypesToday.has(t))
-
-    if (missingMeasurements.length > 0 || needsPhotoTypes.length > 0) {
-      const parts = []
-      if (missingMeasurements.length) parts.push(`Medidas: ${missingMeasurements.join(', ')}`)
-      if (needsPhotoTypes.length) {
-        const labels = { front: 'frente', side: 'lado', back: 'espalda' }
-        parts.push(`Fotos de hoy: ${needsPhotoTypes.map(t => labels[t]).join(', ')}`)
-      }
-      toast({
-        title: 'Falta información para la revisión',
-        description: parts.join(' · '),
-        variant: 'destructive',
-      })
-      return
-    }
-
-    setLoading(true)
-    try {
-      const weightKg = parseFloat(newWeight) || null
-      const { error } = await supabase.from('progress_records').insert([{
-        member_id: user.id,
-        date: new Date().toISOString(),
-        weight_kg: weightKg,
-        chest_cm: parseFloat(newChest) || null,
-        waist_cm: parseFloat(newWaist) || null,
-        hips_cm: parseFloat(newHips) || null,
-        arms_cm: parseFloat(newArms) || null,
-        legs_cm: parseFloat(newLegs) || null,
-        glutes_cm: parseFloat(newGlutes) || null,
-        calves_cm: parseFloat(newCalf) || null,
-        notes: progressNotes
-      }])
-      if (error) throw error
-
-      // Mirror the latest weight into profiles so TDEE/macro calculations
-      // stay in sync without the member having to touch the profile form.
-      if (weightKg) {
-        await supabase.from('profiles').update({ weight_kg: weightKg }).eq('id', user.id)
-        setProfile?.(prev => prev ? { ...prev, weight_kg: weightKg } : prev)
-      }
-
-      toast({ title: '¡Progreso registrado!' })
-      setNewWeight(''); setNewChest(''); setNewWaist(''); setNewHips(''); setNewArms(''); setNewLegs(''); setNewGlutes(''); setNewCalf(''); setProgressNotes('')
-      loadProgress()
-    } catch (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleDeletePhoto = async (photoId) => {
     const { error } = await supabase.from('progress_photos').delete().eq('id', photoId)
@@ -1201,80 +1114,46 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
           {/* PROGRESS TAB */}
           <TabsContent value="progress" className="space-y-4">
-            {/* Photos Section */}
-            <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Camera className="w-5 h-5 text-violet-500" />
-                    Fotos de Progreso
-                  </CardTitle>
-                  {!showPhotoUploader && (
-                    <Button
-                      onClick={() => setShowPhotoUploader(true)}
-                      className="bg-gradient-to-r from-violet-500 to-cyan-500 text-black rounded-xl"
-                    >
-                      <Plus className="w-4 h-4 mr-1" /> Subir
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {showPhotoUploader ? (
-                  <ProgressPhotoUploader
-                    memberId={user.id}
-                    onSuccess={() => {
-                      setShowPhotoUploader(false)
-                      loadProgressPhotos()
-                      toast({ title: '¡Foto guardada!' })
-                    }}
-                    onCancel={() => setShowPhotoUploader(false)}
-                  />
-                ) : (
-                  <ProgressPhotoGallery
-                    photos={progressPhotos}
-                    canDelete={true}
-                    onDelete={handleDeletePhoto}
-                  />
-                )}
-              </CardContent>
-            </Card>
+            {/* Revisión: formulario único (medidas + cómo te sientes + fotos) */}
+            {showCheckInForm ? (
+              <CheckInForm
+                memberId={user.id}
+                onSuccess={() => {
+                  setShowCheckInForm(false)
+                  loadProgress()
+                  loadProgressPhotos()
+                  toast({ title: '¡Revisión enviada!', description: 'Tu entrenador la revisará pronto.' })
+                }}
+                onCancel={() => setShowCheckInForm(false)}
+              />
+            ) : (
+              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+                <CardContent className="py-8 flex flex-col items-center text-center gap-3">
+                  <Camera className="w-10 h-10 text-violet-500" />
+                  <div>
+                    <p className="text-white font-bold">Envía tu revisión periódica</p>
+                    <p className="text-gray-500 text-sm">Peso, medidas, cómo te sientes y tus 3 fotos</p>
+                  </div>
+                  <Button onClick={() => setShowCheckInForm(true)} className="bg-gradient-to-r from-violet-500 to-cyan-500 text-black rounded-xl">
+                    <Plus className="w-4 h-4 mr-1" /> Nueva revisión
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Measurements Section */}
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-violet-500" />
-                  Registrar Medidas
+                  <Camera className="w-5 h-5 text-violet-500" />
+                  Fotos de Progreso
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleAddProgress} className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {[
-                      { label: 'Peso (kg)', value: newWeight, setter: setNewWeight },
-                      { label: 'Pecho (cm)', value: newChest, setter: setNewChest },
-                      { label: 'Cintura (cm)', value: newWaist, setter: setNewWaist },
-                      { label: 'Cadera (cm)', value: newHips, setter: setNewHips },
-                      { label: 'Brazos (cm)', value: newArms, setter: setNewArms },
-                      { label: 'Piernas (cm)', value: newLegs, setter: setNewLegs },
-                      { label: 'Glúteo (cm)', value: newGlutes, setter: setNewGlutes },
-                      { label: 'Gemelo (cm)', value: newCalf, setter: setNewCalf },
-                    ].map(f => (
-                      <div key={f.label}>
-                        <Label className="text-gray-400 text-xs">{f.label}</Label>
-                        <Input type="number" step="0.1" value={f.value} onChange={(e) => f.setter(e.target.value)} className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1" />
-                      </div>
-                    ))}
-                  </div>
-                  <div>
-                    <Label className="text-gray-400 text-xs">Notas</Label>
-                    <Textarea value={progressNotes} onChange={(e) => setProgressNotes(e.target.value)} placeholder="¿Cómo te sientes?" className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1" />
-                  </div>
-                  <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-2xl py-6">
-                    Guardar Medidas
-                  </Button>
-                </form>
+                <ProgressPhotoGallery
+                  photos={progressPhotos}
+                  canDelete={true}
+                  onDelete={handleDeletePhoto}
+                />
               </CardContent>
             </Card>
 

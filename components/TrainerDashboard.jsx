@@ -28,6 +28,7 @@ import { FeedSection } from './FeedSection'
 import { AvatarBubble, ProfileModal } from './UserProfile'
 import { WorkoutBuilder } from './WorkoutBuilder'
 import { DietBuilder } from './DietBuilder'
+import { CheckInReviewPanel } from './CheckInReviewPanel'
 
 export default function TrainerDashboard({ user, profile, setProfile, onLogout }) {
   const [members, setMembers] = useState([])
@@ -45,6 +46,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
   const [editingDiet, setEditingDiet] = useState(null)
   const [activeTab, setActiveTab] = useState('members')
   const [dietRequests, setDietRequests] = useState([])
+  const [pendingCheckins, setPendingCheckins] = useState([])
   const [selectedRequestAnswers, setSelectedRequestAnswers] = useState(null)
   const [dietDraft, setDietDraft] = useState(null)
   const [draftCorrection, setDraftCorrection] = useState('')
@@ -140,11 +142,38 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
       })
       .subscribe()
 
+    // Realtime: uno de sus socios envía una revisión periódica (check-in).
+    // RLS ya limita lo que este canal puede ver a sus propios socios asignados.
+    const checkinsChannel = supabase
+      .channel(`trainer_checkins_${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'member_checkins' }, async (payload) => {
+        loadPendingCheckins()
+        if (payload.eventType === 'INSERT') {
+          let memberName = 'Un socio'
+          try {
+            const { data: mp } = await supabase.from('profiles').select('name, email').eq('id', payload.new.member_id).maybeSingle()
+            memberName = mp?.name || mp?.email?.split('@')[0] || memberName
+          } catch {}
+          toast({ title: '📈 Nueva revisión recibida', description: `${memberName} ha enviado su revisión periódica.` })
+        }
+      })
+      .subscribe()
+
     return () => {
       supabase.removeChannel(dietRequestsChannel)
       supabase.removeChannel(notificationsChannel)
+      supabase.removeChannel(checkinsChannel)
     }
   }, [])
+
+  const loadPendingCheckins = async () => {
+    const { data } = await supabase
+      .from('member_checkins')
+      .select('*, member:profiles!member_checkins_member_id_fkey(name, email)')
+      .in('status', ['analyzing', 'draft_ready', 'failed'])
+      .order('created_at', { ascending: false })
+    setPendingCheckins(data || [])
+  }
 
   const loadData = async () => {
     await Promise.all([
@@ -154,7 +183,8 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
       loadNotices(),
       loadChallenges(),
       loadDietRequests(),
-      loadNotifications()
+      loadNotifications(),
+      loadPendingCheckins()
     ])
   }
 
@@ -618,6 +648,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
             <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
               {[
                 { value: 'members', icon: Users, label: 'Mis Socios' },
+                { value: 'checkins', icon: TrendingUp, label: 'Revisiones' },
                 { value: 'feed', icon: MessageSquare, label: 'Feed' },
                 { value: 'challenges', icon: Target, label: 'Retos' },
                 { value: 'workouts', icon: Dumbbell, label: 'Rutinas' },
@@ -639,10 +670,20 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                       {unreadNotifications.length}
                     </span>
                   )}
+                  {tab.value === 'checkins' && pendingCheckins.filter(c => c.status === 'draft_ready' || c.status === 'failed').length > 0 && (
+                    <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+                      {pendingCheckins.filter(c => c.status === 'draft_ready' || c.status === 'failed').length}
+                    </span>
+                  )}
                 </TabsTrigger>
               ))}
             </TabsList>
           </div>
+
+          {/* CHECK-INS TAB */}
+          <TabsContent value="checkins" className="space-y-4">
+            <CheckInReviewPanel checkins={pendingCheckins} onRefresh={loadPendingCheckins} />
+          </TabsContent>
 
           {/* MEMBERS TAB */}
           <TabsContent value="members" className="space-y-4">

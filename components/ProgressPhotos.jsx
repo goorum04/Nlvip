@@ -185,7 +185,7 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
         const file = photos[type].file
         const fileId = generateFileId()
         const ext = getFileExtension(file.name)
-        const path = `progress/${memberId}/${fileId}_${type}.${ext}`
+        const path = `${memberId}/checkins/${fileId}_${type}.${ext}`
 
         // Subir a storage (usamos el nuevo límite de 50MB)
         const result = await uploadFile('progress_photos', path, file, {

@@ -22,6 +22,7 @@ import { AdminContentTab } from './AdminContentTab'
 import { AdminCodesTab } from './AdminCodesTab'
 import { AdminFeedTab } from './AdminFeedTab'
 import { MemberDetailPanel } from './MemberDetailPanel'
+import { CheckInReviewPanel } from './CheckInReviewPanel'
 import { WorkoutBuilder } from './WorkoutBuilder'
 import { DietBuilder } from './DietBuilder'
 import { AvatarBubble, ProfileModal } from './UserProfile'
@@ -61,6 +62,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const [challenges, setChallenges] = useState([])
   const [challengeParticipants, setChallengeParticipants] = useState({})
   const [dietRequests, setDietRequests] = useState([])
+  const [pendingCheckins, setPendingCheckins] = useState([])
   const [selectedRequestAnswers, setSelectedRequestAnswers] = useState(null)
   const [dietDraft, setDietDraft] = useState(null)
   const [draftCorrection, setDraftCorrection] = useState('')
@@ -124,6 +126,12 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   // superior y los badges en los botones de navegación.
   const pendingDietSubmissions = (dietRequests || []).filter(
     r => r && r.status === 'submitted'
+  ).length
+
+  // Revisiones periódicas listas para revisar (o que fallaron y requieren
+  // atención). 'analyzing' no cuenta: todavía no hay nada que aprobar.
+  const pendingCheckinsCount = (pendingCheckins || []).filter(
+    c => c && (c.status === 'draft_ready' || c.status === 'failed')
   ).length
 
   const [unreadNotifications, setUnreadNotifications] = useState([])
@@ -202,9 +210,27 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       })
       .subscribe()
 
+    // Realtime: socio envía una revisión periódica (check-in) → refrescamos
+    // la lista y avisamos con un toast, igual que con los cuestionarios.
+    const checkinsChannel = supabase
+      .channel('admin_checkins')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'member_checkins' }, async (payload) => {
+        loadPendingCheckins()
+        if (payload.eventType === 'INSERT') {
+          let memberName = 'Un socio'
+          try {
+            const { data: mp } = await supabase.from('profiles').select('name, email').eq('id', payload.new.member_id).maybeSingle()
+            memberName = mp?.name || mp?.email?.split('@')[0] || memberName
+          } catch {}
+          toast({ title: '📈 Nueva revisión recibida', description: `${memberName} ha enviado su revisión periódica.` })
+        }
+      })
+      .subscribe()
+
     return () => {
       supabase.removeChannel(dietRequestsChannel)
       supabase.removeChannel(notificationsChannel)
+      supabase.removeChannel(checkinsChannel)
     }
   }, [])
 
@@ -221,7 +247,8 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       loadDietTemplates(),
       loadChallenges(),
       loadDietRequests(),
-      loadNotifications()
+      loadNotifications(),
+      loadPendingCheckins()
     ])
   }
 
@@ -243,6 +270,16 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
     if (data) setDietTemplates(data)
   }
   
+  // Load pending member check-ins (revisiones periódicas) awaiting review
+  const loadPendingCheckins = async () => {
+    const { data } = await supabase
+      .from('member_checkins')
+      .select('*, member:profiles!member_checkins_member_id_fkey(name, email)')
+      .in('status', ['analyzing', 'draft_ready', 'failed'])
+      .order('created_at', { ascending: false })
+    setPendingCheckins(data || [])
+  }
+
   // Load all diet requests (including processed)
   const loadDietRequests = async () => {
     const { data } = await supabase
@@ -1195,6 +1232,25 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
               Socios
             </Button>
 
+            {/* Botón REVISIONES */}
+            <Button
+              variant="outline"
+              onClick={() => setActiveTab('checkins')}
+              className={`relative border-violet-500/30 bg-[#1a1a1a] hover:bg-violet-500/10 rounded-xl gap-2 h-10 ${
+                activeTab === 'checkins'
+                  ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-black border-transparent'
+                  : 'text-gray-300'
+              }`}
+            >
+              <FileCheck className="w-4 h-4" />
+              Revisiones
+              {pendingCheckinsCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-pulse">
+                  {pendingCheckinsCount}
+                </span>
+              )}
+            </Button>
+
             {/* Menú ENTRENAMIENTOS */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -1536,6 +1592,10 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
           </TabsContent>
 
           {/* Socios */}
+          <TabsContent value="checkins" className="space-y-4">
+            <CheckInReviewPanel checkins={pendingCheckins} onRefresh={loadPendingCheckins} />
+          </TabsContent>
+
           <TabsContent value="members" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-violet-500/20">
               <CardHeader>
