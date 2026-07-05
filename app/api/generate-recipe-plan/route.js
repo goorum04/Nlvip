@@ -300,13 +300,26 @@ export async function POST(req) {
 
     const responses = onboarding?.responses || {}
 
-    // Mapear preferencias a filtros de Spoonacular
-    const spoonDiet = DIET_MAP[responses.preferencias] || ''
+    // Alergias/intolerancias permanentes del PERFIL. Fuente imprescindible para
+    // socios que NO rellenaron el cuestionario (p.ej. importados): su intolerancia
+    // vive en profiles.allergies, no en las respuestas del onboarding. Sin esto,
+    // el plan de Spoonacular podría incluir alérgenos (gluten, lactosa...).
+    const { data: memberProfile } = await supabase
+      .from('profiles')
+      .select('allergies')
+      .eq('id', memberId)
+      .maybeSingle()
+    const profileAllergies = (memberProfile?.allergies || '').toString().trim()
 
-    // restricciones: aceptar string CSV o array; ignorar "ninguna"; matching contra INTOLERANCE_MAP
-    const restrictionsText = Array.isArray(responses.restricciones)
-      ? responses.restricciones.join(',')
-      : (responses.restricciones || '')
+    // Mapear preferencias a filtros de Spoonacular
+    let spoonDiet = DIET_MAP[responses.preferencias] || ''
+
+    // restricciones: respuestas del onboarding + alergias del perfil. Ignorar
+    // "ninguna"; matching contra INTOLERANCE_MAP sobre el texto combinado.
+    const restrictionsText = [
+      Array.isArray(responses.restricciones) ? responses.restricciones.join(',') : (responses.restricciones || ''),
+      profileAllergies,
+    ].filter(Boolean).join(',')
     const restrictionsLower = restrictionsText.toLowerCase()
     const spoonIntolerances = Object.entries(INTOLERANCE_MAP)
       .filter(([key]) => key !== 'ninguna' && restrictionsLower.includes(key))
@@ -314,6 +327,13 @@ export async function POST(req) {
       .filter(Boolean)
       .join(',')
 
+    // Refuerzo: si hay intolerancia al gluten, activa además el filtro diet=gluten free
+    // de Spoonacular (doble red de seguridad frente a intolerances=gluten).
+    if (!spoonDiet && restrictionsLower.includes('gluten')) spoonDiet = 'gluten free'
+
+    // Excluir ingredientes: lo que no le gusta el socio (del onboarding). NO se
+    // mete aquí el texto de la alergia: eso se gestiona vía intolerances/diet,
+    // no como nombre de ingrediente literal.
     const excludeIngredients = (responses.no_me_gusta || '').toString().trim()
 
     // favoritos: pasarlos como includeIngredients (Spoonacular prioriza recetas con esos ingredientes)
