@@ -311,8 +311,8 @@ export async function POST(req) {
       .maybeSingle()
     const profileAllergies = (memberProfile?.allergies || '').toString().trim()
 
-    // Mapear preferencias a filtros de Spoonacular
-    let spoonDiet = DIET_MAP[responses.preferencias] || ''
+    // Mapear preferencias a filtros de Spoonacular (tipo de dieta del onboarding)
+    const spoonDiet = DIET_MAP[responses.preferencias] || ''
 
     // restricciones: respuestas del onboarding + alergias del perfil. Ignorar
     // "ninguna"; matching contra INTOLERANCE_MAP sobre el texto combinado.
@@ -327,9 +327,10 @@ export async function POST(req) {
       .filter(Boolean)
       .join(',')
 
-    // Refuerzo: si hay intolerancia al gluten, activa además el filtro diet=gluten free
-    // de Spoonacular (doble red de seguridad frente a intolerances=gluten).
-    if (!spoonDiet && restrictionsLower.includes('gluten')) spoonDiet = 'gluten free'
+    // Para excluir gluten basta con intolerances=gluten (excluye cualquier receta
+    // con ingredientes con gluten). NO forzamos además diet=gluten free: ese filtro
+    // exige que la receta esté ETIQUETADA como dieta sin gluten (muy pocas) y,
+    // combinado con los objetivos de macros, deja la búsqueda en cero resultados.
 
     // Excluir ingredientes: lo que no le gusta el socio (del onboarding). NO se
     // mete aquí el texto de la alergia: eso se gestiona vía intolerances/diet,
