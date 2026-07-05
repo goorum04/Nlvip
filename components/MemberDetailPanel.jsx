@@ -9,13 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dumbbell, Heart,
-  LoaderCircle as Loader2, ChevronRight, MessageSquare, Bell, ChevronDown, ChevronUp, RefreshCw
+  LoaderCircle as Loader2, ChevronRight, MessageSquare, Bell, ChevronDown, ChevronUp, RefreshCw, Plus
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
 import { WorkoutViewer } from './WorkoutBuilder'
 import { DietViewer } from './DietBuilder'
-import { ProgressPhotoGallery } from './ProgressPhotos'
+import { ProgressPhotoGallery, ProgressPhotoUploader } from './ProgressPhotos'
 import { MemberOnboardingResponses } from './MemberPhotosAndForm'
 
 export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRefresh, onOpenChat, initialTab = 'form' }) {
@@ -34,6 +34,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
   const [activeTab, setActiveTab] = useState(initialTab)
   const [memberProgressPhotos, setMemberProgressPhotos] = useState([])
   const [loadingPhotos, setLoadingPhotos] = useState(false)
+  const [showPhotoUploader, setShowPhotoUploader] = useState(false)
   const { toast } = useToast()
 
   const REMINDER_FREQUENCY_OPTIONS = [
@@ -389,7 +390,31 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
               </TabsContent>
 
               {/* Tab: Fotos y Medidas */}
-              <TabsContent value="photos" className="mt-4">
+              <TabsContent value="photos" className="mt-4 space-y-4">
+                <div className="flex justify-end">
+                  {!showPhotoUploader && (
+                    <Button
+                      size="sm"
+                      onClick={() => setShowPhotoUploader(true)}
+                      className="bg-gradient-to-r from-violet-500 to-cyan-500 text-black rounded-xl"
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Subir fotos del socio
+                    </Button>
+                  )}
+                </div>
+
+                {showPhotoUploader && (
+                  <ProgressPhotoUploader
+                    memberId={member.id}
+                    onSuccess={() => {
+                      setShowPhotoUploader(false)
+                      loadPhotos()
+                      toast({ title: '¡Fotos subidas!' })
+                    }}
+                    onCancel={() => setShowPhotoUploader(false)}
+                  />
+                )}
+
                 {loadingPhotos ? (
                   <div className="flex items-center justify-center py-16">
                     <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
@@ -398,6 +423,10 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                   <ProgressPhotoGallery
                     photos={memberProgressPhotos}
                     canDelete={true}
+                    onDelete={async (photoId) => {
+                      await supabase.from('progress_photos').delete().eq('id', photoId)
+                      loadPhotos()
+                    }}
                   />
                 )}
               </TabsContent>
