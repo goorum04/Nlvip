@@ -556,13 +556,24 @@ export async function POST(req) {
       })
     }
 
-    // 6. Insertar items (limpiar anteriores)
-    await supabase.from('member_recipe_plan_items').delete().eq('plan_id', plan.id)
-    
-    if (planItems.length > 0) {
-      const { error: itemsError } = await supabase.from('member_recipe_plan_items').insert(planItems)
-      if (itemsError) throw new Error('Error al insertar las recetas en el plan: ' + itemsError.message)
+    // 6. Insertar items. SEGURIDAD: si la generación no produjo NINGUNA receta
+    // (típico cuando Spoonacular falla o agota su cuota diaria), NO borramos el
+    // plan anterior. Es mejor conservar el plan que ya tenía el socio que dejarlo
+    // con cero recetas por un fallo transitorio de la API.
+    if (planItems.length === 0) {
+      console.warn(`[Recipe Plan] 0 recetas generadas para ${memberId} (posible límite/caída de Spoonacular). Se conserva el plan anterior sin borrar.`)
+      return NextResponse.json({
+        success: false,
+        message: 'No se pudieron obtener recetas (posible límite diario de la API de recetas). Se ha conservado el plan anterior. Vuelve a intentarlo más tarde.',
+        planId: plan.id,
+        itemsCount: 0
+      }, { status: 503 })
     }
+
+    // Solo reemplazamos (borrar + insertar) cuando hay recetas nuevas de verdad.
+    await supabase.from('member_recipe_plan_items').delete().eq('plan_id', plan.id)
+    const { error: itemsError } = await supabase.from('member_recipe_plan_items').insert(planItems)
+    if (itemsError) throw new Error('Error al insertar las recetas en el plan: ' + itemsError.message)
 
     console.log(`[Recipe Plan] Generated ${planItems.length} items for member ${memberId}`)
 
