@@ -295,10 +295,10 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
         ) : (
           <div className="space-y-4 py-2">
             {/* Acciones rápidas */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => onOpenChat?.(member)}
-                className="flex-1 bg-violet-600 hover:bg-violet-500 text-white rounded-xl gap-2 h-10"
+                className="flex-1 min-w-[120px] bg-violet-600 hover:bg-violet-500 text-white rounded-xl gap-2 h-10"
               >
                 <MessageSquare className="w-4 h-4" />
                 Mensaje
@@ -306,7 +306,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
               <Button
                 onClick={handleSendProgressReminder}
                 variant="outline"
-                className="flex-1 border-violet-500/30 bg-black/40 text-violet-200 hover:bg-violet-500/10 rounded-xl gap-2 h-10"
+                className="flex-1 min-w-[120px] border-violet-500/30 bg-black/40 text-violet-200 hover:bg-violet-500/10 rounded-xl gap-2 h-10"
               >
                 <Bell className="w-4 h-4" />
                 Pedir revisión
@@ -316,7 +316,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                 onValueChange={handleReminderFrequencyChange}
                 disabled={savingReminderFreq}
               >
-                <SelectTrigger className="w-40 h-10 bg-black/50 border-violet-500/20 rounded-xl text-white text-xs">
+                <SelectTrigger className="w-full sm:w-40 h-10 bg-black/50 border-violet-500/20 rounded-xl text-white text-xs">
                   <Bell className="w-3 h-3 mr-1 text-violet-400" />
                   <SelectValue placeholder="Recordatorio…" />
                 </SelectTrigger>
