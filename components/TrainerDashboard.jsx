@@ -698,20 +698,20 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                 {members.map((member) => (
                   <Dialog key={member.id}>
                     <DialogTrigger asChild>
-                      <div className="flex items-center justify-between p-4 bg-black/30 rounded-2xl border border-[#2a2a2a] cursor-pointer hover:border-violet-500/30 transition-all group">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500/20 to-cyan-500/10 flex items-center justify-center text-violet-400 font-bold border border-violet-500/20">
+                      <div className="flex items-center justify-between gap-3 p-4 bg-black/30 rounded-2xl border border-[#2a2a2a] cursor-pointer hover:border-violet-500/30 transition-all group">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500/20 to-cyan-500/10 flex items-center justify-center text-violet-400 font-bold border border-violet-500/20 flex-shrink-0">
                             {member.name?.charAt(0)}
                           </div>
-                          <div>
-                            <p className="font-semibold text-white flex items-center gap-2">
-                              {member.name}
-                              {member.sex === 'female' && <Heart className="w-3 h-3 text-pink-400" />}
+                          <div className="min-w-0">
+                            <p className="font-semibold text-white flex items-center gap-2 min-w-0">
+                              <span className="truncate">{member.name}</span>
+                              {member.sex === 'female' && <Heart className="w-3 h-3 text-pink-400 flex-shrink-0" />}
                             </p>
-                            <p className="text-sm text-gray-500">{member.email}</p>
+                            <p className="text-sm text-gray-500 truncate">{member.email}</p>
                           </div>
                         </div>
-                        <Button size="sm" className="bg-gradient-to-r from-violet-500 to-cyan-500 text-black rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button size="sm" className="flex-shrink-0 bg-gradient-to-r from-violet-500 to-cyan-500 text-black rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
                           <Eye className="w-4 h-4 mr-1" /> Ver
                         </Button>
                       </div>

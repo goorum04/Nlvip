@@ -1615,7 +1615,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                             {member.name?.charAt(0)}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-semibold text-white">{member.name}</p>
+                            <p className="font-semibold text-white truncate">{member.name}</p>
                             <p className="text-sm text-gray-400 truncate">{member.email}</p>
                           </div>
                         </div>
