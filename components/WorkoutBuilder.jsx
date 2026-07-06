@@ -117,13 +117,15 @@ function ExerciseVideoUploader({ onVideoUploaded, existingVideo, trainerId }) {
 // --- Dropset helpers ---
 // Dropsets are stored as a [dropset:12,10,8] prefix in the description field,
 // where the numbers are the reps for each successive drop (first = main set).
-function parseDropset(description = '') {
+function parseDropset(description) {
+  if (!description) return null
   const match = description.match(/^\[dropset:([^\]]+)\]/)
   if (!match) return null
   return match[1].split(',').map(s => s.trim()).filter(Boolean)
 }
 
-function stripDropsetTag(description = '') {
+function stripDropsetTag(description) {
+  if (!description) return ''
   return description.replace(/^\[dropset:[^\]]+\]\s*/, '')
 }
 
