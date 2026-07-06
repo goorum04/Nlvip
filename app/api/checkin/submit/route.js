@@ -142,7 +142,7 @@ export async function POST(req) {
     const [{ data: currentDiet }, { data: currentWorkout }] = await Promise.all([
       supabase
         .from('member_diets')
-        .select('diet_template_id, diet_templates(id, content, calories, protein_g, carbs_g, fat_g)')
+        .select('diet_template_id, diet_templates(id, content, calories, protein_g, carbs_g, fat_g, goal_tag)')
         .eq('member_id', memberId)
         .maybeSingle(),
       supabase
@@ -215,6 +215,7 @@ export async function POST(req) {
               carbs_g: currentDiet.diet_templates.carbs_g,
               fat_g: currentDiet.diet_templates.fat_g,
             },
+            goalTag: currentDiet.diet_templates.goal_tag || '',
             checkinNotes,
             photoAnalysis: photoAnalysis || '',
           })
