@@ -1608,17 +1608,32 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                       key={member.id}
                       className="p-4 bg-black/50 rounded-lg border border-violet-500/10 hover:border-violet-500/20 transition-all space-y-2"
                     >
-                      {/* Fila superior: info + botones */}
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold flex-shrink-0">
-                            {member.name?.charAt(0)}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-semibold text-white truncate">{member.name}</p>
-                            <p className="text-sm text-gray-400 truncate">{member.email}</p>
-                          </div>
+                      {/* Fila superior: solo avatar + nombre/email, a todo el ancho */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold flex-shrink-0">
+                          {member.name?.charAt(0)}
                         </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-white truncate">{member.name}</p>
+                          <p className="text-sm text-gray-400 truncate">{member.email}</p>
+                        </div>
+                      </div>
+                      {/* Fila inferior: selector de entrenador + botones de acción */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <Select
+                          value={member.trainer_members?.[0]?.trainer_id || member.trainer_members?.[0]?.trainer?.id || ""}
+                          onValueChange={(val) => handleAssignTrainerToMember(member.id, val)}
+                          disabled={loading}
+                        >
+                          <SelectTrigger className="h-7 bg-violet-500/10 border-violet-500/20 text-[10px] text-violet-300 flex-1 min-w-[120px] max-w-[180px] rounded-lg">
+                            <SelectValue placeholder="Sin entrenador" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {trainers.map(t => (
+                              <SelectItem key={t.id} value={t.id} className="text-xs">{t.name} ({t.role === 'admin' ? 'Admin' : 'Coach'})</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <Button
                             size="icon"
@@ -1666,23 +1681,6 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
-                      </div>
-                      {/* Fila inferior: selector de entrenador */}
-                      <div className="pl-13">
-                        <Select
-                          value={member.trainer_members?.[0]?.trainer_id || member.trainer_members?.[0]?.trainer?.id || ""}
-                          onValueChange={(val) => handleAssignTrainerToMember(member.id, val)}
-                          disabled={loading}
-                        >
-                          <SelectTrigger className="h-7 bg-violet-500/10 border-violet-500/20 text-[10px] text-violet-300 w-[180px] rounded-lg">
-                            <SelectValue placeholder="Sin entrenador" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {trainers.map(t => (
-                              <SelectItem key={t.id} value={t.id} className="text-xs">{t.name} ({t.role === 'admin' ? 'Admin' : 'Coach'})</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
                       </div>
                     </div>
                   ))}
