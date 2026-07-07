@@ -280,26 +280,39 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
     setPendingCheckins(data || [])
   }
 
-  // Load all diet requests (including processed)
+  // Load diet requests that still need action.
+  // Regla: "Generar dieta con IA" es SOLO para altas nuevas que aún no tienen
+  // dieta. Los socios importados (a los que ya se les asignó su dieta) no deben
+  // aparecer aquí aunque tengan un cuestionario registrado.
   const loadDietRequests = async () => {
     const { data } = await supabase
       .from('diet_onboarding_requests')
       .select('*, member:profiles!diet_onboarding_requests_member_id_fkey(name, email)')
       .order('created_at', { ascending: false })
-      
-    if (data) {
-      // Show only the latest form per member to prevent duplicates
-      const uniqueRequests = []
-      const seenMembers = new Set()
-      
-      for (const req of data) {
-        if (!seenMembers.has(req.member_id)) {
-          seenMembers.add(req.member_id)
-          uniqueRequests.push(req)
-        }
-      }
-      setDietRequests(uniqueRequests)
+
+    if (!data) return
+
+    // Excluir a quien ya tenga una dieta asignada.
+    const memberIds = [...new Set(data.map(r => r.member_id))]
+    let membersWithDiet = new Set()
+    if (memberIds.length) {
+      const { data: diets } = await supabase
+        .from('member_diets')
+        .select('member_id')
+        .in('member_id', memberIds)
+      membersWithDiet = new Set((diets || []).map(d => d.member_id))
     }
+
+    // Un solo cuestionario por socio (el más reciente) y solo si no tiene dieta.
+    const uniqueRequests = []
+    const seenMembers = new Set()
+    for (const req of data) {
+      if (seenMembers.has(req.member_id)) continue
+      seenMembers.add(req.member_id)
+      if (membersWithDiet.has(req.member_id)) continue
+      uniqueRequests.push(req)
+    }
+    setDietRequests(uniqueRequests)
   }
 
   // Load challenges (all)
