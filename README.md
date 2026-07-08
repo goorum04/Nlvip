@@ -23,7 +23,8 @@
 9. [Scripts de utilidad](#scripts-de-utilidad)
 10. [Build móvil (iOS/Android)](#build-móvil-iosandroid)
 11. [Monitoreo y errores](#monitoreo-y-errores)
-12. [Troubleshooting](#troubleshooting)
+12. [Seguridad](#seguridad)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -101,7 +102,13 @@
 - Ejercicios organizados por días con series, repeticiones y notas
 - Catálogo de ejercicios con equipamiento
 - Asignación directa a socios
-- **Generador de rutinas por IA**: crea rutinas personalizadas en segundos basándose en objetivos, nivel y equipamiento disponible
+- **Generador de rutinas por IA** (solo admin/entrenador): crea rutinas personalizadas considerando:
+  - Rutina actual del socio (no repite)
+  - Marcas y pesos registrados (progresión real)
+  - Frecuencia real de entrenamiento
+  - Edad (55+ prioriza máquinas)
+  - Lesiones (detecta indirectas también)
+  - Volumen de entrenamiento (avisa si es excesivo)
 - Socios hacen **check-in diario** para registrar el entrenamiento realizado
 
 ### 🥗 Nutrición avanzada
@@ -129,7 +136,8 @@
 - Catálogo de más de 15 recetas con macros
 - Integración con **Spoonacular API** para recetas externas
 - Imágenes de recetas via **Unsplash API**
-- **Generación de recetas por IA** según preferencias y objetivos
+- **Generación de recetas por IA** (solo admin/entrenador) según preferencias y objetivos, considerando dieta anterior
+- **Generación de planes de comidas por IA** (solo admin/entrenador) que varían alimentos para evitar monotonía y ajustan según evolución de peso
 - **Planes de comidas semanales** (7 días × 4 slots: desayuno, almuerzo, cena, snack)
 - Entrenadores asignan y personalizan los planes de recetas de cada socio
 
@@ -141,14 +149,17 @@
 
 ### 🤖 Asistente IA y automatización
 
-| Feature | Descripción |
-|---|---|
-| Generador de rutinas | Crea rutinas completas en base a objetivos y perfil |
-| Generador de recetas | Sugiere recetas según preferencias y macros objetivo |
-| Generador de planes de comidas | Planifica una semana completa de alimentación |
-| Onboarding de dieta | Guía al socio paso a paso para configurar su dieta |
-| Análisis de alimentos | Estima macros de cualquier alimento via foto o texto |
-| Asistente Admin (flotante) | Chatbot de ayuda para administradores del sistema |
+| Feature | Descripción | Acceso |
+|---|---|---|
+| Generador de rutinas | Crea rutinas personalizadas considerando rutina actual, marcas registradas, frecuencia real de entrenamiento, edad, lesiones y volumen | Solo admin/entrenador |
+| Generador de dietas | Genera planes adaptados considerando dieta anterior, evolución de peso (últimas 8 semanas) y consistencia de entrenamiento | Solo admin/entrenador |
+| Generador de recetas | Sugiere recetas según preferencias y macros objetivo | Solo admin/entrenador |
+| Generador de planes de comidas | Planifica una semana completa de alimentación | Solo admin/entrenador |
+| Onboarding de dieta | Guía al socio paso a paso para configurar su dieta | Socio/Admin/Entrenador |
+| Análisis de alimentos | Estima macros de cualquier alimento via foto o texto | Socio/Admin/Entrenador |
+| Asistente Admin (flotante) | Chatbot de ayuda para administradores del sistema | Solo admin |
+
+**Nota sobre IA personalizada:** Los generadores de rutinas y dietas ahora tienen "memoria" del socio — no generan desde cero, sino que consideran automáticamente su historial para crear planes progresivos y evitar repetición.
 
 ### 👩‍⚕️ Salud femenina y ciclo menstrual
 
@@ -607,6 +618,35 @@ El proyecto usa **Sentry** para seguimiento de errores en producción.
 - `sentry.edge.config.js` — errores en Edge functions
 
 Configura las variables `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG` y `SENTRY_PROJECT` en `.env.local`.
+
+---
+
+## Seguridad
+
+### Mejoras recientes (junio 2026)
+
+Se han corregido tres fallos graves de seguridad:
+
+1. **Control de acceso a herramientas de IA** — Solo entrenadores y administradores pueden usar los generadores de rutinas y dietas (que tienen costo en OpenAI). Antes, cualquiera podía accederlos.
+
+2. **Control de premium** — Solo administradores pueden conceder membresía premium a un socio. Se eliminó el fallo que permitía a socios activarse premium ellos mismos.
+
+3. **Integridad de códigos de invitación** — Se corrigió un fallo en RLS que permitía manipular códigos de invitación (resetear contadores, cambiar asignación de entrenador).
+
+### ⚠️ Acción recomendada — Renovar claves de Supabase
+
+Por precaución, se recomienda **regenerar las claves de acceso a la base de datos**, ya que versiones antiguas del código las exponían públicamente.
+
+**Pasos:**
+
+1. Ir a **Supabase Dashboard** → Settings → API → **Regenerate keys**
+2. Copiar las dos claves nuevas (`service_role` y `anon`)
+3. En **Vercel** → Settings → Environment Variables, actualizar:
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. Redesplegar la aplicación
+
+**Tiempo estimado:** 5 minutos
 
 ---
 
