@@ -117,6 +117,23 @@ function PhotoCompare({ groupId, previousGroupId }) {
   )
 }
 
+// Botón de selección tipo "radio" para elegir, por cada parte, entre aplicar
+// la propuesta nueva o mantener la que el socio ya tenía. Las dos decisiones
+// (dieta y rutina) son independientes: elegir una no condiciona la otra.
+function ChoiceButton({ active, variant, onClick, disabled, children }) {
+  const base = 'flex-1 text-xs font-semibold rounded-xl px-3 py-2 border transition-colors'
+  const styles = active
+    ? (variant === 'apply'
+        ? 'bg-emerald-600 border-emerald-500 text-white'
+        : 'bg-slate-600 border-slate-500 text-white')
+    : 'bg-black/30 border-[#2a2a2a] text-gray-400 hover:border-gray-500'
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className={`${base} ${styles} disabled:opacity-50`}>
+      {children}
+    </button>
+  )
+}
+
 function CheckInCard({ checkin, onRefresh }) {
   const [expanded, setExpanded] = useState(false)
   const [progressRecord, setProgressRecord] = useState(null)
@@ -124,7 +141,16 @@ function CheckInCard({ checkin, onRefresh }) {
   const [correctionTarget, setCorrectionTarget] = useState(null) // 'diet' | 'routine' | null
   const [correction, setCorrection] = useState('')
   const [busy, setBusy] = useState(false)
+  // Decisión por parte: 'apply' (aplicar la nueva) | 'keep' (mantener la actual) | null (sin decidir)
+  const [dietChoice, setDietChoice] = useState(null)
+  const [routineChoice, setRoutineChoice] = useState(null)
   const { toast } = useToast()
+
+  const dietPresent = !!checkin.draft_diet_content
+  const routinePresent = !!checkin.draft_routine_data
+  const dietDecided = !dietPresent || dietChoice !== null
+  const routineDecided = !routinePresent || routineChoice !== null
+  const canConfirm = (dietPresent || routinePresent) && dietDecided && routineDecided
 
   useEffect(() => {
     if (!expanded || progressRecord) return
@@ -203,6 +229,35 @@ function CheckInCard({ checkin, onRefresh }) {
     }
   }
 
+  // Cierra la revisión sin tocar nada: se mantienen la dieta y la rutina
+  // actuales del socio (cuando el admin elige "mantener" en todas las partes).
+  const handleKeepAll = async () => {
+    setBusy(true)
+    try {
+      const { error } = await supabase.from('member_checkins').update({ status: 'dismissed' }).eq('id', checkin.id)
+      if (error) throw error
+      toast({ title: 'Sin cambios', description: `Se mantienen la dieta y la rutina actuales de ${memberName}.` })
+      onRefresh?.()
+    } catch (e) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Aplica cada decisión de forma independiente: sólo se cambia lo que el admin
+  // haya marcado como "aplicar la nueva". Lo marcado como "mantener" no se toca.
+  const handleConfirm = async () => {
+    const approveDiet = dietPresent && dietChoice === 'apply'
+    const approveRoutine = routinePresent && routineChoice === 'apply'
+    if (!approveDiet && !approveRoutine) {
+      // Todo en "mantener": no hay nada que aplicar → se cierra sin cambios.
+      await handleKeepAll()
+      return
+    }
+    await handleApprove(approveDiet, approveRoutine)
+  }
+
   return (
     <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
       <CardHeader className="cursor-pointer" onClick={() => setExpanded(v => !v)}>
@@ -258,13 +313,16 @@ function CheckInCard({ checkin, onRefresh }) {
               )}
               <DietDraftPreview content={checkin.draft_diet_content} />
               <div className="flex gap-2">
-                <Button size="sm" disabled={busy} onClick={() => handleApprove(true, false)} className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl">
-                  <Check className="w-3.5 h-3.5 mr-1" /> Aprobar dieta
-                </Button>
-                <Button size="sm" variant="outline" disabled={busy} onClick={() => setCorrectionTarget(correctionTarget === 'diet' ? null : 'diet')} className="rounded-xl">
-                  <MessageSquarePlus className="w-3.5 h-3.5 mr-1" /> Pedir ajuste
-                </Button>
+                <ChoiceButton active={dietChoice === 'apply'} variant="apply" disabled={busy} onClick={() => setDietChoice('apply')}>
+                  <Check className="w-3.5 h-3.5 mr-1 inline" /> Aplicar nueva dieta
+                </ChoiceButton>
+                <ChoiceButton active={dietChoice === 'keep'} variant="keep" disabled={busy} onClick={() => setDietChoice('keep')}>
+                  Mantener la actual
+                </ChoiceButton>
               </div>
+              <Button size="sm" variant="outline" disabled={busy} onClick={() => setCorrectionTarget(correctionTarget === 'diet' ? null : 'diet')} className="rounded-xl w-full">
+                <MessageSquarePlus className="w-3.5 h-3.5 mr-1" /> Pedir ajuste a la propuesta
+              </Button>
               {correctionTarget === 'diet' && (
                 <div className="flex gap-2">
                   <Textarea value={correction} onChange={e => setCorrection(e.target.value)} placeholder="Ej: no le bajes tanto los carbos..." className="bg-black/50 border-[#2a2a2a] rounded-xl text-white" />
@@ -282,13 +340,16 @@ function CheckInCard({ checkin, onRefresh }) {
               )}
               <RoutineDraftPreview routine={checkin.draft_routine_data} />
               <div className="flex gap-2">
-                <Button size="sm" disabled={busy} onClick={() => handleApprove(false, true)} className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl">
-                  <Check className="w-3.5 h-3.5 mr-1" /> Aprobar rutina
-                </Button>
-                <Button size="sm" variant="outline" disabled={busy} onClick={() => setCorrectionTarget(correctionTarget === 'routine' ? null : 'routine')} className="rounded-xl">
-                  <MessageSquarePlus className="w-3.5 h-3.5 mr-1" /> Pedir ajuste
-                </Button>
+                <ChoiceButton active={routineChoice === 'apply'} variant="apply" disabled={busy} onClick={() => setRoutineChoice('apply')}>
+                  <Check className="w-3.5 h-3.5 mr-1 inline" /> Aplicar nueva rutina
+                </ChoiceButton>
+                <ChoiceButton active={routineChoice === 'keep'} variant="keep" disabled={busy} onClick={() => setRoutineChoice('keep')}>
+                  Mantener la actual
+                </ChoiceButton>
               </div>
+              <Button size="sm" variant="outline" disabled={busy} onClick={() => setCorrectionTarget(correctionTarget === 'routine' ? null : 'routine')} className="rounded-xl w-full">
+                <MessageSquarePlus className="w-3.5 h-3.5 mr-1" /> Pedir ajuste a la propuesta
+              </Button>
               {correctionTarget === 'routine' && (
                 <div className="flex gap-2">
                   <Textarea value={correction} onChange={e => setCorrection(e.target.value)} placeholder="Ej: quita el peso muerto, le sigue molestando la lumbar..." className="bg-black/50 border-[#2a2a2a] rounded-xl text-white" />
@@ -298,15 +359,28 @@ function CheckInCard({ checkin, onRefresh }) {
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-2 border-t border-[#2a2a2a]">
-            {checkin.draft_diet_content && checkin.draft_routine_data && (
-              <Button size="sm" disabled={busy} onClick={() => handleApprove(true, true)} className="bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-xl">
-                Aprobar todo
-              </Button>
+          <div className="space-y-2 pt-2 border-t border-[#2a2a2a]">
+            {(dietPresent || routinePresent) && (
+              <p className="text-[11px] text-gray-500">
+                {(() => {
+                  if (!dietDecided || !routineDecided) {
+                    return 'Elige qué hacer con cada parte para poder confirmar.'
+                  }
+                  const parts = []
+                  if (dietPresent) parts.push(dietChoice === 'apply' ? 'nueva dieta' : 'dieta actual (sin cambios)')
+                  if (routinePresent) parts.push(routineChoice === 'apply' ? 'nueva rutina' : 'rutina actual (sin cambios)')
+                  return `Al confirmar: ${parts.join(' · ')}.`
+                })()}
+              </p>
             )}
-            <Button size="sm" variant="ghost" disabled={busy} onClick={handleDismiss} className="text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-xl ml-auto">
-              <X className="w-3.5 h-3.5 mr-1" /> Descartar revisión
-            </Button>
+            <div className="flex items-center justify-between">
+              <Button size="sm" disabled={busy || !canConfirm} onClick={handleConfirm} className="bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-xl disabled:opacity-50">
+                <Check className="w-3.5 h-3.5 mr-1" /> Confirmar
+              </Button>
+              <Button size="sm" variant="ghost" disabled={busy} onClick={handleDismiss} className="text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-xl ml-auto">
+                <X className="w-3.5 h-3.5 mr-1" /> Descartar revisión
+              </Button>
+            </div>
           </div>
         </CardContent>
       )}
