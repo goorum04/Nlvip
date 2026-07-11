@@ -2248,7 +2248,12 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                     <div key={assignment.id} className="p-4 bg-black/50 rounded-lg border border-violet-500/10">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="font-semibold text-white">{assignment.member?.name}</p>
+                          <p className="font-semibold text-white flex items-center gap-2">
+                            {assignment.member?.name}
+                            {assignment.routine_slot === 'alternativa' && (
+                              <span className="text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400">Alternativa</span>
+                            )}
+                          </p>
                           <p className="text-sm text-violet-400 mt-1">{assignment.workout?.name}</p>
                           <p className="text-xs text-gray-400 mt-1">
                             Asignado por: {assignment.assigned?.name}

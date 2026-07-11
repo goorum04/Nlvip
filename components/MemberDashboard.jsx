@@ -41,8 +41,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 export default function MemberDashboard({ user, profile, setProfile, onLogout }) {
   const [feedPosts, setFeedPosts] = useState([])
-  const [myWorkout, setMyWorkout] = useState(null)
-  const [workoutVideos, setWorkoutVideos] = useState([])
+  const [myWorkouts, setMyWorkouts] = useState({ principal: null, alternativa: null })
+  const [activeWorkoutSlot, setActiveWorkoutSlot] = useState('principal')
   const [myDiet, setMyDiet] = useState(null)
   const [progressRecords, setProgressRecords] = useState([])
   const [progressPhotos, setProgressPhotos] = useState([])
@@ -417,16 +417,13 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
       .from('member_workouts')
       .select(`*, workout:workout_templates!member_workouts_workout_template_id_fkey(id, name, description, medical_rationale, workout_videos(*))`)
       .eq('member_id', user.id)
-      .maybeSingle()
 
     if (data) {
-      setMyWorkout(data)
-      if (data.workout?.workout_videos) {
-        const sorted = [...data.workout.workout_videos].sort(
-          (a, b) => new Date(a.created_at) - new Date(b.created_at)
-        )
-        setWorkoutVideos(sorted)
+      const bySlot = { principal: null, alternativa: null }
+      for (const row of data) {
+        bySlot[row.routine_slot || 'principal'] = row
       }
+      setMyWorkouts(bySlot)
     }
   }
 
@@ -857,7 +854,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
           {/* WORKOUT TAB */}
           <TabsContent value="workout" className="space-y-4">
-            {!dataLoaded && !myWorkout && (
+            {!dataLoaded && !myWorkouts.principal && !myWorkouts.alternativa && (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
                 <CardContent className="p-5 space-y-4">
                   <Skeleton className="h-6 w-1/2 bg-white/5" />
@@ -869,8 +866,40 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 </CardContent>
               </Card>
             )}
-            {myWorkout ? (
+            {(myWorkouts.principal || myWorkouts.alternativa) ? (() => {
+              const activeWorkout = myWorkouts[activeWorkoutSlot] || myWorkouts.principal || myWorkouts.alternativa
+              const workoutVideos = activeWorkout?.workout?.workout_videos
+                ? [...activeWorkout.workout.workout_videos].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                : []
+              return (
               <>
+                {myWorkouts.principal && myWorkouts.alternativa && (
+                  <div className="flex p-1 bg-black/40 rounded-xl border border-white/5 w-full sm:w-auto sm:inline-flex">
+                    <button
+                      onClick={() => setActiveWorkoutSlot('principal')}
+                      className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                        activeWorkoutSlot === 'principal'
+                          ? 'bg-violet-600 text-white shadow-lg'
+                          : 'text-gray-500 hover:text-gray-300'
+                      }`}
+                    >
+                      <Dumbbell className="w-3.5 h-3.5" />
+                      PRINCIPAL
+                    </button>
+                    <button
+                      onClick={() => setActiveWorkoutSlot('alternativa')}
+                      className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                        activeWorkoutSlot === 'alternativa'
+                          ? 'bg-violet-600 text-white shadow-lg'
+                          : 'text-gray-500 hover:text-gray-300'
+                      }`}
+                    >
+                      <Flame className="w-3.5 h-3.5" />
+                      ALTERNATIVA
+                    </button>
+                  </div>
+                )}
+
                 {/* Workout Checkin Button */}
                 <Card className={`overflow-hidden border-2 transition-all duration-500 ${showCheckinConfetti ? 'bg-emerald-500/20 border-emerald-500/50 scale-105' : 'bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a]'} rounded-3xl`}>
                   <CardContent className="p-6 text-center">
@@ -926,7 +955,8 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 </Card>
 
                 <WorkoutViewer
-                  workoutId={myWorkout.workout?.id}
+                  key={activeWorkout?.workout?.id}
+                  workoutId={activeWorkout?.workout?.id}
                   memberPrs={myPrs}
                   highlightToday
                 />
@@ -956,7 +986,8 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
                 <PRTracker memberId={user.id} />
               </>
-            ) : (
+              )
+            })() : (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
                 <CardContent className="py-20 text-center">
                   <Dumbbell className="w-20 h-20 mx-auto text-violet-500/20 mb-4" />

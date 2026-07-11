@@ -149,6 +149,7 @@ export async function POST(req) {
         .from('member_workouts')
         .select('workout_template_id, workout_templates(id, name)')
         .eq('member_id', memberId)
+        .eq('routine_slot', 'principal')
         .maybeSingle(),
     ])
 

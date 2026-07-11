@@ -34,6 +34,7 @@ const routineSchema = z.object({
 const bodySchema = z.object({
   trainer_id: z.string().uuid().optional().nullable(),
   member_id: z.string().uuid().optional().nullable(),
+  routine_slot: z.enum(['principal', 'alternativa']).optional().default('principal'),
   notes: z.string().max(500).optional().nullable(),
   routine: routineSchema
 })
@@ -52,7 +53,7 @@ export async function POST(request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
     }
-    const { trainer_id, member_id, routine, notes = '' } = parsed.data
+    const { trainer_id, member_id, routine, notes = '', routine_slot = 'principal' } = parsed.data
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -155,8 +156,8 @@ export async function POST(request) {
       await supabase
         .from('member_workouts')
         .upsert(
-          [{ member_id, workout_template_id: template.id, assigned_by: trainer_id || caller.id }],
-          { onConflict: 'member_id' }
+          [{ member_id, workout_template_id: template.id, routine_slot, assigned_by: trainer_id || caller.id }],
+          { onConflict: 'member_id,routine_slot' }
         )
     }
 
