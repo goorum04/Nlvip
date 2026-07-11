@@ -126,8 +126,9 @@ export async function POST(req) {
         .upsert({
           member_id: checkin.member_id,
           workout_template_id: template.id,
+          routine_slot: 'principal',
           assigned_at: new Date().toISOString(),
-        }, { onConflict: 'member_id' })
+        }, { onConflict: 'member_id,routine_slot' })
       if (wError) throw new Error(`Error asignando la rutina adaptada: ${wError.message}`)
 
       updatePayload.new_workout_template_id = template.id

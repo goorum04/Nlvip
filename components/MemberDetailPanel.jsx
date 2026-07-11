@@ -21,12 +21,12 @@ import { MemberOnboardingResponses } from './MemberPhotosAndForm'
 export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRefresh, onOpenChat, initialTab = 'form' }) {
   const [loading, setLoading] = useState(true)
   const [memberData, setMemberData] = useState(null)
-  const [assignedWorkout, setAssignedWorkout] = useState(null)
+  const [assignedWorkouts, setAssignedWorkouts] = useState({ principal: null, alternativa: null })
   const [assignedDiet, setAssignedDiet] = useState(null)
-  const [workoutDays, setWorkoutDays] = useState([])
+  const [workoutDaysBySlot, setWorkoutDaysBySlot] = useState({ principal: [], alternativa: [] })
   const [availableWorkouts, setAvailableWorkouts] = useState([])
   const [availableDiets, setAvailableDiets] = useState([])
-  const [showWorkoutDetail, setShowWorkoutDetail] = useState(false)
+  const [showWorkoutDetailSlot, setShowWorkoutDetailSlot] = useState(null)
   const [showDietContent, setShowDietContent] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
@@ -54,7 +54,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
       setActiveTab(initialTab)
       setMemberProgressPhotos([])
       setShowDietContent(false)
-      setShowWorkoutDetail(false)
+      setShowWorkoutDetailSlot(null)
       loadMemberData()
     }
   }, [member, isOpen])
@@ -76,7 +76,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
 
       setMemberData(profile)
 
-      const { data: workoutAssignment } = await supabase
+      const { data: workoutAssignments } = await supabase
         .from('member_workouts')
         .select(`
           *,
@@ -86,15 +86,18 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
           )
         `)
         .eq('member_id', member.id)
-        .single()
 
-      if (workoutAssignment?.workout) {
-        setAssignedWorkout(workoutAssignment.workout)
-        setWorkoutDays(workoutAssignment.workout.workout_days || [])
-      } else {
-        setAssignedWorkout(null)
-        setWorkoutDays([])
+      const newAssignedWorkouts = { principal: null, alternativa: null }
+      const newWorkoutDaysBySlot = { principal: [], alternativa: [] }
+      for (const row of workoutAssignments || []) {
+        const slot = row.routine_slot || 'principal'
+        if (row.workout) {
+          newAssignedWorkouts[slot] = row.workout
+          newWorkoutDaysBySlot[slot] = row.workout.workout_days || []
+        }
       }
+      setAssignedWorkouts(newAssignedWorkouts)
+      setWorkoutDaysBySlot(newWorkoutDaysBySlot)
 
       const { data: dietAssignment } = await supabase
         .from('member_diets')
@@ -148,7 +151,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
     }
   }
 
-  const handleAssignWorkout = async (workoutId) => {
+  const handleAssignWorkout = async (workoutId, routineSlot = 'principal') => {
     setAssigning(true)
     try {
       const { error } = await supabase
@@ -156,11 +159,12 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
         .upsert([{
           member_id: member.id,
           workout_template_id: workoutId,
+          routine_slot: routineSlot,
           assigned_by: (await supabase.auth.getUser()).data.user?.id
-        }], { onConflict: 'member_id' })
+        }], { onConflict: 'member_id,routine_slot' })
 
       if (error) throw error
-      toast({ title: '¡Rutina asignada!' })
+      toast({ title: routineSlot === 'alternativa' ? '¡Rutina alternativa asignada!' : '¡Rutina asignada!' })
       loadMemberData()
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -433,54 +437,66 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
 
               {/* Tab: Rutina */}
               <TabsContent value="workout" className="mt-4 space-y-4">
-                <Card className="bg-black/30 border-violet-500/20 rounded-2xl">
-                  <CardContent className="pt-4 space-y-3">
-                    {assignedWorkout ? (
-                      <div className="space-y-3">
-                        <div className="p-4 bg-violet-500/10 border border-violet-500/30 rounded-xl">
-                          <div className="flex items-center justify-between mb-2">
-                            <div>
-                              <h4 className="font-semibold text-white">{assignedWorkout.name}</h4>
-                              <p className="text-sm text-gray-400">{workoutDays.length} días de entrenamiento</p>
+                {[
+                  { slot: 'principal', label: 'Rutina principal' },
+                  { slot: 'alternativa', label: 'Rutina alternativa (días sin tiempo, vacaciones...)' },
+                ].map(({ slot, label }) => {
+                  const workout = assignedWorkouts[slot]
+                  const days = workoutDaysBySlot[slot]
+                  return (
+                    <Card key={slot} className="bg-black/30 border-violet-500/20 rounded-2xl">
+                      <CardHeader className="pb-0">
+                        <CardTitle className="text-sm font-semibold text-gray-300">{label}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-4 space-y-3">
+                        {workout ? (
+                          <div className="space-y-3">
+                            <div className="p-4 bg-violet-500/10 border border-violet-500/30 rounded-xl">
+                              <div className="flex items-center justify-between mb-2">
+                                <div>
+                                  <h4 className="font-semibold text-white">{workout.name}</h4>
+                                  <p className="text-sm text-gray-400">{days.length} días de entrenamiento</p>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-violet-400 hover:text-violet-300 gap-1"
+                                  onClick={() => setShowWorkoutDetailSlot(slot)}
+                                >
+                                  Ver detalle <ChevronRight className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              {days.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {[...days].sort((a, b) => a.day_number - b.day_number).map(day => (
+                                    <span key={day.id} className="px-2 py-1 bg-violet-500/20 rounded-lg text-xs text-violet-300">
+                                      Día {day.day_number}: {day.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-violet-400 hover:text-violet-300 gap-1"
-                              onClick={() => setShowWorkoutDetail(true)}
-                            >
-                              Ver detalle <ChevronRight className="w-4 h-4" />
-                            </Button>
                           </div>
-                          {workoutDays.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-2">
-                              {workoutDays.sort((a, b) => a.day_number - b.day_number).map(day => (
-                                <span key={day.id} className="px-2 py-1 bg-violet-500/20 rounded-lg text-xs text-violet-300">
-                                  Día {day.day_number}: {day.name}
-                                </span>
+                        ) : (
+                          <p className="text-gray-500 text-sm">Sin rutina asignada</p>
+                        )}
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1">Asignar / cambiar:</p>
+                          <Select onValueChange={(workoutId) => handleAssignWorkout(workoutId, slot)} disabled={assigning}>
+                            <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white">
+                              <SelectValue placeholder="Seleccionar rutina..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableWorkouts.map(w => (
+                                <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
                               ))}
-                            </div>
-                          )}
+                            </SelectContent>
+                          </Select>
                         </div>
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 text-sm">Sin rutina asignada</p>
-                    )}
-                    <div>
-                      <p className="text-xs text-gray-400 mb-1">Asignar / cambiar rutina:</p>
-                      <Select onValueChange={handleAssignWorkout} disabled={assigning}>
-                        <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white">
-                          <SelectValue placeholder="Seleccionar rutina..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableWorkouts.map(w => (
-                            <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </TabsContent>
 
               {/* Tab: Dieta */}
@@ -549,16 +565,16 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
           </div>
         )}
 
-        {showWorkoutDetail && assignedWorkout && (
-          <Dialog open={showWorkoutDetail} onOpenChange={() => setShowWorkoutDetail(false)}>
+        {showWorkoutDetailSlot && assignedWorkouts[showWorkoutDetailSlot] && (
+          <Dialog open={!!showWorkoutDetailSlot} onOpenChange={() => setShowWorkoutDetailSlot(null)}>
             <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-white flex items-center gap-2">
                   <Dumbbell className="w-5 h-5 text-violet-400" />
-                  Rutina: {assignedWorkout.name}
+                  Rutina: {assignedWorkouts[showWorkoutDetailSlot].name}
                 </DialogTitle>
               </DialogHeader>
-              <WorkoutViewer workoutId={assignedWorkout.id} />
+              <WorkoutViewer workoutId={assignedWorkouts[showWorkoutDetailSlot].id} />
             </DialogContent>
           </Dialog>
         )}

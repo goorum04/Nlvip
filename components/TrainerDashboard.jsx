@@ -434,11 +434,14 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
     }
   }
 
-  const handleAssignWorkout = async (memberId, templateId) => {
+  const handleAssignWorkout = async (memberId, templateId, routineSlot = 'principal') => {
     try {
-      const { error } = await supabase.from('member_workouts').upsert({ member_id: memberId, workout_template_id: templateId, assigned_by: user.id }, { onConflict: 'member_id' })
+      const { error } = await supabase.from('member_workouts').upsert(
+        { member_id: memberId, workout_template_id: templateId, routine_slot: routineSlot, assigned_by: user.id },
+        { onConflict: 'member_id,routine_slot' }
+      )
       if (error) throw error
-      toast({ title: '¡Rutina asignada!' })
+      toast({ title: routineSlot === 'alternativa' ? '¡Rutina alternativa asignada!' : '¡Rutina asignada!' })
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     }
@@ -737,8 +740,17 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                       </DialogHeader>
                       <div className="space-y-4 pt-4">
                         <div>
-                          <Label className="text-gray-400 text-sm">Asignar Rutina</Label>
-                          <Select onValueChange={(val) => handleAssignWorkout(member.id, val)}>
+                          <Label className="text-gray-400 text-sm">Asignar Rutina Principal</Label>
+                          <Select onValueChange={(val) => handleAssignWorkout(member.id, val, 'principal')}>
+                            <SelectTrigger className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-2"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                            <SelectContent>
+                              {workoutTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400 text-sm">Asignar Rutina Alternativa (días sin tiempo, vacaciones...)</Label>
+                          <Select onValueChange={(val) => handleAssignWorkout(member.id, val, 'alternativa')}>
                             <SelectTrigger className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-2"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                             <SelectContent>
                               {workoutTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
