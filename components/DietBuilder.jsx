@@ -11,7 +11,8 @@ import {
     Apple, Plus, Trash2, Clock, UtensilsCrossed,
     Flame, Target, Zap, Star, Save, X, ChevronRight,
     ChevronLeft, Info, LoaderCircle as Loader2,
-    Sparkles, Lightbulb, BookOpen, Pill, Eye, Droplet, Footprints
+    Sparkles, Lightbulb, BookOpen, Pill, Eye, Droplet, Footprints,
+    CalendarDays
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { parseDietContent } from '@/lib/dietContentParser'
@@ -317,9 +318,20 @@ export function DietBuilder({ trainerId, existingDiet, onSave, onCancel }) {
     )
 }
 
+// Splits a meal name like "COMIDA 1 — DÍA DE ENTRENO" into
+// { baseName: "COMIDA 1", variant: "DÍA DE ENTRENO" } when the diet encodes
+// a day-type split (entreno/descanso, entre semana/fin de semana...) as
+// repeated meal blocks distinguished only by an em-dash suffix in the name.
+function splitMealVariant(name) {
+    const match = (name || '').match(/^(.*?)\s+—\s+(.+)$/)
+    if (!match) return { baseName: name, variant: null }
+    return { baseName: match[1].trim(), variant: match[2].trim() }
+}
+
 export function DietViewer({ dietId }) {
     const [diet, setDiet] = useState(null)
     const [loading, setLoading] = useState(true)
+    const [activeVariant, setActiveVariant] = useState(null)
 
     useEffect(() => {
         if (dietId) loadDiet()
@@ -354,10 +366,36 @@ export function DietViewer({ dietId }) {
     if (!diet) return <div className="py-20 text-center text-gray-500 italic">No se encontró la dieta.</div>
 
     const hasParsed = diet.parsed && !diet.parsed.rawFallback
-    const meals = diet.legacyMeals || (hasParsed ? diet.parsed.meals : [])
+    const allMeals = diet.legacyMeals || (hasParsed ? diet.parsed.meals : [])
     const recommendations = hasParsed ? diet.parsed.recommendations : []
     const sections = hasParsed ? diet.parsed.sections : null
     const disclaimer = hasParsed ? diet.parsed.disclaimer : ''
+
+    // Diets that encode a day-type split (día de entreno/descanso, entre
+    // semana/fin de semana...) repeat the SAME meal once per variant, with
+    // the variant named after an em-dash in the header. A meal name can
+    // also carry an em-dash for an unrelated one-off qualifier (e.g. "RECENA
+    // — SOLO SI HAMBRE REAL"), so only treat a suffix as a real variant when
+    // it recurs across the same base meal name at least twice.
+    const mealsWithVariant = allMeals.map(m => ({ ...m, ...splitMealVariant(m.name) }))
+    const variantsByBaseName = {}
+    mealsWithVariant.forEach(m => {
+        if (!m.variant) return
+        if (!variantsByBaseName[m.baseName]) variantsByBaseName[m.baseName] = new Set()
+        variantsByBaseName[m.baseName].add(m.variant)
+    })
+    const splitVariants = new Set()
+    Object.values(variantsByBaseName).forEach(set => {
+        if (set.size >= 2) set.forEach(v => splitVariants.add(v))
+    })
+    const dayVariants = [...splitVariants]
+    const hasDayVariants = dayVariants.length >= 2
+    const selectedVariant = hasDayVariants ? (activeVariant && dayVariants.includes(activeVariant) ? activeVariant : dayVariants[0]) : null
+    const meals = hasDayVariants
+        ? mealsWithVariant
+            .filter(m => !splitVariants.has(m.variant) || m.variant === selectedVariant)
+            .map(m => splitVariants.has(m.variant) ? { ...m, name: m.baseName } : m)
+        : allMeals
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -388,9 +426,29 @@ export function DietViewer({ dietId }) {
             {/* Timeline of Meals */}
             {meals.length > 0 && (
                 <div className="space-y-6">
-                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                        <Clock className="w-4 h-4" /> Horario y Platos
-                    </h3>
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                            <Clock className="w-4 h-4" /> Horario y Platos
+                        </h3>
+                        {hasDayVariants && (
+                            <div className="flex p-1 bg-black/40 rounded-xl border border-white/5 w-full sm:w-auto sm:inline-flex">
+                                {dayVariants.map(variant => (
+                                    <button
+                                        key={variant}
+                                        onClick={() => setActiveVariant(variant)}
+                                        className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                                            selectedVariant === variant
+                                                ? 'bg-green-600 text-white shadow-lg'
+                                                : 'text-gray-500 hover:text-gray-300'
+                                        }`}
+                                    >
+                                        <CalendarDays className="w-3.5 h-3.5" />
+                                        {variant.toUpperCase()}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
                     <div className="space-y-0 relative border-l border-white/5 ml-3 pl-8">
                         {meals.map((meal, idx) => (
