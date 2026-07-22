@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { sendNativeApplePush } from '@/lib/apn'
 import { sendPushToUser } from '@/lib/webpush'
 import { persistRoutine } from '@/lib/routinePersistence'
 
@@ -140,12 +141,14 @@ export async function POST(req) {
 
     try {
       const label = appliedParts.length === 2 ? 'plan (dieta y rutina)' : appliedParts[0]
-      await sendPushToUser(supabase, checkin.member_id, {
+      const payload = {
         title: '¡Tu plan se ha actualizado!',
         body: `Tras tu última revisión, hemos actualizado tu ${label}. ¡Échale un vistazo!`,
         url: appliedParts.includes('dieta') ? '/nutrition' : '/workout',
         icon: '/icons/icon-192x192.png',
-      })
+      }
+      await sendNativeApplePush(supabase, checkin.member_id, payload)
+      await sendPushToUser(supabase, checkin.member_id, payload)
     } catch (e) {
       console.warn('checkin/complete: could not notify member:', e.message)
     }
