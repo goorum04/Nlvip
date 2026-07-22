@@ -6,7 +6,6 @@ import { getApiUrl } from '@/lib/utils'
 
 export default function ServiceWorkerInit() {
   useEffect(() => {
-    // Force unregister of Service Worker to bypass stale cache
     if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
       navigator.serviceWorker.getRegistrations().then(registrations => {
         for (let registration of registrations) {
@@ -15,6 +14,21 @@ export default function ServiceWorkerInit() {
         }
       }).catch(err => console.warn('SW unregister error:', err))
     }
+  }, [])
+
+  // Registra y suscribe a push notifications
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.serviceWorker) return
+    const register = async () => {
+      try {
+        const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        console.log('Service Worker registered')
+        await setupPushSubscription(reg)
+      } catch (err) {
+        console.warn('SW registration error:', err)
+      }
+    }
+    register()
   }, [])
 
   return null
