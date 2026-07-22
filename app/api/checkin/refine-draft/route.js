@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
 import { z } from 'zod'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 import { refineRoutineDraft } from '@/lib/routineGeneration'
+import { refineDietDraft } from '@/lib/dietGeneration'
 
 function getSupabase() {
   return createClient(
@@ -59,48 +59,43 @@ export async function POST(req) {
       if (!checkin.draft_diet_content) {
         return NextResponse.json({ error: 'Esta revisión no tiene borrador de dieta' }, { status: 400 })
       }
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-      const prompt = `Eres un nutricionista deportivo experto del club NL VIP.
-El entrenador está revisando la dieta ADAPTADA tras la revisión periódica de un socio y quiere aplicar una corrección.
-
-MACROS OBJETIVO ACTUALES DEL BORRADOR:
-- Calorías: ${checkin.draft_calories || '?'} kcal | Proteína: ${checkin.draft_protein_g || '?'}g | Carbohidratos: ${checkin.draft_carbs_g || '?'}g | Grasas: ${checkin.draft_fat_g || '?'}g
-
-BORRADOR ACTUAL:
-${checkin.draft_diet_content}
-
-CORRECCIÓN SOLICITADA POR EL ENTRENADOR:
-"${correction}"
-
-INSTRUCCIONES:
-1. Aplica EXACTAMENTE la corrección indicada manteniendo el mismo formato y estructura del documento (mismos encabezados "## ..." y formato de comidas).
-2. Ajusta gramos de otros alimentos si hace falta para mantener los macros objetivo, salvo que la corrección pida explícitamente cambiarlos.
-3. Devuelve el DOCUMENTO COMPLETO corregido, sin explicaciones adicionales.`
-
-      const aiResponse = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 4000,
-        temperature: 0.4,
+      const { content, macros, changeSummary } = await refineDietDraft({
+        currentContent: checkin.draft_diet_content,
+        currentMacros: {
+          calories: checkin.draft_calories,
+          protein_g: checkin.draft_protein_g,
+          carbs_g: checkin.draft_carbs_g,
+          fat_g: checkin.draft_fat_g,
+        },
+        correction,
       })
-      const updatedDietContent = aiResponse.choices[0]?.message?.content?.trim() || checkin.draft_diet_content
 
-      await supabase.from('member_checkins').update({ draft_diet_content: updatedDietContent }).eq('id', checkinId)
-      return NextResponse.json({ success: true, target: 'diet', draftDietContent: updatedDietContent })
+      await supabase.from('member_checkins').update({
+        draft_diet_content: content,
+        draft_calories: macros.calories,
+        draft_protein_g: macros.protein_g,
+        draft_carbs_g: macros.carbs_g,
+        draft_fat_g: macros.fat_g,
+        diet_change_summary: changeSummary || checkin.diet_change_summary,
+      }).eq('id', checkinId)
+      return NextResponse.json({ success: true, target: 'diet', draftDietContent: content, macros, changeSummary })
     }
 
     // target === 'routine'
     if (!checkin.draft_routine_data) {
       return NextResponse.json({ error: 'Esta revisión no tiene borrador de rutina' }, { status: 400 })
     }
-    const updatedRoutine = await refineRoutineDraft({
+    const { routine: updatedRoutine, changeSummary } = await refineRoutineDraft({
       supabase,
       member_id: checkin.member_id,
       currentRoutine: checkin.draft_routine_data,
       correction,
     })
-    await supabase.from('member_checkins').update({ draft_routine_data: updatedRoutine }).eq('id', checkinId)
-    return NextResponse.json({ success: true, target: 'routine', draftRoutineData: updatedRoutine })
+    await supabase.from('member_checkins').update({
+      draft_routine_data: updatedRoutine,
+      routine_change_summary: changeSummary || checkin.routine_change_summary,
+    }).eq('id', checkinId)
+    return NextResponse.json({ success: true, target: 'routine', draftRoutineData: updatedRoutine, changeSummary })
   } catch (error) {
     console.error('checkin/refine-draft error:', error)
     return NextResponse.json({ error: error.message }, { status: error.status || 500 })

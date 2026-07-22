@@ -218,7 +218,7 @@ function CheckInCard({ checkin, onRefresh }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error al ajustar')
-      toast({ title: 'Ajuste aplicado' })
+      toast({ title: 'Ajuste aplicado', description: data.changeSummary || undefined })
       setCorrection('')
       setCorrectionTarget(null)
       onRefresh?.()
