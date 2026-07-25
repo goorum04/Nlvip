@@ -625,6 +625,192 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
   const handleSendRef = useRef(null)
   const { toast } = useToast()
 
+  // --- Background job polling ---------------------------------------------
+  // La generación de dietas/rutinas puede tardar 15-30s+ encadenando varias
+  // llamadas a OpenAI. En vez de mantener la conexión abierta esperando (lo
+  // que se corta si el admin minimiza la app o pierde la señal un momento),
+  // el servidor arranca un job y responde al instante con su id; el cliente
+  // solo pregunta "¿ya está?" cada pocos segundos. El job sigue corriendo en
+  // el servidor pase lo que pase con la conexión del cliente, y si la app se
+  // minimiza/cierra del todo, al volver retoma la consulta sola gracias al
+  // id guardado en localStorage.
+  const PENDING_JOB_KEY = 'nlvip_admin_assistant_job'
+  const JOB_STALE_MS = 15 * 60 * 1000
+  const activeJobRef = useRef(null)
+
+  const savePendingJob = (jobId, kind, extra = {}) => {
+    try { localStorage.setItem(PENDING_JOB_KEY, JSON.stringify({ jobId, kind, ts: Date.now(), ...extra })) } catch {}
+  }
+  const clearPendingJob = () => {
+    try { localStorage.removeItem(PENDING_JOB_KEY) } catch {}
+  }
+
+  const fetchJobStatus = async (jobId) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch(`${getApiUrl()}/api/admin-assistant?jobId=${jobId}`, {
+      headers: { 'Authorization': `Bearer ${session?.access_token}` },
+    })
+    return res.json()
+  }
+
+  // Sondea un job hasta que termine. Si falla la consulta por red (p.ej. la
+  // app estaba minimizada), reintenta sin abortar — el job sigue vivo en el
+  // servidor de todas formas.
+  const pollJob = (jobId) => new Promise((resolve, reject) => {
+    let cancelled = false
+    let timeoutId = null
+
+    const cleanup = () => {
+      cancelled = true
+      if (timeoutId) clearTimeout(timeoutId)
+      if (activeJobRef.current?.jobId === jobId) activeJobRef.current = null
+    }
+
+    const check = async () => {
+      if (cancelled) return
+      try {
+        const data = await fetchJobStatus(jobId)
+        if (data.status === 'done') { cleanup(); resolve(data.result); return }
+        if (data.status === 'error') { cleanup(); reject(new Error(data.error || 'Error del asistente')); return }
+      } catch {
+        // Fallo de red consultando el estado: reintentamos, no abortamos.
+      }
+      if (!cancelled) timeoutId = setTimeout(check, 3000)
+    }
+
+    activeJobRef.current = { jobId, checkNow: check }
+    check()
+  })
+
+  // Al volver a primer plano, comprueba el job activo de inmediato en vez de
+  // esperar al siguiente intervalo de 3s.
+  useEffect(() => {
+    const onResume = () => {
+      if (document.visibilityState === 'visible' && activeJobRef.current) {
+        activeJobRef.current.checkNow()
+      }
+    }
+    document.addEventListener('visibilitychange', onResume)
+    window.addEventListener('focus', onResume)
+    return () => {
+      document.removeEventListener('visibilitychange', onResume)
+      window.removeEventListener('focus', onResume)
+    }
+  }, [])
+
+  // Aplica el resultado de un job de chat normal (mismo procesamiento que
+  // antes hacía handleSend justo después del fetch).
+  const applyChatResult = (data) => {
+    if (data.message) {
+      let extractedDietData = null
+      let extractedRoutine = null
+      if (data.toolResults) {
+        for (const result of Object.values(data.toolResults)) {
+          if (!extractedDietData && result?.diet_generated && result?.diet_data) {
+            extractedDietData = result.diet_data
+          }
+          if (!extractedRoutine && result?.routine_generated && result?.routine_data) {
+            extractedRoutine = {
+              routine_data: result.routine_data,
+              replaced: result.replaced || [],
+              injuries: result.injuries || [],
+              member_name: result.member_name || null
+            }
+          }
+        }
+      }
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: data.message,
+        diet_data: extractedDietData,
+        routine: extractedRoutine
+      }])
+      speak(data.message)
+    }
+
+    if (data.needsConfirmation && data.executionPlan) {
+      setPendingPlan(data.executionPlan)
+      setPendingToolCalls(data.toolCalls)
+    }
+  }
+
+  // Aplica el resultado de un job de ejecución de acciones confirmadas
+  // (mismo procesamiento que antes hacía handleConfirm tras el fetch).
+  const applyConfirmResult = async (data, toolsToExecute, session) => {
+    let resultMessage = data.success ? '✅ ¡Acciones ejecutadas correctamente!' : '❌ Algunas acciones fallaron'
+    if (!data.success && data.errors?.length) {
+      const errorDetail = data.errors.map(e => `• ${e.name}: ${e.error}`).join('\n')
+      resultMessage = `❌ Algunas acciones fallaron:\n${errorDetail}`
+    }
+    setMessages(prev => [...prev, { role: 'assistant', content: resultMessage }])
+    speak(data.success ? 'Listo, acciones ejecutadas' : 'Hubo algunos errores')
+
+    // Si se guardó una dieta NL Elite, disparar la generación del plan de recetas
+    // desde el cliente (los fetch internos servidor→servidor fallan en Vercel).
+    const toolResultsMap = data.toolResults || data.results || {}
+    if (data.success && toolResultsMap) {
+      const saveDietCall = toolsToExecute?.find(tc => tc.name === 'save_ai_diet')
+      if (saveDietCall) {
+        const saveResult = toolResultsMap[saveDietCall.id]
+        const saveArgs = typeof saveDietCall.args === 'string'
+          ? JSON.parse(saveDietCall.args)
+          : saveDietCall.args
+        const memberId = saveArgs?.member_id
+        const dietId = saveResult?.template_id
+        if (memberId && dietId) {
+          fetch(getApiUrl() + '/api/generate-recipe-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+            body: JSON.stringify({ memberId, dietId }),
+          }).catch(e => console.warn('Recipe plan generation failed:', e))
+        }
+      }
+    }
+
+    setPendingPlan(null)
+    setPendingToolCalls([])
+    toast({
+      title: data.success ? '¡Éxito!' : 'Error',
+      description: data.success ? 'Acciones ejecutadas correctamente' : 'Algunas acciones fallaron',
+      variant: data.success ? 'default' : 'destructive'
+    })
+  }
+
+  // Si la app se cerró/recargó con un job aún en curso, lo retoma solo.
+  useEffect(() => {
+    let raw = null
+    try { raw = localStorage.getItem(PENDING_JOB_KEY) } catch {}
+    if (!raw) return
+    let saved = null
+    try { saved = JSON.parse(raw) } catch {}
+    if (!saved?.jobId || Date.now() - (saved.ts || 0) > JOB_STALE_MS) {
+      clearPendingJob()
+      return
+    }
+
+    if (saved.kind === 'confirm') {
+      setIsExecuting(true)
+      pollJob(saved.jobId)
+        .then(async (data) => {
+          const { data: { session } } = await supabase.auth.getSession()
+          await applyConfirmResult(data, saved.toolsToExecute, session)
+        })
+        .catch((error) => {
+          toast({ title: 'Error', description: error.message, variant: 'destructive' })
+        })
+        .finally(() => { setIsExecuting(false); clearPendingJob() })
+    } else {
+      setLoading(true)
+      setIsLoading(true)
+      pollJob(saved.jobId)
+        .then(applyChatResult)
+        .catch((error) => {
+          setMessages(prev => [...prev, { role: 'assistant', content: `Lo siento, hubo un error: ${error.message}` }])
+        })
+        .finally(() => { setIsLoading(false); clearPendingJob() })
+    }
+  }, [])
+
   useEffect(() => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -823,40 +1009,15 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
         })
       })
 
-      const data = await response.json()
-      if (data.error) throw new Error(data.error)
+      const { jobId, error: startError } = await response.json()
+      if (startError) throw new Error(startError)
 
-      if (data.message) {
-        let extractedDietData = null
-        let extractedRoutine = null
-        if (data.toolResults) {
-          for (const result of Object.values(data.toolResults)) {
-            if (!extractedDietData && result?.diet_generated && result?.diet_data) {
-              extractedDietData = result.diet_data
-            }
-            if (!extractedRoutine && result?.routine_generated && result?.routine_data) {
-              extractedRoutine = {
-                routine_data: result.routine_data,
-                replaced: result.replaced || [],
-                injuries: result.injuries || [],
-                member_name: result.member_name || null
-              }
-            }
-          }
-        }
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: data.message,
-          diet_data: extractedDietData,
-          routine: extractedRoutine
-        }])
-        speak(data.message)
-      }
-
-      if (data.needsConfirmation && data.executionPlan) {
-        setPendingPlan(data.executionPlan)
-        setPendingToolCalls(data.toolCalls)
-      }
+      // A partir de aquí, la generación corre en el servidor pase lo que
+      // pase con esta pestaña/app — si se minimiza o se cierra del todo,
+      // este job se retoma solo al volver (ver useEffect de arriba).
+      savePendingJob(jobId, 'chat')
+      const data = await pollJob(jobId)
+      applyChatResult(data)
     } catch (error) {
       const isNetworkError = error.message === 'Load failed' || error.message === 'Failed to fetch' || error.message === 'Network request failed'
       const userMessage = isNetworkError
@@ -866,6 +1027,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
       toast({ title: isNetworkError ? 'Sin conexión' : 'Error', description: isNetworkError ? 'Comprueba tu conexión a internet' : error.message, variant: 'destructive' })
     } finally {
       setIsLoading(false)
+      clearPendingJob()
     }
   }
 
@@ -901,50 +1063,20 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
         body: JSON.stringify({ executeTools: true, toolCallsToExecute: toolsToExecute })
       })
 
-      const data = await response.json()
-      // Mostrar errores específicos si los hay para facilitar diagnóstico
-      let resultMessage = data.success ? '✅ ¡Acciones ejecutadas correctamente!' : '❌ Algunas acciones fallaron'
-      if (!data.success && data.errors?.length) {
-        const errorDetail = data.errors.map(e => `• ${e.name}: ${e.error}`).join('\n')
-        resultMessage = `❌ Algunas acciones fallaron:\n${errorDetail}`
-      }
-      setMessages(prev => [...prev, { role: 'assistant', content: resultMessage }])
-      speak(data.success ? 'Listo, acciones ejecutadas' : 'Hubo algunos errores')
+      const { jobId, error: startError } = await response.json()
+      if (startError) throw new Error(startError)
 
-      // Si se guardó una dieta NL Elite, disparar la generación del plan de recetas
-      // desde el cliente (los fetch internos servidor→servidor fallan en Vercel).
-      const toolResultsMap = data.toolResults || data.results || {}
-      if (data.success && toolResultsMap) {
-        const saveDietCall = toolsToExecute.find(tc => tc.name === 'save_ai_diet')
-        if (saveDietCall) {
-          const saveResult = toolResultsMap[saveDietCall.id]
-          const saveArgs = typeof saveDietCall.args === 'string'
-            ? JSON.parse(saveDietCall.args)
-            : saveDietCall.args
-          const memberId = saveArgs?.member_id
-          const dietId = saveResult?.template_id
-          if (memberId && dietId) {
-            fetch(getApiUrl() + '/api/generate-recipe-plan', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-              body: JSON.stringify({ memberId, dietId }),
-            }).catch(e => console.warn('Recipe plan generation failed:', e))
-          }
-        }
-      }
-
-      setPendingPlan(null)
-      setPendingToolCalls([])
-      toast({
-        title: data.success ? '¡Éxito!' : 'Error',
-        description: data.success ? 'Acciones ejecutadas correctamente' : 'Algunas acciones fallaron',
-        variant: data.success ? 'default' : 'destructive'
-      })
+      // Igual que en handleSend: la ejecución sigue en el servidor aunque se
+      // minimice o cierre la app; se retoma sola al volver.
+      savePendingJob(jobId, 'confirm', { toolsToExecute })
+      const data = await pollJob(jobId)
+      await applyConfirmResult(data, toolsToExecute, session)
     } catch (error) {
       const isNetworkError = error.message === 'Load failed' || error.message === 'Failed to fetch' || error.message === 'Network request failed'
       toast({ title: isNetworkError ? 'Sin conexión' : 'Error', description: isNetworkError ? 'Comprueba tu conexión a internet' : error.message, variant: 'destructive' })
     } finally {
       setIsExecuting(false)
+      clearPendingJob()
     }
   }
 

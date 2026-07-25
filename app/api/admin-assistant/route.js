@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import * as Sentry from '@sentry/nextjs'
 import { createClient } from '@supabase/supabase-js'
+import { waitUntil } from '@vercel/functions'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 
@@ -165,9 +166,217 @@ ${DIET_RULES}
 
 Responde siempre de forma amigable y profesional. Si algo falla, explica el problema de forma sencilla.`
 
+// Ejecuta las tool calls ya confirmadas por el admin (acciones que escriben datos).
+async function runToolExecution({ toolCallsToExecute, adminToken }) {
+  const results = {}
+  const errors = []
+
+  for (const toolCall of toolCallsToExecute) {
+    try {
+      const args = typeof toolCall.args === 'string' ? JSON.parse(toolCall.args) : toolCall.args
+      const result = await executeTool(toolCall.name, args, adminToken)
+      results[toolCall.id] = result
+    } catch (err) {
+      errors.push({ id: toolCall.id, name: toolCall.name, error: err.message })
+      results[toolCall.id] = { success: false, error: err.message }
+    }
+  }
+
+  return {
+    success: errors.length === 0,
+    results,
+    errors: errors.length > 0 ? errors : undefined
+  }
+}
+
+// Llamada normal al asistente: puede encadenar hasta 3 llamadas a OpenAI
+// (interpretar → ejecutar tools de lectura → interpretar resultados). Puede
+// tardar bastante, por eso corre como job en segundo plano (ver POST).
+async function runAssistantChat({ openai, messages, adminToken }) {
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      ...messages
+    ],
+    tools: TOOLS_DEFINITIONS,
+    tool_choice: 'auto',
+    temperature: 0.7,
+    max_tokens: 4000
+  })
+
+  const assistantMessage = response.choices[0].message
+  const toolCalls = assistantMessage.tool_calls || []
+
+  // Si hay tool calls, ejecutar las de solo lectura automáticamente
+  if (toolCalls.length > 0) {
+    const readOnlyTools = [
+      'find_member', 'get_member_summary', 'get_gym_dashboard', 'list_trainers',
+      'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity',
+      'list_members', 'generate_ai_diet_from_recipes', 'generate_member_routine',
+      'swap_routine_exercise', 'remove_routine_exercise', 'add_routine_exercise',
+      'modify_routine_exercise', 'modify_routine_day'
+    ]
+    const autoExecute = []
+    const needsConfirmation = []
+
+    for (const call of toolCalls) {
+      if (readOnlyTools.includes(call.function.name)) {
+        autoExecute.push(call)
+      } else {
+        needsConfirmation.push(call)
+      }
+    }
+
+    // Ejecutar automáticamente las herramientas de solo lectura
+    const toolResults = {}
+    for (const call of autoExecute) {
+      try {
+        const args = JSON.parse(call.function.arguments || '{}')
+        toolResults[call.id] = await executeTool(call.function.name, args, adminToken)
+      } catch (err) {
+        toolResults[call.id] = { success: false, error: err.message }
+      }
+    }
+
+    // Si hay resultados de lectura, hacer una segunda llamada para que el modelo los interprete
+    if (autoExecute.length > 0 && needsConfirmation.length === 0) {
+      const toolMessages = autoExecute.map(call => ({
+        role: 'tool',
+        tool_call_id: call.id,
+        content: JSON.stringify(toolResults[call.id])
+      }))
+
+      const followUpResponse = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...messages,
+          assistantMessage,
+          ...toolMessages
+        ],
+        tools: TOOLS_DEFINITIONS,
+        tool_choice: 'auto',
+        temperature: 0.7,
+        max_tokens: 2000
+      })
+
+      const followUpMessage = followUpResponse.choices[0].message
+      const newToolCalls = followUpMessage.tool_calls || []
+
+      // Si hay nuevas tool calls, procesarlas
+      if (newToolCalls.length > 0) {
+        const newAutoExecute = newToolCalls.filter(c => readOnlyTools.includes(c.function.name))
+        const newNeedsConfirmation = newToolCalls.filter(c => !readOnlyTools.includes(c.function.name))
+
+        // Ejecutar automáticamente las nuevas herramientas de solo lectura
+        for (const call of newAutoExecute) {
+          try {
+            const args = JSON.parse(call.function.arguments || '{}')
+            toolResults[call.id] = await executeTool(call.function.name, args, adminToken)
+          } catch (err) {
+            toolResults[call.id] = { success: false, error: err.message }
+          }
+        }
+
+        // Si ejecutamos más herramientas de solo lectura, hacer otra llamada al modelo
+        if (newAutoExecute.length > 0 && newNeedsConfirmation.length === 0) {
+          const newToolMessages = newAutoExecute.map(call => ({
+            role: 'tool',
+            tool_call_id: call.id,
+            content: JSON.stringify(toolResults[call.id])
+          }))
+
+          const finalResponse = await openai.chat.completions.create({
+            model: 'gpt-4o',
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              ...messages,
+              assistantMessage,
+              ...toolMessages,
+              followUpMessage,
+              ...newToolMessages
+            ],
+            temperature: 0.7,
+            max_tokens: 3000
+          })
+
+          return {
+            message: finalResponse.choices[0].message.content || 'Aquí está la información solicitada.',
+            toolCalls: [],
+            needsConfirmation: false,
+            toolResults
+          }
+        }
+
+        // Si hay acciones que necesitan confirmación
+        if (newNeedsConfirmation.length > 0) {
+          const executionPlan = generateExecutionPlan(newNeedsConfirmation)
+          return {
+            message: followUpMessage.content || 'Voy a realizar las siguientes acciones:',
+            toolCalls: newToolCalls,
+            executionPlan,
+            needsConfirmation: true,
+            toolResults
+          }
+        }
+      }
+
+      return {
+        message: followUpMessage.content || 'Listo',
+        toolCalls: [],
+        needsConfirmation: false,
+        toolResults
+      }
+    }
+
+    // Si hay acciones que necesitan confirmación
+    if (needsConfirmation.length > 0) {
+      const executionPlan = generateExecutionPlan(needsConfirmation)
+      return {
+        message: assistantMessage.content || 'Voy a realizar las siguientes acciones. ¿Confirmas?',
+        toolCalls: needsConfirmation,
+        executionPlan,
+        needsConfirmation: true,
+        toolResults
+      }
+    }
+  }
+
+  // Respuesta simple sin tools
+  return {
+    message: assistantMessage.content || 'No entendí tu petición. ¿Puedes reformularla?',
+    toolCalls: [],
+    needsConfirmation: false
+  }
+}
+
+// Corre el trabajo pesado (openai + tools) DESPUÉS de haber respondido ya al
+// cliente con el jobId (ver waitUntil en POST). Así, si el admin minimiza la
+// app o pierde la conexión mientras "piensa", el proceso sigue en el
+// servidor y el resultado queda guardado para cuando vuelva a consultarlo.
+async function processAssistantJob(jobId, supabaseAdmin, { messages, executeTools, toolCallsToExecute, adminToken }) {
+  try {
+    const result = executeTools && toolCallsToExecute?.length > 0
+      ? await runToolExecution({ toolCallsToExecute, adminToken })
+      : await runAssistantChat({ openai: getOpenAI(), messages, adminToken })
+
+    await supabaseAdmin
+      .from('assistant_jobs')
+      .update({ status: 'done', result, updated_at: new Date().toISOString() })
+      .eq('id', jobId)
+  } catch (error) {
+    Sentry.captureException(error, { tags: { endpoint: 'admin-assistant-job' } })
+    console.error('Admin Assistant job error:', error)
+    await supabaseAdmin
+      .from('assistant_jobs')
+      .update({ status: 'error', error: error.message || 'Error del asistente', updated_at: new Date().toISOString() })
+      .eq('id', jobId)
+  }
+}
+
 export async function POST(request) {
   const supabaseAdmin = getSupabaseAdmin()
-  const openai = getOpenAI()
   try {
     // 1. Rate Limiting (Más amplio para el chat del asistente)
     const identifier = getIdentifier(request)
@@ -186,11 +395,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
-
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(adminToken)
     if (authError || !user) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
@@ -206,187 +410,26 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Permisos insuficientes' }, { status: 403 })
     }
 
-    // Si es una petición de ejecución de tools ya confirmados
-    if (executeTools && toolCallsToExecute.length > 0) {
-      const results = {}
-      const errors = []
-
-      for (const toolCall of toolCallsToExecute) {
-        try {
-          const args = typeof toolCall.args === 'string' ? JSON.parse(toolCall.args) : toolCall.args
-          const result = await executeTool(toolCall.name, args, adminToken)
-          results[toolCall.id] = result
-        } catch (err) {
-          errors.push({ id: toolCall.id, name: toolCall.name, error: err.message })
-          results[toolCall.id] = { success: false, error: err.message }
-        }
-      }
-
-      return NextResponse.json({
-        success: errors.length === 0,
-        results,
-        errors: errors.length > 0 ? errors : undefined
+    // 3. Crear el job YA (estado 'processing') y responder de inmediato con su
+    // id. El trabajo real (OpenAI + tools) sigue corriendo en segundo plano
+    // vía waitUntil, independiente de si el cliente sigue conectado o no.
+    const { data: job, error: jobError } = await supabaseAdmin
+      .from('assistant_jobs')
+      .insert({
+        created_by: user.id,
+        status: 'processing',
+        request: { messages: messages || null, executeTools, toolCallsToExecute },
       })
+      .select('id')
+      .single()
+
+    if (jobError || !job) {
+      throw new Error(jobError?.message || 'No se pudo crear el job del asistente')
     }
 
-    // Llamada normal al asistente
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...messages
-      ],
-      tools: TOOLS_DEFINITIONS,
-      tool_choice: 'auto',
-      temperature: 0.7,
-      max_tokens: 4000
-    })
+    waitUntil(processAssistantJob(job.id, supabaseAdmin, { messages, executeTools, toolCallsToExecute, adminToken }))
 
-    const assistantMessage = response.choices[0].message
-    const toolCalls = assistantMessage.tool_calls || []
-
-    // Si hay tool calls, ejecutar las de solo lectura automáticamente
-    if (toolCalls.length > 0) {
-      const readOnlyTools = [
-        'find_member', 'get_member_summary', 'get_gym_dashboard', 'list_trainers',
-        'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity',
-        'list_members', 'generate_ai_diet_from_recipes', 'generate_member_routine',
-        'swap_routine_exercise', 'remove_routine_exercise', 'add_routine_exercise',
-        'modify_routine_exercise', 'modify_routine_day'
-      ]
-      const autoExecute = []
-      const needsConfirmation = []
-
-      for (const call of toolCalls) {
-        if (readOnlyTools.includes(call.function.name)) {
-          autoExecute.push(call)
-        } else {
-          needsConfirmation.push(call)
-        }
-      }
-
-      // Ejecutar automáticamente las herramientas de solo lectura
-      const toolResults = {}
-      for (const call of autoExecute) {
-        try {
-          const args = JSON.parse(call.function.arguments || '{}')
-          toolResults[call.id] = await executeTool(call.function.name, args, adminToken)
-        } catch (err) {
-          toolResults[call.id] = { success: false, error: err.message }
-        }
-      }
-
-      // Si hay resultados de lectura, hacer una segunda llamada para que el modelo los interprete
-      if (autoExecute.length > 0 && needsConfirmation.length === 0) {
-        const toolMessages = autoExecute.map(call => ({
-          role: 'tool',
-          tool_call_id: call.id,
-          content: JSON.stringify(toolResults[call.id])
-        }))
-
-        const followUpResponse = await openai.chat.completions.create({
-          model: 'gpt-4o',
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            ...messages,
-            assistantMessage,
-            ...toolMessages
-          ],
-          tools: TOOLS_DEFINITIONS,
-          tool_choice: 'auto',
-          temperature: 0.7,
-          max_tokens: 2000
-        })
-
-        const followUpMessage = followUpResponse.choices[0].message
-        const newToolCalls = followUpMessage.tool_calls || []
-
-        // Si hay nuevas tool calls, procesarlas
-        if (newToolCalls.length > 0) {
-          const newAutoExecute = newToolCalls.filter(c => readOnlyTools.includes(c.function.name))
-          const newNeedsConfirmation = newToolCalls.filter(c => !readOnlyTools.includes(c.function.name))
-
-          // Ejecutar automáticamente las nuevas herramientas de solo lectura
-          for (const call of newAutoExecute) {
-            try {
-              const args = JSON.parse(call.function.arguments || '{}')
-              toolResults[call.id] = await executeTool(call.function.name, args, adminToken)
-            } catch (err) {
-              toolResults[call.id] = { success: false, error: err.message }
-            }
-          }
-
-          // Si ejecutamos más herramientas de solo lectura, hacer otra llamada al modelo
-          if (newAutoExecute.length > 0 && newNeedsConfirmation.length === 0) {
-            const newToolMessages = newAutoExecute.map(call => ({
-              role: 'tool',
-              tool_call_id: call.id,
-              content: JSON.stringify(toolResults[call.id])
-            }))
-
-            const finalResponse = await openai.chat.completions.create({
-              model: 'gpt-4o',
-              messages: [
-                { role: 'system', content: SYSTEM_PROMPT },
-                ...messages,
-                assistantMessage,
-                ...toolMessages,
-                followUpMessage,
-                ...newToolMessages
-              ],
-              temperature: 0.7,
-              max_tokens: 3000
-            })
-
-            return NextResponse.json({
-              message: finalResponse.choices[0].message.content || 'Aquí está la información solicitada.',
-              toolCalls: [],
-              needsConfirmation: false,
-              toolResults
-            })
-          }
-
-          // Si hay acciones que necesitan confirmación
-          if (newNeedsConfirmation.length > 0) {
-            const executionPlan = generateExecutionPlan(newNeedsConfirmation)
-            return NextResponse.json({
-              message: followUpMessage.content || 'Voy a realizar las siguientes acciones:',
-              toolCalls: newToolCalls,
-              executionPlan,
-              needsConfirmation: true,
-              toolResults
-            })
-          }
-        }
-
-        return NextResponse.json({
-          message: followUpMessage.content || 'Listo',
-          toolCalls: [],
-          needsConfirmation: false,
-          toolResults
-        })
-      }
-
-      // Si hay acciones que necesitan confirmación
-      if (needsConfirmation.length > 0) {
-        const executionPlan = generateExecutionPlan(needsConfirmation)
-        return NextResponse.json({
-          message: assistantMessage.content || 'Voy a realizar las siguientes acciones. ¿Confirmas?',
-          toolCalls: needsConfirmation,
-          executionPlan,
-          needsConfirmation: true,
-          toolResults
-        })
-      }
-    }
-
-    // Respuesta simple sin tools
-    return NextResponse.json({
-      message: assistantMessage.content || 'No entendí tu petición. ¿Puedes reformularla?',
-      toolCalls: [],
-      needsConfirmation: false
-    })
-
+    return NextResponse.json({ jobId: job.id })
   } catch (error) {
     Sentry.captureException(error, { tags: { endpoint: 'admin-assistant' } })
     console.error('Admin Assistant Error:', error)
@@ -394,5 +437,39 @@ export async function POST(request) {
       { error: error.message || 'Error del asistente' },
       { status: 500 }
     )
+  }
+}
+
+// GET /api/admin-assistant?jobId=... — consulta el estado de un job en curso.
+// El cliente lo sondea cada pocos segundos (y al volver del segundo plano)
+// hasta que status pase a 'done' o 'error'.
+export async function GET(request) {
+  const supabaseAdmin = getSupabaseAdmin()
+  try {
+    const jobId = new URL(request.url).searchParams.get('jobId')
+    if (!jobId) {
+      return NextResponse.json({ error: 'jobId requerido' }, { status: 400 })
+    }
+
+    const authHeader = request.headers.get('Authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    if (authError || !user) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+
+    const { data: job, error } = await supabaseAdmin
+      .from('assistant_jobs')
+      .select('id, status, result, error, created_by')
+      .eq('id', jobId)
+      .maybeSingle()
+
+    if (error || !job) return NextResponse.json({ error: 'Job no encontrado' }, { status: 404 })
+    if (job.created_by !== user.id) return NextResponse.json({ error: 'Prohibido' }, { status: 403 })
+
+    return NextResponse.json({ status: job.status, result: job.result, error: job.error })
+  } catch (error) {
+    Sentry.captureException(error, { tags: { endpoint: 'admin-assistant-job-status' } })
+    return NextResponse.json({ error: error.message || 'Error consultando el job' }, { status: 500 })
   }
 }
