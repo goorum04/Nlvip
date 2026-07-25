@@ -12,7 +12,10 @@ const getSupabaseAdmin = () => createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 )
 
-const getOpenAI = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+// maxRetries bajo: si hay rate limit, mejor fallar rápido y que el admin
+// vea el aviso a los pocos segundos (el poll del cliente lo recoge en su
+// siguiente vuelta) que esperar ~40s a que el SDK agote sus reintentos.
+const getOpenAI = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 1 })
 
 const DIET_RULES = `
 SISTEMA NL ELITE — REGLAS DEL PROGRAMA NUTRICIONAL:
@@ -355,6 +358,17 @@ async function runAssistantChat({ openai, messages, adminToken }) {
 // cliente con el jobId (ver waitUntil en POST). Así, si el admin minimiza la
 // app o pierde la conexión mientras "piensa", el proceso sigue en el
 // servidor y el resultado queda guardado para cuando vuelva a consultarlo.
+function friendlyJobError(error) {
+  const raw = error?.message || ''
+  if (error?.status === 429 || /rate limit/i.test(raw)) {
+    return 'Ahora mismo tengo demasiadas peticiones a la vez (límite de uso de la IA). Espera unos 20-30 segundos e inténtalo de nuevo.'
+  }
+  if (error?.status === 401 || /invalid api key|incorrect api key/i.test(raw)) {
+    return 'Hay un problema de configuración con la IA. Avisa al desarrollador.'
+  }
+  return raw || 'Error del asistente'
+}
+
 async function processAssistantJob(jobId, supabaseAdmin, { messages, executeTools, toolCallsToExecute, adminToken }) {
   try {
     const result = executeTools && toolCallsToExecute?.length > 0
@@ -370,7 +384,7 @@ async function processAssistantJob(jobId, supabaseAdmin, { messages, executeTool
     console.error('Admin Assistant job error:', error)
     await supabaseAdmin
       .from('assistant_jobs')
-      .update({ status: 'error', error: error.message || 'Error del asistente', updated_at: new Date().toISOString() })
+      .update({ status: 'error', error: friendlyJobError(error), updated_at: new Date().toISOString() })
       .eq('id', jobId)
   }
 }
