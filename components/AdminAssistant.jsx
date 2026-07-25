@@ -655,10 +655,15 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
 
   // Sondea un job hasta que termine. Si falla la consulta por red (p.ej. la
   // app estaba minimizada), reintenta sin abortar — el job sigue vivo en el
-  // servidor de todas formas.
+  // servidor de todas formas. Red de seguridad: nunca sondea más de 5 minutos
+  // seguidos, para que un fallo inesperado no deje isLoading atascado en
+  // true para siempre (lo que bloquearía silenciosamente cualquier envío
+  // futuro).
+  const POLL_MAX_MS = 5 * 60 * 1000
   const pollJob = (jobId) => new Promise((resolve, reject) => {
     let cancelled = false
     let timeoutId = null
+    const startedAt = Date.now()
 
     const cleanup = () => {
       cancelled = true
@@ -668,6 +673,11 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
 
     const check = async () => {
       if (cancelled) return
+      if (Date.now() - startedAt > POLL_MAX_MS) {
+        cleanup()
+        reject(new Error('El asistente está tardando demasiado. Inténtalo de nuevo en un momento.'))
+        return
+      }
       try {
         const data = await fetchJobStatus(jobId)
         if (data.status === 'done') { cleanup(); resolve(data.result); return }
