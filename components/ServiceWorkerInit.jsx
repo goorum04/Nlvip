@@ -5,18 +5,12 @@ import { supabase } from '@/lib/supabase'
 import { getApiUrl } from '@/lib/utils'
 
 export default function ServiceWorkerInit() {
-  useEffect(() => {
-    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        for (let registration of registrations) {
-          registration.unregister()
-          console.log('Service Worker unregistered to clear cache')
-        }
-      }).catch(err => console.warn('SW unregister error:', err))
-    }
-  }, [])
-
-  // Registra y suscribe a push notifications
+  // Registra y suscribe a push notifications.
+  // (sw.js ya limpia toda caché vieja en su propio evento 'activate', así que
+  // no hace falta desregistrar aquí — hacerlo en paralelo al register() de
+  // abajo competía por el mismo Service Worker y podía dejarlo a medio
+  // desregistrar mientras una petición larga (p.ej. enviar un audio) seguía
+  // en curso, cortándola.)
   useEffect(() => {
     if (typeof navigator === 'undefined' || !navigator.serviceWorker) return
     const register = async () => {
