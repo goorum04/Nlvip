@@ -29,6 +29,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Never serve the HTML shell from cache. Falling back to a stale cached
+  // page on a network blip means the app can silently keep running old
+  // JS (with old bugs already fixed on the server) indefinitely, since the
+  // fallback is invisible to the user — no error, just old code. The app
+  // shell is cheap to refetch, so always require a fresh network response
+  // for navigations.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        new Response('<h1>Sin conexión</h1><p>Comprueba tu internet e inténtalo de nuevo.</p>', {
+          status: 503,
+          headers: { 'Content-Type': 'text/html' }
+        })
+      )
+    );
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
