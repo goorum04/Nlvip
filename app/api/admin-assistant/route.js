@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import * as Sentry from '@sentry/nextjs'
 import { createClient } from '@supabase/supabase-js'
-import { waitUntil } from '@vercel/functions'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 
@@ -354,10 +353,8 @@ async function runAssistantChat({ openai, messages, adminToken }) {
   }
 }
 
-// Corre el trabajo pesado (openai + tools) DESPUÉS de haber respondido ya al
-// cliente con el jobId (ver waitUntil en POST). Así, si el admin minimiza la
-// app o pierde la conexión mientras "piensa", el proceso sigue en el
-// servidor y el resultado queda guardado para cuando vuelva a consultarlo.
+// Convierte errores técnicos (p.ej. 429 de OpenAI) en un mensaje claro en
+// español para el admin, en vez del texto crudo del proveedor.
 function friendlyJobError(error) {
   const raw = error?.message || ''
   if (error?.status === 429 || /rate limit/i.test(raw)) {
@@ -367,26 +364,6 @@ function friendlyJobError(error) {
     return 'Hay un problema de configuración con la IA. Avisa al desarrollador.'
   }
   return raw || 'Error del asistente'
-}
-
-async function processAssistantJob(jobId, supabaseAdmin, { messages, executeTools, toolCallsToExecute, adminToken }) {
-  try {
-    const result = executeTools && toolCallsToExecute?.length > 0
-      ? await runToolExecution({ toolCallsToExecute, adminToken })
-      : await runAssistantChat({ openai: getOpenAI(), messages, adminToken })
-
-    await supabaseAdmin
-      .from('assistant_jobs')
-      .update({ status: 'done', result, updated_at: new Date().toISOString() })
-      .eq('id', jobId)
-  } catch (error) {
-    Sentry.captureException(error, { tags: { endpoint: 'admin-assistant-job' } })
-    console.error('Admin Assistant job error:', error)
-    await supabaseAdmin
-      .from('assistant_jobs')
-      .update({ status: 'error', error: friendlyJobError(error), updated_at: new Date().toISOString() })
-      .eq('id', jobId)
-  }
 }
 
 export async function POST(request) {
@@ -424,10 +401,22 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Permisos insuficientes' }, { status: 403 })
     }
 
-    // 3. Crear el job YA (estado 'processing') y responder de inmediato con su
-    // id. El trabajo real (OpenAI + tools) sigue corriendo en segundo plano
-    // vía waitUntil, independiente de si el cliente sigue conectado o no.
-    const { data: job, error: jobError } = await supabaseAdmin
+    // 3. Registrar el job (para trazabilidad / futura consulta) y procesar
+    // AQUÍ MISMO, síncronamente, devolviendo el resultado completo en esta
+    // misma respuesta.
+    //
+    // IMPORTANTE: la app instalada desde el App Store no se actualiza sola
+    // — el JS que corre ahí quedó fijado en la última build de Xcode. Ese
+    // cliente espera recibir {message, toolCalls, ...} directamente en la
+    // respuesta del POST, tal como funcionaba antes. Si esta ruta solo
+    // devuelve {jobId} y deja el trabajo para después (como en un momento
+    // se probó), esa app antigua no sabe que tiene que preguntar por el
+    // resultado: la petición "termina" sin mostrar nada, aunque el job se
+    // complete bien en el servidor. Por eso esta ruta debe seguir siendo
+    // síncrona mientras siga en uso la build actual del App Store — el
+    // modo asíncrono (job + polling) solo se puede activar de verdad en
+    // una futura actualización nativa que además actualice el cliente.
+    const { data: job } = await supabaseAdmin
       .from('assistant_jobs')
       .insert({
         created_by: user.id,
@@ -437,18 +426,23 @@ export async function POST(request) {
       .select('id')
       .single()
 
-    if (jobError || !job) {
-      throw new Error(jobError?.message || 'No se pudo crear el job del asistente')
+    const result = executeTools && toolCallsToExecute?.length > 0
+      ? await runToolExecution({ toolCallsToExecute, adminToken })
+      : await runAssistantChat({ openai: getOpenAI(), messages, adminToken })
+
+    if (job?.id) {
+      await supabaseAdmin
+        .from('assistant_jobs')
+        .update({ status: 'done', result, updated_at: new Date().toISOString() })
+        .eq('id', job.id)
     }
 
-    waitUntil(processAssistantJob(job.id, supabaseAdmin, { messages, executeTools, toolCallsToExecute, adminToken }))
-
-    return NextResponse.json({ jobId: job.id })
+    return NextResponse.json({ jobId: job?.id, ...result })
   } catch (error) {
     Sentry.captureException(error, { tags: { endpoint: 'admin-assistant' } })
     console.error('Admin Assistant Error:', error)
     return NextResponse.json(
-      { error: error.message || 'Error del asistente' },
+      { error: friendlyJobError(error) },
       { status: 500 }
     )
   }
