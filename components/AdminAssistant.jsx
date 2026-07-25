@@ -786,7 +786,11 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
     })
   }
 
-  // Si la app se cerró/recargó con un job aún en curso, lo retoma solo.
+  // Si la app se cerró/recargó con un job aún en curso, lo retoma solo —
+  // pero SIN usar isLoading/isExecuting: esos también bloquean el envío de
+  // mensajes nuevos (ver "if (isLoading) return" en handleSend), y retomar
+  // algo viejo en segundo plano no debe impedir que el admin escriba o
+  // grabe algo nuevo mientras tanto.
   useEffect(() => {
     let raw = null
     try { raw = localStorage.getItem(PENDING_JOB_KEY) } catch {}
@@ -799,7 +803,6 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
     }
 
     if (saved.kind === 'confirm') {
-      setIsExecuting(true)
       pollJob(saved.jobId)
         .then(async (data) => {
           const { data: { session } } = await supabase.auth.getSession()
@@ -808,16 +811,14 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
         .catch((error) => {
           toast({ title: 'Error', description: error.message, variant: 'destructive' })
         })
-        .finally(() => { setIsExecuting(false); clearPendingJob() })
+        .finally(() => { clearPendingJob() })
     } else {
-      setLoading(true)
-      setIsLoading(true)
       pollJob(saved.jobId)
         .then(applyChatResult)
         .catch((error) => {
           setMessages(prev => [...prev, { role: 'assistant', content: `Lo siento, hubo un error: ${error.message}` }])
         })
-        .finally(() => { setIsLoading(false); clearPendingJob() })
+        .finally(() => { clearPendingJob() })
     }
   }, [])
 
