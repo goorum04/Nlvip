@@ -57,8 +57,11 @@ CÁLCULO DE MACROS:
 `;
 
 
-const SYSTEM_PROMPT = `Eres el Asistente IA del gimnasio NL VIP TEAM. Tu trabajo es ayudar al administrador a gestionar el gimnasio mediante comandos de voz o texto.
-
+const buildSystemPrompt = (adminPreferencesText) => `Eres el Asistente IA del gimnasio NL VIP TEAM. Tu trabajo es ayudar al administrador a gestionar el gimnasio mediante comandos de voz o texto.
+${adminPreferencesText ? `
+CÓMO TRABAJA ESTE ADMIN (aprendido de conversaciones anteriores — aplícalo SIEMPRE, en cualquier socio, sin que tenga que repetirlo):
+${adminPreferencesText}
+` : ''}
 IMPORTANTE:
 1. SIEMPRE usa las herramientas disponibles para obtener información o realizar acciones
 2. Cuando el admin mencione un nombre de socio, PRIMERO usa find_member para buscarlo
@@ -170,6 +173,15 @@ REGLAS IMPORTANTES PARA LA EDICIÓN:
 CUANDO GENERES O HABLES DE DIETAS, USA ESTAS REGLAS DEL GIMNASIO:
 ${DIET_RULES}
 
+MEMORIA DEL ASISTENTE — CUÁNDO GUARDAR ALGO PARA RECORDARLO SIEMPRE:
+El asistente puede recordar cosas de una conversación a otra. Hay dos tipos de memoria, no las mezcles:
+
+1. NOTA DE UN SOCIO CONCRETO (add_member_note): algo duradero sobre ESE socio en particular que no sea una aversión de alimento (para comida usa add_food_aversion). Ejemplos: "hombro sensible al hacer press", "prefiere barra recta en curl de bíceps y tríceps", "no le gusta hacer cardio en cinta". Guárdalo en cuanto el admin diga algo así sobre un socio con nombre, SIN esperar a que diga "recuérdalo" — es su forma normal de darte contexto duradero. Estas notas se cargan automáticamente cada vez que generes una rutina o dieta para ese socio.
+
+2. PREFERENCIA GENERAL DEL ADMIN (remember_admin_preference): algo sobre CÓMO le gusta trabajar al admin en general, no ligado a un socio. Ejemplos: "para el día de empuje siempre agrupa hombro con tríceps", "usa 'barra recta' como término para bíceps y tríceps", "prefiere que los resúmenes sean breves". Guárdalo cuando detectes un patrón que el admin repite o corrige más de una vez, o cuando diga explícitamente "recuerda que...", "acuérdate de que...", "a partir de ahora...". Esto se aplica SIEMPRE a partir de entonces, con cualquier socio.
+
+Si dudas si algo es específico de un socio o una preferencia general, pregúntale al admin antes de guardarlo. Usa list_member_notes / list_admin_preferences si el admin pregunta "¿qué recuerdas de X?" o "¿qué sabes de mi forma de trabajar?".
+
 Responde siempre de forma amigable y profesional. Si algo falla, explica el problema de forma sencilla.`
 
 // Ejecuta las tool calls ya confirmadas por el admin (acciones que escriben datos).
@@ -198,11 +210,12 @@ async function runToolExecution({ toolCallsToExecute, adminToken }) {
 // Llamada normal al asistente: puede encadenar hasta 3 llamadas a OpenAI
 // (interpretar → ejecutar tools de lectura → interpretar resultados). Puede
 // tardar bastante, por eso corre como job en segundo plano (ver POST).
-async function runAssistantChat({ openai, messages, adminToken }) {
+async function runAssistantChat({ openai, messages, adminToken, adminPreferencesText }) {
+  const systemPrompt = buildSystemPrompt(adminPreferencesText)
   const response = await openai.chat.completions.create({
     model: 'gpt-4o',
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       ...messages
     ],
     tools: TOOLS_DEFINITIONS,
@@ -221,7 +234,8 @@ async function runAssistantChat({ openai, messages, adminToken }) {
       'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity',
       'list_members', 'generate_ai_diet_from_recipes', 'generate_member_routine',
       'swap_routine_exercise', 'remove_routine_exercise', 'add_routine_exercise',
-      'modify_routine_exercise', 'modify_routine_day'
+      'modify_routine_exercise', 'modify_routine_day',
+      'list_member_notes', 'list_admin_preferences'
     ]
     const autoExecute = []
     const needsConfirmation = []
@@ -256,7 +270,7 @@ async function runAssistantChat({ openai, messages, adminToken }) {
       const followUpResponse = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: systemPrompt },
           ...messages,
           assistantMessage,
           ...toolMessages
@@ -296,7 +310,7 @@ async function runAssistantChat({ openai, messages, adminToken }) {
           const finalResponse = await openai.chat.completions.create({
             model: 'gpt-4o',
             messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'system', content: systemPrompt },
               ...messages,
               assistantMessage,
               ...toolMessages,
@@ -430,9 +444,19 @@ export async function POST(request) {
       .select('id')
       .single()
 
+    let adminPreferencesText = ''
+    if (!(executeTools && toolCallsToExecute?.length > 0)) {
+      try {
+        const { data } = await supabaseAdmin.rpc('rpc_get_admin_preferences_text')
+        adminPreferencesText = data || ''
+      } catch (e) {
+        console.warn('rpc_get_admin_preferences_text falló, se ignoran preferencias:', e.message)
+      }
+    }
+
     const result = executeTools && toolCallsToExecute?.length > 0
       ? await runToolExecution({ toolCallsToExecute, adminToken })
-      : await runAssistantChat({ openai: getOpenAI(), messages, adminToken })
+      : await runAssistantChat({ openai: getOpenAI(), messages, adminToken, adminPreferencesText })
 
     if (job?.id) {
       await supabaseAdmin

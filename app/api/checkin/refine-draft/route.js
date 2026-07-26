@@ -68,6 +68,8 @@ export async function POST(req) {
           fat_g: checkin.draft_fat_g,
         },
         correction,
+        supabase,
+        memberId: checkin.member_id,
       })
 
       await supabase.from('member_checkins').update({

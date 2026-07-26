@@ -56,6 +56,8 @@ export async function POST(req) {
       currentContent: currentDiet.diet_templates.content,
       currentMacros: oldMacros,
       correction,
+      supabase,
+      memberId,
     })
 
     // Modo previsualización: devuelve el contenido generado sin guardar nada,
