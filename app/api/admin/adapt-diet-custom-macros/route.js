@@ -33,6 +33,14 @@ export async function POST(req) {
       .eq('id', memberId)
       .single()
 
+    const { data: adminProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin')
+      .limit(1)
+      .maybeSingle()
+    const trainerId = adminProfile?.id || null
+
     const oldMacros = {
       calories: currentDiet.diet_templates.calories,
       protein_g: currentDiet.diet_templates.protein_g,
@@ -54,7 +62,7 @@ export async function POST(req) {
     const { data: template, error: tError } = await supabase
       .from('diet_templates')
       .insert({
-        trainer_id: 'admin',
+        trainer_id: trainerId,
         name: `${profile.name} — Macros ajustados (${new Date().toLocaleDateString('es-ES')})`,
         content,
         calories: macros.calories,
@@ -73,7 +81,7 @@ export async function POST(req) {
       .upsert({
         member_id: memberId,
         diet_template_id: template.id,
-        assigned_by: 'admin',
+        assigned_by: trainerId,
         assigned_at: new Date().toISOString(),
       }, { onConflict: 'member_id' })
 
