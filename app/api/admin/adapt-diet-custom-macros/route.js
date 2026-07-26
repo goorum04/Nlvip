@@ -13,7 +13,7 @@ function getSupabase() {
 export async function POST(req) {
   const supabase = getSupabase()
   try {
-    const { memberId, calories, protein_g, carbs_g, fat_g } = await req.json()
+    const { memberId, calories, protein_g, carbs_g, fat_g, preview = false } = await req.json()
     if (!memberId) return NextResponse.json({ error: 'memberId requerido' }, { status: 400 })
 
     // Obtener dieta actual
@@ -57,6 +57,20 @@ export async function POST(req) {
       currentMacros: oldMacros,
       correction,
     })
+
+    // Modo previsualización: devuelve el contenido generado sin guardar nada,
+    // para que el admin pueda revisarlo antes de asignarlo al socio.
+    if (preview) {
+      return NextResponse.json({
+        success: true,
+        preview: true,
+        message: `Vista previa de la dieta ajustada de ${profile.name}`,
+        oldMacros,
+        newMacros: macros,
+        content,
+        changeSummary,
+      })
+    }
 
     // Guardar nueva plantilla
     const { data: template, error: tError } = await supabase
