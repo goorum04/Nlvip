@@ -1,6 +1,7 @@
 import './globals.css'
 import ServiceWorkerInit from '@/components/ServiceWorkerInit'
 import CapacitorPushInit from '@/components/CapacitorPushInit'
+import AppUpdateBanner from '@/components/AppUpdateBanner'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Toaster } from '@/components/ui/toaster'
 
@@ -41,6 +42,7 @@ export default function RootLayout({ children }) {
       <body className="bg-[#030303] text-white overscroll-none">
         <ServiceWorkerInit />
         <CapacitorPushInit />
+        <AppUpdateBanner />
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
