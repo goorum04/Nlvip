@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import ExerciseCatalogPicker from './ExerciseCatalogPicker'
+import { WorkoutSetLogger } from './WorkoutSetLogger'
 
 // Componente para subir video de ejercicio
 function ExerciseVideoUploader({ onVideoUploaded, existingVideo, trainerId }) {
@@ -794,7 +795,11 @@ export function WorkoutBuilder({ trainerId, existingWorkout = null, onSave, onCa
 }
 
 // Componente para ver una rutina (modo lectura)
-export function WorkoutViewer({ workoutId, memberPrs = [], highlightToday = false }) {
+// logSetsForMemberId: si se pasa (solo lo hace la vista del socio), debajo del
+// entreno de hoy aparece el registro OPCIONAL de series. Sin esta prop el
+// componente se comporta exactamente igual que antes — así la vista del
+// entrenador/admin no cambia.
+export function WorkoutViewer({ workoutId, memberPrs = [], highlightToday = false, logSetsForMemberId = null }) {
   const [workout, setWorkout] = useState(null)
   const [days, setDays] = useState([])
   const [exercisesByDay, setExercisesByDay] = useState({})
@@ -925,7 +930,16 @@ export function WorkoutViewer({ workoutId, memberPrs = [], highlightToday = fals
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">Entreno de hoy</h3>
             </div>
             {todayDay ? (
-              renderDayCard(todayDay)
+              <>
+                {renderDayCard(todayDay)}
+                {logSetsForMemberId && (
+                  <WorkoutSetLogger
+                    memberId={logSetsForMemberId}
+                    day={todayDay}
+                    exercises={exercisesByDay[todayDay.id] || []}
+                  />
+                )}
+              </>
             ) : (
               <div className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-[#2a2a2a] rounded-3xl p-6 text-center">
                 <Coffee className="w-10 h-10 mx-auto text-violet-400/60 mb-2" />

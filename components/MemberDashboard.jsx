@@ -959,6 +959,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                   workoutId={activeWorkout?.workout?.id}
                   memberPrs={myPrs}
                   highlightToday
+                  logSetsForMemberId={user.id}
                 />
 
                 {/* Workout Videos */}
