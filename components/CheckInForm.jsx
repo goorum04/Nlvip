@@ -12,14 +12,27 @@ import { Camera as CameraIcon, X, LoaderCircle as Loader2, CircleAlert as AlertC
 import { useFileUpload, generateFileId, getFileExtension } from '@/hooks/useStorage'
 import { authFetch } from '@/lib/utils'
 
+// Acepta coma decimal además de punto: en un móvil con teclado en español lo
+// natural es escribir "65,5", que en un <input type="number"> se queda en
+// valor vacío y hacía que la revisión no se pudiera enviar ("indica tu peso").
+// Por eso los campos son type="text" con inputMode decimal y se normaliza aquí.
+const parseDecimal = (value) => {
+  if (value === null || value === undefined) return null
+  const normalized = String(value).trim().replace(',', '.')
+  if (normalized === '') return null
+  const n = parseFloat(normalized)
+  return Number.isFinite(n) ? n : null
+}
+
 // Formulario ÚNICO de revisión periódica del socio: peso, medidas corporales,
-// cómo se siente, y las 3 fotos. NUNCA incluye nada de comida/dieta/macros —
+// cómo se siente, y las 4 fotos. NUNCA incluye nada de comida/dieta/macros —
 // eso pertenece exclusivamente al cuestionario inicial (DietOnboardingForm),
 // que se rellena una sola vez y no se repite aquí.
 export function CheckInForm({ memberId, onSuccess, onCancel }) {
   const [photos, setPhotos] = useState({
     front: { file: null, preview: null },
     side: { file: null, preview: null },
+    side_right: { file: null, preview: null },
     back: { file: null, preview: null },
   })
   const [weight, setWeight] = useState('')
@@ -27,8 +40,10 @@ export function CheckInForm({ memberId, onSuccess, onCancel }) {
   const [chest, setChest] = useState('')
   const [waist, setWaist] = useState('')
   const [hips, setHips] = useState('')
-  const [arms, setArms] = useState('')
-  const [legs, setLegs] = useState('')
+  const [armsLeft, setArmsLeft] = useState('')
+  const [armsRight, setArmsRight] = useState('')
+  const [legsLeft, setLegsLeft] = useState('')
+  const [legsRight, setLegsRight] = useState('')
   const [glutes, setGlutes] = useState('')
   const [calves, setCalves] = useState('')
 
@@ -46,6 +61,7 @@ export function CheckInForm({ memberId, onSuccess, onCancel }) {
 
   const frontInputRef = useRef(null)
   const sideInputRef = useRef(null)
+  const sideRightInputRef = useRef(null)
   const backInputRef = useRef(null)
   const { uploadFile } = useFileUpload()
 
@@ -109,12 +125,13 @@ export function CheckInForm({ memberId, onSuccess, onCancel }) {
     e.preventDefault()
     setError(null)
 
-    if (!weight || parseFloat(weight) <= 0) {
+    const weightValue = parseDecimal(weight)
+    if (!weightValue || weightValue <= 0) {
       setError('Indica tu peso actual')
       return
     }
-    if (!photos.front.file || !photos.side.file || !photos.back.file) {
-      setError('Debes subir las 3 fotos (frente, lado y espalda)')
+    if (!photos.front.file || !photos.side.file || !photos.side_right.file || !photos.back.file) {
+      setError('Debes subir las 4 fotos (frente, ambos lados y espalda)')
       return
     }
 
@@ -122,7 +139,7 @@ export function CheckInForm({ memberId, onSuccess, onCancel }) {
     try {
       const groupId = crypto.randomUUID()
       const uploadedPhotos = []
-      for (const type of ['front', 'side', 'back']) {
+      for (const type of ['front', 'side', 'side_right', 'back']) {
         const file = photos[type].file
         const fileId = generateFileId()
         const ext = getFileExtension(file.name)
@@ -141,16 +158,18 @@ export function CheckInForm({ memberId, onSuccess, onCancel }) {
         body: JSON.stringify({
           memberId,
           groupId,
-          weight: parseFloat(weight),
+          weight: weightValue,
           measurements: {
-            neck: parseFloat(neck) || null,
-            chest: parseFloat(chest) || null,
-            waist: parseFloat(waist) || null,
-            hips: parseFloat(hips) || null,
-            arms: parseFloat(arms) || null,
-            legs: parseFloat(legs) || null,
-            glutes: parseFloat(glutes) || null,
-            calves: parseFloat(calves) || null,
+            neck: parseDecimal(neck),
+            chest: parseDecimal(chest),
+            waist: parseDecimal(waist),
+            hips: parseDecimal(hips),
+            armsLeft: parseDecimal(armsLeft),
+            armsRight: parseDecimal(armsRight),
+            legsLeft: parseDecimal(legsLeft),
+            legsRight: parseDecimal(legsRight),
+            glutes: parseDecimal(glutes),
+            calves: parseDecimal(calves),
           },
           feeling: {
             dietAdherence,
@@ -238,15 +257,16 @@ export function CheckInForm({ memberId, onSuccess, onCancel }) {
             Nueva Revisión
           </CardTitle>
           <CardDescription className="text-gray-500">
-            Peso, medidas, cómo te sientes y tus 3 fotos. Tu entrenador la revisará y adaptará tu dieta y rutina según tu evolución.
+            Peso, medidas, cómo te sientes y tus 4 fotos. Tu entrenador la revisará y adaptará tu dieta y rutina según tu evolución.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <p className="text-white font-bold text-sm mb-3">Fotos (frente, lado y espalda)</p>
-            <div className="grid grid-cols-3 gap-3">
+            <p className="text-white font-bold text-sm mb-3">Fotos (frente, ambos lados y espalda)</p>
+            <div className="grid grid-cols-4 gap-2">
               <PhotoSlot type="front" label="Frente" inputRef={frontInputRef} />
-              <PhotoSlot type="side" label="Lado" inputRef={sideInputRef} />
+              <PhotoSlot type="side" label="Lado izq." inputRef={sideInputRef} />
+              <PhotoSlot type="side_right" label="Lado der." inputRef={sideRightInputRef} />
               <PhotoSlot type="back" label="Espalda" inputRef={backInputRef} />
             </div>
           </div>
@@ -260,16 +280,22 @@ export function CheckInForm({ memberId, onSuccess, onCancel }) {
                 { label: 'Pecho (cm)', value: chest, setter: setChest },
                 { label: 'Cintura (cm)', value: waist, setter: setWaist },
                 { label: 'Cadera (cm)', value: hips, setter: setHips },
-                { label: 'Brazo (cm)', value: arms, setter: setArms },
-                { label: 'Muslo (cm)', value: legs, setter: setLegs },
+                { label: 'Brazo izq. (cm)', value: armsLeft, setter: setArmsLeft },
+                { label: 'Brazo der. (cm)', value: armsRight, setter: setArmsRight },
+                { label: 'Muslo izq. (cm)', value: legsLeft, setter: setLegsLeft },
+                { label: 'Muslo der. (cm)', value: legsRight, setter: setLegsRight },
                 { label: 'Glúteo (cm)', value: glutes, setter: setGlutes },
                 { label: 'Gemelo (cm)', value: calves, setter: setCalves },
               ].map(f => (
                 <div key={f.label}>
                   <Label className="text-gray-400 text-xs">{f.label}</Label>
+                  {/* type="text" + inputMode decimal: permite escribir la coma
+                      del teclado español (65,5) sin que el campo se invalide. */}
                   <Input
-                    type="number" step="0.1" value={f.value}
-                    onChange={(e) => f.setter(e.target.value)}
+                    type="text"
+                    inputMode="decimal"
+                    value={f.value}
+                    onChange={(e) => f.setter(e.target.value.replace(/[^0-9.,]/g, ''))}
                     required={f.required}
                     disabled={submitting}
                     className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-1"

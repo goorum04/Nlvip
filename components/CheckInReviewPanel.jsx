@@ -16,9 +16,27 @@ import { useToast } from '@/hooks/use-toast'
 
 const MEASURE_LABELS = {
   weight_kg: 'Peso (kg)', neck_cm: 'Cuello (cm)', chest_cm: 'Pecho (cm)', waist_cm: 'Cintura (cm)',
-  hips_cm: 'Cadera (cm)', arms_cm: 'Brazo (cm)', legs_cm: 'Muslo (cm)', glutes_cm: 'Glúteo (cm)', calves_cm: 'Gemelo (cm)',
+  hips_cm: 'Cadera (cm)',
+  arms_cm: 'Brazo (cm)', arms_left_cm: 'Brazo izq. (cm)', arms_right_cm: 'Brazo der. (cm)',
+  legs_cm: 'Muslo (cm)', legs_left_cm: 'Muslo izq. (cm)', legs_right_cm: 'Muslo der. (cm)',
+  glutes_cm: 'Glúteo (cm)', calves_cm: 'Gemelo (cm)',
 }
-const PHOTO_LABELS = { front: 'Frente', side: 'Lado', back: 'Espalda' }
+
+// Las revisiones nuevas traen brazo/muslo por lado y además rellenan
+// arms_cm/legs_cm como valor de referencia para no cortar las gráficas
+// históricas. Si hay medida por lado, se oculta la genérica para no mostrar
+// el mismo número dos veces; las revisiones antiguas siguen viéndose igual.
+function visibleMeasureKeys(record) {
+  const hasBilateralArms = record?.arms_left_cm != null || record?.arms_right_cm != null
+  const hasBilateralLegs = record?.legs_left_cm != null || record?.legs_right_cm != null
+  return Object.keys(MEASURE_LABELS).filter(key => {
+    if (key === 'arms_cm' && hasBilateralArms) return false
+    if (key === 'legs_cm' && hasBilateralLegs) return false
+    return true
+  })
+}
+
+const PHOTO_LABELS = { front: 'Frente', side: 'Lado izq.', side_right: 'Lado der.', back: 'Espalda' }
 
 function MeasurementDelta({ label, current, previous }) {
   if (current === null || current === undefined) return null
@@ -98,9 +116,14 @@ function PhotoCompare({ groupId, previousGroupId }) {
 
   if (loading) return <div className="flex justify-center py-6"><Loader2 className="w-6 h-6 text-violet-500 animate-spin" /></div>
 
+  // El lado derecho solo existe en revisiones enviadas desde la app nueva;
+  // en las antiguas no se pinta la columna para no dejar un hueco vacío.
+  const hasRightSide = Boolean(newUrls.side_right || prevUrls.side_right)
+  const types = hasRightSide ? ['front', 'side', 'side_right', 'back'] : ['front', 'side', 'back']
+
   return (
-    <div className="grid grid-cols-3 gap-2">
-      {['front', 'side', 'back'].map(type => (
+    <div className={`grid gap-2 ${hasRightSide ? 'grid-cols-4' : 'grid-cols-3'}`}>
+      {types.map(type => (
         <div key={type} className="space-y-1">
           <p className="text-[10px] text-gray-500 uppercase text-center">{PHOTO_LABELS[type]}</p>
           <div className="grid grid-cols-2 gap-1">
@@ -282,8 +305,8 @@ function CheckInCard({ checkin, onRefresh }) {
             <div>
               <p className="text-white font-bold text-sm mb-2">Medidas</p>
               <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                {Object.entries(MEASURE_LABELS).map(([key, label]) => (
-                  <MeasurementDelta key={key} label={label} current={progressRecord[key]} previous={previousRecord?.[key]} />
+                {visibleMeasureKeys(progressRecord).map(key => (
+                  <MeasurementDelta key={key} label={MEASURE_LABELS[key]} current={progressRecord[key]} previous={previousRecord?.[key]} />
                 ))}
               </div>
               {progressRecord.notes && <p className="text-gray-400 text-xs mt-2 italic">"{progressRecord.notes}"</p>}

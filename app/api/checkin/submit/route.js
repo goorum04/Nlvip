@@ -16,8 +16,15 @@ const schema = z.object({
     chest: z.number().nullable().optional(),
     waist: z.number().nullable().optional(),
     hips: z.number().nullable().optional(),
+    // arms/legs (medida única) se mantienen para la app antigua de la App
+    // Store, que sigue enviando solo estos. Los *Left/*Right los envía la
+    // build nueva; ambos formatos conviven.
     arms: z.number().nullable().optional(),
     legs: z.number().nullable().optional(),
+    armsLeft: z.number().nullable().optional(),
+    armsRight: z.number().nullable().optional(),
+    legsLeft: z.number().nullable().optional(),
+    legsRight: z.number().nullable().optional(),
     glutes: z.number().nullable().optional(),
     calves: z.number().nullable().optional(),
   }).optional().default({}),
@@ -31,10 +38,12 @@ const schema = z.object({
     sleepQuality: z.string().nullable().optional(),
   }).optional().default({}),
   notes: z.string().max(2000).optional().default(''),
+  // 3 fotos (app antigua: frente/lado/espalda) o 4 (build nueva, que añade
+  // el lado derecho). Aceptar ambos rangos evita romper la app ya instalada.
   photos: z.array(z.object({
-    type: z.enum(['front', 'side', 'back']),
+    type: z.enum(['front', 'side', 'back', 'side_right']),
     path: z.string().min(1),
-  })).length(3),
+  })).min(3).max(4),
 })
 
 function getSupabase() {
@@ -93,8 +102,16 @@ export async function POST(req) {
         chest_cm: measurements.chest ?? null,
         waist_cm: measurements.waist ?? null,
         hips_cm: measurements.hips ?? null,
-        arms_cm: measurements.arms ?? null,
-        legs_cm: measurements.legs ?? null,
+        // arms_cm/legs_cm siguen siendo la medida "de referencia" para el
+        // histórico y los gráficos: si llegan las bilaterales, se guarda la
+        // del lado derecho (o la izquierda si solo hay esa) para que la serie
+        // temporal no se corte al cambiar de app.
+        arms_cm: measurements.arms ?? measurements.armsRight ?? measurements.armsLeft ?? null,
+        legs_cm: measurements.legs ?? measurements.legsRight ?? measurements.legsLeft ?? null,
+        arms_left_cm: measurements.armsLeft ?? null,
+        arms_right_cm: measurements.armsRight ?? null,
+        legs_left_cm: measurements.legsLeft ?? null,
+        legs_right_cm: measurements.legsRight ?? null,
         glutes_cm: measurements.glutes ?? null,
         calves_cm: measurements.calves ?? null,
         diet_adherence: feeling.dietAdherence ?? null,

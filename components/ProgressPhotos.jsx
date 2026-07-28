@@ -12,6 +12,16 @@ import { useFileUpload, useSignedUrl, generateFileId, getFileExtension } from '@
 import { supabase } from '@/lib/supabase'
 // ⚠️ Capacitor imports must be dynamic inside functions to prevent iOS startup crash
 
+// Etiquetas de cada tipo de foto. 'side_right' solo aparece en sesiones
+// enviadas desde la revisión nueva (4 fotos); las antiguas solo tienen
+// front/side/back y se siguen mostrando igual.
+const PHOTO_TYPE_LABELS = {
+  front: 'Frente',
+  side: 'Lado izq.',
+  side_right: 'Lado der.',
+  back: 'Espalda',
+}
+
 // Componente para subir fotos de progreso (3 fotos requeridas)
 export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
   const [photos, setPhotos] = useState({
@@ -452,8 +462,11 @@ export function ProgressPhotoGallery({ photos, canDelete = false, onDelete }) {
             {group.notes && <span className="text-[10px] text-gray-500 italic max-w-[150px] truncate">{group.notes}</span>}
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            {['front', 'side', 'back'].map((type) => {
+          <div className={`grid gap-2 ${group.photos.some(p => p.photo_type === 'side_right') ? 'grid-cols-4' : 'grid-cols-3'}`}>
+            {(group.photos.some(p => p.photo_type === 'side_right')
+              ? ['front', 'side', 'side_right', 'back']
+              : ['front', 'side', 'back']
+            ).map((type) => {
               const photo = group.photos.find(p => p.photo_type === type) || group.photos[0] // Fallback
               return (
                 <div key={type} className="space-y-1">
@@ -465,7 +478,7 @@ export function ProgressPhotoGallery({ photos, canDelete = false, onDelete }) {
                       <>
                         <img src={imageUrls[photo.id]} alt={type} className="w-full h-full object-cover" />
                         <div className="absolute bottom-0 left-0 right-0 bg-black/60 py-1 text-[8px] text-white font-bold uppercase tracking-tighter">
-                          {type === 'front' ? 'Frente' : type === 'side' ? 'Lado' : 'Espalda'}
+                          {PHOTO_TYPE_LABELS[type] || type}
                         </div>
                       </>
                     ) : (
@@ -517,13 +530,13 @@ export function ProgressPhotoGallery({ photos, canDelete = false, onDelete }) {
               {selectedGroup.notes && <p className="text-gray-400 mt-2">{selectedGroup.notes}</p>}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto max-h-[70vh] py-4">
-              {['front', 'side', 'back'].map(type => {
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 overflow-y-auto max-h-[70vh] py-4">
+              {['front', 'side', 'side_right', 'back'].map(type => {
                 const photo = selectedGroup.photos.find(p => p.photo_type === type)
                 if (!photo) return null
                 return (
                   <div key={type} className="space-y-3">
-                    <p className="text-violet-400 font-bold text-center uppercase tracking-widest text-sm">{type === 'front' ? 'Frente' : type === 'side' ? 'Lado' : 'Espalda'}</p>
+                    <p className="text-violet-400 font-bold text-center uppercase tracking-widest text-sm">{PHOTO_TYPE_LABELS[type] || type}</p>
                     <div className="aspect-[3/4] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
                       <img src={imageUrls[photo.id]} className="w-full h-full object-cover" />
                     </div>
