@@ -45,7 +45,8 @@ export function CheckInForm({ memberId, onSuccess, onCancel }) {
   const [legsLeft, setLegsLeft] = useState('')
   const [legsRight, setLegsRight] = useState('')
   const [glutes, setGlutes] = useState('')
-  const [calves, setCalves] = useState('')
+  const [calvesLeft, setCalvesLeft] = useState('')
+  const [calvesRight, setCalvesRight] = useState('')
 
   const [dietAdherence, setDietAdherence] = useState(true)
   const [activityAdherence, setActivityAdherence] = useState(true)
@@ -169,7 +170,8 @@ export function CheckInForm({ memberId, onSuccess, onCancel }) {
             legsLeft: parseDecimal(legsLeft),
             legsRight: parseDecimal(legsRight),
             glutes: parseDecimal(glutes),
-            calves: parseDecimal(calves),
+            calvesLeft: parseDecimal(calvesLeft),
+            calvesRight: parseDecimal(calvesRight),
           },
           feeling: {
             dietAdherence,
@@ -285,7 +287,8 @@ export function CheckInForm({ memberId, onSuccess, onCancel }) {
                 { label: 'Muslo izq. (cm)', value: legsLeft, setter: setLegsLeft },
                 { label: 'Muslo der. (cm)', value: legsRight, setter: setLegsRight },
                 { label: 'Glúteo (cm)', value: glutes, setter: setGlutes },
-                { label: 'Gemelo (cm)', value: calves, setter: setCalves },
+                { label: 'Gemelo izq. (cm)', value: calvesLeft, setter: setCalvesLeft },
+                { label: 'Gemelo der. (cm)', value: calvesRight, setter: setCalvesRight },
               ].map(f => (
                 <div key={f.label}>
                   <Label className="text-gray-400 text-xs">{f.label}</Label>

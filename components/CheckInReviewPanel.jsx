@@ -19,7 +19,8 @@ const MEASURE_LABELS = {
   hips_cm: 'Cadera (cm)',
   arms_cm: 'Brazo (cm)', arms_left_cm: 'Brazo izq. (cm)', arms_right_cm: 'Brazo der. (cm)',
   legs_cm: 'Muslo (cm)', legs_left_cm: 'Muslo izq. (cm)', legs_right_cm: 'Muslo der. (cm)',
-  glutes_cm: 'Glúteo (cm)', calves_cm: 'Gemelo (cm)',
+  glutes_cm: 'Glúteo (cm)',
+  calves_cm: 'Gemelo (cm)', calves_left_cm: 'Gemelo izq. (cm)', calves_right_cm: 'Gemelo der. (cm)',
 }
 
 // Las revisiones nuevas traen brazo/muslo por lado y además rellenan
@@ -29,9 +30,11 @@ const MEASURE_LABELS = {
 function visibleMeasureKeys(record) {
   const hasBilateralArms = record?.arms_left_cm != null || record?.arms_right_cm != null
   const hasBilateralLegs = record?.legs_left_cm != null || record?.legs_right_cm != null
+  const hasBilateralCalves = record?.calves_left_cm != null || record?.calves_right_cm != null
   return Object.keys(MEASURE_LABELS).filter(key => {
     if (key === 'arms_cm' && hasBilateralArms) return false
     if (key === 'legs_cm' && hasBilateralLegs) return false
+    if (key === 'calves_cm' && hasBilateralCalves) return false
     return true
   })
 }
