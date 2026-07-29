@@ -26,11 +26,66 @@ export default function ActivityTracker({ userId, compact = false }) {
   useEffect(() => {
     loadActivity()
     loadHistory()
-    // Do NOT auto-call syncFromHealthKit() on mount — the native
-    // HKHealthStore._validateAuthorizationRequestWithShareTypes:readTypes:
-    // can raise an NSException that kills the process before any UI shows
-    // (confirmed in TestFlight crash report, v1.32 build 55, Apr 2026).
-    // The user can still trigger the sync manually via the HealthKit button.
+
+    // Sincronización automática y silenciosa con Apple Health: el permiso
+    // solo se pide una vez de verdad (iOS recuerda la respuesta para
+    // siempre); a partir de ahí esto es solo una lectura silenciosa de los
+    // pasos de hoy, sin ningún diálogo para el socio.
+    //
+    // OJO — esto reintroduce una llamada automática a HealthKit, que ya
+    // provocó un crash nativo real cuando se disparaba en el mismo tick del
+    // montaje (confirmado en TestFlight, v1.32 build 55, abr 2026 — una
+    // NSException del lado nativo de iOS, que un try/catch de JS NO detiene).
+    // Por eso aquí NUNCA se llama de forma síncrona: siempre con un margen
+    // de varios segundos tras el montaje, cuando la app ya está
+    // completamente cargada y estable, y NO compite con la propia
+    // inicialización nativa. Antes de ampliar esto a más pantallas, probar
+    // en TestFlight — no se puede verificar en un dispositivo real desde
+    // aquí.
+    const AUTO_SYNC_DELAY_MS = 3000
+    const AUTO_SYNC_THROTTLE_MS = 5 * 60 * 1000 // no repetir antes de 5 min
+    const THROTTLE_KEY = 'nlvip_last_healthkit_autosync'
+
+    const shouldAutoSync = () => {
+      try {
+        const last = Number(sessionStorage.getItem(THROTTLE_KEY) || 0)
+        return Date.now() - last > AUTO_SYNC_THROTTLE_MS
+      } catch {
+        return true
+      }
+    }
+    const markAutoSynced = () => {
+      try { sessionStorage.setItem(THROTTLE_KEY, String(Date.now())) } catch {}
+    }
+    const attemptAutoSync = () => {
+      if (!shouldAutoSync()) return
+      markAutoSynced()
+      syncFromHealthKit(false) // silencioso: si falla, no se entera nadie
+    }
+
+    const initialTimer = setTimeout(attemptAutoSync, AUTO_SYNC_DELAY_MS)
+
+    // También al volver de segundo plano (minimizar y reabrir la app) — así
+    // los pasos se refrescan solos sin que el socio tenga que tocar nada.
+    let removeAppStateListener = null
+    ;(async () => {
+      try {
+        const { Capacitor } = await import('@capacitor/core')
+        if (!Capacitor.isNativePlatform()) return
+        const { App } = await import('@capacitor/app')
+        const sub = await App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive) attemptAutoSync()
+        })
+        removeAppStateListener = () => sub.remove()
+      } catch (e) {
+        console.warn('No se pudo registrar appStateChange para auto-sync:', e?.message)
+      }
+    })()
+
+    return () => {
+      clearTimeout(initialTimer)
+      if (removeAppStateListener) removeAppStateListener()
+    }
   }, [userId])
 
   const syncFromHealthKit = async (showToast = false) => {
