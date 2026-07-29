@@ -13,18 +13,36 @@ Proyecto Supabase: `qnuzcmdjpafbqnofpzfp` (Postgres 17). App: Next.js + Capacito
   internas `is_admin()`. Las alertas del advisor sobre ellos son de robustez,
   no huecos reales.
 
-## Aplicado en esta rama (seguro, sin cambio de comportamiento)
+## Aplicado en producción (2026-07-29, verificado uno a uno antes de aplicar)
 
-Migración `20260710000001_safe_perf_cleanup.sql`:
+Migración `20260710000001_safe_perf_cleanup.sql` — **ya ejecutada** contra
+`qnuzcmdjpafbqnofpzfp`:
 
 1. `search_path = public` en `start_conversation`, `rpc_update_daily_steps`,
    `calculate_activity_metrics` (vía `ALTER FUNCTION`, cuerpo intacto).
-2. Borrado de 19 índices duplicados redundantes, con guarda que impide tocar
-   cualquiera que respalde una PK o constraint.
+   Verificado que ninguna de las 3 usa nada fuera de `public` sin cualificar
+   (`auth.uid()` ya iba con esquema explícito) → cero cambio de comportamiento.
+2. Borrado de los índices duplicados redundantes, con guarda que impide tocar
+   cualquiera que respalde una PK o constraint. Verificados uno a uno contra
+   `pg_indexes`/`pg_constraint`: 17 de 19 eran gemelos idénticos reales; 1
+   (`idx_member_workouts_unique_member`) ya no existía — el esquema cambió
+   con el soporte multi-rutina después de escribirse esta auditoría, la
+   guarda `IF EXISTS` lo saltó sin fallar. Confirmado que ninguna tabla se
+   quedó sin índice en la columna tras el borrado.
 
-> Nota: la migración está en el repo pero **no se ha ejecutado contra
-> producción** en esta sesión (herramienta MCP de Supabase bloqueada por
-> aprobación). Aplicar tras revisión con el flujo habitual de migraciones.
+### Hallazgo NO recogido en esta auditoría: IDOR en `rpc_update_daily_steps`
+
+Existía una segunda sobrecarga, `rpc_update_daily_steps(uuid, integer)`, resto
+huérfano de `legacy_migrations/CUENTA-PASOS.sql` que ninguna migración había
+tocado. A diferencia de la versión en uso (que resuelve el socio vía
+`auth.uid()`), esta aceptaba `p_member_id` como parámetro directo sin
+comprobar que fuera el del llamante — `SECURITY DEFINER`, con `EXECUTE`
+concedido a `anon` y `authenticated`. Cualquiera con la clave pública de la
+app podía alterar los pasos de cualquier socio sin haber iniciado sesión.
+
+Verificado (grep) que el cliente solo llama a la firma segura
+(`ActivityTracker.jsx`). Se borró en `20260729000002_drop_insecure_steps_overload.sql`
+— ya aplicado en producción.
 
 ## Pendiente — requiere cambio coordinado o pruebas (NO aplicado)
 
@@ -44,16 +62,23 @@ seguro, pero antes hay que verificar TODOS los consumidores
 UPDATE storage.buckets SET public = false WHERE id = 'progress_photos';
 ```
 
-### 2. Rutas de IA sin autenticación (abuso de coste)
+### 2. Rutas de IA sin autenticación (abuso de coste) — reverificado 2026-07-29
 `/api/generate-recipe`, `/api/generate-recipe-plan`, `/api/spoonacular-diet`
 no verifican token. Riesgo: cualquiera puede quemar créditos de OpenAI/
 Spoonacular y, en `generate-recipe-plan`, sobrescribir planes de cualquier
 socio (confía en `memberId` del body con `service_role`).
-Antes de exigir `Authorization`, verificar que TODAS las llamadas del cliente
-(`AdminDashboard:1070`, `TrainerDashboard:453/551`, `RecipePlan:626`,
-`MemberDetailPanel:187/209`) envían el header; si no, romperían.
+
+Revisadas las 8 llamadas reales del cliente a `generate-recipe-plan` +
+`generate-recipe`: **solo 1 de 8 manda `Authorization`**
+(`AdminAssistant.jsx:771`). Las otras 7 NO lo mandan y se romperían si se
+exige el header sin tocarlas antes:
+`AdminDashboard.jsx:1070`, `TrainerDashboard.jsx:456`, `TrainerDashboard.jsx:554`,
+`RecipesManager.jsx:252`, `RecipePlan.jsx:626`, `MemberDetailPanel.jsx:191`,
+`MemberDetailPanel.jsx:213`.
 Las llamadas server→server (`diet-onboarding/complete`, `checkin/complete`)
 necesitarían un secreto compartido.
+Pendiente de aplicar: requiere tocar 7 archivos de cliente + las rutas
+servidor a la vez, no es seguro hacerlo por partes.
 
 ### 3. Rate-limit en memoria no sirve en serverless
 `lib/rateLimit.js` usa un `Map` local. En Vercel cada invocación puede ser

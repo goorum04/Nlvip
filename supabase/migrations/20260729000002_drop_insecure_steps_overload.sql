@@ -1,0 +1,19 @@
+-- rpc_update_daily_steps(uuid, integer) era un resto huérfano de un script
+-- antiguo (legacy_migrations/CUENTA-PASOS.sql), NO tocado por la migración
+-- 20260413000001 que limpió las otras dos sobrecargas legacy.
+--
+-- A diferencia de la versión que SÍ se usa (rpc_update_daily_steps(integer,
+-- date, text), que resuelve el socio con auth.uid() internamente), esta
+-- aceptaba p_member_id como parámetro directo sin comprobar que fuera el del
+-- que llama. Es SECURITY DEFINER y tenía EXECUTE concedido a 'anon' y
+-- 'authenticated': cualquiera con la clave pública de la app (no secreta)
+-- podía llamarla con el UUID de otro socio y alterar sus daily_activity, sin
+-- ni siquiera haber iniciado sesión.
+--
+-- Verificado (grep) que ningún código del cliente llama a esta firma —
+-- ActivityTracker.jsx solo usa rpc_update_daily_steps(p_steps, p_source).
+-- Se borra en vez de repararla: no la usa nadie.
+--
+-- Ya aplicado directamente en producción (proyecto qnuzcmdjpafbqnofpzfp) el
+-- 2026-07-29; este archivo deja el cambio documentado en el repo.
+DROP FUNCTION IF EXISTS public.rpc_update_daily_steps(uuid, integer);
