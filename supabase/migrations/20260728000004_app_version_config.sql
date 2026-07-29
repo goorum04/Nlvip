@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS public.app_version_config (
 
 INSERT INTO public.app_version_config (platform, latest_version, update_message, store_url, configured)
 VALUES
-  ('ios', '1.97', 'Nueva versión disponible', 'https://apps.apple.com/app/nl-vip-club/id6503098673', true),
+  ('ios', '1.97', 'Nueva versión disponible', 'https://apps.apple.com/es/app/nl-vip-club/id6759666320', true),
   ('android', '1.97', 'Nueva versión disponible', 'https://play.google.com/store/apps/details?id=com.leonardos.app', true)
 ON CONFLICT (platform) DO UPDATE SET
   latest_version = EXCLUDED.latest_version,
