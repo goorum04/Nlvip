@@ -8,7 +8,7 @@ import {
   Mic, MicOff, Send, Bot, User, LoaderCircle as Loader2, CircleCheckBig as CheckCircle2, CircleX as XCircle, X,
   Volume2, VolumeX, Sparkles, TriangleAlert as AlertTriangle, Zap, Crown, WandSparkles as Wand2,
   ChefHat, Flame, Beef, Wheat, Droplets, Clock, ChartBar as BarChart3, Info,
-  Play, Pause, Dumbbell, ChevronDown, HeartPulse
+  Play, Pause, Dumbbell, ChevronDown, HeartPulse, Square
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { getApiUrl } from '@/lib/utils'
@@ -598,6 +598,11 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
   const [ttsEnabled, setTtsEnabled] = useState(false)
   const [assistantIsSpeaking, setAssistantIsSpeaking] = useState(false)
   const synthRef = useRef(null)
+  // jobIds que el admin ha pedido parar de ver. El job puede seguir corriendo
+  // en el servidor (no hay forma de abortar la llamada a OpenAI a mitad),
+  // pero dejamos de esperar su resultado para que el admin pueda escribir y
+  // mandar algo nuevo YA, sin quedarse bloqueado hasta que termine.
+  const stoppedJobIdsRef = useRef(new Set())
 
   // Función TTS para leer respuestas del asistente
   const speak = (text) => {
@@ -673,6 +678,11 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
 
     const check = async () => {
       if (cancelled) return
+      if (stoppedJobIdsRef.current.has(jobId)) {
+        cleanup()
+        reject(new Error('STOPPED_BY_USER'))
+        return
+      }
       if (Date.now() - startedAt > POLL_MAX_MS) {
         cleanup()
         reject(new Error('El asistente está tardando demasiado. Inténtalo de nuevo en un momento.'))
@@ -691,6 +701,22 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
     activeJobRef.current = { jobId, checkNow: check }
     check()
   })
+
+  // Botón "Detener": el admin deja de esperar la generación en curso y puede
+  // escribir/mandar algo nuevo al instante. El job puede seguir terminando en
+  // el servidor (no hay forma de abortar una llamada a OpenAI ya en marcha),
+  // pero su resultado se descarta en cuanto llegue — nunca se aplicará al
+  // chat ni confundirá la siguiente conversación.
+  const stopGenerating = () => {
+    const jobId = activeJobRef.current?.jobId
+    if (jobId) stoppedJobIdsRef.current.add(jobId)
+    clearPendingJob()
+    setIsLoading(false)
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: '⏹️ Generación detenida. Puedes escribir o mandar algo nuevo ahora mismo.'
+    }])
+  }
 
   // Al volver a primer plano, comprueba el job activo de inmediato en vez de
   // esperar al siguiente intervalo de 3s.
@@ -1030,12 +1056,18 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
       const data = await pollJob(jobId)
       applyChatResult(data)
     } catch (error) {
-      const isNetworkError = error.message === 'Load failed' || error.message === 'Failed to fetch' || error.message === 'Network request failed'
-      const userMessage = isNetworkError
-        ? 'Sin conexión con el servidor. Comprueba tu internet e inténtalo de nuevo en unos segundos.'
-        : `Lo siento, hubo un error: ${error.message}`
-      setMessages(prev => [...prev, { role: 'assistant', content: userMessage }])
-      toast({ title: isNetworkError ? 'Sin conexión' : 'Error', description: isNetworkError ? 'Comprueba tu conexión a internet' : error.message, variant: 'destructive' })
+      // Parada intencionada por el admin: stopGenerating() ya puso su propio
+      // aviso en el chat, no lo dupliques con un mensaje de error.
+      if (error.message === 'STOPPED_BY_USER') {
+        // no-op
+      } else {
+        const isNetworkError = error.message === 'Load failed' || error.message === 'Failed to fetch' || error.message === 'Network request failed'
+        const userMessage = isNetworkError
+          ? 'Sin conexión con el servidor. Comprueba tu internet e inténtalo de nuevo en unos segundos.'
+          : `Lo siento, hubo un error: ${error.message}`
+        setMessages(prev => [...prev, { role: 'assistant', content: userMessage }])
+        toast({ title: isNetworkError ? 'Sin conexión' : 'Error', description: isNetworkError ? 'Comprueba tu conexión a internet' : error.message, variant: 'destructive' })
+      }
     } finally {
       setIsLoading(false)
       clearPendingJob()
@@ -1280,18 +1312,27 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
                   <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                    placeholder="Escribe o mantén pulsado..."
-                    disabled={isLoading}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && !isLoading && handleSend()}
+                    placeholder={isLoading ? 'Generando... puedes seguir escribiendo' : 'Escribe o mantén pulsado...'}
                     className="w-full h-14 bg-white/5 border-white/10 rounded-2xl pl-5 pr-14 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20"
                   />
-                  <Button
-                    onClick={() => handleSend()}
-                    disabled={isLoading || !input.trim()}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-lg shadow-violet-500/25 disabled:opacity-30 disabled:shadow-none"
-                  >
-                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                  </Button>
+                  {isLoading ? (
+                    <Button
+                      onClick={stopGenerating}
+                      title="Detener generación"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-red-500/90 hover:bg-red-500 text-white shadow-lg shadow-red-500/25"
+                    >
+                      <Square className="w-4 h-4" fill="currentColor" />
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => handleSend()}
+                      disabled={!input.trim()}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-lg shadow-violet-500/25 disabled:opacity-30 disabled:shadow-none"
+                    >
+                      <Send className="w-5 h-5" />
+                    </Button>
+                  )}
                 </>
               )}
             </div>
