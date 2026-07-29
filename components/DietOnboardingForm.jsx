@@ -119,8 +119,8 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
     peso: '', altura: '', cintura: '', pecho: '', biceps: '', cadera: '', muslo: '', gluteo: '', gemelo: ''
   })
   const [extras, setExtras] = useState({ favoritos: '', no_me_gusta: '', condicion_medica: '' })
-  const [photos, setPhotos] = useState({ front: null, side: null, back: null })
-  const [photoPreviews, setPhotoPreviews] = useState({ front: null, side: null, back: null })
+  const [photos, setPhotos] = useState({ front: null, side: null, side_right: null, back: null })
+  const [photoPreviews, setPhotoPreviews] = useState({ front: null, side: null, side_right: null, back: null })
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
   const [validationError, setValidationError] = useState(null)
@@ -202,7 +202,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
     try {
       // Upload photos to Supabase storage if provided
       const groupId = crypto.randomUUID()
-      const photoTypes = ['front', 'side', 'back']
+      const photoTypes = ['front', 'side', 'side_right', 'back']
       for (const type of photoTypes) {
         const file = photos[type]
         if (!file) continue
@@ -536,10 +536,11 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
             <p className="text-gray-500 text-[11px] leading-relaxed">
               Subir fotos ayuda a personalizar mejor tu plan. Son privadas y solo las verá tu entrenador. Si no quieres, déjalo en blanco y pulsa solicitar.
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {[
                 { key: 'front', label: 'Frente' },
-                { key: 'side', label: 'Lateral' },
+                { key: 'side', label: 'Lado izq.' },
+                { key: 'side_right', label: 'Lado der.' },
                 { key: 'back', label: 'Espalda' }
               ].map(({ key, label }) => (
                 <div key={key} className="relative">

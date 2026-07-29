@@ -33,6 +33,7 @@ import { AvatarBubble, ProfileModal } from './UserProfile'
 import { CycleModule } from './CycleModule'
 import { LifeStageSelector, PregnancyMode, PostpartumMode, LactationTracker } from './LifeStageModules'
 import DietOnboardingForm, { DietOnboardingBanner } from './DietOnboardingForm'
+import OnboardingPhotosCard from './OnboardingPhotosCard'
 import { DietDailyView, DietWeeklyView } from './DietTabParts'
 import { SymptomsTracker } from './SymptomsTracker'
 import PRTracker from './PRTracker'
@@ -52,6 +53,8 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const [loading, setLoading] = useState(false)
   const [pendingOnboarding, setPendingOnboarding] = useState(null)
   const [onboardingChecked, setOnboardingChecked] = useState(false)
+  const [needsOnboardingPhotos, setNeedsOnboardingPhotos] = useState(false)
+  const [onboardingPhotosDismissed, setOnboardingPhotosDismissed] = useState(false)
   const [dietViewMode, setDietViewMode] = useState('daily')
   const [myTrainer, setMyTrainer] = useState(null)
   const [gymAdmin, setGymAdmin] = useState(null)
@@ -268,6 +271,31 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
       setPendingOnboarding(data?.[0] || null)
     } catch (e) {
       console.warn('Error fetching onboarding:', e.message)
+    }
+
+    // Muchos socios rellenan el cuestionario sin tener las fotos hechas
+    // todavía (las 3 preguntas del cuestionario son obligatorias, las fotos
+    // no). Si ya envió el cuestionario al menos una vez y no tiene ninguna
+    // foto marcada como inicial, ofrecemos añadirlas después con calma.
+    try {
+      const dismissed = localStorage.getItem(`nlvip_onboarding_photos_dismissed_${user.id}`) === '1'
+      if (dismissed) { setOnboardingPhotosDismissed(true); return }
+
+      const { count: submittedCount } = await supabase
+        .from('diet_onboarding_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('member_id', user.id)
+        .neq('status', 'pending')
+      if (!submittedCount) { setNeedsOnboardingPhotos(false); return }
+
+      const { count: photoCount } = await supabase
+        .from('progress_photos')
+        .select('id', { count: 'exact', head: true })
+        .eq('member_id', user.id)
+        .eq('notes', 'Foto inicial cuestionario nutricional')
+      setNeedsOnboardingPhotos(!photoCount)
+    } catch (e) {
+      console.warn('Error checking onboarding photos:', e.message)
     }
   }
 
@@ -1020,6 +1048,16 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 onCompleted={() => {
                   setPendingOnboarding(null)
                   loadData()
+                }}
+              />
+            )}
+            {onboardingChecked && !pendingOnboarding && needsOnboardingPhotos && !onboardingPhotosDismissed && (
+              <OnboardingPhotosCard
+                memberId={user.id}
+                onDone={() => setNeedsOnboardingPhotos(false)}
+                onDismiss={() => {
+                  try { localStorage.setItem(`nlvip_onboarding_photos_dismissed_${user.id}`, '1') } catch {}
+                  setOnboardingPhotosDismissed(true)
                 }}
               />
             )}
