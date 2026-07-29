@@ -49,18 +49,28 @@ Verificado (grep) que el cliente solo llama a la firma segura
 Ordenado por impacto. Cada uno puede romper una funcionalidad si se aplica
 en aislamiento, por eso se deja documentado y no ejecutado.
 
-### 1. Fotos de progreso en bucket público (privacidad)
-`progress_photos` es `public: true` con 33 objetos (fotos corporales).
-El código ya lee con `getSignedUrls`, así que hacerlo privado **podría** ser
-seguro, pero antes hay que verificar TODOS los consumidores
-(`MemberPhotosAndForm`, `MemberDetailPanel`, `TrainerDashboard`,
-`MemberDashboard`, `DietOnboardingForm`) para confirmar que ninguno usa
-`getPublicUrl`. Verificar y probar antes de:
+### 1. Fotos de progreso en bucket público — RESUELTO 2026-07-29 (era peor de lo que parecía)
+`progress_photos` era `public: true` (fotos corporales). Verificados los 9
+archivos de cliente que lo tocan (`ProgressPhotos`, `DietOnboardingForm`,
+`MemberPhotosAndForm`, `TrainerDashboard`, `CheckInReviewPanel`,
+`MemberDashboard`, `MemberDetailPanel`, `CheckInForm`, `UserProfile` — este
+último usa `getPublicUrl` pero para el bucket `avatars`, no este): ninguno
+usa `getPublicUrl` para `progress_photos`, todos pasan por
+`createSignedUrl(s)`. Bucket cerrado (`public = false`).
 
-```sql
--- SOLO tras confirmar que todos los consumidores usan URLs firmadas
-UPDATE storage.buckets SET public = false WHERE id = 'progress_photos';
-```
+**Hallazgo adicional no anticipado**: además del bucket público, existían 3
+políticas RLS en `storage.objects` (`progress_photos_storage_select/insert/
+delete`) sin restricción real de propiedad — la de SELECT solo comprobaba
+`bucket_id`, sin mirar quién pedía la foto. Como las políticas permisivas de
+Postgres se combinan con OR, estas policies genéricas **anulaban** a las
+correctas que ya existían en paralelo (`progress_photos_member_read/upload/
+delete`, `progress_photos_staff_upload/delete`). Resultado: cerrar solo el
+bucket NO habría arreglado nada — cualquier socio con sesión iniciada podía
+seguir leyendo/borrando/sobrescribiendo fotos de cualquier otro socio vía
+Storage API directo. Se borraron las 3 policies genéricas tras confirmar que
+las restrictivas cubren el 100% de los patrones reales de subida
+(`memberId/checkins/...`, `memberId/onboarding/...`).
+Ver `20260729000003_secure_progress_photos_bucket.sql`.
 
 ### 2. Rutas de IA sin autenticación (abuso de coste) — reverificado 2026-07-29
 `/api/generate-recipe`, `/api/generate-recipe-plan`, `/api/spoonacular-diet`
