@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import {
   ClipboardCheck, Loader2, ChevronDown, ChevronUp, Check, X, MessageSquarePlus,
-  Apple, Dumbbell, Camera as CameraIcon
+  Apple, Dumbbell, Camera as CameraIcon, Footprints
 } from 'lucide-react'
 import { useSignedUrl } from '@/hooks/useStorage'
 import { authFetch } from '@/lib/utils'
@@ -34,6 +34,78 @@ function MeasurementDelta({ label, current, previous }) {
           </span>
         )}
       </div>
+    </div>
+  )
+}
+
+// Cumplimiento REAL de pasos del periodo, contrastado con lo que el socio dijo
+// en el formulario. El valor está en ver las dos cosas juntas: "dice que sí" +
+// "cumplió 4 de 21 días" es información que ahora mismo nadie tiene.
+function StepsCompliance({ summary, declared }) {
+  if (!summary) return null
+
+  const pct = summary.compliance_pct ?? 0
+  const goal = summary.steps_goal ?? 8000
+  const nf = (n) => Number(n || 0).toLocaleString('es-ES')
+
+  const tone = pct >= 80
+    ? { text: 'text-emerald-400', bar: 'bg-emerald-400' }
+    : pct >= 50
+      ? { text: 'text-amber-400', bar: 'bg-amber-400' }
+      : { text: 'text-orange-400', bar: 'bg-orange-400' }
+
+  // Solo se marca discrepancia cuando el dato es fiable: con registro en menos
+  // de la mitad de los días, el porcentaje no da para contradecir a nadie.
+  let mismatch = null
+  if (summary.reliable && declared === true && pct < 50) {
+    mismatch = { label: 'No cuadra con lo que dice', cls: 'text-orange-300 bg-orange-500/10 border-orange-400/30' }
+  } else if (summary.reliable && declared === false && pct >= 80) {
+    mismatch = { label: 'Mejor de lo que él cree', cls: 'text-emerald-300 bg-emerald-500/10 border-emerald-400/30' }
+  }
+
+  return (
+    <div className="bg-black/30 rounded-xl border border-[#2a2a2a] p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <p className="text-white font-bold text-sm flex items-center gap-2">
+          <Footprints className="w-4 h-4 text-violet-400" /> Pasos del periodo
+        </p>
+        {mismatch && (
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${mismatch.cls}`}>
+            {mismatch.label}
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span className="text-white font-bold text-lg tabular-nums">{nf(summary.avg_steps)}</span>
+        <span className="text-xs text-gray-500">pasos/día de media · objetivo {nf(goal)}</span>
+      </div>
+
+      <div>
+        <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+          <div className={`h-full rounded-full ${tone.bar}`} style={{ width: `${Math.min(100, pct)}%` }} />
+        </div>
+        <p className="text-xs text-gray-400 mt-1.5">
+          Llegó al objetivo <span className={`font-bold ${tone.text}`}>{summary.days_goal_met} de {summary.days_with_data} días</span>
+          {' '}con registro ({pct}%).
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-500">
+        <span>Periodo: {summary.period_days} días</span>
+        {summary.device_days > 0
+          ? <span>{summary.device_days} días desde el reloj</span>
+          : <span>Todo introducido a mano</span>}
+        {declared !== null && declared !== undefined && (
+          <span>Él dijo: <span className="text-gray-400 font-semibold">{declared ? 'sí cumplí' : 'no cumplí'}</span></span>
+        )}
+      </div>
+
+      {!summary.reliable && (
+        <p className="text-[11px] text-gray-500 italic">
+          Solo registró {summary.days_with_data} de {summary.period_days} días: el porcentaje es orientativo.
+        </p>
+      )}
     </div>
   )
 }
@@ -289,6 +361,11 @@ function CheckInCard({ checkin, onRefresh }) {
               {progressRecord.notes && <p className="text-gray-400 text-xs mt-2 italic">"{progressRecord.notes}"</p>}
             </div>
           )}
+
+          <StepsCompliance
+            summary={checkin.steps_summary}
+            declared={progressRecord?.activity_adherence}
+          />
 
           <div>
             <p className="text-white font-bold text-sm mb-2 flex items-center gap-2"><CameraIcon className="w-4 h-4 text-violet-400" /> Fotos (anterior vs. nueva)</p>

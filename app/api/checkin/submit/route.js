@@ -6,6 +6,7 @@ import { sendPushToUser } from '@/lib/webpush'
 import { adaptExistingDiet } from '@/lib/dietGeneration'
 import { compareProgressPhotos } from '@/lib/photoAnalysis'
 import { generateRoutineForMember, GOAL_FROM_ONBOARDING } from '@/lib/routineGeneration'
+import { gatherStepsCompliance } from '@/lib/activityContext'
 
 const schema = z.object({
   memberId: z.string().uuid(),
@@ -153,7 +154,30 @@ export async function POST(req) {
         .maybeSingle(),
     ])
 
-    // 5. Crear la fila de la revisión ya con lo que sabemos; el resto (fotos
+    // 5. Cumplimiento REAL de pasos del periodo que cubre esta revisión (desde
+    // la revisión anterior hasta hoy). Se guarda como foto fija: el entrenador
+    // puede revisar semanas después y sigue viendo el periodo correcto.
+    // Si el socio no registra pasos, queda null y no se muestra nada.
+    let stepsSummary = null
+    try {
+      const { data: prevCheckin } = await supabase
+        .from('member_checkins')
+        .select('created_at')
+        .eq('member_id', memberId)
+        .neq('status', 'failed')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      stepsSummary = await gatherStepsCompliance(supabase, memberId, {
+        sinceDate: prevCheckin?.created_at
+          ? new Date(prevCheckin.created_at).toISOString().split('T')[0]
+          : null,
+      })
+    } catch (stepsErr) {
+      console.warn('checkin/submit steps summary error:', stepsErr.message)
+    }
+
+    // 6. Crear la fila de la revisión ya con lo que sabemos; el resto (fotos
     // comparadas + borradores) se rellena a continuación.
     const { data: checkin, error: checkinError } = await supabase
       .from('member_checkins')
@@ -165,12 +189,13 @@ export async function POST(req) {
         status: 'analyzing',
         current_diet_id: currentDiet?.diet_templates?.id || null,
         current_workout_template_id: currentWorkout?.workout_templates?.id || null,
+        steps_summary: stepsSummary,
       })
       .select()
       .single()
     if (checkinError) throw new Error(`Error creando la revisión: ${checkinError.message}`)
 
-    // 6. Análisis de fotos + adaptación de dieta y rutina. Si algo falla aquí,
+    // 7. Análisis de fotos + adaptación de dieta y rutina. Si algo falla aquí,
     // se marca la revisión como 'failed' con el motivo, pero YA quedan
     // guardadas las medidas/fotos del socio (nada se pierde).
     try {
@@ -276,7 +301,7 @@ export async function POST(req) {
       }).eq('id', checkin.id)
     }
 
-    // 7. Notificar a admin + entrenador asignado.
+    // 8. Notificar a admin + entrenador asignado.
     try {
       const { data: memberProfile } = await supabase
         .from('profiles').select('name, email').eq('id', memberId).single()
