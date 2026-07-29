@@ -35,6 +35,8 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
   const [memberProgressPhotos, setMemberProgressPhotos] = useState([])
   const [loadingPhotos, setLoadingPhotos] = useState(false)
   const [showPhotoUploader, setShowPhotoUploader] = useState(false)
+  const [memberSetLogs, setMemberSetLogs] = useState([])
+  const [loadingSetLogs, setLoadingSetLogs] = useState(false)
   const { toast } = useToast()
 
   const REMINDER_FREQUENCY_OPTIONS = [
@@ -53,6 +55,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
     if (member && isOpen) {
       setActiveTab(initialTab)
       setMemberProgressPhotos([])
+      setMemberSetLogs([])
       setShowDietContent(false)
       setShowWorkoutDetailSlot(null)
       loadMemberData()
@@ -63,7 +66,50 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
     if (activeTab === 'photos' && member?.id && memberProgressPhotos.length === 0 && !loadingPhotos) {
       loadPhotos()
     }
+    if (activeTab === 'workout' && member?.id && memberSetLogs.length === 0 && !loadingSetLogs) {
+      loadSetLogs()
+    }
   }, [activeTab])
+
+  // Series registradas por el socio (peso/reps de WorkoutSetLogger). Agrupadas
+  // por día + ejercicio para que el entrenador vea la progresión real sesión a
+  // sesión, no solo la última — es justo lo que hoy solo usaba la IA en
+  // silencio para adaptar rutinas, sin que ningún humano lo viera.
+  const loadSetLogs = async () => {
+    setLoadingSetLogs(true)
+    try {
+      const since = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      const { data } = await supabase
+        .from('workout_set_logs')
+        .select('exercise_name, performed_on, set_number, weight_kg, reps')
+        .eq('member_id', member.id)
+        .gte('performed_on', since)
+        .order('performed_on', { ascending: false })
+        .order('set_number', { ascending: true })
+
+      const byDate = new Map()
+      for (const row of data || []) {
+        if (!byDate.has(row.performed_on)) byDate.set(row.performed_on, new Map())
+        const byExercise = byDate.get(row.performed_on)
+        if (!byExercise.has(row.exercise_name)) byExercise.set(row.exercise_name, [])
+        byExercise.get(row.exercise_name).push(row)
+      }
+
+      const sessions = [...byDate.entries()].map(([date, byExercise]) => ({
+        date,
+        exercises: [...byExercise.entries()].map(([name, sets]) => ({
+          name,
+          sets: sets.sort((a, b) => a.set_number - b.set_number),
+        })),
+      }))
+
+      setMemberSetLogs(sessions)
+    } catch (e) {
+      console.warn('Error loading set logs:', e.message)
+    } finally {
+      setLoadingSetLogs(false)
+    }
+  }
 
   const loadMemberData = async () => {
     setLoading(true)
@@ -497,6 +543,43 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                     </Card>
                   )
                 })}
+
+                <Card className="bg-black/30 border-violet-500/20 rounded-2xl">
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-sm font-semibold text-gray-300">Series registradas por el socio</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    {loadingSetLogs ? (
+                      <div className="flex justify-center py-6">
+                        <Loader2 className="w-5 h-5 text-violet-500 animate-spin" />
+                      </div>
+                    ) : memberSetLogs.length === 0 ? (
+                      <p className="text-gray-500 text-sm">
+                        Todavía no ha registrado peso ni repeticiones de ningún entreno (es opcional para el socio).
+                      </p>
+                    ) : (
+                      <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                        {memberSetLogs.map(session => (
+                          <div key={session.date} className="bg-black/20 rounded-xl p-3 border border-white/5">
+                            <p className="text-xs font-bold text-violet-400 mb-1.5">
+                              {new Date(session.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                            <div className="space-y-1">
+                              {session.exercises.map(ex => (
+                                <div key={ex.name} className="flex items-baseline justify-between gap-2 text-sm">
+                                  <span className="text-gray-300">{ex.name}</span>
+                                  <span className="text-gray-500 text-xs text-right">
+                                    {ex.sets.map(s => `${s.weight_kg ?? '—'}kg×${s.reps ?? '—'}`).join('  ')}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               {/* Tab: Dieta */}
