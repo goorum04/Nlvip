@@ -2,8 +2,14 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import * as Sentry from '@sentry/nextjs'
 import { createClient } from '@supabase/supabase-js'
+import { waitUntil } from '@vercel/functions'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
+
+// El flujo puede encadenar hasta 3 llamadas a OpenAI (15-30s+). En modo
+// background (waitUntil) el trabajo real sigue después de responder, así
+// que necesita el mismo margen o más que en modo síncrono.
+export const maxDuration = 60
 
 const getSupabaseAdmin = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -400,7 +406,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Too many requests. Límite de 100/min alcanzado.' }, { status: 429 })
     }
 
-    const { messages, executeTools = false, toolCallsToExecute = [] } = await request.json()
+    const { messages, executeTools = false, toolCallsToExecute = [], background = false } = await request.json()
 
     // 2. Authorization Check
     const authHeader = request.headers.get('Authorization')
@@ -425,21 +431,17 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Permisos insuficientes' }, { status: 403 })
     }
 
-    // 3. Registrar el job (para trazabilidad / futura consulta) y procesar
-    // AQUÍ MISMO, síncronamente, devolviendo el resultado completo en esta
-    // misma respuesta.
+    // 3. Registrar el job (para trazabilidad / consulta) y procesar.
     //
-    // IMPORTANTE: la app instalada desde el App Store no se actualiza sola
-    // — el JS que corre ahí quedó fijado en la última build de Xcode. Ese
-    // cliente espera recibir {message, toolCalls, ...} directamente en la
-    // respuesta del POST, tal como funcionaba antes. Si esta ruta solo
-    // devuelve {jobId} y deja el trabajo para después (como en un momento
-    // se probó), esa app antigua no sabe que tiene que preguntar por el
-    // resultado: la petición "termina" sin mostrar nada, aunque el job se
-    // complete bien en el servidor. Por eso esta ruta debe seguir siendo
-    // síncrona mientras siga en uso la build actual del App Store — el
-    // modo asíncrono (job + polling) solo se puede activar de verdad en
-    // una futura actualización nativa que además actualice el cliente.
+    // IMPORTANTE — compatibilidad con la app YA instalada desde el App Store:
+    // ese JS quedó fijado en la última build de Xcode y espera recibir
+    // {message, toolCalls, ...} directamente en la respuesta del POST, tal
+    // como funcionaba antes — no sabe preguntar por un jobId. Por eso el
+    // modo asíncrono de verdad SOLO se activa si el cliente manda
+    // `background: true` en el body, cosa que la app antigua nunca hace.
+    // Sin ese flag, esta ruta se comporta exactamente igual que siempre
+    // (síncrona, resultado completo en la misma respuesta) — cero riesgo
+    // para los dispositivos que aún no tienen la próxima build.
     const { data: job } = await supabaseAdmin
       .from('assistant_jobs')
       .insert({
@@ -450,27 +452,51 @@ export async function POST(request) {
       .select('id')
       .single()
 
-    let adminPreferencesText = ''
-    if (!(executeTools && toolCallsToExecute?.length > 0)) {
-      try {
-        const { data } = await supabaseAdmin.rpc('rpc_get_admin_preferences_text')
-        adminPreferencesText = data || ''
-      } catch (e) {
-        console.warn('rpc_get_admin_preferences_text falló, se ignoran preferencias:', e.message)
+    const runAndFinish = async () => {
+      let adminPreferencesText = ''
+      if (!(executeTools && toolCallsToExecute?.length > 0)) {
+        try {
+          const { data } = await supabaseAdmin.rpc('rpc_get_admin_preferences_text')
+          adminPreferencesText = data || ''
+        } catch (e) {
+          console.warn('rpc_get_admin_preferences_text falló, se ignoran preferencias:', e.message)
+        }
       }
+
+      const result = executeTools && toolCallsToExecute?.length > 0
+        ? await runToolExecution({ toolCallsToExecute, adminToken })
+        : await runAssistantChat({ openai: getOpenAI(), messages, adminToken, adminPreferencesText })
+
+      if (job?.id) {
+        await supabaseAdmin
+          .from('assistant_jobs')
+          .update({ status: 'done', result, updated_at: new Date().toISOString() })
+          .eq('id', job.id)
+      }
+      return result
     }
 
-    const result = executeTools && toolCallsToExecute?.length > 0
-      ? await runToolExecution({ toolCallsToExecute, adminToken })
-      : await runAssistantChat({ openai: getOpenAI(), messages, adminToken, adminPreferencesText })
-
-    if (job?.id) {
-      await supabaseAdmin
-        .from('assistant_jobs')
-        .update({ status: 'done', result, updated_at: new Date().toISOString() })
-        .eq('id', job.id)
+    if (background && job?.id) {
+      // Cliente nuevo: responde YA con el jobId. waitUntil mantiene la
+      // función viva DESPUÉS de haber respondido para terminar el trabajo
+      // real (puede encadenar varias llamadas a OpenAI, 15-30s+) — así el
+      // admin puede minimizar o cerrar la app y el job sigue y termina en
+      // el servidor de todas formas. El cliente lo recoge sondeando GET
+      // ?jobId=... (o solo, al volver, gracias al id guardado en localStorage).
+      waitUntil(
+        runAndFinish().catch(async (error) => {
+          Sentry.captureException(error, { tags: { endpoint: 'admin-assistant-background' } })
+          await supabaseAdmin
+            .from('assistant_jobs')
+            .update({ status: 'error', error: friendlyJobError(error), updated_at: new Date().toISOString() })
+            .eq('id', job.id)
+        })
+      )
+      return NextResponse.json({ jobId: job.id })
     }
 
+    // Modo síncrono (comportamiento de siempre): se espera aquí mismo.
+    const result = await runAndFinish()
     return NextResponse.json({ jobId: job?.id, ...result })
   } catch (error) {
     Sentry.captureException(error, { tags: { endpoint: 'admin-assistant' } })

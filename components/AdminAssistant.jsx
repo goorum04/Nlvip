@@ -1042,7 +1042,10 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
           'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content }))
+          messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })),
+          // Pide al servidor que responda YA con el jobId y siga generando
+          // después, aunque se minimice o cierre la app (ver route.js).
+          background: true,
         })
       })
 
@@ -1103,7 +1106,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`
         },
-        body: JSON.stringify({ executeTools: true, toolCallsToExecute: toolsToExecute })
+        body: JSON.stringify({ executeTools: true, toolCallsToExecute: toolsToExecute, background: true })
       })
 
       const { jobId, error: startError } = await response.json()
