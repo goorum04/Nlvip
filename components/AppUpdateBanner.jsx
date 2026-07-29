@@ -77,20 +77,41 @@ export default function AppUpdateBanner() {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white px-4 py-3 flex items-center gap-3 shadow-lg">
-      <Sparkles className="w-5 h-5 flex-shrink-0" />
-      <p className="text-sm flex-1 leading-snug">{info.message}</p>
-      <a
-        href={info.storeUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="bg-white/20 hover:bg-white/30 transition-colors text-white text-sm font-bold px-3 py-1.5 rounded-xl flex-shrink-0"
-      >
-        Actualizar
-      </a>
-      <button onClick={handleDismiss} className="flex-shrink-0 p-1" aria-label="Cerrar aviso">
-        <X className="w-4 h-4" />
-      </button>
+    // Anclado ABAJO (no arriba): pegado al techo tapaba la cabecera de la
+    // app y sus botones quedaban debajo, sin poder tocarlos ni leer el
+    // aviso completo. Envuelto en un div con padding + safe-area para que
+    // flote separado del borde y del home indicator del iPhone.
+    <div
+      className="fixed left-0 right-0 bottom-0 z-[100] px-4 pointer-events-none"
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
+    >
+      <div className="max-w-lg mx-auto bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-3xl shadow-2xl shadow-black/40 p-5 flex items-start gap-4 pointer-events-auto">
+        <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center flex-shrink-0">
+          <Sparkles className="w-6 h-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-base leading-snug">{info.message}</p>
+          <div className="flex items-center gap-2 mt-3">
+            <a
+              href={info.storeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white text-violet-700 hover:bg-white/90 transition-colors font-bold text-sm px-4 py-2 rounded-xl"
+            >
+              Actualizar ahora
+            </a>
+            <button
+              onClick={handleDismiss}
+              className="text-white/80 hover:text-white text-sm font-semibold px-3 py-2"
+            >
+              Más tarde
+            </button>
+          </div>
+        </div>
+        <button onClick={handleDismiss} className="flex-shrink-0 p-1 text-white/70 hover:text-white" aria-label="Cerrar aviso">
+          <X className="w-5 h-5" />
+        </button>
+      </div>
     </div>
   )
 }
