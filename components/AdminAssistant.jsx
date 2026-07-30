@@ -924,7 +924,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
       if (timerRef.current) clearInterval(timerRef.current)
       timerRef.current = setInterval(() => setRecordingDuration(p => p + 1), 1000)
 
-      // 2. Transcription logic (while holding)
+      // 2. Transcription logic (while recording)
       transcriptRef.current = ''
       if (recognitionRef.current) {
         setInput('')
@@ -1316,7 +1316,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && !isLoading && handleSend()}
-                    placeholder={isLoading ? 'Generando... puedes seguir escribiendo' : 'Escribe o mantén pulsado...'}
+                    placeholder={isLoading ? 'Generando... puedes seguir escribiendo' : 'Escribe o toca el micro...'}
                     className="w-full h-14 bg-white/5 border-white/10 rounded-2xl pl-5 pr-14 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20"
                   />
                   {isLoading ? (
@@ -1341,7 +1341,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
             </div>
           </div>
           <p className="text-center text-[10px] text-gray-600 mt-3 font-medium uppercase tracking-widest">
-            Mantén pulsado el icono del micro para enviar un audio
+            Toca el micro para grabar, tócalo de nuevo para enviarlo
           </p>
         </div>
       </div>
