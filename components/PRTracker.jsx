@@ -17,6 +17,7 @@ export default function PRTracker({ memberId }) {
   const [prs, setPrs] = useState([])
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
+  const [deletingId, setDeletingId] = useState(null)
   const [form, setForm] = useState({
     exercise_name: '',
     weight_kg: '',
@@ -48,12 +49,16 @@ export default function PRTracker({ memberId }) {
 
   const handleDeletePR = async (prId) => {
     if (!window.confirm('¿Eliminar este récord personal? No se puede deshacer.')) return
+    setDeletingId(prId)
+    const prevPrs = prs
+    setPrs(prev => prev.filter(pr => pr.id !== prId)) // optimista: fuera al instante
     const { error } = await supabase.from('member_prs').delete().eq('id', prId)
+    setDeletingId(null)
     if (error) {
+      setPrs(prevPrs)
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } else {
       toast({ title: 'Récord eliminado' })
-      loadPRs()
     }
   }
 
@@ -77,7 +82,7 @@ export default function PRTracker({ memberId }) {
       })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error)
-      
+
       toast({ title: '¡Récord guardado!', description: `Nuevo PR en ${form.exercise_name}` })
       setForm({
         exercise_name: '',
@@ -85,7 +90,10 @@ export default function PRTracker({ memberId }) {
         reps: '1',
         date: new Date().toISOString().split('T')[0]
       })
-      loadPRs()
+      // El propio POST ya devuelve la fila insertada: la añadimos directamente
+      // en vez de disparar otro fetch completo (GET) para volver a traer lo mismo.
+      if (result.data) setPrs(prev => [result.data, ...prev])
+      else loadPRs()
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
@@ -236,9 +244,10 @@ export default function PRTracker({ memberId }) {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeletePR(pr.id)}
+                        disabled={deletingId === pr.id}
                         className="h-6 w-6 p-0 hover:text-red-400"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        {deletingId === pr.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                       </Button>
                     </div>
                   </CardContent>

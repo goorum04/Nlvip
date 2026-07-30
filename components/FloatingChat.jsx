@@ -432,6 +432,17 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       }, (payload) => {
         setMessages(prev => {
           if (prev.find(m => m.id === payload.new.id)) return prev
+          // Si es un mensaje de texto nuestro que ya se mostró de forma
+          // optimista al enviarlo, sustituye el provisional por el real en
+          // vez de duplicarlo en la lista.
+          if (payload.new.sender_id === userId) {
+            const optimisticIdx = prev.findIndex(m => m._optimistic && m.text === payload.new.text)
+            if (optimisticIdx !== -1) {
+              const next = [...prev]
+              next[optimisticIdx] = payload.new
+              return next
+            }
+          }
           return [...prev, payload.new]
         })
         scrollToBottom()
@@ -471,6 +482,27 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     if (!activeConversation) {
       alert('Error: No hay una conversación activa. Por favor, espera a que el chat cargue o refresca la página.')
       return
+    }
+
+    // Los mensajes de solo texto se pueden mostrar al instante (sin subida
+    // de por medio); audio/imagen necesitan subirse primero, así que esos
+    // se quedan esperando como antes. El provisional se sustituye por el
+    // real en cuanto llega por el canal realtime (ver setupSubscription).
+    const isTextOnly = !!newMessage.trim() && !audioBlob && !imageFile
+    const textToSend = newMessage.trim()
+    const tempId = `optimistic-${Date.now()}`
+    if (isTextOnly) {
+      setMessages(prev => [...prev, {
+        id: tempId,
+        conversation_id: activeConversation.id,
+        sender_id: userId,
+        text: textToSend,
+        type: 'text',
+        created_at: new Date().toISOString(),
+        _optimistic: true,
+      }])
+      setNewMessage('')
+      scrollToBottom()
     }
 
     setLoading(true)
@@ -544,7 +576,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
         console.warn('Error disparando notificación de mensaje:', notifErr)
       }
       
-      setNewMessage('')
+      if (!isTextOnly) setNewMessage('')
       setAudioBlob(null)
       setImageFile(null)
       setImagePreview(null)
@@ -552,6 +584,10 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     } catch (error) {
       console.error('Error sending message:', error)
       alert('Error al enviar el mensaje: ' + error.message)
+      if (isTextOnly) {
+        setMessages(prev => prev.filter(m => m.id !== tempId))
+        setNewMessage(textToSend) // devolver el texto al input para reintentar
+      }
     } finally {
       setLoading(false)
       setUploadingImage(false)

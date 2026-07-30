@@ -161,12 +161,34 @@ export default function FoodTracker({ userId }) {
     }
   }
 
+  // Optimista: quita el registro y descuenta sus macros al instante en vez
+  // de esperar a un loadData() completo (2 RPCs); si el borrado falla de
+  // verdad, se devuelve todo a como estaba.
   const handleDeleteFood = async (id) => {
+    const deletedLog = foodLogs.find(l => l.id === id)
+    const prevLogs = foodLogs
+    const prevSummary = macrosSummary
+
+    setFoodLogs(prev => prev.filter(l => l.id !== id))
+    if (deletedLog && macrosSummary?.consumed) {
+      setMacrosSummary(prev => ({
+        ...prev,
+        consumed: {
+          ...prev.consumed,
+          calories: Math.max(0, (prev.consumed.calories || 0) - (deletedLog.calories || 0)),
+          protein_g: Math.max(0, (prev.consumed.protein_g || 0) - (deletedLog.protein_g || 0)),
+          carbs_g: Math.max(0, (prev.consumed.carbs_g || 0) - (deletedLog.carbs_g || 0)),
+          fat_g: Math.max(0, (prev.consumed.fat_g || 0) - (deletedLog.fat_g || 0)),
+        },
+      }))
+    }
+
     try {
       await supabase.rpc('rpc_delete_food_log', { p_id: id })
       toast({ title: 'Comida eliminada' })
-      loadData()
     } catch (err) {
+      setFoodLogs(prevLogs)
+      setMacrosSummary(prevSummary)
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
     }
   }

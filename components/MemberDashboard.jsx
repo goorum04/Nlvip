@@ -56,6 +56,10 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const [needsOnboardingPhotos, setNeedsOnboardingPhotos] = useState(false)
   const [onboardingPhotosDismissed, setOnboardingPhotosDismissed] = useState(false)
   const [dietViewMode, setDietViewMode] = useState('daily')
+  // Igual que visitedTabs: la vista Diario/Semanal de la dieta se queda
+  // montada (solo oculta con CSS) una vez abierta, para que alternar entre
+  // ambas no vuelva a recargar MemberRecipePlan/FoodTracker cada vez.
+  const [visitedDietModes, setVisitedDietModes] = useState(() => new Set(['daily']))
   const [myTrainer, setMyTrainer] = useState(null)
   const [gymAdmin, setGymAdmin] = useState(null)
   const [feedImageUrls, setFeedImageUrls] = useState({})
@@ -1124,10 +1128,13 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                   
                   <div className="flex p-1 bg-black/40 rounded-xl border border-white/5 w-full sm:w-auto">
                     <button
-                      onClick={() => setDietViewMode('daily')}
+                      onClick={() => {
+                        setDietViewMode('daily')
+                        setVisitedDietModes(prev => prev.has('daily') ? prev : new Set(prev).add('daily'))
+                      }}
                       className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                        dietViewMode === 'daily' 
-                          ? 'bg-violet-600 text-white shadow-lg' 
+                        dietViewMode === 'daily'
+                          ? 'bg-violet-600 text-white shadow-lg'
                           : 'text-gray-500 hover:text-gray-300'
                       }`}
                     >
@@ -1135,7 +1142,10 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                       DIARIO
                     </button>
                     <button
-                      onClick={() => setDietViewMode('weekly')}
+                      onClick={() => {
+                        setDietViewMode('weekly')
+                        setVisitedDietModes(prev => prev.has('weekly') ? prev : new Set(prev).add('weekly'))
+                      }}
                       className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                         dietViewMode === 'weekly' 
                           ? 'bg-violet-600 text-white shadow-lg' 
@@ -1148,8 +1158,8 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                   </div>
                 </div>
 
-                {dietViewMode === 'daily' ? (
-                  <div className="space-y-8">
+                {visitedDietModes.has('daily') && (
+                  <div className={`space-y-8 ${dietViewMode === 'daily' ? '' : 'hidden'}`}>
                     {/* Compact Macros for Daily */}
                     <div className="grid grid-cols-4 gap-2 sm:gap-4">
                       {[
@@ -1173,11 +1183,12 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                     {/* Today's Recipe part is already inside MemberRecipePlan which we show below */}
                     <MemberRecipePlan userId={user.id} />
                   </div>
-                ) : (
-                  <div className="space-y-8">
+                )}
+                {visitedDietModes.has('weekly') && (
+                  <div className={`space-y-8 ${dietViewMode === 'weekly' ? '' : 'hidden'}`}>
                     <MemberRecipePlan userId={user.id} forceFullWeek={true} />
-                    
-                    <DietWeeklyView 
+
+                    <DietWeeklyView
                       content={myDiet.diet?.content}
                       calories={myDiet.diet?.calories}
                       protein={myDiet.diet?.protein_g}
@@ -1196,8 +1207,14 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
               </Card>
             )}
 
-            {/* FOOD TRACKER is always useful in daily context, but we keep it below the main diet logic */}
-            {dietViewMode === 'daily' && <FoodTracker userId={user.id} />}
+            {/* FOOD TRACKER is always useful in daily context, but we keep it below the main diet logic.
+                Se queda montado tras la primera vez para no recargar los macros del día cada vez
+                que se alterna entre Diario y Semanal. */}
+            {visitedDietModes.has('daily') && (
+              <div className={dietViewMode === 'daily' ? '' : 'hidden'}>
+                <FoodTracker userId={user.id} />
+              </div>
+            )}
           </TabsContent>
 
           {/* RECIPES TAB - Browse all recipes */}
