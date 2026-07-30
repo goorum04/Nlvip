@@ -630,6 +630,13 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
   const handleSendRef = useRef(null)
   const { toast } = useToast()
 
+  // Baja solo hasta el último mensaje cada vez que llega uno nuevo, se está
+  // generando una respuesta o aparece un plan para confirmar — sin esto el
+  // chat se quedaba parado donde estuviera y había que bajar a mano cada vez.
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [messages, isLoading, pendingPlan])
+
   // --- Background job polling ---------------------------------------------
   // La generación de dietas/rutinas puede tardar 15-30s+ encadenando varias
   // llamadas a OpenAI. En vez de mantener la conexión abierta esperando (lo
@@ -695,7 +702,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
       } catch {
         // Fallo de red consultando el estado: reintentamos, no abortamos.
       }
-      if (!cancelled) timeoutId = setTimeout(check, 3000)
+      if (!cancelled) timeoutId = setTimeout(check, 1200)
     }
 
     activeJobRef.current = { jobId, checkNow: check }
