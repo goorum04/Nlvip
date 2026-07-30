@@ -289,7 +289,12 @@ export function ChallengesSection({ userId }) {
     }
   }
 
+  // Optimista: la tarjeta salta a "Mis Retos" al instante (antes de que
+  // responda el servidor) añadiendo una participación provisional; antes
+  // había que esperar a un loadChallenges() completo para ver el cambio.
   const joinChallenge = async (challengeId) => {
+    const optimisticId = `optimistic-${challengeId}`
+    setParticipations(prev => [...prev, { id: optimisticId, challenge_id: challengeId, member_id: userId, progress_value: 0, completed: false }])
     try {
       const { error } = await supabase.from('challenge_participants').insert([{
         challenge_id: challengeId,
@@ -298,8 +303,9 @@ export function ChallengesSection({ userId }) {
       }])
       if (error) throw error
       toast({ title: '¡Reto aceptado! 🔥', description: '¡A por todas, tú puedes!' })
-      loadChallenges()
+      loadChallenges() // sincroniza con el id real de la base de datos
     } catch (error) {
+      setParticipations(prev => prev.filter(p => p.id !== optimisticId))
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     }
   }

@@ -541,23 +541,55 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
     }
   }
 
+  // Optimista: el corazón cambia al instante usando lo que ya tenemos en
+  // memoria (sin esperar un SELECT previo para saber si ya estaba dado el
+  // like) y solo se revierte si la petición real falla.
   const handleLikePost = async (postId) => {
-    const { data: existingLike } = await supabase.from('feed_likes').select('id').eq('post_id', postId).eq('user_id', user.id).single()
-    if (existingLike) {
-      await supabase.from('feed_likes').delete().eq('post_id', postId).eq('user_id', user.id)
-    } else {
-      await supabase.from('feed_likes').insert([{ post_id: postId, user_id: user.id }])
+    const post = feedPosts.find(p => p.id === postId)
+    const alreadyLiked = post?.feed_likes?.some(l => l.user_id === user.id)
+
+    setFeedPosts(prev => prev.map(p => {
+      if (p.id !== postId) return p
+      return {
+        ...p,
+        feed_likes: alreadyLiked
+          ? (p.feed_likes || []).filter(l => l.user_id !== user.id)
+          : [...(p.feed_likes || []), { id: `optimistic-${user.id}`, user_id: user.id }],
+      }
+    }))
+
+    try {
+      if (alreadyLiked) {
+        await supabase.from('feed_likes').delete().eq('post_id', postId).eq('user_id', user.id)
+      } else {
+        await supabase.from('feed_likes').insert([{ post_id: postId, user_id: user.id }])
+      }
+    } catch (e) {
+      loadFeed() // algo falló: recargamos para volver al estado real
     }
-    loadFeed()
   }
 
+  // Optimista: el comentario aparece al instante y el campo se vacía ya
+  // mismo; si el insert falla de verdad, se retira y se avisa.
   const handleComment = async (postId) => {
-    if (!newComment.trim()) return
-    const { error } = await supabase.from('feed_comments').insert([{ post_id: postId, commenter_id: user.id, content: newComment }])
-    if (!error) {
-      setNewComment('')
-      setCommentingPost(null)
-      loadFeed()
+    const content = newComment.trim()
+    if (!content) return
+
+    const tempId = `optimistic-${Date.now()}`
+    setFeedPosts(prev => prev.map(p => p.id === postId
+      ? { ...p, feed_comments: [...(p.feed_comments || []), { id: tempId, content, commenter: { name: profile?.name || 'Tú' } }] }
+      : p))
+    setNewComment('')
+    setCommentingPost(null)
+
+    const { error } = await supabase.from('feed_comments').insert([{ post_id: postId, commenter_id: user.id, content }])
+    if (error) {
+      setFeedPosts(prev => prev.map(p => p.id === postId
+        ? { ...p, feed_comments: (p.feed_comments || []).filter(c => c.id !== tempId) }
+        : p))
+      toast({ title: 'No se pudo enviar el comentario', description: 'Inténtalo de nuevo' })
+    } else {
+      loadFeed() // sincroniza con el id/fecha reales, ya sin bloquear la UI
     }
   }
 
@@ -568,22 +600,31 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
   const isLikedByMe = (post) => post.feed_likes?.some(like => like.user_id === user.id)
 
+  // Optimista: la foto/el registro desaparecen de la lista al instante en
+  // vez de esperar a un reload completo; si el borrado real falla, se
+  // devuelve a la lista y se avisa.
   const handleDeletePhoto = async (photoId) => {
+    const prevPhotos = progressPhotos
+    setProgressPhotos(prev => prev.filter(p => p.id !== photoId))
     const { error } = await supabase.from('progress_photos').delete().eq('id', photoId)
-    if (!error) {
+    if (error) {
+      setProgressPhotos(prevPhotos)
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } else {
       toast({ title: 'Foto eliminada' })
-      loadProgressPhotos()
     }
   }
 
   const handleDeleteProgressRecord = async (recordId) => {
     if (!window.confirm('¿Eliminar este registro de medidas? No se puede deshacer.')) return
+    const prevRecords = progressRecords
+    setProgressRecords(prev => prev.filter(r => r.id !== recordId))
     const { error } = await supabase.from('progress_records').delete().eq('id', recordId)
     if (error) {
+      setProgressRecords(prevRecords)
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } else {
       toast({ title: 'Registro eliminado' })
-      loadProgress()
     }
   }
 
