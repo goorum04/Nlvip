@@ -655,7 +655,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className={`fixed ${userRole === 'admin' ? 'bottom-2' : 'bottom-6'} right-6 w-16 h-16 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-full shadow-2xl shadow-violet-500/40 flex items-center justify-center hover:scale-110 transition-all duration-300 z-50 group`}
+          className={`fixed ${userRole === 'admin' ? 'bottom-2' : 'bottom-6'} right-6 w-16 h-16 bg-gradient-to-br from-violet-500 to-cyan-500 rounded-full shadow-2xl shadow-violet-500/40 flex items-center justify-center hover:scale-110 transition-all duration-300 z-[110] group`}
         >
           <MessageCircle className="w-7 h-7 text-black" />
           
@@ -674,7 +674,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
 
       {/* Ventana de Chat */}
       {isOpen && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 lg:left-auto lg:right-6 lg:translate-x-0 w-[92%] max-w-[400px] h-[600px] max-h-[85vh] bg-[#0A0A0A] rounded-[2rem] shadow-2xl shadow-black border border-white/10 flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 lg:left-auto lg:right-6 lg:translate-x-0 w-[92%] max-w-[400px] h-[600px] max-h-[85vh] bg-[#0A0A0A] rounded-[2rem] shadow-2xl shadow-black border border-white/10 flex flex-col overflow-hidden z-[110] animate-in slide-in-from-bottom-5 duration-300">
           
           {/* Header & Tabs */}
           <div className="bg-gradient-to-b from-zinc-900 to-black p-4 border-b border-white/5">

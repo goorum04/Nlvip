@@ -2799,12 +2799,6 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
         initialTab={memberDetailTab}
       />
 
-      <FloatingChat
-        userId={user.id}
-        userRole="admin"
-        members={members}
-      />
-
       <FloatingAdminAssistant userId={user.id} />
       {showDietBuilder && (
         <Dialog open={showDietBuilder} onOpenChange={setShowDietBuilder}>

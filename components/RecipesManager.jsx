@@ -28,6 +28,7 @@ const categoryIcons = {
 // Tarjeta de receta
 function RecipeCard({ recipe, onEdit, onDelete, canEdit = false }) {
   const [showDetail, setShowDetail] = useState(false)
+  const [imageFailed, setImageFailed] = useState(false)
   const category = categoryIcons[recipe.category] || categoryIcons.any
   const CategoryIcon = category.icon
 
@@ -39,10 +40,11 @@ function RecipeCard({ recipe, onEdit, onDelete, canEdit = false }) {
       >
         {/* Imagen */}
         <div className="aspect-video bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] relative overflow-hidden">
-          {recipe.image_url ? (
-            <img 
-              src={recipe.image_url} 
+          {recipe.image_url && !imageFailed ? (
+            <img
+              src={recipe.image_url}
               alt={recipe.name}
+              onError={() => setImageFailed(true)}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
@@ -120,10 +122,11 @@ function RecipeCard({ recipe, onEdit, onDelete, canEdit = false }) {
 
           <div className="overflow-y-auto p-6 space-y-5">
 
-            {recipe.image_url && (
-              <img 
-                src={recipe.image_url} 
+            {recipe.image_url && !imageFailed && (
+              <img
+                src={recipe.image_url}
                 alt={recipe.name}
+                onError={() => setImageFailed(true)}
                 className="w-full aspect-video object-cover rounded-xl"
               />
             )}
@@ -574,6 +577,28 @@ function RecipeFormModal({ isOpen, onClose, recipe = null, onSave }) {
     setFormData(prev => ({ ...prev, image_url: '' }))
   }
 
+  // El bucket recipe_images solo acepta jpeg/png/webp, pero las fotos hechas
+  // con la cámara de iPhone suelen venir en HEIC (y muchos navegadores no
+  // saben ni mostrar ese formato). Si el archivo no viene en un tipo válido,
+  // lo reconvertimos a JPEG en el propio navegador antes de subirlo.
+  const toUploadableImage = async (file) => {
+    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return file
+
+    const bitmap = await createImageBitmap(file).catch(() => null)
+    if (!bitmap) {
+      throw new Error('No se pudo procesar esta foto. Prueba con otra imagen, o cambia el formato de la cámara a "Más compatible" en Ajustes > Cámara del iPhone.')
+    }
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    canvas.getContext('2d').drawImage(bitmap, 0, 0)
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9))
+    if (!blob) {
+      throw new Error('No se pudo convertir esta foto a un formato compatible.')
+    }
+    return new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' })
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!formData.name) {
@@ -587,17 +612,30 @@ function RecipeFormModal({ isOpen, onClose, recipe = null, onSave }) {
 
       // Subir imagen si hay una nueva
       if (imageFile) {
-        const fileExt = imageFile.name.split('.').pop()
+        let uploadFile
+        try {
+          uploadFile = await toUploadableImage(imageFile)
+        } catch (conversionError) {
+          toast({ title: 'No se pudo subir la foto', description: conversionError.message, variant: 'destructive' })
+          setSaving(false)
+          return
+        }
+
+        const fileExt = uploadFile.name.split('.').pop()
         const fileName = `recipe_${Date.now()}.${fileExt}`
         const filePath = `recipes/${fileName}`
 
         const { error: uploadError } = await supabase.storage
           .from('recipe_images')
-          .upload(filePath, imageFile)
+          .upload(filePath, uploadFile)
 
         if (uploadError) {
-          // Si el bucket no existe, usar URL pública directamente
-          console.warn('Upload error, using placeholder:', uploadError)
+          console.warn('Upload error:', uploadError)
+          toast({
+            title: 'No se pudo subir la foto',
+            description: 'La receta se va a guardar sin imagen. Puedes editarla luego para volver a intentarlo.',
+            variant: 'destructive'
+          })
         } else {
           const { data: urlData } = supabase.storage
             .from('recipe_images')
