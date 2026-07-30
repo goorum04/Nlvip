@@ -115,25 +115,49 @@ function ExerciseVideoUploader({ onVideoUploaded, existingVideo, trainerId }) {
 }
 
 
+// --- Superset (bi-serie / tri-serie) helpers ---
+// El generador de IA marca los ejercicios encadenados con un prefijo
+// [bi-serie:N] / [tri-serie:N] en description (ver lib/routinePersistence.js).
+// Cada ejercicio del grupo sigue siendo su propia fila en workout_exercises,
+// con sus propias series/peso/reps — el tag solo sirve para agruparlos
+// visualmente aquí y en el registro de series del socio.
+const SUPERSET_TAG_RE = /^\[(bi-serie|tri-serie):(\d+)\]\s*/i
+
+function parseSupersetGroup(description) {
+  const m = (description || '').match(SUPERSET_TAG_RE)
+  return m ? parseInt(m[2], 10) : 0
+}
+
+function stripSupersetTag(description) {
+  if (!description) return description || ''
+  return description.replace(SUPERSET_TAG_RE, '')
+}
+
 // --- Dropset helpers ---
 // Dropsets are stored as a [dropset:12,10,8] prefix in the description field,
 // where the numbers are the reps for each successive drop (first = main set).
+// Puede convivir con un [bi-serie:N]/[tri-serie:N] delante: ese tag se
+// respeta y se vuelve a anteponer al reconstruir la description.
 function parseDropset(description) {
   if (!description) return null
-  const match = description.match(/^\[dropset:([^\]]+)\]/)
+  const withoutSuperset = stripSupersetTag(description)
+  const match = withoutSuperset.match(/^\[dropset:([^\]]+)\]/)
   if (!match) return null
   return match[1].split(',').map(s => s.trim()).filter(Boolean)
 }
 
 function stripDropsetTag(description) {
   if (!description) return ''
-  return description.replace(/^\[dropset:[^\]]+\]\s*/, '')
+  const supersetTag = (description.match(SUPERSET_TAG_RE) || [''])[0]
+  const rest = description.slice(supersetTag.length)
+  return supersetTag + rest.replace(/^\[dropset:[^\]]+\]\s*/, '')
 }
 
 function encodeDropset(description = '', drops) {
-  const base = stripDropsetTag(description)
-  if (!drops || drops.length === 0) return base
-  return `[dropset:${drops.join(',')}]${base ? ' ' + base : ''}`
+  const supersetTag = (description.match(SUPERSET_TAG_RE) || [''])[0]
+  const base = stripDropsetTag(description).slice(supersetTag.length)
+  if (!drops || drops.length === 0) return supersetTag + base
+  return `${supersetTag}[dropset:${drops.join(',')}]${base ? ' ' + base : ''}`
 }
 
 // Componente para un ejercicio individual
@@ -195,6 +219,7 @@ function ExerciseItem({ exercise, onUpdate, onDelete, trainerId, isEditing, prs 
     const pr = prs?.find(p => p.exercise_name.toLowerCase() === exercise.name.toLowerCase())
     const suggestedWeight = pr ? (parseFloat(pr.estimated_1rm) * 0.75).toFixed(1) : null
     const dropsetDrops = parseDropset(exercise.description)
+    const supersetGroup = parseSupersetGroup(exercise.description)
 
     return (
       <div className={`flex flex-col gap-2 p-4 rounded-2xl border transition-all ${dropsetDrops ? 'bg-orange-500/5 border-orange-500/20 hover:border-orange-500/40' : 'bg-black/30 border-white/5 hover:border-violet-500/20'}`}>
@@ -205,6 +230,11 @@ function ExerciseItem({ exercise, onUpdate, onDelete, trainerId, isEditing, prs 
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <p className="text-white font-bold">{exercise.name}</p>
+              {supersetGroup > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-black uppercase tracking-wider">
+                  Bi-serie
+                </span>
+              )}
               {dropsetDrops && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 font-black uppercase tracking-wider">
                   Dropset
@@ -379,11 +409,12 @@ function ExerciseItem({ exercise, onUpdate, onDelete, trainerId, isEditing, prs 
           </div>
 
           <Textarea
-            value={stripDropsetTag(localExercise.description || '')}
+            value={stripSupersetTag(stripDropsetTag(localExercise.description || ''))}
             onChange={(e) => {
+              const supersetTag = (localExercise.description || '').match(SUPERSET_TAG_RE)?.[0] || ''
               const newDesc = isDropset
-                ? encodeDropset(e.target.value, dropsetDrops)
-                : e.target.value
+                ? encodeDropset(supersetTag + e.target.value, dropsetDrops)
+                : supersetTag + e.target.value
               handleChange('description', newDesc)
             }}
             placeholder="Instrucciones o notas (opcional)"
@@ -463,18 +494,60 @@ function WorkoutDayCard({
       
       {expanded && (
         <CardContent className="space-y-3 pt-2">
-          {exercises.map((exercise, idx) => (
-            <ExerciseItem
-              key={exercise.id || idx}
-              exercise={{ ...exercise, order_index: idx }}
-              onUpdate={(updated) => onUpdateExercise(idx, updated)}
-              onDelete={() => onDeleteExercise(idx)}
-              onPlay={exercise.onPlay}
-              prs={prs}
-              trainerId={trainerId}
-              isEditing={isEditing}
-            />
-          ))}
+          {(() => {
+            // Agrupa visualmente los ejercicios encadenados en bi-serie/tri-serie
+            // (ver SUPERSET_TAG_RE) — cada uno sigue teniendo su propia tarjeta
+            // y sus propias series/peso/reps, solo se envuelven juntos.
+            const groups = []
+            let current = null
+            exercises.forEach((exercise, idx) => {
+              const g = parseSupersetGroup(exercise.description)
+              if (g && current && current.id === g) {
+                current.items.push({ exercise, idx })
+              } else if (g) {
+                current = { id: g, items: [{ exercise, idx }] }
+                groups.push(current)
+              } else {
+                groups.push({ id: 0, items: [{ exercise, idx }] })
+                current = null
+              }
+            })
+
+            return groups.map((grp, gi) => {
+              const size = grp.items.length
+              const isSuperset = grp.id > 0 && size >= 2
+              const label = size >= 3 ? 'Tri-serie' : 'Bi-serie'
+              return (
+                <div
+                  key={gi}
+                  className={isSuperset ? 'border border-amber-500/30 bg-amber-500/[0.03] rounded-2xl p-2.5 space-y-2.5' : 'space-y-3'}
+                >
+                  {isSuperset && (
+                    <div className="flex items-center gap-2 px-1">
+                      <span className="text-[10px] uppercase tracking-wide font-black text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                        {label}
+                      </span>
+                      <span className="text-[11px] text-amber-300/70">
+                        {size} ejercicios encadenados, sin descanso entre ellos
+                      </span>
+                    </div>
+                  )}
+                  {grp.items.map(({ exercise, idx }) => (
+                    <ExerciseItem
+                      key={exercise.id || idx}
+                      exercise={{ ...exercise, order_index: idx }}
+                      onUpdate={(updated) => onUpdateExercise(idx, updated)}
+                      onDelete={() => onDeleteExercise(idx)}
+                      onPlay={exercise.onPlay}
+                      prs={prs}
+                      trainerId={trainerId}
+                      isEditing={isEditing}
+                    />
+                  ))}
+                </div>
+              )
+            })
+          })()}
           
           {isEditing && (
             <Button

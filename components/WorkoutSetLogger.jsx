@@ -27,6 +27,16 @@ const parseIntOrNull = (value) => {
 
 const todayISO = () => new Date().toISOString().split('T')[0]
 
+// El generador de IA marca los ejercicios encadenados en bi-serie/tri-serie
+// con un prefijo [bi-serie:N] / [tri-serie:N] en description (ver
+// lib/routinePersistence.js). Cada ejercicio sigue siendo su propia fila con
+// sus propias series/peso/reps — esto solo agrupa las tarjetas visualmente.
+const SUPERSET_TAG_RE = /^\[(bi-serie|tri-serie):(\d+)\]\s*/i
+const parseSupersetGroup = (description) => {
+  const m = (description || '').match(SUPERSET_TAG_RE)
+  return m ? parseInt(m[2], 10) : 0
+}
+
 /**
  * Registro OPCIONAL de series del socio para el entreno de hoy.
  *
@@ -223,51 +233,90 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
             </div>
           ) : (
             <>
-              {exercises.map(ex => (
-                <div key={ex.id} className="bg-black/30 rounded-2xl p-4 border border-[#2a2a2a]">
-                  <div className="flex items-baseline justify-between gap-2 mb-1">
-                    <p className="text-white font-semibold text-sm">{ex.name}</p>
-                    <span className="text-[11px] text-violet-400 whitespace-nowrap">
-                      {ex.sets}×{ex.reps}
-                    </span>
-                  </div>
+              {(() => {
+                const groups = []
+                let current = null
+                exercises.forEach(ex => {
+                  const g = parseSupersetGroup(ex.description)
+                  if (g && current && current.id === g) {
+                    current.items.push(ex)
+                  } else if (g) {
+                    current = { id: g, items: [ex] }
+                    groups.push(current)
+                  } else {
+                    groups.push({ id: 0, items: [ex] })
+                    current = null
+                  }
+                })
 
-                  {lastSession[ex.id] && (
-                    <p className="text-[11px] text-gray-500 mb-3 flex items-center gap-1">
-                      <History className="w-3 h-3" />
-                      Última vez: {lastSession[ex.id]}
-                    </p>
-                  )}
+                return groups.map((grp, gi) => {
+                  const size = grp.items.length
+                  const isSuperset = grp.id > 0 && size >= 2
+                  const label = size >= 3 ? 'Tri-serie' : 'Bi-serie'
+                  return (
+                    <div
+                      key={gi}
+                      className={isSuperset ? 'border border-amber-500/30 bg-amber-500/[0.04] rounded-2xl p-2.5 space-y-2.5' : 'space-y-3'}
+                    >
+                      {isSuperset && (
+                        <div className="flex items-center gap-2 px-1.5">
+                          <span className="text-[10px] uppercase tracking-wide font-black text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                            {label}
+                          </span>
+                          <span className="text-[11px] text-amber-300/70">
+                            registra cada ejercicio por separado
+                          </span>
+                        </div>
+                      )}
+                      {grp.items.map(ex => (
+                        <div key={ex.id} className="bg-black/30 rounded-2xl p-4 border border-[#2a2a2a]">
+                          <div className="flex items-baseline justify-between gap-2 mb-1">
+                            <p className="text-white font-semibold text-sm">{ex.name}</p>
+                            <span className="text-[11px] text-violet-400 whitespace-nowrap">
+                              {ex.sets}×{ex.reps}
+                            </span>
+                          </div>
 
-                  <div className="space-y-2">
-                    {(values[ex.id] || []).map((row, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <span className="text-[11px] text-gray-500 w-12 flex-shrink-0">
-                          Serie {i + 1}
-                        </span>
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          placeholder="kg"
-                          value={row.weight}
-                          onChange={e => setField(ex.id, i, 'weight', e.target.value)}
-                          disabled={saving}
-                          className="bg-black/50 border-[#2a2a2a] rounded-xl text-white h-9 text-sm"
-                        />
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="reps"
-                          value={row.reps}
-                          onChange={e => setField(ex.id, i, 'reps', e.target.value)}
-                          disabled={saving}
-                          className="bg-black/50 border-[#2a2a2a] rounded-xl text-white h-9 text-sm"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                          {lastSession[ex.id] && (
+                            <p className="text-[11px] text-gray-500 mb-3 flex items-center gap-1">
+                              <History className="w-3 h-3" />
+                              Última vez: {lastSession[ex.id]}
+                            </p>
+                          )}
+
+                          <div className="space-y-2">
+                            {(values[ex.id] || []).map((row, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <span className="text-[11px] text-gray-500 w-12 flex-shrink-0">
+                                  Serie {i + 1}
+                                </span>
+                                <Input
+                                  type="text"
+                                  inputMode="decimal"
+                                  placeholder="kg"
+                                  value={row.weight}
+                                  onChange={e => setField(ex.id, i, 'weight', e.target.value)}
+                                  disabled={saving}
+                                  className="bg-black/50 border-[#2a2a2a] rounded-xl text-white h-9 text-sm"
+                                />
+                                <Input
+                                  type="text"
+                                  inputMode="numeric"
+                                  placeholder="reps"
+                                  value={row.reps}
+                                  onChange={e => setField(ex.id, i, 'reps', e.target.value)}
+                                  disabled={saving}
+                                  className="bg-black/50 border-[#2a2a2a] rounded-xl text-white h-9 text-sm"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })
+              })()}
 
               <Button
                 onClick={handleSave}
