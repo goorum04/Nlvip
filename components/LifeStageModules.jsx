@@ -499,7 +499,7 @@ export function LactationTracker({ userId, onThemeChange }) {
     const handleSave = async () => {
         setSaving(true)
         try {
-            const { error } = await supabase.from('lactation_sessions').insert([{
+            const { data, error } = await supabase.from('lactation_sessions').insert([{
                 user_id: userId,
                 session_type: form.session_type,
                 breast_side: form.breast_side || null,
@@ -507,12 +507,21 @@ export function LactationTracker({ userId, onThemeChange }) {
                 duration_minutes: form.duration_minutes ? parseInt(form.duration_minutes) : null,
                 amount_ml: form.amount_ml ? parseInt(form.amount_ml) : null,
                 notes: form.notes || null
-            }])
+            }]).select().single()
             if (error) throw error
             toast({ title: '✅ Toma registrada' })
             setShowAdd(false)
             setForm({ session_type: 'breastfeed', breast_side: 'left', start_time: new Date().toISOString().slice(0, 16), duration_minutes: '', amount_ml: '', notes: '' })
-            loadSessions()
+            // La propia respuesta del insert ya trae la fila creada: la
+            // metemos directamente en la lista (reordenando por fecha) en vez
+            // de volver a pedir las 20 últimas de cero.
+            if (data) {
+                setSessions(prev => [data, ...prev]
+                    .sort((a, b) => new Date(b.start_time) - new Date(a.start_time))
+                    .slice(0, 20))
+            } else {
+                loadSessions()
+            }
         } catch (error) {
             toast({ title: 'Error', description: error.message, variant: 'destructive' })
         } finally {

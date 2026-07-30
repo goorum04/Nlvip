@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -110,7 +110,17 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
     }
   }, [memberId, exerciseIds])
 
-  useEffect(() => { if (open) load() }, [open, load])
+  // Solo recarga la primera vez que se abre este día/lista de ejercicios:
+  // antes recargaba (con su spinner de pantalla completa) cada vez que se
+  // cerraba y se volvía a abrir el panel, aunque fuera exactamente lo mismo.
+  const loadedKeyRef = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const key = `${dayId || ''}:${exerciseIds}`
+    if (loadedKeyRef.current === key) return
+    loadedKeyRef.current = key
+    load()
+  }, [open, load, dayId, exerciseIds])
 
   const setField = (exerciseId, index, field, raw) => {
     const clean = field === 'weight'
@@ -177,7 +187,8 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
           ? `${toUpsert.length} serie(s) registradas en el entreno de hoy.`
           : 'No has dejado ninguna serie registrada hoy.',
       })
-      load()
+      // No hace falta volver a pedir los datos: `values` ya refleja
+      // exactamente lo que se acaba de guardar.
     } catch (e) {
       toast({ title: 'No se pudo guardar', description: e.message, variant: 'destructive' })
     } finally {
