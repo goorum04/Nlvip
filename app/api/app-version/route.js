@@ -1,6 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+// Esta respuesta la lee el aviso de actualización nada más abrir la app: si
+// algún proxy/CDN o el propio WebView la cachea, un socio que ya haya
+// actualizado puede seguir viendo el aviso de una versión vieja.
+function jsonNoStore(body, init) {
+  return Response.json(body, {
+    ...init,
+    headers: { 'Cache-Control': 'no-store, must-revalidate', ...(init?.headers || {}) },
+  })
+}
 
 // Id numérico de la ficha de la App Store (de la propia store_url configurada).
 // La API pública de iTunes Lookup no necesita ninguna clave ni login de
@@ -36,7 +47,7 @@ export async function GET(request) {
 
     // Validar platform
     if (!['ios', 'android'].includes(platform)) {
-      return Response.json({ configured: false }, { status: 400 })
+      return jsonNoStore({ configured: false }, { status: 400 })
     }
 
     // Conectar a Supabase con service role (sin autenticación necesaria)
@@ -53,7 +64,7 @@ export async function GET(request) {
       .single()
 
     if (error || !data) {
-      return Response.json({ configured: false })
+      return jsonNoStore({ configured: false })
     }
 
     // iOS: la versión "disponible" ya no depende de que alguien la actualice
@@ -64,7 +75,7 @@ export async function GET(request) {
     const realVersion = platform === 'ios' ? await fetchRealIosVersion() : null
     const latestVersion = realVersion || data.latest_version
 
-    return Response.json({
+    return jsonNoStore({
       configured: data.configured,
       latest_version: latestVersion,
       latest_version_source: realVersion ? 'app_store' : 'manual_fallback',
@@ -74,6 +85,6 @@ export async function GET(request) {
     })
   } catch (e) {
     console.error('app-version error:', e.message)
-    return Response.json({ configured: false })
+    return jsonNoStore({ configured: false })
   }
 }

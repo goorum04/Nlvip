@@ -57,7 +57,9 @@ export default function AppUpdateBanner() {
         const { App } = await import('@capacitor/app')
         const { version: currentVersion } = await App.getInfo()
 
-        const res = await fetch(`${getApiUrl()}/api/app-version?platform=${platform}`)
+        // Sin no-store, el WebView nativo puede quedarse con una respuesta
+        // vieja cacheada y seguir avisando de una versión que ya se instaló.
+        const res = await fetch(`${getApiUrl()}/api/app-version?platform=${platform}`, { cache: 'no-store' })
         const data = await res.json()
         if (cancelled || !data?.configured) return
 
