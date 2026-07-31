@@ -75,13 +75,10 @@ export async function POST(req) {
     const { weight, goal, restrictions, numMeals } = memberContext || {}
 
     const prompt = `Eres un nutricionista deportivo experto del club NL VIP.
-El entrenador está revisando el siguiente borrador de dieta y quiere aplicar una corrección.
+El entrenador está revisando el borrador de dieta de un socio y realiza una consulta o pide una corrección.
 
-MACROS OBJETIVO:
-- Calorías: ${macros?.calories || '?'} kcal
-- Proteína: ${macros?.protein_g || '?'}g
-- Carbohidratos: ${macros?.carbs_g || '?'}g
-- Grasas: ${macros?.fat_g || '?'}g
+MACROS OBJETIVO ACTUALES:
+- Calorías: ${macros?.calories || '?'} kcal | Proteína: ${macros?.protein_g || '?'}g | Carbohidratos: ${macros?.carbs_g || '?'}g | Grasas: ${macros?.fat_g || '?'}g
 
 DATOS DEL SOCIO:
 - Peso: ${weight || '?'}kg | Objetivo: ${goal || '?'} | Comidas: ${numMeals || '?'} | Restricciones: ${restrictions || 'ninguna'}
@@ -89,27 +86,50 @@ DATOS DEL SOCIO:
 BORRADOR ACTUAL:
 ${originalDraft}
 
-CORRECCIÓN SOLICITADA POR EL ENTRENADOR:
+MENSAJE / PREGUNTA / CORRECCIÓN SOLICITADA POR EL ENTRENADOR:
 "${correction}"
 
 INSTRUCCIONES:
-1. Aplica EXACTAMENTE la corrección indicada manteniendo el mismo formato y estructura
-2. Ajusta los gramos de otros alimentos si es necesario para mantener los macros objetivo
-3. Mantén todos los emojis y el formato del borrador original
-4. Devuelve SOLO el texto del menú corregido, sin explicaciones adicionales
-5. Si la corrección implica cambiar un alimento, asegúrate de que el sustituto sea nutritivamente equivalente`
+1. Aplica EXACTAMENTE los cambios indicados si los solicita, manteniendo el formato y estructura del borrador original.
+2. Responde directamente a cualquier pregunta técnico-nutricional planteada por el entrenador en el campo "explanation", argumentando el motivo de la decisión.
+3. Ajusta los gramos de otros alimentos si es necesario para mantener coherencia nutricional.
+4. Si la corrección implica alterar calorías o macros, calcula y actualiza los macros totales resultantes.
+5. Responde ÚNICAMENTE en formato JSON con la siguiente estructura:
+{"updatedDietContent": "<texto completo del menú corregido>", "explanation": "<respuesta directa y justificación al entrenador>", "changeSummary": "<bullets breves de cambios si aplica>", "calories": <number>, "protein_g": <number>, "carbs_g": <number>, "fat_g": <number>}`
 
     const openai = getOpenAI()
     const aiResponse = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 2000,
-      temperature: 0.5
+      response_format: { type: 'json_object' },
+      max_tokens: 3000,
+      temperature: 0.4
     })
 
-    const updatedDietContent = aiResponse.choices[0]?.message?.content || originalDraft
+    let parsedResponse = {}
+    try {
+      parsedResponse = JSON.parse(aiResponse.choices[0]?.message?.content || '{}')
+    } catch (e) {
+      console.warn('Failed to parse json in refine-draft:', e)
+    }
 
-    return NextResponse.json({ success: true, updatedDietContent })
+    const updatedDietContent = parsedResponse.updatedDietContent || originalDraft
+    const explanation = parsedResponse.explanation || parsedResponse.changeSummary || 'Ajuste aplicado según las indicaciones.'
+    const changeSummary = parsedResponse.changeSummary || explanation
+    const updatedMacros = {
+      calories: Number(parsedResponse.calories) || macros?.calories || 0,
+      protein_g: Number(parsedResponse.protein_g) || macros?.protein_g || 0,
+      carbs_g: Number(parsedResponse.carbs_g) || macros?.carbs_g || 0,
+      fat_g: Number(parsedResponse.fat_g) || macros?.fat_g || 0,
+    }
+
+    return NextResponse.json({
+      success: true,
+      updatedDietContent,
+      explanation,
+      changeSummary,
+      macros: updatedMacros
+    })
 
   } catch (error) {
     console.error('diet-onboarding/refine-draft error:', error)

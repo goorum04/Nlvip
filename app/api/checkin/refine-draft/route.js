@@ -59,7 +59,7 @@ export async function POST(req) {
       if (!checkin.draft_diet_content) {
         return NextResponse.json({ error: 'Esta revisión no tiene borrador de dieta' }, { status: 400 })
       }
-      const { content, macros, changeSummary } = await refineDietDraft({
+      const { content, macros, changeSummary, explanation } = await refineDietDraft({
         currentContent: checkin.draft_diet_content,
         currentMacros: {
           calories: checkin.draft_calories,
@@ -80,7 +80,7 @@ export async function POST(req) {
         draft_fat_g: macros.fat_g,
         diet_change_summary: changeSummary || checkin.diet_change_summary,
       }).eq('id', checkinId)
-      return NextResponse.json({ success: true, target: 'diet', draftDietContent: content, macros, changeSummary })
+      return NextResponse.json({ success: true, target: 'diet', draftDietContent: content, macros, changeSummary, explanation })
     }
 
     // target === 'routine'

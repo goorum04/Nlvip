@@ -316,7 +316,7 @@ function CheckInCard({ checkin, onRefresh }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error al ajustar')
-      toast({ title: 'Ajuste aplicado', description: data.changeSummary || undefined })
+      toast({ title: 'Ajuste aplicado', description: data.explanation || data.changeSummary || 'Borrador actualizado por la IA.' })
       setCorrection('')
       setCorrectionTarget(null)
       onRefresh?.()

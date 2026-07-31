@@ -401,10 +401,15 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
       })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || 'Error al refinar')
-      setDietDraft(prev => ({ ...prev, fullDietContent: result.updatedDietContent }))
-      setDraftCorrectionHistory(prev => [...prev, correctionText])
+      setDietDraft(prev => ({
+        ...prev,
+        fullDietContent: result.updatedDietContent,
+        macros: result.macros || prev.macros,
+        rationale: result.explanation ? `${prev.rationale ? prev.rationale + '\n\n' : ''}• Último ajuste (${correctionText}): ${result.explanation}` : prev.rationale
+      }))
+      setDraftCorrectionHistory(prev => [...prev, { userText: correctionText, aiExplanation: result.explanation || result.changeSummary }])
       setDraftCorrection('')
-      toast({ title: 'Corrección aplicada', description: 'El borrador ha sido actualizado por la IA.' })
+      toast({ title: 'Corrección aplicada', description: result.explanation ? 'La IA ha actualizado el borrador y respondido a tu indicación.' : 'El borrador ha sido actualizado por la IA.' })
     } catch (error) {
       toast({ title: 'Error al corregir', description: error.message, variant: 'destructive' })
     } finally {
@@ -1497,13 +1502,25 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                   <Label className="text-violet-300 text-sm font-semibold">Corregir con IA</Label>
                 </div>
                 {draftCorrectionHistory.length > 0 && (
-                  <div className="space-y-1.5 max-h-28 overflow-y-auto">
-                    {draftCorrectionHistory.map((msg, i) => (
-                      <div key={i} className="text-xs text-gray-400 bg-white/5 rounded-lg px-3 py-1.5 flex items-start gap-2">
-                        <span className="text-violet-400 shrink-0">✓</span>
-                        <span>{msg}</span>
-                      </div>
-                    ))}
+                  <div className="space-y-2 max-h-48 overflow-y-auto rounded-xl bg-slate-900/60 p-3 border border-slate-800">
+                    {draftCorrectionHistory.map((item, i) => {
+                      const userText = typeof item === 'string' ? item : item.userText
+                      const aiExplanation = typeof item === 'object' ? item.aiExplanation : null
+                      return (
+                        <div key={i} className="space-y-1 text-xs">
+                          <div className="flex items-start gap-1.5 text-violet-300 font-medium bg-violet-500/10 rounded-lg px-2.5 py-1.5 border border-violet-500/20">
+                            <span className="shrink-0">👤</span>
+                            <span>{userText}</span>
+                          </div>
+                          {aiExplanation && (
+                            <div className="flex items-start gap-1.5 text-amber-200 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1.5 ml-3">
+                              <span className="shrink-0">🤖</span>
+                              <span className="whitespace-pre-wrap">{aiExplanation}</span>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
                 <div className="flex gap-2">
