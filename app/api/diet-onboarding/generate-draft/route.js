@@ -1,13 +1,20 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { waitUntil } from '@vercel/functions'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 import { generateNLEliteDiet } from '@/lib/dietGeneration'
+
+// Puede tardar bastante (llamada a OpenAI generando un menú completo). En
+// modo background (waitUntil) el trabajo real sigue después de responder,
+// así que necesita el mismo margen o más que en modo síncrono.
+export const maxDuration = 60
 
 const schema = z.object({
   requestId: z.string().uuid(),
   memberId: z.string().uuid(),
-  responses: z.record(z.string(), z.unknown()).nullable().optional()
+  responses: z.record(z.string(), z.unknown()).nullable().optional(),
+  background: z.boolean().optional(),
 })
 
 function getSupabase() {
@@ -59,7 +66,7 @@ export async function POST(req) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
     }
-    const { memberId, responses: rawResponses } = parsed.data
+    const { memberId, responses: rawResponses, background = false } = parsed.data
     const responses = rawResponses || {}
 
     // Extraer valores del cuestionario de onboarding para pasarlos como overrides
@@ -79,36 +86,116 @@ export async function POST(req) {
     const mealSchedule = responses['Comidas - Horario'] || ''
     const formMedical = responses.condicion_medica || ''
 
-    const result = await generateNLEliteDiet({
-      supabase,
-      memberId,
-      weight: weightFromForm,
-      height: heightFromForm,
-      waist,
-      goal,
-      numMeals,
-      restrictions: formRestrictions,
-      preferences,
-      dislikes,
-      favorites,
-      intensidadTrabajo,
-      trainTime,
-      trainSchedule,
-      workSchedule,
-      mealSchedule,
-      medConditions: formMedical,
-    })
+    // Registrar el job (para trazabilidad / consulta) y procesar.
+    //
+    // IMPORTANTE — compatibilidad con la app YA instalada: ese JS quedó
+    // fijado en la última build de Xcode y espera recibir el resultado
+    // directamente en la respuesta del POST, tal como funcionaba antes — no
+    // sabe preguntar por un jobId. Por eso el modo asíncrono de verdad SOLO
+    // se activa si el cliente manda `background: true` en el body, cosa que
+    // la app antigua nunca hace. Sin ese flag, esta ruta se comporta
+    // exactamente igual que siempre (síncrona, resultado completo en la
+    // misma respuesta) — cero riesgo para dispositivos sin la próxima build.
+    const { data: job } = await supabase
+      .from('assistant_jobs')
+      .insert({ created_by: caller.id, status: 'processing', request: { type: 'diet_onboarding_generate_draft', memberId } })
+      .select('id')
+      .single()
 
-    return NextResponse.json({
-      success: true,
-      message: 'Borrador generado con éxito.',
-      macros: result.macros,
-      fullDietContent: result.fullDietContent,
-      rationale: result.rationale,
-    })
+    const runAndFinish = async () => {
+      const result = await generateNLEliteDiet({
+        supabase,
+        memberId,
+        weight: weightFromForm,
+        height: heightFromForm,
+        waist,
+        goal,
+        numMeals,
+        restrictions: formRestrictions,
+        preferences,
+        dislikes,
+        favorites,
+        intensidadTrabajo,
+        trainTime,
+        trainSchedule,
+        workSchedule,
+        mealSchedule,
+        medConditions: formMedical,
+      })
+
+      const payload = {
+        success: true,
+        message: 'Borrador generado con éxito.',
+        macros: result.macros,
+        fullDietContent: result.fullDietContent,
+        rationale: result.rationale,
+      }
+
+      if (job?.id) {
+        await supabase
+          .from('assistant_jobs')
+          .update({ status: 'done', result: payload, updated_at: new Date().toISOString() })
+          .eq('id', job.id)
+      }
+      return payload
+    }
+
+    if (background && job?.id) {
+      // Responde YA con el jobId; waitUntil mantiene la función viva después
+      // de responder para terminar el trabajo real (puede tardar bastante) —
+      // así minimizar o cerrar la app no corta la generación, y el cliente
+      // la recoge sondeando GET ?jobId=... (o solo, al volver, gracias al id
+      // guardado en localStorage).
+      waitUntil(
+        runAndFinish().catch(async (error) => {
+          console.error('diet-onboarding/generate-draft background error:', error)
+          await supabase
+            .from('assistant_jobs')
+            .update({ status: 'error', error: error.message || 'Error generando el borrador', updated_at: new Date().toISOString() })
+            .eq('id', job.id)
+        })
+      )
+      return NextResponse.json({ jobId: job.id })
+    }
+
+    // Modo síncrono (comportamiento de siempre): se espera aquí mismo.
+    const result = await runAndFinish()
+    return NextResponse.json(result)
 
   } catch (error) {
     console.error('diet-onboarding/generate-draft error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
+
+// GET /api/diet-onboarding/generate-draft?jobId=... — consulta el estado de
+// un job en curso. El cliente lo sondea cada pocos segundos (y al volver del
+// segundo plano) hasta que status pase a 'done' o 'error'.
+export async function GET(request) {
+  const supabase = getSupabase()
+  try {
+    const jobId = new URL(request.url).searchParams.get('jobId')
+    if (!jobId) return NextResponse.json({ error: 'jobId requerido' }, { status: 400 })
+
+    const authHeader = request.headers.get('Authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+
+    const { data: job, error } = await supabase
+      .from('assistant_jobs')
+      .select('id, status, result, error, created_by')
+      .eq('id', jobId)
+      .maybeSingle()
+
+    if (error || !job) return NextResponse.json({ error: 'Job no encontrado' }, { status: 404 })
+    if (job.created_by !== user.id) return NextResponse.json({ error: 'Prohibido' }, { status: 403 })
+
+    return NextResponse.json({ status: job.status, result: job.result, error: job.error })
+  } catch (error) {
+    console.error('diet-onboarding/generate-draft job-status error:', error)
+    return NextResponse.json({ error: error.message || 'Error consultando el job' }, { status: 500 })
   }
 }

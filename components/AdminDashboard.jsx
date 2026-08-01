@@ -32,6 +32,7 @@ import { FeedSection } from './FeedSection'
 import AIRoutineGenerator from './AIRoutineGenerator'
 import { getApiUrl, authFetch } from '@/lib/utils'
 import { calculateMacros as sharedCalculateMacros } from '@/lib/macroCalculator'
+import { useBackgroundJob } from '@/hooks/useBackgroundJob'
 
 export default function AdminDashboard({ user, profile, setProfile, onLogout }) {
   const [trainers, setTrainers] = useState([])
@@ -65,6 +66,31 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const [pendingCheckins, setPendingCheckins] = useState([])
   const [selectedRequestAnswers, setSelectedRequestAnswers] = useState(null)
   const [dietDraft, setDietDraft] = useState(null)
+  // Generar el borrador puede tardar bastante (llamada a OpenAI). Corre en
+  // segundo plano en el servidor para que minimizar/cerrar la app mientras
+  // se genera no la corte — igual que ya hace el asistente de IA.
+  const dietDraftJob = useBackgroundJob({
+    storageKey: 'nlvip_diet_draft_job',
+    statusUrlBase: '/api/diet-onboarding/generate-draft',
+    onResume: (result, saved) => {
+      if (result?.success) {
+        setDietDraft({
+          requestId: saved.requestId,
+          memberId: saved.memberId,
+          responses: saved.responses ?? {},
+          macros: result.macros,
+          fullDietContent: result.fullDietContent,
+          rationale: result.rationale || ''
+        })
+        toast({ title: '✅ Borrador listo', description: 'La dieta se generó mientras la app estaba en segundo plano.' })
+      }
+      setGeneratingDietId(null)
+    },
+    onResumeError: (error) => {
+      setGeneratingDietId(null)
+      toast({ title: 'Error calculando borrador IA', description: error.message, variant: 'destructive' })
+    },
+  })
   const [draftCorrection, setDraftCorrection] = useState('')
   const [draftCorrectionHistory, setDraftCorrectionHistory] = useState([])
   const [refining, setRefining] = useState(false)
@@ -400,11 +426,19 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
         body: JSON.stringify({
           requestId: request.id,
           memberId: request.member_id,
-          responses: request.responses
+          responses: request.responses,
+          background: true,
         })
       })
-      const result = await res.json()
-      if (!res.ok) throw new Error(result.error || 'Error al generar borrador')
+      const { jobId, error: startError } = await res.json()
+      if (startError) throw new Error(startError)
+
+      // A partir de aquí, la generación corre en el servidor pase lo que
+      // pase con esta pestaña/app — si se minimiza o se cierra del todo,
+      // este job se retoma solo al volver (ver useBackgroundJob).
+      dietDraftJob.savePendingJob(jobId, { requestId: request.id, memberId: request.member_id, responses: request.responses })
+      const result = await dietDraftJob.pollJob(jobId)
+      if (!result?.success) throw new Error(result?.error || 'Error al generar borrador')
 
       setDietDraft({
         requestId: request.id,
@@ -418,6 +452,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       toast({ title: 'Error calculando borrador IA', description: error.message, variant: 'destructive' })
     } finally {
       setGeneratingDietId(null)
+      dietDraftJob.clearPendingJob()
     }
   }
 

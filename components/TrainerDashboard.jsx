@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { authFetch } from '@/lib/utils'
 import { calculateMacros as sharedCalculateMacros } from '@/lib/macroCalculator'
+import { useBackgroundJob } from '@/hooks/useBackgroundJob'
 import FloatingChat from './FloatingChat'
 import VideoUploader from './VideoUploader'
 import { VideoCard } from './VideoPlayer'
@@ -54,6 +55,32 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
   const [refining, setRefining] = useState(false)
   const [unreadNotifications, setUnreadNotifications] = useState([])
   const { toast } = useToast()
+
+  // Generar el borrador puede tardar bastante (llamada a OpenAI). Corre en
+  // segundo plano en el servidor para que minimizar/cerrar la app mientras
+  // se genera no la corte — igual que ya hace el asistente de IA.
+  const dietDraftJob = useBackgroundJob({
+    storageKey: 'nlvip_diet_draft_job',
+    statusUrlBase: '/api/diet-onboarding/generate-draft',
+    onResume: (result, saved) => {
+      if (result?.success) {
+        setDietDraft({
+          requestId: saved.requestId,
+          memberId: saved.memberId,
+          responses: saved.responses ?? {},
+          macros: result.macros,
+          fullDietContent: result.fullDietContent,
+          rationale: result.rationale || ''
+        })
+        toast({ title: '✅ Borrador listo', description: 'La dieta se generó mientras la app estaba en segundo plano.' })
+      }
+      setGeneratingDietId(null)
+    },
+    onResumeError: (error) => {
+      setGeneratingDietId(null)
+      toast({ title: 'Error calculando borrador IA', description: error.message, variant: 'destructive' })
+    },
+  })
 
   const loadNotifications = async () => {
     const { data } = await supabase
@@ -358,11 +385,19 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
         body: JSON.stringify({
           requestId: request.id,
           memberId: request.member_id,
-          responses: request.responses
+          responses: request.responses,
+          background: true,
         })
       })
-      const result = await res.json()
-      if (!res.ok) throw new Error(result.error || 'Error al generar borrador')
+      const { jobId, error: startError } = await res.json()
+      if (startError) throw new Error(startError)
+
+      // A partir de aquí, la generación corre en el servidor pase lo que
+      // pase con esta pestaña/app — si se minimiza o se cierra del todo,
+      // este job se retoma solo al volver (ver useBackgroundJob).
+      dietDraftJob.savePendingJob(jobId, { requestId: request.id, memberId: request.member_id, responses: request.responses })
+      const result = await dietDraftJob.pollJob(jobId)
+      if (!result?.success) throw new Error(result?.error || 'Error al generar borrador')
 
       setDietDraft({
         requestId: request.id,
@@ -376,6 +411,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
       toast({ title: 'Error calculando borrador IA', description: error.message, variant: 'destructive' })
     } finally {
       setGeneratingDietId(null)
+      dietDraftJob.clearPendingJob()
     }
   }
 
