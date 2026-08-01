@@ -232,7 +232,12 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
     ],
     tools: TOOLS_DEFINITIONS,
     tool_choice: 'auto',
-    temperature: 0.7,
+    // Con 0.7 el asistente variaba qué herramienta usaba o se saltaba reglas
+    // del prompt (p. ej. el objetivo o el formato) entre peticiones casi
+    // idénticas — "hace lo que quiere". Bajado a 0.2: para un asistente que
+    // sobre todo tiene que elegir bien la herramienta y seguir reglas fijas,
+    // no redactar con voz propia, la consistencia importa más que la variedad.
+    temperature: 0.2,
     max_tokens: 4000
   })
 
@@ -289,7 +294,7 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
         ],
         tools: TOOLS_DEFINITIONS,
         tool_choice: 'auto',
-        temperature: 0.7,
+        temperature: 0.2,
         max_tokens: 2000
       })
 
@@ -329,7 +334,7 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
               followUpMessage,
               ...newToolMessages
             ],
-            temperature: 0.7,
+            temperature: 0.3,
             max_tokens: 3000
           })
 

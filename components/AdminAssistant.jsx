@@ -13,6 +13,15 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { getApiUrl } from '@/lib/utils'
 
+// Desde que la conversación sobrevive a cerrar/reabrir el panel, puede
+// crecer sin límite durante todo el día. Cada turno se manda entero al
+// servidor y de ahí a OpenAI (hasta 3 veces seguidas por turno) — con el
+// historial completo, cada llamada pesa más y tarda más, y encima una sola
+// dieta/rutina generada ya son miles de caracteres que se repetirían en cada
+// turno siguiente. Se manda solo lo más reciente; el admin no suele referirse
+// a algo de hace 15+ mensajes.
+const MAX_HISTORY_MESSAGES = 24
+
 // Componente AudioPlayer para el asistente
 const AudioPlayer = ({ path }) => {
   const [playing, setPlaying] = useState(false)
@@ -1049,7 +1058,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
           'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })),
+          messages: [...messages, userMessage].slice(-MAX_HISTORY_MESSAGES).map(m => ({ role: m.role, content: m.content })),
           // Pide al servidor que responda YA con el jobId y siga generando
           // después, aunque se minimice o cierre la app (ver route.js).
           background: true,

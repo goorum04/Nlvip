@@ -63,11 +63,16 @@ export async function POST(request) {
       ? audio
       : new File([audio], 'audio.webm', { type: audio.type || 'audio/webm' })
 
+    // El prompt no transcribe nada por sí mismo, pero le da a Whisper
+    // vocabulario y nombres que de otra forma tiende a transcribir mal
+    // (jerga de gimnasio, términos técnicos de dieta/rutina, nombres propios
+    // frecuentes en el club) — reduce bastante el "no entiende lo que digo".
     const transcription = await openai.audio.transcriptions.create({
       file: fileForOpenAI,
       model: 'whisper-1',
       language: 'es',
-      response_format: 'json'
+      response_format: 'json',
+      prompt: 'NL VIP Team, gimnasio, entrenador, socio, rutina, bi-serie, tri-serie, hipertrofia, definición, volumen, pérdida de grasa, series, repeticiones, descanso, dieta, macros, proteína, carbohidratos, TDEE, déficit calórico, recomposición corporal.',
     })
 
     const text = (transcription?.text || '').trim()
