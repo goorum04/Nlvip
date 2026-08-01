@@ -76,7 +76,7 @@ const AudioPlayer = ({ path }) => {
 }
 
 // Componente de mensaje individual
-function ChatMessage({ message, isUser, isLoading, audioPath }) {
+function ChatMessage({ message, isUser, isLoading, audioPath, loadingText }) {
   // Detectar si el mensaje contiene recomendaciones de salud/ejercicios/dieta
   const hasHealthContent = message && /dieta|ejercicio|peso|calor|proteína|grasa|muscular|entrenamiento|salud|macros/i.test(message);
   
@@ -101,7 +101,7 @@ function ChatMessage({ message, isUser, isLoading, audioPath }) {
               <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></span>
               <span className="w-2 h-2 bg-fuchsia-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></span>
             </div>
-            <span className="text-gray-400">Procesando...</span>
+            <span className="text-gray-400 transition-all duration-300">{loadingText || 'Procesando...'}</span>
           </div>
         ) : (
           <>
@@ -600,6 +600,10 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
   const [audioBlob, setAudioBlob] = useState(null)
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  // Paso actual mientras se genera (p.ej. "Buscando socio..."), en vez de un
+  // spinner genérico durante los 15-30s que puede tardar la cadena de
+  // llamadas a OpenAI — ver stage en app/api/admin-assistant/route.js.
+  const [loadingStage, setLoadingStage] = useState('')
   const [messages, setMessages] = useState([])
   const [pendingPlan, setPendingPlan] = useState(null)
   const [pendingToolCalls, setPendingToolCalls] = useState([])
@@ -681,7 +685,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
   // true para siempre (lo que bloquearía silenciosamente cualquier envío
   // futuro).
   const POLL_MAX_MS = 5 * 60 * 1000
-  const pollJob = (jobId) => new Promise((resolve, reject) => {
+  const pollJob = (jobId, onStage) => new Promise((resolve, reject) => {
     let cancelled = false
     let timeoutId = null
     const startedAt = Date.now()
@@ -706,6 +710,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
       }
       try {
         const data = await fetchJobStatus(jobId)
+        if (data.stage) onStage?.(data.stage)
         if (data.status === 'done') { cleanup(); resolve(data.result); return }
         if (data.status === 'error') { cleanup(); reject(new Error(data.error || 'Error del asistente')); return }
       } catch {
@@ -728,6 +733,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
     if (jobId) stoppedJobIdsRef.current.add(jobId)
     clearPendingJob()
     setIsLoading(false)
+    setLoadingStage('')
     setMessages(prev => [...prev, {
       role: 'assistant',
       content: '⏹️ Generación detenida. Puedes escribir o mandar algo nuevo ahora mismo.'
@@ -999,6 +1005,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
 
     setLoading(true)
     setIsLoading(true)
+    setLoadingStage('')
     setPendingPlan(null)
     setPendingToolCalls([])
 
@@ -1072,7 +1079,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
       // pase con esta pestaña/app — si se minimiza o se cierra del todo,
       // este job se retoma solo al volver (ver useEffect de arriba).
       savePendingJob(jobId, 'chat')
-      const data = await pollJob(jobId)
+      const data = await pollJob(jobId, setLoadingStage)
       applyChatResult(data)
     } catch (error) {
       // Parada intencionada por el admin: stopGenerating() ya puso su propio
@@ -1089,6 +1096,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
       }
     } finally {
       setIsLoading(false)
+      setLoadingStage('')
       clearPendingJob()
     }
   }
@@ -1108,6 +1116,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
   const handleConfirm = async () => {
     if (!pendingToolCalls.length) return
     setIsExecuting(true)
+    setLoadingStage('')
     try {
       const toolsToExecute = pendingToolCalls.map(tc => ({
         id: tc.id,
@@ -1131,13 +1140,14 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
       // Igual que en handleSend: la ejecución sigue en el servidor aunque se
       // minimice o cierre la app; se retoma sola al volver.
       savePendingJob(jobId, 'confirm', { toolsToExecute })
-      const data = await pollJob(jobId)
+      const data = await pollJob(jobId, setLoadingStage)
       await applyConfirmResult(data, toolsToExecute, session)
     } catch (error) {
       const isNetworkError = error.message === 'Load failed' || error.message === 'Failed to fetch' || error.message === 'Network request failed'
       toast({ title: isNetworkError ? 'Sin conexión' : 'Error', description: isNetworkError ? 'Comprueba tu conexión a internet' : error.message, variant: 'destructive' })
     } finally {
       setIsExecuting(false)
+      setLoadingStage('')
       clearPendingJob()
     }
   }
@@ -1279,7 +1289,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
                   )}
                 </div>
               ))}
-              {isLoading && <ChatMessage message="" isUser={false} isLoading={true} />}
+              {isLoading && <ChatMessage message="" isUser={false} isLoading={true} loadingText={loadingStage} />}
               {pendingPlan && (
                 <ExecutionPlan
                   plan={pendingPlan}

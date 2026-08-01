@@ -75,6 +75,12 @@ IMPORTANTE:
 4. Responde en español de forma clara y concisa
 5. Para acciones que modifiquen datos, explica qué vas a hacer ANTES de ejecutar
 
+RESPUESTA FINAL — SÉ ÚTIL, NO UN EJECUTOR MUDO (MUY IMPORTANTE):
+1. Si el admin te hace una pregunta (técnica, sobre un socio, sobre por qué algo está como está, pidiendo tu opinión), RESPÓNDELA siempre de forma directa y razonada en el mismo turno. No la sustituyas por una acción sin más, no la ignores para pasar a otra cosa, y no te limites a devolver datos en bruto sin interpretarlos.
+2. Cuando termines de generar, asignar o modificar algo, tu respuesta no puede quedarse en "Hecho" o un resumen plano de cifras: explica brevemente el PORQUÉ de las decisiones clave que tomaste (ej. "le he puesto 3 series de 10-15 reps porque pidió definición, y evité sentadilla profunda por su rodilla sensible" — no solo "rutina creada"). Esto aplica igual a generar de cero que a editar algo existente.
+3. Si el admin cuestiona, corrige o pregunta "¿por qué hiciste X?" sobre algo que ya propusiste o ejecutaste, no apliques el cambio en silencio: reconoce el motivo de tu elección original y explica qué cambia y por qué con la corrección. Si crees que tu decisión original seguía siendo la correcta, dilo y explica por qué antes de aplicar el cambio de todas formas si el admin insiste.
+4. Nunca respondas solo con la ejecución de una herramienta sin texto: cada respuesta al admin debe tener contenido en prosa, aunque sea breve.
+
 Objetivos que el admin puede pedir:
 - "pérdida de grasa" o "definición" → goal: fat_loss
 - "mantener" o "mantenimiento" → goal: maintain  
@@ -197,9 +203,11 @@ CORRECCIÓN DE UNA NOTA YA GUARDADA — MUY IMPORTANTE: si le muestras al admin 
 Responde siempre de forma amigable y profesional. Si algo falla, explica el problema de forma sencilla.`
 
 // Ejecuta las tool calls ya confirmadas por el admin (acciones que escriben datos).
-async function runToolExecution({ toolCallsToExecute, adminToken }) {
+async function runToolExecution({ toolCallsToExecute, adminToken, updateStage }) {
   const results = {}
   const errors = []
+
+  await updateStage?.('Ejecutando acciones...')
 
   for (const toolCall of toolCallsToExecute) {
     try {
@@ -222,8 +230,9 @@ async function runToolExecution({ toolCallsToExecute, adminToken }) {
 // Llamada normal al asistente: puede encadenar hasta 3 llamadas a OpenAI
 // (interpretar → ejecutar tools de lectura → interpretar resultados). Puede
 // tardar bastante, por eso corre como job en segundo plano (ver POST).
-async function runAssistantChat({ openai, messages, adminToken, adminPreferencesText }) {
+async function runAssistantChat({ openai, messages, adminToken, adminPreferencesText, updateStage }) {
   const systemPrompt = buildSystemPrompt(adminPreferencesText)
+  await updateStage?.('Pensando en qué hacer...')
   const response = await openai.chat.completions.create({
     model: 'gpt-4o',
     messages: [
@@ -267,6 +276,7 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
 
     // Ejecutar automáticamente las herramientas de solo lectura
     const toolResults = {}
+    if (autoExecute.length > 0) await updateStage?.('Consultando datos del gimnasio...')
     for (const call of autoExecute) {
       try {
         const args = JSON.parse(call.function.arguments || '{}')
@@ -284,6 +294,7 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
         content: JSON.stringify(toolResults[call.id])
       }))
 
+      await updateStage?.('Interpretando los resultados...')
       const followUpResponse = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
@@ -307,6 +318,7 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
         const newNeedsConfirmation = newToolCalls.filter(c => !readOnlyTools.includes(c.function.name))
 
         // Ejecutar automáticamente las nuevas herramientas de solo lectura
+        if (newAutoExecute.length > 0) await updateStage?.('Consultando más datos...')
         for (const call of newAutoExecute) {
           try {
             const args = JSON.parse(call.function.arguments || '{}')
@@ -324,6 +336,7 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
             content: JSON.stringify(toolResults[call.id])
           }))
 
+          await updateStage?.('Preparando la respuesta...')
           const finalResponse = await openai.chat.completions.create({
             model: 'gpt-4o',
             messages: [
@@ -457,6 +470,19 @@ export async function POST(request) {
       .select('id')
       .single()
 
+    // Actualiza el paso actual mientras el job sigue en processing, para que
+    // el cliente pueda mostrar algo más útil que un spinner genérico durante
+    // los 15-30s que puede tardar la cadena de llamadas a OpenAI.
+    const updateStage = job?.id
+      ? async (stage) => {
+          try {
+            await supabaseAdmin.from('assistant_jobs').update({ stage }).eq('id', job.id)
+          } catch (e) {
+            console.warn('updateStage falló (no crítico):', e.message)
+          }
+        }
+      : null
+
     const runAndFinish = async () => {
       let adminPreferencesText = ''
       if (!(executeTools && toolCallsToExecute?.length > 0)) {
@@ -469,8 +495,8 @@ export async function POST(request) {
       }
 
       const result = executeTools && toolCallsToExecute?.length > 0
-        ? await runToolExecution({ toolCallsToExecute, adminToken })
-        : await runAssistantChat({ openai: getOpenAI(), messages, adminToken, adminPreferencesText })
+        ? await runToolExecution({ toolCallsToExecute, adminToken, updateStage })
+        : await runAssistantChat({ openai: getOpenAI(), messages, adminToken, adminPreferencesText, updateStage })
 
       if (job?.id) {
         await supabaseAdmin
@@ -533,14 +559,14 @@ export async function GET(request) {
 
     const { data: job, error } = await supabaseAdmin
       .from('assistant_jobs')
-      .select('id, status, result, error, created_by')
+      .select('id, status, result, error, created_by, stage')
       .eq('id', jobId)
       .maybeSingle()
 
     if (error || !job) return NextResponse.json({ error: 'Job no encontrado' }, { status: 404 })
     if (job.created_by !== user.id) return NextResponse.json({ error: 'Prohibido' }, { status: 403 })
 
-    return NextResponse.json({ status: job.status, result: job.result, error: job.error })
+    return NextResponse.json({ status: job.status, result: job.result, error: job.error, stage: job.stage })
   } catch (error) {
     Sentry.captureException(error, { tags: { endpoint: 'admin-assistant-job-status' } })
     return NextResponse.json({ error: error.message || 'Error consultando el job' }, { status: 500 })
