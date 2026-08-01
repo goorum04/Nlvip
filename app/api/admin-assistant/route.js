@@ -73,7 +73,8 @@ IMPORTANTE:
 2. Cuando el admin mencione un nombre de socio, PRIMERO usa find_member para buscarlo
 3. Nunca inventes datos - siempre consulta la información real
 4. Responde en español de forma clara y concisa
-5. Para acciones que modifiquen datos, explica qué vas a hacer ANTES de ejecutar
+5. Para acciones que modifiquen datos, incluye una frase breve de qué vas a hacer JUNTO CON la llamada a la herramienta, en el MISMO mensaje — nunca en dos turnos separados. El texto y la llamada a la herramienta van a la vez, no primero uno y luego el otro.
+6. PROHIBIDO prometer una acción sin ejecutarla: si tu respuesta contiene "voy a...", "permíteme un momento", "dame un segundo" o cualquier anuncio similar, ese mismo mensaje TIENE que incluir ya la llamada a la herramienta correspondiente. Nunca dejes una promesa para "el siguiente turno" — ni siquiera cuando el admin ya te dijo "sí"/"vale"/"hazlo"/"adelante": eso significa ejecutar YA, no volver a anunciarlo.
 
 RESPUESTA FINAL — SÉ ÚTIL, NO UN EJECUTOR MUDO (MUY IMPORTANTE):
 1. Si el admin te hace una pregunta (técnica, sobre un socio, sobre por qué algo está como está, pidiendo tu opinión), RESPÓNDELA siempre de forma directa y razonada en el mismo turno. No la sustituyas por una acción sin más, no la ignores para pasar a otra cosa, y no te limites a devolver datos en bruto sin interpretarlos.
@@ -227,6 +228,17 @@ async function runToolExecution({ toolCallsToExecute, adminToken, updateStage })
   }
 }
 
+// Fallo conocido del modelo: en vez de llamar a la herramienta en el mismo
+// turno, anuncia la acción en texto ("permíteme un momento", "voy a
+// generar...") y se queda ahí — el admin ve una promesa que nunca se
+// cumple, ni siquiera insistiendo ("vale", "hazlo"). Lo detectamos para
+// forzar una segunda pasada que sí ejecute algo.
+const STALLING_WITHOUT_ACTION = /perm[ií]teme (un momento|un segundo)|dame (un momento|un segundo|unos segundos)|voy a (proceder|generar|modificar|ajustar|crear|hacer|realizar)[^.!?]*(ahora|momento|seguida)?\s*$|en un momento (te|lo|la)|ahora mismo lo (hago|genero|hacemos|ajusto)/i
+
+function isStallingWithoutAction(content) {
+  return !!content && STALLING_WITHOUT_ACTION.test(content.trim())
+}
+
 // Llamada normal al asistente: puede encadenar hasta 3 llamadas a OpenAI
 // (interpretar → ejecutar tools de lectura → interpretar resultados). Puede
 // tardar bastante, por eso corre como job en segundo plano (ver POST).
@@ -250,8 +262,30 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
     max_tokens: 4000
   })
 
-  const assistantMessage = response.choices[0].message
-  const toolCalls = assistantMessage.tool_calls || []
+  let assistantMessage = response.choices[0].message
+  let toolCalls = assistantMessage.tool_calls || []
+
+  // Si prometió una acción sin ejecutarla, forzamos una segunda pasada con
+  // tool_choice: 'required' — así el modelo SÍ o SÍ llama a una herramienta
+  // en vez de repetir la misma promesa vacía.
+  if (toolCalls.length === 0 && isStallingWithoutAction(assistantMessage.content)) {
+    await updateStage?.('Ejecutando la acción anunciada...')
+    const retryResponse = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages,
+        assistantMessage,
+        { role: 'user', content: 'No has llamado a ninguna herramienta todavía, solo has dicho que ibas a hacerlo. No lo anuncies de nuevo: llama YA a la herramienta correspondiente en este mismo turno.' }
+      ],
+      tools: TOOLS_DEFINITIONS,
+      tool_choice: 'required',
+      temperature: 0.2,
+      max_tokens: 4000
+    })
+    assistantMessage = retryResponse.choices[0].message
+    toolCalls = assistantMessage.tool_calls || []
+  }
 
   // Si hay tool calls, ejecutar las de solo lectura automáticamente
   if (toolCalls.length > 0) {
