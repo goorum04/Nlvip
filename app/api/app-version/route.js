@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
 
 // Esta respuesta la lee el aviso de actualización nada más abrir la app: si
 // algún proxy/CDN o el propio WebView la cachea, un socio que ya haya
