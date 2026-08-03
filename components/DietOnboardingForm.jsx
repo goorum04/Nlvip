@@ -115,10 +115,10 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
   const [lifestyle, setLifestyle] = useState({ horario_trabajo: '', intensidad_trabajo: 'normal' })
   const [meals, setMeals] = useState({ num_comidas: '5', horario_comidas: '' })
   const [training, setTraining] = useState({ momento: 'tarde', horario_especifico: '' })
-  const [measurements, setMeasurements] = useState({ 
-    peso: '', altura: '', cintura: '', pecho: '', biceps: '', cadera: '', muslo: '', gluteo: '', gemelo: ''
+  const [measurements, setMeasurements] = useState({
+    peso: '', altura: '', edad: '', cintura: '', pecho: '', biceps: '', cadera: '', muslo: '', gluteo: '', gemelo: ''
   })
-  const [extras, setExtras] = useState({ favoritos: '', no_me_gusta: '', condicion_medica: '' })
+  const [extras, setExtras] = useState({ favoritos: '', no_me_gusta: '', condicion_medica: '', lesion: '' })
   const [photos, setPhotos] = useState({ front: null, side: null, side_right: null, back: null })
   const [photoPreviews, setPhotoPreviews] = useState({ front: null, side: null, side_right: null, back: null })
   const [submitting, setSubmitting] = useState(false)
@@ -131,6 +131,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
     const measureLabels = {
       peso: 'Peso (kg)',
       altura: 'Altura (cm)',
+      edad: 'Edad',
       cintura: 'Cintura (cm)',
       pecho: 'Pecho (cm)',
       biceps: 'Bíceps (cm)',
@@ -233,6 +234,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
         'Entreno - Horario Detalle': training.horario_especifico,
         'Medida - Peso': measurements.peso,
         'Medida - Altura': measurements.altura,
+        'Medida - Edad': measurements.edad,
         'Medida - Cintura': measurements.cintura,
         'Medida - Pecho': measurements.pecho,
         'Medida - Bíceps': measurements.biceps,
@@ -421,6 +423,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
             {[
               { id: 'peso', label: 'Peso (kg)', icon: ScaleIcon },
               { id: 'altura', label: 'Altura (cm)', icon: Ruler },
+              { id: 'edad', label: 'Edad', icon: Zap },
               { id: 'cintura', label: 'Cintura (cm)', icon: Scissors },
               { id: 'pecho', label: 'Pecho (cm)', icon: Heart },
               { id: 'biceps', label: 'Bíceps contr. (cm)', icon: Zap },
@@ -447,8 +450,8 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
           </div>
           <Button
             onClick={() => {
-              if (!measurements.peso || parseFloat(measurements.peso) <= 0 || !measurements.altura || parseFloat(measurements.altura) <= 0) {
-                toast({ title: 'Medidas incompletas', description: 'Peso y altura son imprescindibles para calcular tus macros.', variant: 'destructive' })
+              if (!measurements.peso || parseFloat(measurements.peso) <= 0 || !measurements.altura || parseFloat(measurements.altura) <= 0 || !measurements.edad || parseFloat(measurements.edad) <= 0) {
+                toast({ title: 'Medidas incompletas', description: 'Peso, altura y edad son imprescindibles para calcular tus macros bien.', variant: 'destructive' })
                 return
               }
               setStep(s => s + 1)
@@ -522,6 +525,16 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
               placeholder="Escribe 'ninguna' si no tienes ninguna..."
               value={extras.condicion_medica}
               onChange={e => setExtras(p => ({ ...p, condicion_medica: e.target.value }))}
+              className="bg-white/5 border-white/10 text-white mt-1 text-sm"
+              rows={2}
+            />
+          </div>
+          <div>
+            <Label className="text-gray-400 text-xs">🤕 ¿Alguna lesión o molestia que te limite al hacer ejercicio?</Label>
+            <Textarea
+              placeholder="Ej: hombro sensible al hacer press, rodilla molesta en sentadilla profunda... Escribe 'ninguna' si no tienes ninguna."
+              value={extras.lesion}
+              onChange={e => setExtras(p => ({ ...p, lesion: e.target.value }))}
               className="bg-white/5 border-white/10 text-white mt-1 text-sm"
               rows={2}
             />

@@ -38,6 +38,36 @@ const flattenResponses = (responses) => {
   return out
 }
 
+// Los datos más críticos para hacer bien la dieta (edad, medidas, lesión...)
+// quedaban enterrados en medio de ~20 claves sueltas sin orden, con nombres
+// crípticos — fáciles de pasar por alto al revisar el cuestionario. Los
+// subimos arriba con etiquetas claras; el resto sigue debajo tal cual.
+const PRIORITY_FIELDS = [
+  ['Medida - Edad', 'Edad'],
+  ['Medida - Peso', 'Peso (kg)'],
+  ['Medida - Altura', 'Altura (cm)'],
+  ['objetivo', 'Objetivo'],
+  ['preferencias', 'Preferencias alimentarias'],
+  ['favoritos', 'Alimentos favoritos'],
+  ['no_me_gusta', 'Alimentos que NO quiere'],
+  ['lesion', 'Lesión / molestia al hacer ejercicio'],
+  ['condicion_medica', 'Condición médica'],
+  ['restricciones', 'Alergias / intolerancias'],
+]
+
+const sortResponseEntries = (entries) => {
+  const map = new Map(entries)
+  const prioritized = []
+  for (const [key, label] of PRIORITY_FIELDS) {
+    if (map.has(key)) {
+      prioritized.push([key, map.get(key), label])
+      map.delete(key)
+    }
+  }
+  const rest = entries.filter(([key]) => map.has(key))
+  return { prioritized, rest }
+}
+
 // Solo cuestionario nutricional. Para usar en el tab Fotos de Progreso
 // donde las fotos ya se muestran por separado.
 export function MemberOnboardingResponses({ memberId, defaultOpen = false }) {
@@ -100,14 +130,31 @@ export function MemberOnboardingResponses({ memberId, defaultOpen = false }) {
                   Enviado: {new Date(onboarding.created_at).toLocaleString()}
                 </p>
               )}
-              <div className="space-y-2">
-                {flattenResponses(onboarding.responses).map(([key, value]) => (
-                  <div key={key} className="border-b border-white/5 pb-2">
-                    <p className="text-[10px] text-violet-400 uppercase font-bold tracking-wider">{formatLabel(key)}</p>
-                    <p className="text-sm text-gray-200 mt-1 break-words">{formatValue(value)}</p>
-                  </div>
-                ))}
-              </div>
+              {(() => {
+                const { prioritized, rest } = sortResponseEntries(flattenResponses(onboarding.responses))
+                return (
+                  <>
+                    {prioritized.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                        {prioritized.map(([key, value, label]) => (
+                          <div key={key}>
+                            <p className="text-[10px] text-violet-300 uppercase font-bold tracking-wider">{label}</p>
+                            <p className="text-sm text-white mt-0.5 break-words">{formatValue(value)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      {rest.map(([key, value]) => (
+                        <div key={key} className="border-b border-white/5 pb-2">
+                          <p className="text-[10px] text-violet-400 uppercase font-bold tracking-wider">{formatLabel(key)}</p>
+                          <p className="text-sm text-gray-200 mt-1 break-words">{formatValue(value)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )
+              })()}
             </div>
           )}
         </CardContent>
@@ -216,14 +263,31 @@ export function MemberPhotosAndForm({ memberId, canDeletePhotos = false, default
                     Enviado: {new Date(onboarding.created_at).toLocaleString()}
                   </p>
                 )}
-                <div className="space-y-2">
-                  {flattenResponses(onboarding.responses).map(([key, value]) => (
-                    <div key={key} className="border-b border-white/5 pb-2">
-                      <p className="text-[10px] text-violet-400 uppercase font-bold tracking-wider">{formatLabel(key)}</p>
-                      <p className="text-sm text-gray-200 mt-1 break-words">{formatValue(value)}</p>
-                    </div>
-                  ))}
-                </div>
+                {(() => {
+                  const { prioritized, rest } = sortResponseEntries(flattenResponses(onboarding.responses))
+                  return (
+                    <>
+                      {prioritized.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                          {prioritized.map(([key, value, label]) => (
+                            <div key={key}>
+                              <p className="text-[10px] text-violet-300 uppercase font-bold tracking-wider">{label}</p>
+                              <p className="text-sm text-white mt-0.5 break-words">{formatValue(value)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        {rest.map(([key, value]) => (
+                          <div key={key} className="border-b border-white/5 pb-2">
+                            <p className="text-[10px] text-violet-400 uppercase font-bold tracking-wider">{formatLabel(key)}</p>
+                            <p className="text-sm text-gray-200 mt-1 break-words">{formatValue(value)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             )}
           </CardContent>

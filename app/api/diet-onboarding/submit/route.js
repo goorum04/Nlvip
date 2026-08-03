@@ -52,12 +52,20 @@ export async function POST(req) {
     // Persist health & measurement data to member profile so the AI always has it
     const weightKg = parseFloat(responses['Medida - Peso']) || null
     const heightCm = parseFloat(responses['Medida - Altura']) || null
+    const ageYears = parseInt(responses['Medida - Edad']) || null
     const allergies = responses.restricciones || null
     const medicalConditions = responses.condicion_medica || null
 
     const profileUpdate = {}
     if (weightKg) profileUpdate.weight_kg = weightKg
     if (heightCm) profileUpdate.height_cm = heightCm
+    // No guardamos día/mes reales (el cuestionario solo pide la edad en años),
+    // pero un birth_date aproximado (1 de enero) ya permite calcular la edad
+    // en el resto de la app (asistente admin, generación de dietas/rutinas)
+    // en vez de quedarse con el default fijo de 30 años.
+    if (ageYears && ageYears > 0 && ageYears < 120) {
+      profileUpdate.birth_date = `${new Date().getFullYear() - ageYears}-01-01`
+    }
     if (allergies && allergies !== 'ninguna') profileUpdate.allergies = allergies
     if (medicalConditions && medicalConditions !== 'ninguna') profileUpdate.medical_conditions = medicalConditions
 
