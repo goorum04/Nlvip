@@ -68,6 +68,10 @@ export default function CompleteProfileBanner({ memberId }) {
       const photoTypesPresent = (photos || []).map(p => p.photo_type).filter(Boolean)
       const items = getMissingOnboardingItems(request.responses, photoTypesPresent)
       setMissing(items)
+      // Si hay campos obligatorios pendientes, se abre solo — no puede quedar
+      // colapsado sin que el socio lo vea (las fotos solas sí pueden quedar
+      // colapsadas, no son obligatorias).
+      if (items.some(i => i.kind === 'field')) setExpanded(true)
     } catch (e) {
       console.warn('CompleteProfileBanner load error:', e.message)
     } finally {
@@ -95,14 +99,18 @@ export default function CompleteProfileBanner({ memberId }) {
     setDismissed(true)
   }
 
+  // Las fotos se pueden dejar para más tarde; los campos de texto/medida NO
+  // — si falta alguno, es obligatorio rellenarlo TODO para poder guardar.
+  const allFieldsFilled = missingFields.every(f => (fieldValues[f.key] || '').trim())
+
   const handleSave = async () => {
+    if (!allFieldsFilled) return
     setSaving(true)
     try {
-      // 1. Campos de texto/medida que se hayan rellenado
+      // 1. Campos de texto/medida — obligatorio ir todos juntos
       const fieldsToSave = {}
       for (const f of missingFields) {
-        const v = (fieldValues[f.key] || '').trim()
-        if (v) fieldsToSave[f.key] = v
+        fieldsToSave[f.key] = fieldValues[f.key].trim()
       }
       if (Object.keys(fieldsToSave).length > 0) {
         const { data: { session } } = await supabase.auth.getSession()
@@ -157,7 +165,8 @@ export default function CompleteProfileBanner({ memberId }) {
 
   if (loading || dismissed || missing.length === 0) return null
 
-  const hasAnyInput = missingFields.some(f => (fieldValues[f.key] || '').trim()) || Object.keys(photoFiles).length > 0
+  const hasMandatoryPending = missingFields.length > 0
+  const canSave = hasMandatoryPending ? allFieldsFilled : Object.keys(photoFiles).length > 0
 
   return (
     <Card className="bg-gradient-to-br from-amber-900/25 to-orange-900/10 border-amber-500/30 rounded-3xl overflow-hidden">
@@ -174,7 +183,9 @@ export default function CompleteProfileBanner({ memberId }) {
               Te falta{missing.length === 1 ? '' : 'n'} {missing.length} dato{missing.length === 1 ? '' : 's'} de tu ficha
             </h3>
             <p className="text-gray-400 text-xs mt-1 leading-relaxed">
-              Ayuda a que tu entrenador te haga un plan más preciso. Solo tardas un momento.
+              {hasMandatoryPending
+                ? 'Estos datos son obligatorios para poder hacerte un plan bien — no se pueden dejar en blanco (las fotos sí pueden esperar).'
+                : 'Puedes añadir las fotos que faltan cuando quieras.'}
             </p>
           </div>
           {expanded ? <ChevronUp className="w-5 h-5 text-gray-500 flex-shrink-0" /> : <ChevronDown className="w-5 h-5 text-gray-500 flex-shrink-0" />}
@@ -185,7 +196,7 @@ export default function CompleteProfileBanner({ memberId }) {
         <CardContent className="pt-0 space-y-4">
           {missingFields.map(f => (
             <div key={f.key}>
-              <Label className="text-gray-400 text-xs">{f.label}</Label>
+              <Label className="text-gray-400 text-xs">{f.label} <span className="text-amber-400">*</span></Label>
               <input
                 type={f.type === 'number' ? 'number' : 'text'}
                 placeholder={f.placeholder}
@@ -235,7 +246,7 @@ export default function CompleteProfileBanner({ memberId }) {
           <div className="flex gap-2">
             <Button
               onClick={handleSave}
-              disabled={saving || !hasAnyInput}
+              disabled={saving || !canSave}
               className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-2xl h-11"
             >
               {saving ? (
@@ -244,17 +255,23 @@ export default function CompleteProfileBanner({ memberId }) {
                 <><CheckCircle2 className="w-4 h-4 mr-2" /> Guardar</>
               )}
             </Button>
-            <Button
-              variant="ghost"
-              disabled={saving}
-              onClick={handleDismiss}
-              className="text-gray-500 hover:text-gray-300 rounded-2xl h-11"
-            >
-              Ahora no
-            </Button>
+            {/* "Ahora no" solo si lo único pendiente son fotos — los campos
+                de texto son obligatorios y no se pueden descartar. */}
+            {!hasMandatoryPending && (
+              <Button
+                variant="ghost"
+                disabled={saving}
+                onClick={handleDismiss}
+                className="text-gray-500 hover:text-gray-300 rounded-2xl h-11"
+              >
+                Ahora no
+              </Button>
+            )}
           </div>
           <p className="text-[11px] text-gray-600 text-center">
-            Puedes rellenar solo parte y volver luego a por el resto.
+            {hasMandatoryPending
+              ? 'Las fotos que falten sí puedes subirlas más adelante — el resto es obligatorio.'
+              : 'Puedes subir solo alguna foto y volver luego a por el resto.'}
           </p>
         </CardContent>
       )}
