@@ -33,7 +33,7 @@ import { AvatarBubble, ProfileModal } from './UserProfile'
 import { CycleModule } from './CycleModule'
 import { LifeStageSelector, PregnancyMode, PostpartumMode, LactationTracker } from './LifeStageModules'
 import DietOnboardingForm, { DietOnboardingBanner } from './DietOnboardingForm'
-import OnboardingPhotosCard from './OnboardingPhotosCard'
+import CompleteProfileBanner from './CompleteProfileBanner'
 import { DietDailyView, DietWeeklyView } from './DietTabParts'
 import { SymptomsTracker } from './SymptomsTracker'
 import PRTracker from './PRTracker'
@@ -1101,15 +1101,8 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 }}
               />
             )}
-            {onboardingChecked && !pendingOnboarding && needsOnboardingPhotos && !onboardingPhotosDismissed && (
-              <OnboardingPhotosCard
-                memberId={user.id}
-                onDone={() => setNeedsOnboardingPhotos(false)}
-                onDismiss={() => {
-                  try { localStorage.setItem(`nlvip_onboarding_photos_dismissed_${user.id}`, '1') } catch {}
-                  setOnboardingPhotosDismissed(true)
-                }}
-              />
+            {onboardingChecked && !pendingOnboarding && (
+              <CompleteProfileBanner memberId={user.id} />
             )}
 
             {myDiet ? (
