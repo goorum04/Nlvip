@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 import * as Sentry from '@sentry/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { waitUntil } from '@vercel/functions'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 
-// El flujo puede encadenar hasta 3 llamadas a OpenAI (15-30s+). En modo
+// El flujo puede encadenar hasta 3 llamadas a Claude (15-30s+). En modo
 // background (waitUntil) el trabajo real sigue después de responder, así
 // que necesita el mismo margen o más que en modo síncrono.
 export const maxDuration = 60
@@ -17,6 +17,8 @@ const getSupabaseAdmin = () => createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 )
 
+const CLAUDE_MODEL = 'claude-sonnet-5'
+
 // Antes maxRetries: 1 ("fallar rápido"). En uso real eso significaba que
 // cualquier 429 pasajero (habitual en horas punta, con varias llamadas
 // encadenadas por turno) se convertía directamente en un error visible
@@ -24,7 +26,41 @@ const getSupabaseAdmin = () => createClient(
 // como job en segundo plano (no bloquea al admin, solo tarda un poco más
 // en el poll), merece más la pena dejar que el SDK reintente con backoff
 // antes de rendirse.
-const getOpenAI = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 3 })
+const getAnthropic = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 3 })
+
+// Migrado desde OpenAI (gpt-4o) a Claude — mismo catálogo de herramientas,
+// solo cambia la forma en que se describen: OpenAI usa
+// {type:'function', function:{name, description, parameters}}, Claude usa
+// {name, description, input_schema}. Se calcula una sola vez a partir del
+// mismo TOOLS_DEFINITIONS que ya usa runToolExecution/generateExecutionPlan,
+// así que lib/adminAssistantTools.js no necesita tocarse.
+const CLAUDE_TOOLS = TOOLS_DEFINITIONS.map(t => ({
+  name: t.function.name,
+  description: t.function.description,
+  input_schema: t.function.parameters
+}))
+
+// Extrae el texto legible de una respuesta de Claude (array de bloques
+// text/tool_use/thinking) — equivalente a leer choices[0].message.content
+// en OpenAI, donde el content siempre era un string plano.
+function extractText(content) {
+  return (content || [])
+    .filter(b => b.type === 'text')
+    .map(b => b.text)
+    .join('\n')
+    .trim()
+}
+
+// Normaliza los bloques tool_use de Claude a la misma forma que ya
+// esperaba todo el código de más abajo (readOnlyTools, generateExecutionPlan,
+// executeTool) desde la época de OpenAI: {id, function:{name, arguments}}.
+// Así el resto de la orquestación (auto-ejecución de lecturas, plan de
+// confirmación, respuesta al cliente) no tiene que cambiar ni una línea.
+function normalizeToolCalls(content) {
+  return (content || [])
+    .filter(b => b.type === 'tool_use')
+    .map(b => ({ id: b.id, function: { name: b.name, arguments: JSON.stringify(b.input || {}) } }))
+}
 
 const DIET_RULES = `
 SISTEMA NL ELITE — REGLAS DEL PROGRAMA NUTRICIONAL:
@@ -250,7 +286,7 @@ function isStallingWithoutAction(content) {
 // "adelante", "confirmar", "asígnala"...), casi seguro está reaccionando a
 // algo que el asistente dejó a medias en el turno anterior. En vez de
 // esperar a que vuelva a fallar para detectarlo, forzamos tool_choice
-// desde la PRIMERA llamada — así no gastamos una llamada extra de OpenAI
+// desde la PRIMERA llamada — así no gastamos una llamada extra a la API
 // (justo lo que dispara el límite de peticiones cuando ya va cargado).
 const SHORT_CONFIRMATION = /^\s*(s[ií]|vale|dale|hazlo|hazla|adelante|confirmar?|confirmo|as[ií]gnala|as[ií]gnalo|guárdala|guárdalo|venga|ok(ay)?|correcto|de acuerdo|proceda?)[.!\s]*$/i
 
@@ -258,60 +294,82 @@ function isShortConfirmation(content) {
   return !!content && SHORT_CONFIRMATION.test(content.trim())
 }
 
-// Llamada normal al asistente: puede encadenar hasta 3 llamadas a OpenAI
+// Herramientas que solo leen datos — se ejecutan automáticamente sin pedir
+// confirmación al admin. Cualquier otra herramienta (asignar, guardar,
+// borrar, modificar) se devuelve al cliente como plan de confirmación.
+const READ_ONLY_TOOLS = [
+  'find_member', 'get_member_summary', 'get_gym_dashboard', 'list_trainers',
+  'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity',
+  'list_members', 'generate_ai_diet_from_recipes', 'generate_member_routine',
+  'swap_routine_exercise', 'remove_routine_exercise', 'add_routine_exercise',
+  'modify_routine_exercise', 'modify_routine_day',
+  'list_member_notes', 'list_admin_preferences'
+]
+
+// Llamada normal al asistente: puede encadenar hasta 3 llamadas a Claude
 // (interpretar → ejecutar tools de lectura → interpretar resultados). Puede
 // tardar bastante, por eso corre como job en segundo plano (ver POST).
-async function runAssistantChat({ openai, messages, adminToken, adminPreferencesText, updateStage }) {
+async function runAssistantChat({ anthropic, messages, adminToken, adminPreferencesText, updateStage }) {
   const systemPrompt = buildSystemPrompt(adminPreferencesText)
+  // El prompt de sistema + el catálogo de herramientas suman varios miles de
+  // tokens fijos que se repiten en CADA una de las hasta 4 llamadas
+  // encadenadas por turno — justo lo que agotaba el límite de peticiones con
+  // GPT-4o. Son idénticos byte a byte dentro de un mismo turno (y estables
+  // entre turnos del mismo admin, ya que adminPreferencesText solo cambia
+  // cuando se actualizan sus preferencias), así que se marcan como
+  // cacheables: Claude cachea tools+system juntos con un único marcador en
+  // el último bloque de system (las tools se renderizan antes, en orden).
+  const cachedSystem = [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }]
   await updateStage?.('Pensando en qué hacer...')
 
   const lastUserContent = [...messages].reverse().find(m => m.role === 'user')?.content
-  const initialToolChoice = isShortConfirmation(lastUserContent) ? 'required' : 'auto'
+  const initialToolChoice = isShortConfirmation(lastUserContent) ? { type: 'any' } : { type: 'auto' }
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      ...messages
-    ],
-    tools: TOOLS_DEFINITIONS,
+  const response = await anthropic.messages.create({
+    model: CLAUDE_MODEL,
+    system: cachedSystem,
+    messages,
+    tools: CLAUDE_TOOLS,
     tool_choice: initialToolChoice,
-    // Con 0.7 el asistente variaba qué herramienta usaba o se saltaba reglas
-    // del prompt (p. ej. el objetivo o el formato) entre peticiones casi
-    // idénticas — "hace lo que quiere". Bajado a 0.2: para un asistente que
-    // sobre todo tiene que elegir bien la herramienta y seguir reglas fijas,
-    // no redactar con voz propia, la consistencia importa más que la variedad.
+    // Con temperaturas altas el asistente variaba qué herramienta usaba o se
+    // saltaba reglas del prompt (p. ej. el objetivo o el formato) entre
+    // peticiones casi idénticas — "hace lo que quiere". Bajado a 0.2: para un
+    // asistente que sobre todo tiene que elegir bien la herramienta y seguir
+    // reglas fijas, no redactar con voz propia, la consistencia importa más
+    // que la variedad.
     temperature: 0.2,
     max_tokens: 4000
   })
 
-  let assistantMessage = response.choices[0].message
-  let toolCalls = assistantMessage.tool_calls || []
+  let assistantContent = response.content
+  let assistantText = extractText(assistantContent)
+  let toolCalls = normalizeToolCalls(assistantContent)
 
   // Si prometió una acción sin ejecutarla, forzamos una segunda pasada con
-  // tool_choice: 'required' — así el modelo SÍ o SÍ llama a una herramienta
-  // en vez de repetir la misma promesa vacía. Si esta segunda llamada
-  // también falla (p. ej. rate limit), no la dejamos reventar el turno
-  // entero: nos quedamos con el mensaje original y dejamos que la regla de
-  // "hazlo"/"sí" del admin fuerce tool_choice de entrada la próxima vez.
-  if (toolCalls.length === 0 && initialToolChoice === 'auto' && isStallingWithoutAction(assistantMessage.content)) {
+  // tool_choice: 'any' — así el modelo SÍ o SÍ llama a una herramienta en vez
+  // de repetir la misma promesa vacía. Si esta segunda llamada también falla
+  // (p. ej. rate limit), no la dejamos reventar el turno entero: nos
+  // quedamos con la respuesta original y dejamos que la regla de "hazlo"/"sí"
+  // del admin fuerce tool_choice de entrada la próxima vez.
+  if (toolCalls.length === 0 && initialToolChoice.type === 'auto' && isStallingWithoutAction(assistantText)) {
     try {
       await updateStage?.('Ejecutando la acción anunciada...')
-      const retryResponse = await openai.chat.completions.create({
-        model: 'gpt-4o',
+      const retryResponse = await anthropic.messages.create({
+        model: CLAUDE_MODEL,
+        system: cachedSystem,
         messages: [
-          { role: 'system', content: systemPrompt },
           ...messages,
-          assistantMessage,
+          { role: 'assistant', content: assistantContent },
           { role: 'user', content: 'No has llamado a ninguna herramienta todavía, solo has dicho que ibas a hacerlo. No lo anuncies de nuevo: llama YA a la herramienta correspondiente en este mismo turno.' }
         ],
-        tools: TOOLS_DEFINITIONS,
-        tool_choice: 'required',
+        tools: CLAUDE_TOOLS,
+        tool_choice: { type: 'any' },
         temperature: 0.2,
         max_tokens: 4000
       })
-      assistantMessage = retryResponse.choices[0].message
-      toolCalls = assistantMessage.tool_calls || []
+      assistantContent = retryResponse.content
+      assistantText = extractText(assistantContent)
+      toolCalls = normalizeToolCalls(assistantContent)
     } catch (retryError) {
       console.warn('Reintento de stalling falló (se conserva la respuesta original):', retryError.message)
     }
@@ -319,19 +377,11 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
 
   // Si hay tool calls, ejecutar las de solo lectura automáticamente
   if (toolCalls.length > 0) {
-    const readOnlyTools = [
-      'find_member', 'get_member_summary', 'get_gym_dashboard', 'list_trainers',
-      'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity',
-      'list_members', 'generate_ai_diet_from_recipes', 'generate_member_routine',
-      'swap_routine_exercise', 'remove_routine_exercise', 'add_routine_exercise',
-      'modify_routine_exercise', 'modify_routine_day',
-      'list_member_notes', 'list_admin_preferences'
-    ]
     const autoExecute = []
     const needsConfirmation = []
 
     for (const call of toolCalls) {
-      if (readOnlyTools.includes(call.function.name)) {
+      if (READ_ONLY_TOOLS.includes(call.function.name)) {
         autoExecute.push(call)
       } else {
         needsConfirmation.push(call)
@@ -352,34 +402,37 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
 
     // Si hay resultados de lectura, hacer una segunda llamada para que el modelo los interprete
     if (autoExecute.length > 0 && needsConfirmation.length === 0) {
-      const toolMessages = autoExecute.map(call => ({
-        role: 'tool',
-        tool_call_id: call.id,
+      const toolResultBlocks = autoExecute.map(call => ({
+        type: 'tool_result',
+        tool_use_id: call.id,
         content: JSON.stringify(toolResults[call.id])
       }))
 
+      const messagesWithResults = [
+        ...messages,
+        { role: 'assistant', content: assistantContent },
+        { role: 'user', content: toolResultBlocks }
+      ]
+
       await updateStage?.('Interpretando los resultados...')
-      const followUpResponse = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages,
-          assistantMessage,
-          ...toolMessages
-        ],
-        tools: TOOLS_DEFINITIONS,
-        tool_choice: 'auto',
+      const followUpResponse = await anthropic.messages.create({
+        model: CLAUDE_MODEL,
+        system: cachedSystem,
+        messages: messagesWithResults,
+        tools: CLAUDE_TOOLS,
+        tool_choice: { type: 'auto' },
         temperature: 0.2,
         max_tokens: 2000
       })
 
-      const followUpMessage = followUpResponse.choices[0].message
-      const newToolCalls = followUpMessage.tool_calls || []
+      const followUpContent = followUpResponse.content
+      const followUpText = extractText(followUpContent)
+      const newToolCalls = normalizeToolCalls(followUpContent)
 
       // Si hay nuevas tool calls, procesarlas
       if (newToolCalls.length > 0) {
-        const newAutoExecute = newToolCalls.filter(c => readOnlyTools.includes(c.function.name))
-        const newNeedsConfirmation = newToolCalls.filter(c => !readOnlyTools.includes(c.function.name))
+        const newAutoExecute = newToolCalls.filter(c => READ_ONLY_TOOLS.includes(c.function.name))
+        const newNeedsConfirmation = newToolCalls.filter(c => !READ_ONLY_TOOLS.includes(c.function.name))
 
         // Ejecutar automáticamente las nuevas herramientas de solo lectura
         if (newAutoExecute.length > 0) await updateStage?.('Consultando más datos...')
@@ -394,29 +447,27 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
 
         // Si ejecutamos más herramientas de solo lectura, hacer otra llamada al modelo
         if (newAutoExecute.length > 0 && newNeedsConfirmation.length === 0) {
-          const newToolMessages = newAutoExecute.map(call => ({
-            role: 'tool',
-            tool_call_id: call.id,
+          const newToolResultBlocks = newAutoExecute.map(call => ({
+            type: 'tool_result',
+            tool_use_id: call.id,
             content: JSON.stringify(toolResults[call.id])
           }))
 
           await updateStage?.('Preparando la respuesta...')
-          const finalResponse = await openai.chat.completions.create({
-            model: 'gpt-4o',
+          const finalResponse = await anthropic.messages.create({
+            model: CLAUDE_MODEL,
+            system: cachedSystem,
             messages: [
-              { role: 'system', content: systemPrompt },
-              ...messages,
-              assistantMessage,
-              ...toolMessages,
-              followUpMessage,
-              ...newToolMessages
+              ...messagesWithResults,
+              { role: 'assistant', content: followUpContent },
+              { role: 'user', content: newToolResultBlocks }
             ],
             temperature: 0.3,
             max_tokens: 3000
           })
 
           return {
-            message: finalResponse.choices[0].message.content || 'Aquí está la información solicitada.',
+            message: extractText(finalResponse.content) || 'Aquí está la información solicitada.',
             toolCalls: [],
             needsConfirmation: false,
             toolResults
@@ -427,7 +478,7 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
         if (newNeedsConfirmation.length > 0) {
           const executionPlan = generateExecutionPlan(newNeedsConfirmation)
           return {
-            message: followUpMessage.content || 'Voy a realizar las siguientes acciones:',
+            message: followUpText || 'Voy a realizar las siguientes acciones:',
             toolCalls: newToolCalls,
             executionPlan,
             needsConfirmation: true,
@@ -437,7 +488,7 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
       }
 
       return {
-        message: followUpMessage.content || 'Listo',
+        message: followUpText || 'Listo',
         toolCalls: [],
         needsConfirmation: false,
         toolResults
@@ -448,7 +499,7 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
     if (needsConfirmation.length > 0) {
       const executionPlan = generateExecutionPlan(needsConfirmation)
       return {
-        message: assistantMessage.content || 'Voy a realizar las siguientes acciones. ¿Confirmas?',
+        message: assistantText || 'Voy a realizar las siguientes acciones. ¿Confirmas?',
         toolCalls: needsConfirmation,
         executionPlan,
         needsConfirmation: true,
@@ -459,14 +510,14 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
 
   // Respuesta simple sin tools
   return {
-    message: assistantMessage.content || 'No entendí tu petición. ¿Puedes reformularla?',
+    message: assistantText || 'No entendí tu petición. ¿Puedes reformularla?',
     toolCalls: [],
     needsConfirmation: false
   }
 }
 
-// Convierte errores técnicos (p.ej. 429 de OpenAI) en un mensaje claro en
-// español para el admin, en vez del texto crudo del proveedor.
+// Convierte errores técnicos (p.ej. 429 de la API de Claude) en un mensaje
+// claro en español para el admin, en vez del texto crudo del proveedor.
 function friendlyJobError(error) {
   const raw = error?.message || ''
   if (error?.status === 429 || /rate limit/i.test(raw)) {
@@ -536,7 +587,7 @@ export async function POST(request) {
 
     // Actualiza el paso actual mientras el job sigue en processing, para que
     // el cliente pueda mostrar algo más útil que un spinner genérico durante
-    // los 15-30s que puede tardar la cadena de llamadas a OpenAI.
+    // los 15-30s que puede tardar la cadena de llamadas a Claude.
     const updateStage = job?.id
       ? async (stage) => {
           try {
@@ -560,7 +611,7 @@ export async function POST(request) {
 
       const result = executeTools && toolCallsToExecute?.length > 0
         ? await runToolExecution({ toolCallsToExecute, adminToken, updateStage })
-        : await runAssistantChat({ openai: getOpenAI(), messages, adminToken, adminPreferencesText, updateStage })
+        : await runAssistantChat({ anthropic: getAnthropic(), messages, adminToken, adminPreferencesText, updateStage })
 
       if (job?.id) {
         await supabaseAdmin
@@ -574,7 +625,7 @@ export async function POST(request) {
     if (background && job?.id) {
       // Cliente nuevo: responde YA con el jobId. waitUntil mantiene la
       // función viva DESPUÉS de haber respondido para terminar el trabajo
-      // real (puede encadenar varias llamadas a OpenAI, 15-30s+) — así el
+      // real (puede encadenar varias llamadas a Claude, 15-30s+) — así el
       // admin puede minimizar o cerrar la app y el job sigue y termina en
       // el servidor de todas formas. El cliente lo recoge sondeando GET
       // ?jobId=... (o solo, al volver, gracias al id guardado en localStorage).
