@@ -247,7 +247,7 @@ REGLAS IMPORTANTES PARA LA EDICIÓN:
 1. Pasa SIEMPRE el routine_data completo de la última versión (la devuelta por generate_member_routine o por la última herramienta de edición). NO inventes el routine_data ni lo simplifiques.
 1b. LÍMITE CRÍTICO: solo tienes el routine_data exacto (JSON completo) cuando generate_member_routine o una edición te lo devolvió DENTRO DE ESTE MISMO TURNO, como resultado de herramienta. Si el admin pide un cambio sobre una rutina de la que solo tienes el resumen en texto de un turno ANTERIOR (no la generaste ni editaste en este turno), NO tienes el routine_data real — NUNCA lo reconstruyas de memoria a partir de tu propio resumen para llamar a swap/remove/add/modify_routine_exercise/modify_routine_day: el JSON que inventarías estará incompleto o mal formado y la herramienta fallará en silencio. En ese caso, vuelve a llamar a generate_member_routine con "notes" describiendo la rutina completa que quieres (la estructura que ya tenía + el cambio pedido, ej. "misma distribución de días que antes, pero con más volumen de bíceps: añade un ejercicio extra de bíceps en el día de brazos").
 2. Identifica el día por su number 1-based (ej: "día 2" → day_index: 2). Si el admin no dice día y la rutina tiene varios, pregúntale a qué día se refiere.
-3. Usa nombres parciales si hace falta (la búsqueda es case-insensitive y por substring).
+3. Usa nombres parciales si hace falta (la búsqueda es case-insensitive y por substring), pero si no estás seguro del nombre EXACTO tal cual figura en el catálogo, usa PRIMERO search_exercise_catalog (por término o por grupo muscular) — un nombre "razonable" que no coincida literalmente (ej. "Curl predicador" cuando el catálogo lo llama "Curl en banco predicador") hace que swap/add fallen.
 4. Tras cada edición, muestra al admin un resumen breve de la rutina actualizada y pregunta si quiere otro cambio o si ya la asigna.
 5. Cuando el admin diga "asígnala" / "dale", llama a save_member_routine con el routine_data MÁS RECIENTE (el devuelto por la última edición).
 
@@ -302,7 +302,7 @@ async function runToolExecution({ toolCallsToExecute, adminToken, updateStage })
 // cuando YA sabemos que no hubo tool_calls, así que pecar de detectar de
 // más aquí es gratis — la alternativa (detectar de menos, como pasaba
 // antes con "Procederé a crearla ahora mismo.") deja al admin en bucle.
-const STALLING_WITHOUT_ACTION = /perm[ií]teme (un momento|un segundo)|dame (un momento|un segundo|unos segundos)|voy a (proceder|generar|modificar|ajustar|crear|hacer|realizar|asignar)|proceder[ée] a|procedo a|intentar[ée] (generar|crear|modificar|asignar|hacer)|en un momento (te|lo|la)|ahora mismo lo (hago|genero|hacemos|ajusto|creo|asigno)|lo (har[ée]|generar[ée]|crear[ée]|asignar[ée])\b/i
+const STALLING_WITHOUT_ACTION = /perm[ií]teme (un momento|un segundo)|dame (un momento|un segundo|unos segundos)|voy a (proceder|generar|modificar|ajustar|crear|hacer|realizar|asignar|buscar|revisar|comprobar|encontrar|mirar|consultar|intentar)|proceder[ée] a|procedo a|intentar[ée] (generar|crear|modificar|asignar|hacer|buscar|encontrar)|en un momento (te|lo|la)|ahora mismo lo (hago|genero|hacemos|ajusto|creo|asigno|busco)|lo (har[ée]|generar[ée]|crear[ée]|asignar[ée]|buscar[ée]|intentar[ée])\b/i
 
 function isStallingWithoutAction(content) {
   return !!content && STALLING_WITHOUT_ACTION.test(content.trim())
@@ -327,6 +327,7 @@ const READ_ONLY_TOOLS = [
   'find_member', 'get_member_summary', 'get_gym_dashboard', 'list_trainers',
   'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity',
   'list_members', 'generate_ai_diet_from_recipes', 'generate_member_routine',
+  'search_exercise_catalog',
   'swap_routine_exercise', 'remove_routine_exercise', 'add_routine_exercise',
   'modify_routine_exercise', 'modify_routine_day',
   'list_member_notes', 'list_admin_preferences'
@@ -452,9 +453,40 @@ async function runAssistantChat({ anthropic, messages, adminToken, adminPreferen
         max_tokens: 2000
       })
 
-      const followUpContent = followUpResponse.content
-      const followUpText = extractText(followUpContent)
-      const newToolCalls = normalizeToolCalls(followUpContent)
+      let followUpContent = followUpResponse.content
+      let followUpText = extractText(followUpContent)
+      let newToolCalls = normalizeToolCalls(followUpContent)
+
+      // Mismo problema de "voy a buscar/revisar..." sin actuar puede pasar
+      // aquí, no solo en la primera llamada: el modelo ya tiene resultados
+      // de una herramienta de lectura y en vez de usar otra herramienta para
+      // seguir (ej. search_exercise_catalog) anuncia que lo va a hacer y se
+      // queda ahí. Mismo remedio: forzar una segunda pasada con tool_choice
+      // 'any'.
+      if (newToolCalls.length === 0 && isStallingWithoutAction(followUpText)) {
+        try {
+          await updateStage?.('Ejecutando la acción anunciada...')
+          const retryFollowUp = await anthropic.messages.create({
+            model: CLAUDE_MODEL,
+            system: cachedSystem,
+            messages: [
+              ...messagesWithResults,
+              { role: 'assistant', content: followUpContent },
+              { role: 'user', content: 'No has llamado a ninguna herramienta todavía, solo has dicho que ibas a hacerlo. No lo anuncies de nuevo: llama YA a la herramienta correspondiente en este mismo turno.' }
+            ],
+            tools: CLAUDE_TOOLS,
+            tool_choice: { type: 'any' },
+            thinking: NO_THINKING,
+            output_config: LOW_EFFORT,
+            max_tokens: 2000
+          })
+          followUpContent = retryFollowUp.content
+          followUpText = extractText(followUpContent)
+          newToolCalls = normalizeToolCalls(followUpContent)
+        } catch (retryError) {
+          console.warn('Reintento de stalling (follow-up) falló (se conserva la respuesta original):', retryError.message)
+        }
+      }
 
       // Si hay nuevas tool calls, procesarlas
       if (newToolCalls.length > 0) {
