@@ -17,6 +17,18 @@ const schema = z.object({
   background: z.boolean().optional(),
 })
 
+// Traduce el error técnico de rechazo de OpenAI (visto en producción: el
+// modelo se niega 3 veces seguidas ante cierto perfil, algo raro pero
+// posible con datos médicos/edad sensibles) a algo que un entrenador
+// entienda, en vez del mensaje crudo con la respuesta del modelo en inglés.
+function friendlyDraftError(error) {
+  const raw = error?.message || ''
+  if (/rechazó generar la dieta/i.test(raw)) {
+    return 'La IA no pudo generar la dieta para este perfil (puede pasar con ciertos datos médicos o de edad). Inténtalo de nuevo — si vuelve a fallar, avisa al desarrollador.'
+  }
+  return raw || 'Error generando el borrador'
+}
+
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -151,7 +163,7 @@ export async function POST(req) {
           console.error('diet-onboarding/generate-draft background error:', error)
           await supabase
             .from('assistant_jobs')
-            .update({ status: 'error', error: error.message || 'Error generando el borrador', updated_at: new Date().toISOString() })
+            .update({ status: 'error', error: friendlyDraftError(error), updated_at: new Date().toISOString() })
             .eq('id', job.id)
         })
       )
@@ -164,7 +176,7 @@ export async function POST(req) {
 
   } catch (error) {
     console.error('diet-onboarding/generate-draft error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: friendlyDraftError(error) }, { status: 500 })
   }
 }
 
