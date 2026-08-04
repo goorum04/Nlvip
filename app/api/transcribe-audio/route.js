@@ -67,12 +67,16 @@ export async function POST(request) {
     // vocabulario y nombres que de otra forma tiende a transcribir mal
     // (jerga de gimnasio, términos técnicos de dieta/rutina, nombres propios
     // frecuentes en el club) — reduce bastante el "no entiende lo que digo".
+    // Whisper condiciona mejor la ortografía de un término con una frase de
+    // ejemplo completa que usándolo que con solo listarlo suelto entre comas
+    // (así lo recomienda OpenAI) — de ahí la frase de ejemplo al final con
+    // "biserie", que es la variante que peor reconocía.
     const transcription = await openai.audio.transcriptions.create({
       file: fileForOpenAI,
       model: 'whisper-1',
       language: 'es',
       response_format: 'json',
-      prompt: 'NL VIP Team, gimnasio, entrenador, socio, rutina, bi-serie, tri-serie, hipertrofia, definición, volumen, pérdida de grasa, series, repeticiones, descanso, dieta, macros, proteína, carbohidratos, TDEE, déficit calórico, recomposición corporal.',
+      prompt: 'NL VIP Team, gimnasio, entrenador, socio, rutina, biserie, bi-serie, triserie, tri-serie, superserie, dropset, hipertrofia, definición, volumen, pérdida de grasa, series, repeticiones, descanso, dieta, macros, proteína, carbohidratos, TDEE, déficit calórico, recomposición corporal. Ejemplo: "Hazle una rutina de hipertrofia con biserie de hombro y tríceps."',
     })
 
     const text = (transcription?.text || '').trim()
