@@ -274,12 +274,23 @@ export async function POST(req) {
               .from('workout_days')
               .select('id')
               .eq('workout_template_id', currentWorkout.workout_templates.id)
-            const { data: memberProfile } = await supabase
-              .from('profiles')
-              .select('goal')
-              .eq('id', memberId)
+            // 'goal' no es una columna de profiles — el objetivo real vive en
+            // la respuesta del cuestionario de onboarding (mismo campo que
+            // usa routineGeneration.js internamente). La consulta anterior
+            // pedía una columna inexistente, PostgREST la fallaba en
+            // silencio, y el check-in periódico regeneraba SIEMPRE con
+            // "hipertrofia" sin importar el objetivo real del socio
+            // (pérdida de grasa, mantenimiento...).
+            const { data: lastOnboarding } = await supabase
+              .from('diet_onboarding_requests')
+              .select('responses')
+              .eq('member_id', memberId)
+              .in('status', ['completed', 'reviewed'])
+              .order('created_at', { ascending: false })
+              .limit(1)
               .maybeSingle()
-            const routineGoal = GOAL_FROM_ONBOARDING[memberProfile?.goal] || 'hipertrofia'
+            const onboardingObjetivo = lastOnboarding?.responses?.objetivo
+            const routineGoal = GOAL_FROM_ONBOARDING[onboardingObjetivo] || 'hipertrofia'
             const routineNotes = `Revisión periódica del socio. ${checkinNotes}.${photoAnalysis ? ` Análisis visual de fotos: ${photoAnalysis}` : ''} Ajusta variedad de ejercicios y/o intensidad en consecuencia (sube si hay buena adherencia y evolución, baja/simplifica si hay fatiga, mala adherencia o molestias).`
             return generateRoutineForMember({
               supabase,
