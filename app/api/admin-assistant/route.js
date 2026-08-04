@@ -135,6 +135,7 @@ ${adminPreferencesText}
 IMPORTANTE:
 1. SIEMPRE usa las herramientas disponibles para obtener información o realizar acciones
 2. Cuando el admin mencione un nombre de socio, PRIMERO usa find_member para buscarlo
+2b. member_id SIEMPRE tiene que ser el UUID real que devolvió find_member (u otra herramienta) COMO RESULTADO en ESTA MISMA CONVERSACIÓN — nunca lo inventes, ni un apodo/slug, ni lo "recuerdes" de un resumen en texto de un turno anterior sin repetir la búsqueda. Solo ves el HISTORIAL EN TEXTO de turnos previos, no los resultados de herramientas de entonces: si vas a llamar a algo que necesita member_id y no tienes su UUID real delante ahora mismo (en un resultado de herramienta de este turno), llama a find_member de nuevo primero, en el mismo turno, antes de la herramienta que lo necesita. Un member_id inventado hace que la acción falle en seco cuando el admin confirme.
 3. Nunca inventes datos - siempre consulta la información real
 4. Responde en español de forma clara y concisa
 5. Para acciones que modifiquen datos, incluye una frase breve de qué vas a hacer JUNTO CON la llamada a la herramienta, en el MISMO mensaje — nunca en dos turnos separados. El texto y la llamada a la herramienta van a la vez, no primero uno y luego el otro.
