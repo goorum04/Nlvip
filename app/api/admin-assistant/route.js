@@ -336,6 +336,21 @@ const READ_ONLY_TOOLS = [
 // Llamada normal al asistente: puede encadenar hasta 3 llamadas a Claude
 // (interpretar → ejecutar tools de lectura → interpretar resultados). Puede
 // tardar bastante, por eso corre como job en segundo plano (ver POST).
+// Máximo de llamadas encadenadas a Claude en un turno. Antes era una cadena
+// fija de 2-3 niveles con "tools" quitado en la última llamada (asumiendo
+// que a esas alturas el modelo solo tenía que redactar texto) — en la
+// práctica, probando en vivo, el modelo a veces necesita un tercer o cuarto
+// paso de verdad (ej: buscar el nombre exacto de un ejercicio en el
+// catálogo y DESPUÉS usarlo para añadirlo), y sin "tools" disponible se
+// quedaba sin nada que decir. Ahora es un bucle acotado que SIEMPRE deja
+// tools disponibles, así el modelo puede seguir actuando hasta que de
+// verdad termine o hasta el límite de rondas.
+const MAX_ASSISTANT_ROUNDS = 4
+
+// Llamada normal al asistente: encadena hasta MAX_ASSISTANT_ROUNDS llamadas
+// a Claude (interpretar → ejecutar tools de lectura → interpretar
+// resultados → ...). Puede tardar bastante, por eso corre como job en
+// segundo plano (ver POST).
 async function runAssistantChat({ anthropic, messages, adminToken, adminPreferencesText, updateStage }) {
   const systemPrompt = buildSystemPrompt(adminPreferencesText)
   // El prompt de sistema + el catálogo de herramientas suman varios miles de
@@ -347,76 +362,85 @@ async function runAssistantChat({ anthropic, messages, adminToken, adminPreferen
   // cacheables: Claude cachea tools+system juntos con un único marcador en
   // el último bloque de system (las tools se renderizan antes, en orden).
   const cachedSystem = [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }]
-  await updateStage?.('Pensando en qué hacer...')
 
   const lastUserContent = [...messages].reverse().find(m => m.role === 'user')?.content
-  const initialToolChoice = isShortConfirmation(lastUserContent) ? { type: 'any' } : { type: 'auto' }
+  let toolChoice = isShortConfirmation(lastUserContent) ? { type: 'any' } : { type: 'auto' }
 
-  const response = await anthropic.messages.create({
-    model: CLAUDE_MODEL,
-    system: cachedSystem,
-    messages,
-    tools: CLAUDE_TOOLS,
-    tool_choice: initialToolChoice,
-    thinking: NO_THINKING,
-    output_config: LOW_EFFORT,
-    // Claude Sonnet 5 rechaza temperature/top_p/top_k con 400 ("deprecated
-    // for this model") — a diferencia de OpenAI, aquí la consistencia se
-    // controla desde el prompt (ver reglas fijas del asistente), no con un
-    // parámetro de sampling.
-    max_tokens: 4000
-  })
+  const convo = [...messages]
+  const toolResults = {}
+  const STAGE_BY_ROUND = ['Pensando en qué hacer...', 'Interpretando los resultados...']
 
-  let assistantContent = response.content
-  let assistantText = extractText(assistantContent)
-  let toolCalls = normalizeToolCalls(assistantContent)
+  for (let round = 0; round < MAX_ASSISTANT_ROUNDS; round++) {
+    await updateStage?.(STAGE_BY_ROUND[round] || 'Preparando la respuesta...')
 
-  // Si prometió una acción sin ejecutarla, forzamos una segunda pasada con
-  // tool_choice: 'any' — así el modelo SÍ o SÍ llama a una herramienta en vez
-  // de repetir la misma promesa vacía. Si esta segunda llamada también falla
-  // (p. ej. rate limit), no la dejamos reventar el turno entero: nos
-  // quedamos con la respuesta original y dejamos que la regla de "hazlo"/"sí"
-  // del admin fuerce tool_choice de entrada la próxima vez.
-  if (toolCalls.length === 0 && initialToolChoice.type === 'auto' && isStallingWithoutAction(assistantText)) {
-    try {
-      await updateStage?.('Ejecutando la acción anunciada...')
-      const retryResponse = await anthropic.messages.create({
-        model: CLAUDE_MODEL,
-        system: cachedSystem,
-        messages: [
-          ...messages,
-          { role: 'assistant', content: assistantContent },
-          { role: 'user', content: 'No has llamado a ninguna herramienta todavía, solo has dicho que ibas a hacerlo. No lo anuncies de nuevo: llama YA a la herramienta correspondiente en este mismo turno.' }
-        ],
-        tools: CLAUDE_TOOLS,
-        tool_choice: { type: 'any' },
-        thinking: NO_THINKING,
-        output_config: LOW_EFFORT,
-        max_tokens: 4000
-      })
-      assistantContent = retryResponse.content
-      assistantText = extractText(assistantContent)
-      toolCalls = normalizeToolCalls(assistantContent)
-    } catch (retryError) {
-      console.warn('Reintento de stalling falló (se conserva la respuesta original):', retryError.message)
-    }
-  }
+    const resp = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      system: cachedSystem,
+      messages: convo,
+      tools: CLAUDE_TOOLS,
+      tool_choice: toolChoice,
+      thinking: NO_THINKING,
+      output_config: LOW_EFFORT,
+      // Claude Sonnet 5 rechaza temperature/top_p/top_k con 400 ("deprecated
+      // for this model") — a diferencia de OpenAI, aquí la consistencia se
+      // controla desde el prompt (ver reglas fijas del asistente), no con un
+      // parámetro de sampling.
+      max_tokens: round === 0 ? 4000 : 3000
+    })
 
-  // Si hay tool calls, ejecutar las de solo lectura automáticamente
-  if (toolCalls.length > 0) {
-    const autoExecute = []
-    const needsConfirmation = []
+    let content = resp.content
+    let text = extractText(content)
+    let calls = normalizeToolCalls(content)
 
-    for (const call of toolCalls) {
-      if (READ_ONLY_TOOLS.includes(call.function.name)) {
-        autoExecute.push(call)
-      } else {
-        needsConfirmation.push(call)
+    // Fallo conocido del modelo: anuncia una acción ("voy a...", "permíteme
+    // un momento") o se queda sin texto tras una tanda de lecturas, en vez
+    // de llamar a la herramienta correspondiente en el mismo turno. Forzamos
+    // una segunda pasada con tool_choice: 'any'. Si esta también falla (p.
+    // ej. rate limit), no reventamos el turno: nos quedamos con la
+    // respuesta original.
+    if (calls.length === 0 && toolChoice.type === 'auto' && (isStallingWithoutAction(text) || !text)) {
+      try {
+        await updateStage?.('Ejecutando la acción anunciada...')
+        const retry = await anthropic.messages.create({
+          model: CLAUDE_MODEL,
+          system: cachedSystem,
+          messages: [
+            ...convo,
+            { role: 'assistant', content },
+            { role: 'user', content: 'No has llamado a ninguna herramienta todavía, solo has dicho que ibas a hacerlo (o no has dicho nada). No lo anuncies de nuevo: llama YA a la herramienta correspondiente en este mismo turno.' }
+          ],
+          tools: CLAUDE_TOOLS,
+          tool_choice: { type: 'any' },
+          thinking: NO_THINKING,
+          output_config: LOW_EFFORT,
+          max_tokens: round === 0 ? 4000 : 3000
+        })
+        content = retry.content
+        text = extractText(content)
+        calls = normalizeToolCalls(content)
+      } catch (retryError) {
+        console.warn('Reintento de stalling falló (se conserva la respuesta original):', retryError.message)
       }
     }
 
-    // Ejecutar automáticamente las herramientas de solo lectura
-    const toolResults = {}
+    convo.push({ role: 'assistant', content })
+
+    // Sin más tool calls: esta es la respuesta final del turno.
+    if (calls.length === 0) {
+      return {
+        message: text || fallbackMessage(toolResults, round === 0 ? 'No entendí tu petición. ¿Puedes reformularla?' : 'Listo'),
+        toolCalls: [],
+        needsConfirmation: false,
+        toolResults
+      }
+    }
+
+    const autoExecute = calls.filter(c => READ_ONLY_TOOLS.includes(c.function.name))
+    const needsConfirmation = calls.filter(c => !READ_ONLY_TOOLS.includes(c.function.name))
+
+    // Ejecutar automáticamente las herramientas de solo lectura, aunque
+    // vengan mezcladas con acciones que necesitan confirmación — así el
+    // admin ve igualmente esos datos en el plan de confirmación.
     if (autoExecute.length > 0) await updateStage?.('Consultando datos del gimnasio...')
     for (const call of autoExecute) {
       try {
@@ -427,152 +451,39 @@ async function runAssistantChat({ anthropic, messages, adminToken, adminPreferen
       }
     }
 
-    // Si hay resultados de lectura, hacer una segunda llamada para que el modelo los interprete
-    if (autoExecute.length > 0 && needsConfirmation.length === 0) {
-      const toolResultBlocks = autoExecute.map(call => ({
-        type: 'tool_result',
-        tool_use_id: call.id,
-        content: JSON.stringify(toolResults[call.id])
-      }))
-
-      const messagesWithResults = [
-        ...messages,
-        { role: 'assistant', content: assistantContent },
-        { role: 'user', content: toolResultBlocks }
-      ]
-
-      await updateStage?.('Interpretando los resultados...')
-      const followUpResponse = await anthropic.messages.create({
-        model: CLAUDE_MODEL,
-        system: cachedSystem,
-        messages: messagesWithResults,
-        tools: CLAUDE_TOOLS,
-        tool_choice: { type: 'auto' },
-        thinking: NO_THINKING,
-        output_config: LOW_EFFORT,
-        max_tokens: 2000
-      })
-
-      let followUpContent = followUpResponse.content
-      let followUpText = extractText(followUpContent)
-      let newToolCalls = normalizeToolCalls(followUpContent)
-
-      // Mismo problema de "voy a buscar/revisar..." sin actuar puede pasar
-      // aquí, no solo en la primera llamada: el modelo ya tiene resultados
-      // de una herramienta de lectura y en vez de usar otra herramienta para
-      // seguir (ej. search_exercise_catalog) anuncia que lo va a hacer y se
-      // queda ahí. Mismo remedio: forzar una segunda pasada con tool_choice
-      // 'any'.
-      if (newToolCalls.length === 0 && isStallingWithoutAction(followUpText)) {
-        try {
-          await updateStage?.('Ejecutando la acción anunciada...')
-          const retryFollowUp = await anthropic.messages.create({
-            model: CLAUDE_MODEL,
-            system: cachedSystem,
-            messages: [
-              ...messagesWithResults,
-              { role: 'assistant', content: followUpContent },
-              { role: 'user', content: 'No has llamado a ninguna herramienta todavía, solo has dicho que ibas a hacerlo. No lo anuncies de nuevo: llama YA a la herramienta correspondiente en este mismo turno.' }
-            ],
-            tools: CLAUDE_TOOLS,
-            tool_choice: { type: 'any' },
-            thinking: NO_THINKING,
-            output_config: LOW_EFFORT,
-            max_tokens: 2000
-          })
-          followUpContent = retryFollowUp.content
-          followUpText = extractText(followUpContent)
-          newToolCalls = normalizeToolCalls(followUpContent)
-        } catch (retryError) {
-          console.warn('Reintento de stalling (follow-up) falló (se conserva la respuesta original):', retryError.message)
-        }
-      }
-
-      // Si hay nuevas tool calls, procesarlas
-      if (newToolCalls.length > 0) {
-        const newAutoExecute = newToolCalls.filter(c => READ_ONLY_TOOLS.includes(c.function.name))
-        const newNeedsConfirmation = newToolCalls.filter(c => !READ_ONLY_TOOLS.includes(c.function.name))
-
-        // Ejecutar automáticamente las nuevas herramientas de solo lectura
-        if (newAutoExecute.length > 0) await updateStage?.('Consultando más datos...')
-        for (const call of newAutoExecute) {
-          try {
-            const args = JSON.parse(call.function.arguments || '{}')
-            toolResults[call.id] = await executeTool(call.function.name, args, adminToken)
-          } catch (err) {
-            toolResults[call.id] = { success: false, error: err.message }
-          }
-        }
-
-        // Si ejecutamos más herramientas de solo lectura, hacer otra llamada al modelo
-        if (newAutoExecute.length > 0 && newNeedsConfirmation.length === 0) {
-          const newToolResultBlocks = newAutoExecute.map(call => ({
-            type: 'tool_result',
-            tool_use_id: call.id,
-            content: JSON.stringify(toolResults[call.id])
-          }))
-
-          await updateStage?.('Preparando la respuesta...')
-          const finalResponse = await anthropic.messages.create({
-            model: CLAUDE_MODEL,
-            system: cachedSystem,
-            messages: [
-              ...messagesWithResults,
-              { role: 'assistant', content: followUpContent },
-              { role: 'user', content: newToolResultBlocks }
-            ],
-            thinking: NO_THINKING,
-            output_config: LOW_EFFORT,
-            max_tokens: 3000
-          })
-
-          return {
-            message: extractText(finalResponse.content) || fallbackMessage(toolResults, 'Aquí está la información solicitada.'),
-            toolCalls: [],
-            needsConfirmation: false,
-            toolResults
-          }
-        }
-
-        // Si hay acciones que necesitan confirmación
-        if (newNeedsConfirmation.length > 0) {
-          const executionPlan = generateExecutionPlan(newNeedsConfirmation)
-          return {
-            message: followUpText || 'Voy a realizar las siguientes acciones:',
-            toolCalls: newToolCalls,
-            executionPlan,
-            needsConfirmation: true,
-            toolResults
-          }
-        }
-      }
-
-      return {
-        message: followUpText || fallbackMessage(toolResults, 'Listo'),
-        toolCalls: [],
-        needsConfirmation: false,
-        toolResults
-      }
-    }
-
-    // Si hay acciones que necesitan confirmación
+    // Hay acciones que escriben datos: se devuelven para que el admin
+    // confirme, sin seguir encadenando llamadas al modelo.
     if (needsConfirmation.length > 0) {
-      const executionPlan = generateExecutionPlan(needsConfirmation)
+      const executionPlan = generateExecutionPlan(needsConfirmation, toolResults)
       return {
-        message: assistantText || 'Voy a realizar las siguientes acciones. ¿Confirmas?',
+        message: text || 'Voy a realizar las siguientes acciones. ¿Confirmas?',
         toolCalls: needsConfirmation,
         executionPlan,
         needsConfirmation: true,
         toolResults
       }
     }
+
+    // Solo lecturas: se le devuelven los resultados al modelo y se sigue a
+    // la siguiente ronda (tools siempre disponibles, para que pueda seguir
+    // actuando con lo que acaba de averiguar en vez de quedarse sin nada
+    // más que decir).
+    const toolResultBlocks = autoExecute.map(call => ({
+      type: 'tool_result',
+      tool_use_id: call.id,
+      content: JSON.stringify(toolResults[call.id])
+    }))
+    convo.push({ role: 'user', content: toolResultBlocks })
+    toolChoice = { type: 'auto' }
   }
 
-  // Respuesta simple sin tools
+  // Se agotaron las rondas sin que el modelo terminara con una respuesta de
+  // texto limpia — más honesto decírselo al admin que fingir que se acabó.
   return {
-    message: assistantText || 'No entendí tu petición. ¿Puedes reformularla?',
+    message: fallbackMessage(toolResults, 'He consultado varios datos pero necesito un paso más para terminar — vuelve a pedírmelo y sigo desde aquí.'),
     toolCalls: [],
-    needsConfirmation: false
+    needsConfirmation: false,
+    toolResults
   }
 }
 
