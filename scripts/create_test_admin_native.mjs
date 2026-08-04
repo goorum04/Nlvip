@@ -1,4 +1,5 @@
 import fs from 'fs';
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const envFile = fs.readFileSync('.env.local', 'utf8');
@@ -13,10 +14,19 @@ const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseKey, { auth: { autoRefreshToken: false, persistSession: false } });
 
+// Antes tenía la contraseña escrita literalmente aquí ('password123') — en un
+// repo público eso es una cuenta de admin con contraseña conocida por
+// cualquiera que vea el código. Ahora hay que pasarla por variable de
+// entorno; si no se da ninguna, se genera una aleatoria y se imprime UNA vez.
+const testAdminPassword = process.env.TEST_ADMIN_PASSWORD || crypto.randomBytes(12).toString('base64url');
+if (!process.env.TEST_ADMIN_PASSWORD) {
+  console.log(`No se dio TEST_ADMIN_PASSWORD — contraseña generada (apúntala, no se volverá a mostrar): ${testAdminPassword}`);
+}
+
 async function createAdmin() {
   const { data: user, error } = await supabaseAdmin.auth.admin.createUser({
     email: 'testadmin@nlvip.com',
-    password: 'password123',
+    password: testAdminPassword,
     email_confirm: true
   });
   
