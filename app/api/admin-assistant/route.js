@@ -74,6 +74,18 @@ function normalizeToolCalls(content) {
     .map(b => ({ id: b.id, function: { name: b.name, arguments: JSON.stringify(b.input || {}) } }))
 }
 
+// Si el modelo se queda sin texto que devolver (raro, pero puede pasar con
+// effort bajo tras una cadena de tools), un genérico tipo "Aquí está la
+// información solicitada" es engañoso cuando en realidad una herramienta
+// falló — el admin ve un mensaje de éxito vacío y no se entera de que algo
+// no se aplicó. Si hay algún error real entre los resultados, se muestra
+// ese en vez del genérico.
+function fallbackMessage(toolResults, generic) {
+  const failed = Object.values(toolResults || {}).find(r => r && r.success === false)
+  if (failed?.error) return `Hubo un problema al ejecutar una acción: ${failed.error}`
+  return generic
+}
+
 const DIET_RULES = `
 SISTEMA NL ELITE — REGLAS DEL PROGRAMA NUTRICIONAL:
 
@@ -233,6 +245,7 @@ Tras generar la rutina con generate_member_routine, el admin puede pedir cambios
 
 REGLAS IMPORTANTES PARA LA EDICIÓN:
 1. Pasa SIEMPRE el routine_data completo de la última versión (la devuelta por generate_member_routine o por la última herramienta de edición). NO inventes el routine_data ni lo simplifiques.
+1b. LÍMITE CRÍTICO: solo tienes el routine_data exacto (JSON completo) cuando generate_member_routine o una edición te lo devolvió DENTRO DE ESTE MISMO TURNO, como resultado de herramienta. Si el admin pide un cambio sobre una rutina de la que solo tienes el resumen en texto de un turno ANTERIOR (no la generaste ni editaste en este turno), NO tienes el routine_data real — NUNCA lo reconstruyas de memoria a partir de tu propio resumen para llamar a swap/remove/add/modify_routine_exercise/modify_routine_day: el JSON que inventarías estará incompleto o mal formado y la herramienta fallará en silencio. En ese caso, vuelve a llamar a generate_member_routine con "notes" describiendo la rutina completa que quieres (la estructura que ya tenía + el cambio pedido, ej. "misma distribución de días que antes, pero con más volumen de bíceps: añade un ejercicio extra de bíceps en el día de brazos").
 2. Identifica el día por su number 1-based (ej: "día 2" → day_index: 2). Si el admin no dice día y la rutina tiene varios, pregúntale a qué día se refiere.
 3. Usa nombres parciales si hace falta (la búsqueda es case-insensitive y por substring).
 4. Tras cada edición, muestra al admin un resumen breve de la rutina actualizada y pregunta si quiere otro cambio o si ya la asigna.
@@ -482,7 +495,7 @@ async function runAssistantChat({ anthropic, messages, adminToken, adminPreferen
           })
 
           return {
-            message: extractText(finalResponse.content) || 'Aquí está la información solicitada.',
+            message: extractText(finalResponse.content) || fallbackMessage(toolResults, 'Aquí está la información solicitada.'),
             toolCalls: [],
             needsConfirmation: false,
             toolResults
@@ -503,7 +516,7 @@ async function runAssistantChat({ anthropic, messages, adminToken, adminPreferen
       }
 
       return {
-        message: followUpText || 'Listo',
+        message: followUpText || fallbackMessage(toolResults, 'Listo'),
         toolCalls: [],
         needsConfirmation: false,
         toolResults
