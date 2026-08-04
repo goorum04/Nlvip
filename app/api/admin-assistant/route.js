@@ -17,10 +17,14 @@ const getSupabaseAdmin = () => createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 )
 
-// maxRetries bajo: si hay rate limit, mejor fallar rápido y que el admin
-// vea el aviso a los pocos segundos (el poll del cliente lo recoge en su
-// siguiente vuelta) que esperar ~40s a que el SDK agote sus reintentos.
-const getOpenAI = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 1 })
+// Antes maxRetries: 1 ("fallar rápido"). En uso real eso significaba que
+// cualquier 429 pasajero (habitual en horas punta, con varias llamadas
+// encadenadas por turno) se convertía directamente en un error visible
+// para el admin — "límite alcanzado" cada dos por tres. Como esto corre
+// como job en segundo plano (no bloquea al admin, solo tarda un poco más
+// en el poll), merece más la pena dejar que el SDK reintente con backoff
+// antes de rendirse.
+const getOpenAI = () => new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 3 })
 
 const DIET_RULES = `
 SISTEMA NL ELITE — REGLAS DEL PROGRAMA NUTRICIONAL:
@@ -230,13 +234,28 @@ async function runToolExecution({ toolCallsToExecute, adminToken, updateStage })
 
 // Fallo conocido del modelo: en vez de llamar a la herramienta en el mismo
 // turno, anuncia la acción en texto ("permíteme un momento", "voy a
-// generar...") y se queda ahí — el admin ve una promesa que nunca se
-// cumple, ni siquiera insistiendo ("vale", "hazlo"). Lo detectamos para
-// forzar una segunda pasada que sí ejecute algo.
-const STALLING_WITHOUT_ACTION = /perm[ií]teme (un momento|un segundo)|dame (un momento|un segundo|unos segundos)|voy a (proceder|generar|modificar|ajustar|crear|hacer|realizar)[^.!?]*(ahora|momento|seguida)?\s*$|en un momento (te|lo|la)|ahora mismo lo (hago|genero|hacemos|ajusto)/i
+// generar...", "procederé a...") y se queda ahí — el admin ve una promesa
+// que nunca se cumple, ni siquiera insistiendo ("vale", "hazlo"). Amplia
+// a propósito (sin anclar al final de la frase): esto solo se consulta
+// cuando YA sabemos que no hubo tool_calls, así que pecar de detectar de
+// más aquí es gratis — la alternativa (detectar de menos, como pasaba
+// antes con "Procederé a crearla ahora mismo.") deja al admin en bucle.
+const STALLING_WITHOUT_ACTION = /perm[ií]teme (un momento|un segundo)|dame (un momento|un segundo|unos segundos)|voy a (proceder|generar|modificar|ajustar|crear|hacer|realizar|asignar)|proceder[ée] a|procedo a|intentar[ée] (generar|crear|modificar|asignar|hacer)|en un momento (te|lo|la)|ahora mismo lo (hago|genero|hacemos|ajusto|creo|asigno)|lo (har[ée]|generar[ée]|crear[ée]|asignar[ée])\b/i
 
 function isStallingWithoutAction(content) {
   return !!content && STALLING_WITHOUT_ACTION.test(content.trim())
+}
+
+// Si el admin confirma con una palabra corta ("hazlo", "sí", "dale",
+// "adelante", "confirmar", "asígnala"...), casi seguro está reaccionando a
+// algo que el asistente dejó a medias en el turno anterior. En vez de
+// esperar a que vuelva a fallar para detectarlo, forzamos tool_choice
+// desde la PRIMERA llamada — así no gastamos una llamada extra de OpenAI
+// (justo lo que dispara el límite de peticiones cuando ya va cargado).
+const SHORT_CONFIRMATION = /^\s*(s[ií]|vale|dale|hazlo|hazla|adelante|confirmar?|confirmo|as[ií]gnala|as[ií]gnalo|guárdala|guárdalo|venga|ok(ay)?|correcto|de acuerdo|proceda?)[.!\s]*$/i
+
+function isShortConfirmation(content) {
+  return !!content && SHORT_CONFIRMATION.test(content.trim())
 }
 
 // Llamada normal al asistente: puede encadenar hasta 3 llamadas a OpenAI
@@ -245,6 +264,10 @@ function isStallingWithoutAction(content) {
 async function runAssistantChat({ openai, messages, adminToken, adminPreferencesText, updateStage }) {
   const systemPrompt = buildSystemPrompt(adminPreferencesText)
   await updateStage?.('Pensando en qué hacer...')
+
+  const lastUserContent = [...messages].reverse().find(m => m.role === 'user')?.content
+  const initialToolChoice = isShortConfirmation(lastUserContent) ? 'required' : 'auto'
+
   const response = await openai.chat.completions.create({
     model: 'gpt-4o',
     messages: [
@@ -252,7 +275,7 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
       ...messages
     ],
     tools: TOOLS_DEFINITIONS,
-    tool_choice: 'auto',
+    tool_choice: initialToolChoice,
     // Con 0.7 el asistente variaba qué herramienta usaba o se saltaba reglas
     // del prompt (p. ej. el objetivo o el formato) entre peticiones casi
     // idénticas — "hace lo que quiere". Bajado a 0.2: para un asistente que
@@ -267,24 +290,31 @@ async function runAssistantChat({ openai, messages, adminToken, adminPreferences
 
   // Si prometió una acción sin ejecutarla, forzamos una segunda pasada con
   // tool_choice: 'required' — así el modelo SÍ o SÍ llama a una herramienta
-  // en vez de repetir la misma promesa vacía.
-  if (toolCalls.length === 0 && isStallingWithoutAction(assistantMessage.content)) {
-    await updateStage?.('Ejecutando la acción anunciada...')
-    const retryResponse = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...messages,
-        assistantMessage,
-        { role: 'user', content: 'No has llamado a ninguna herramienta todavía, solo has dicho que ibas a hacerlo. No lo anuncies de nuevo: llama YA a la herramienta correspondiente en este mismo turno.' }
-      ],
-      tools: TOOLS_DEFINITIONS,
-      tool_choice: 'required',
-      temperature: 0.2,
-      max_tokens: 4000
-    })
-    assistantMessage = retryResponse.choices[0].message
-    toolCalls = assistantMessage.tool_calls || []
+  // en vez de repetir la misma promesa vacía. Si esta segunda llamada
+  // también falla (p. ej. rate limit), no la dejamos reventar el turno
+  // entero: nos quedamos con el mensaje original y dejamos que la regla de
+  // "hazlo"/"sí" del admin fuerce tool_choice de entrada la próxima vez.
+  if (toolCalls.length === 0 && initialToolChoice === 'auto' && isStallingWithoutAction(assistantMessage.content)) {
+    try {
+      await updateStage?.('Ejecutando la acción anunciada...')
+      const retryResponse = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages,
+          assistantMessage,
+          { role: 'user', content: 'No has llamado a ninguna herramienta todavía, solo has dicho que ibas a hacerlo. No lo anuncies de nuevo: llama YA a la herramienta correspondiente en este mismo turno.' }
+        ],
+        tools: TOOLS_DEFINITIONS,
+        tool_choice: 'required',
+        temperature: 0.2,
+        max_tokens: 4000
+      })
+      assistantMessage = retryResponse.choices[0].message
+      toolCalls = assistantMessage.tool_calls || []
+    } catch (retryError) {
+      console.warn('Reintento de stalling falló (se conserva la respuesta original):', retryError.message)
+    }
   }
 
   // Si hay tool calls, ejecutar las de solo lectura automáticamente
