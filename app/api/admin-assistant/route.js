@@ -19,6 +19,18 @@ const getSupabaseAdmin = () => createClient(
 
 const CLAUDE_MODEL = 'claude-sonnet-5'
 
+// Sonnet 5 activa "adaptive thinking" por defecto en cuanto se omite
+// `thinking` — y ese pensamiento consume del MISMO max_tokens que la
+// respuesta, con riesgo real de truncar la respuesta a medias
+// (stop_reason: "max_tokens") si el presupuesto se queda corto. Para un
+// asistente de chat + function-calling como este (no una tarea de
+// razonamiento profundo tipo coding/agéntico), la guía de Anthropic
+// recomienda explícitamente desactivar el pensamiento y bajar el effort:
+// mismo o mejor rendimiento que sin pensar, sin la latencia ni el riesgo de
+// corte a mitad de respuesta.
+const NO_THINKING = { type: 'disabled' }
+const LOW_EFFORT = { effort: 'low' }
+
 // Antes maxRetries: 1 ("fallar rápido"). En uso real eso significaba que
 // cualquier 429 pasajero (habitual en horas punta, con varias llamadas
 // encadenadas por turno) se convertía directamente en un error visible
@@ -115,6 +127,7 @@ IMPORTANTE:
 4. Responde en español de forma clara y concisa
 5. Para acciones que modifiquen datos, incluye una frase breve de qué vas a hacer JUNTO CON la llamada a la herramienta, en el MISMO mensaje — nunca en dos turnos separados. El texto y la llamada a la herramienta van a la vez, no primero uno y luego el otro.
 6. PROHIBIDO prometer una acción sin ejecutarla: si tu respuesta contiene "voy a...", "permíteme un momento", "dame un segundo" o cualquier anuncio similar, ese mismo mensaje TIENE que incluir ya la llamada a la herramienta correspondiente. Nunca dejes una promesa para "el siguiente turno" — ni siquiera cuando el admin ya te dijo "sí"/"vale"/"hazlo"/"adelante": eso significa ejecutar YA, no volver a anunciarlo.
+7. En cuanto identifiques qué herramienta hace falta, LLÁMALA directamente — no delibera de más ni te pares a explicar lo que vas a hacer antes de hacerlo.
 
 RESPUESTA FINAL — SÉ ÚTIL, NO UN EJECUTOR MUDO (MUY IMPORTANTE):
 1. Si el admin te hace una pregunta (técnica, sobre un socio, sobre por qué algo está como está, pidiendo tu opinión), RESPÓNDELA siempre de forma directa y razonada en el mismo turno. No la sustituyas por una acción sin más, no la ignores para pasar a otra cosa, y no te limites a devolver datos en bruto sin interpretarlos.
@@ -331,13 +344,12 @@ async function runAssistantChat({ anthropic, messages, adminToken, adminPreferen
     messages,
     tools: CLAUDE_TOOLS,
     tool_choice: initialToolChoice,
-    // Con temperaturas altas el asistente variaba qué herramienta usaba o se
-    // saltaba reglas del prompt (p. ej. el objetivo o el formato) entre
-    // peticiones casi idénticas — "hace lo que quiere". Bajado a 0.2: para un
-    // asistente que sobre todo tiene que elegir bien la herramienta y seguir
-    // reglas fijas, no redactar con voz propia, la consistencia importa más
-    // que la variedad.
-    temperature: 0.2,
+    thinking: NO_THINKING,
+    output_config: LOW_EFFORT,
+    // Claude Sonnet 5 rechaza temperature/top_p/top_k con 400 ("deprecated
+    // for this model") — a diferencia de OpenAI, aquí la consistencia se
+    // controla desde el prompt (ver reglas fijas del asistente), no con un
+    // parámetro de sampling.
     max_tokens: 4000
   })
 
@@ -364,7 +376,8 @@ async function runAssistantChat({ anthropic, messages, adminToken, adminPreferen
         ],
         tools: CLAUDE_TOOLS,
         tool_choice: { type: 'any' },
-        temperature: 0.2,
+        thinking: NO_THINKING,
+        output_config: LOW_EFFORT,
         max_tokens: 4000
       })
       assistantContent = retryResponse.content
@@ -421,7 +434,8 @@ async function runAssistantChat({ anthropic, messages, adminToken, adminPreferen
         messages: messagesWithResults,
         tools: CLAUDE_TOOLS,
         tool_choice: { type: 'auto' },
-        temperature: 0.2,
+        thinking: NO_THINKING,
+        output_config: LOW_EFFORT,
         max_tokens: 2000
       })
 
@@ -462,7 +476,8 @@ async function runAssistantChat({ anthropic, messages, adminToken, adminPreferen
               { role: 'assistant', content: followUpContent },
               { role: 'user', content: newToolResultBlocks }
             ],
-            temperature: 0.3,
+            thinking: NO_THINKING,
+            output_config: LOW_EFFORT,
             max_tokens: 3000
           })
 
