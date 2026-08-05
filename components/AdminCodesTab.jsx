@@ -136,7 +136,7 @@ export function AdminCodesTab({
                                                 </td>
                                                 <td className="px-4 py-4 text-center">
                                                     <div className="flex items-center justify-center gap-1.5">
-                                                        <span className="text-sm font-bold text-white">{code.uses_count || 0}</span>
+                                                        <span className="text-sm font-bold text-white">{code.current_uses || 0}</span>
                                                         <span className="text-gray-600 text-xs">/ {code.max_uses}</span>
                                                     </div>
                                                 </td>

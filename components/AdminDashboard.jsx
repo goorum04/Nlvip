@@ -1611,7 +1611,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                         <p className="font-mono font-bold text-violet-400 text-lg">{code.code}</p>
                         <p className="text-sm text-gray-400">Entrenador: {code.profiles?.name}</p>
                         <p className="text-xs text-gray-500">
-                          Usos: {code.uses_count}/{code.max_uses} | 
+                          Usos: {code.current_uses || 0}/{code.max_uses} |
                           Expira: {new Date(code.expires_at).toLocaleDateString()}
                         </p>
                       </div>
