@@ -4,6 +4,7 @@
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=nextdotjs)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)
+![Claude](https://img.shields.io/badge/Claude-Sonnet%205-CC785C?logo=anthropic)
 ![OpenAI](https://img.shields.io/badge/OpenAI-GPT-412991?logo=openai)
 ![Capacitor](https://img.shields.io/badge/Capacitor-iOS%2FAndroid-119EFF?logo=capacitor)
 ![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry)
@@ -48,7 +49,8 @@
 | Frontend | Next.js 14 (App Router) | Framework principal |
 | UI | shadcn/ui + Tailwind CSS | Componentes y estilos |
 | Backend/Auth | Supabase | Autenticación, base de datos PostgreSQL, storage |
-| IA | OpenAI (GPT) | Generación de rutinas, dietas, recetas y asistente |
+| IA — asistente admin | Anthropic (Claude Sonnet) | Chatbot de gestión con tool use para el panel de admin |
+| IA — generación de contenido | OpenAI (GPT) | Generación de rutinas, dietas, recetas y análisis de alimentos |
 | Recetas | Spoonacular API | Catálogo externo de recetas |
 | Imágenes | Unsplash API | Fotos de recetas libres de derechos |
 | Base de datos adicional | MongoDB | API catch-all (`/api/[[...path]]`) |
@@ -74,14 +76,14 @@
 | Ver todos los socios y progreso | ✅ | Solo los suyos | Solo el propio |
 | Moderar feed (ocultar posts) | ✅ | ❌ | ❌ |
 | Aprobar videos de entrenamiento | ✅ | ❌ | ❌ |
-| Asistente IA flotante | ✅ | ❌ | ❌ |
+| Asistente IA flotante (Claude) | ✅ | ❌ | ❌ |
 | Crear/asignar rutinas | ✅ | ✅ | ❌ |
 | Crear/asignar dietas | ✅ | ✅ | ❌ |
 | Crear planes de recetas semanales | ✅ | ✅ | ❌ |
 | Enviar avisos a socios | ✅ | ✅ | ❌ |
 | Subir videos de entrenamiento | ❌ | ✅ | ❌ |
-| Ver feed social | ✅ | ✅ | ✅ |
-| Publicar en feed | ❌ | ❌ | ✅ |
+| Ver feed social | ✅ (siempre) | Solo si es Premium | Solo si es Premium |
+| Publicar / comentar / dar like en feed | ✅ (siempre) | Solo si es Premium | Solo si es Premium |
 | Ver rutina y dieta asignada | — | — | ✅ |
 | Registrar progreso físico | — | — | ✅ |
 | Subir fotos de progreso | — | — | ✅ |
@@ -148,7 +150,7 @@
 | Generador de planes de comidas | Planifica una semana completa de alimentación |
 | Onboarding de dieta | Guía al socio paso a paso para configurar su dieta |
 | Análisis de alimentos | Estima macros de cualquier alimento via foto o texto |
-| Asistente Admin (flotante) | Chatbot de ayuda para administradores del sistema |
+| Asistente Admin (flotante) | Chatbot con tool use (Claude Sonnet) para gestionar socios, rutinas, dietas, avisos, retos y códigos desde el chat |
 
 ### 👩‍⚕️ Salud femenina y ciclo menstrual
 
@@ -178,12 +180,12 @@ Cada etapa ajusta automáticamente las recomendaciones nutricionales y de entren
 ### 🏆 Gamificación
 
 **Retos:**
-- 4 plantillas de retos predefinidos
 - Participación y seguimiento de progreso
 - Fechas de inicio y fin configurables
+- Progreso calculado automáticamente por cron diario (`/api/cron/challenge-progress`) según tipo: entrenamientos, consistencia o peso
 
 **Badges (7 tipos de logros):**
-- Asignados por el sistema o manualmente por el entrenador
+- Otorgados automáticamente por cron diario (`/api/cron/award-badges`) según condición: primer entrenamiento, nº de entrenamientos, racha o retos completados
 - Visibles en el perfil del socio
 
 **Check-ins de entrenamiento:**
@@ -229,8 +231,8 @@ Cada etapa ajusta automáticamente las recomendaciones nutricionales y de entren
 - Suscripción y desuscripción por usuario
 - Envío desde el backend
 
-**Push nativas (Capacitor):**
-- Notificaciones nativas en iOS y Android
+**Push nativas (Capacitor + Direct APNs / FCM):**
+- Notificaciones nativas en iOS (Direct APNs, sin Firebase) y Android
 - Configuración automática al instalar la app
 
 **Avisos del entrenador:**
@@ -240,11 +242,11 @@ Cada etapa ajusta automáticamente las recomendaciones nutricionales y de entren
 
 ### 🛡️ Feed social privado
 
-- Solo socios pueden publicar (texto e imágenes)
+- **Exclusivo para socios Premium** (ver, publicar, comentar y dar like): un socio sin código de invitación Premium no ve contenido del feed en absoluto. El admin siempre tiene acceso completo.
+- Admin, entrenador (si es Premium) y socios Premium pueden publicar (texto e imágenes)
 - Likes y comentarios
 - Sistema de reportes
 - Admins pueden ocultar contenido inapropiado
-- Feed exclusivo para miembros del club
 
 ### 👥 Gestión de usuarios (Admin)
 
@@ -268,7 +270,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
 ```
 
-### OpenAI — funciones de IA (obligatorio para IA)
+### Anthropic / Claude — asistente admin (obligatorio para el asistente IA)
+
+```env
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### OpenAI — generación de dietas/rutinas/recetas (obligatorio para IA)
 
 ```env
 OPENAI_API_KEY=sk-...
@@ -285,6 +293,15 @@ VAPID_EMAIL=mailto:tu@email.com
 Generar claves VAPID:
 ```bash
 node scripts/generate-vapid-keys.js
+```
+
+### Notificaciones push nativas iOS — Direct APNs (opcional, solo build móvil)
+
+```env
+APNS_TEAM_ID=...
+APNS_KEY_ID=...
+APNS_BUNDLE_ID=com.nlvipnutrition.app
+APNS_P8_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
 ```
 
 ### APIs externas (opcional)
@@ -361,7 +378,16 @@ En el **SQL Editor** de Supabase, ejecuta el esquema maestro:
 -- sql/master-schema.sql
 ```
 
-Esto crea todas las tablas, políticas RLS, funciones e índices.
+Esto crea la base: tablas, políticas RLS, funciones e índices.
+
+Después, aplica **todas** las migraciones de `supabase/migrations/` en orden cronológico (por nombre de archivo) — son la fuente de verdad actualizada del esquema (tablas nuevas, columnas, funciones RPC, RLS y storage buckets añadidos después del esquema maestro). Con la Supabase CLI:
+
+```bash
+supabase link --project-ref tu-project-ref
+supabase db push
+```
+
+> ⚠️ `sql/` contiene versiones legacy e históricas de fixes puntuales — no las apliques directamente en un proyecto nuevo. `supabase/migrations/` es la carpeta que se mantiene al día.
 
 ### 5. Crear cuentas demo
 
@@ -400,16 +426,20 @@ SELECT
 
 ### 6. Configurar Storage en Supabase
 
-Crea los siguientes buckets en **Storage → New bucket**:
+Crea los siguientes buckets en **Storage → New bucket** (el nombre exacto importa — el código usa guion bajo, no guion medio):
 
 | Bucket | Acceso |
 |---|---|
-| `progress-photos` | Privado |
-| `feed-images` | Público |
-| `workout-videos` | Privado |
+| `progress_photos` | Privado |
+| `feed_images` | Público |
+| `workout_videos` | Privado |
+| `exercise_videos` | Público |
+| `recipe_images` | Público |
+| `chat_images` | Público |
+| `chat_audios` | Privado |
 | `avatars` | Público |
 
-Aplica las políticas de storage ejecutando los scripts en `sql/` con prefijo `FIX-STORAGE`.
+Las políticas de cada bucket ya están definidas en las migraciones de `supabase/migrations/` (búscalas por el nombre del bucket).
 
 ### 7. Ejecutar en desarrollo
 
@@ -523,8 +553,9 @@ nlvip/
 │   └── ui/                       # Componentes shadcn/ui
 ├── lib/                          # Utilidades y helpers
 ├── hooks/                        # Custom React hooks
-├── sql/                          # Esquemas SQL y migraciones (43 archivos)
-├── scripts/                      # Scripts de utilidad (31 archivos)
+├── supabase/migrations/          # Migraciones activas (fuente de verdad del esquema)
+├── sql/                          # Esquema maestro inicial + fixes legacy históricos
+├── scripts/                      # Scripts de utilidad (scripts/legacy/ = históricos)
 ├── docs/                         # Documentación por fases
 ├── ios/                          # Recursos app iOS
 ├── public/                       # Assets estáticos
@@ -539,32 +570,28 @@ nlvip/
 ## Scripts de utilidad
 
 ```bash
-# Configuración inicial de Supabase
-node scripts/setup-supabase.js
-
-# Poblar datos de prueba
-node scripts/seed-data.js
-node scripts/seed-exercises.js
-
 # Generar claves VAPID para push notifications
 node scripts/generate-vapid-keys.js
 
-# Crear cuenta admin de prueba
-node scripts/create_test_admin.mjs
+# Crear cuenta admin de prueba (contraseña vía env TEST_ADMIN_PASSWORD,
+# o se genera una aleatoria y se imprime una sola vez)
+node scripts/create_test_admin_native.mjs
 
-# Crear cuenta demo femenina (con ciclo)
-node scripts/create-demo-female.js
+# Aplicar una migración SQL suelta contra Supabase
+node scripts/apply-migration.js
 
-# Verificar tablas y datos
-node scripts/check-tables.js
-node scripts/check-demo.js
+# Smoke test contra la app (login QA + checks de solo lectura;
+# --full añade generar→confirmar→guardar rutina con auto-limpieza)
+node scripts/qa-smoke-test.mjs [--full]
 
-# Poblar catálogo de recetas
-node scripts/bulk_populate_recipes.js
+# Sincronizar variables de entorno hacia Vercel
+node scripts/push-vercel-env.js
 
-# Ejecutar migración SQL
-node scripts/run_migration.js
+# Borrar cuentas demo/de prueba
+node scripts/delete-demo-accounts.js
 ```
+
+> `scripts/legacy/` contiene scripts antiguos ya no mantenidos (seed de datos, setup inicial de Supabase, etc.) — consérvalos solo como referencia histórica.
 
 ---
 
