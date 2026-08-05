@@ -5,7 +5,7 @@ import { waitUntil } from '@vercel/functions'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 import { generateNLEliteDiet } from '@/lib/dietGeneration'
 
-// Puede tardar bastante (llamada a OpenAI generando un menú completo). En
+// Puede tardar bastante (llamada a Claude generando un menú completo). En
 // modo background (waitUntil) el trabajo real sigue después de responder,
 // así que necesita el mismo margen o más que en modo síncrono.
 export const maxDuration = 60
@@ -17,7 +17,7 @@ const schema = z.object({
   background: z.boolean().optional(),
 })
 
-// Traduce el error técnico de rechazo de OpenAI (visto en producción: el
+// Traduce el error técnico de rechazo del modelo (visto en producción: el
 // modelo se niega 3 veces seguidas ante cierto perfil, algo raro pero
 // posible con datos médicos/edad sensibles) a algo que un entrenador
 // entienda, en vez del mensaje crudo con la respuesta del modelo en inglés.
@@ -38,11 +38,11 @@ function getSupabase() {
 }
 
 // POST /api/diet-onboarding/generate-draft
-// Llama a OpenAI y genera el borrador de la dieta, pero no lo guarda en BBDD.
+// Llama a Claude y genera el borrador de la dieta, pero no lo guarda en BBDD.
 export async function POST(req) {
   const supabase = getSupabase()
   try {
-    // Auth: solo admin/trainer pueden generar borradores de dieta (consume OpenAI
+    // Auth: solo admin/trainer pueden generar borradores de dieta (consume Claude
     // y accede al perfil del socio). Mismo patrón que /api/generate-routine.
     const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
     if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
