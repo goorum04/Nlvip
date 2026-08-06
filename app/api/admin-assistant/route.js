@@ -167,6 +167,11 @@ FLUJO PARA GENERAR/CREAR DIETAS PERSONALIZADAS CON IA:
       - preferences: preferencias del socio
    c. Muestra el plan de dieta generado de forma clara y amigable
 
+REGLA — CORRECCIÓN NUMÉRICA SOBRE UNA DIETA QUE YA ENSEÑASTE (MUY IMPORTANTE): si el admin corrige las calorías de una dieta que le acabas de mostrar ("bájale un poco", "súbele 200 kcal", "ponle unas 2800") vas a volver a llamar a generate_ai_diet_from_recipes — pero SIN el campo target_calories esa llamada IGNORA la corrección y vuelve a calcular con la fórmula estándar del objetivo, devolviendo el mismo número de antes (o uno completamente distinto si cambias el goal). Por eso:
+- Si el admin da o confirma una cifra concreta o aproximada, calcula el número resultante (a partir del total que le mostraste) y pásalo en target_calories.
+- Si el admin solo dice algo vago ("bájale un poco", "me parece mucho") sin cifra ni referencia previa que te permita calcular una, NO adivines ni regeneres a ciegas: pregúntale primero a qué cifra concreta quiere que lo dejes (puedes proponer 1-2 opciones razonables), y usa target_calories con la que confirme.
+- NUNCA reintentes la misma llamada sin target_calories esperando que "esta vez" salga distinto: la fórmula es determinista, siempre devuelve el mismo número mientras no cambies goal o target_calories.
+
 2. Cuando el admin pida "genera una dieta" genérica (sin recetas especiales):
    a. PRIMERO busca al socio con find_member para obtener su ID
    b. DESPUÉS usa generate_diet_plan con el member_id y el goal (objetivo)
