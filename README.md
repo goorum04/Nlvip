@@ -151,6 +151,7 @@
 | Onboarding de dieta | Guía al socio paso a paso para configurar su dieta |
 | Análisis de alimentos | Estima macros de cualquier alimento via foto o texto |
 | Asistente Admin (flotante) | Chatbot con tool use (Claude Sonnet) para gestionar socios, rutinas, dietas, avisos, retos y códigos desde el chat |
+| Memoria persistente | Dos niveles: notas duraderas por socio (ej. "hombro sensible en press") y preferencias generales de cómo trabaja el entrenador/admin (terminología, formato). Se guarda diciéndoselo al asistente y se aplica automáticamente en cada generación posterior de dieta o rutina para ese socio, sin tener que repetirlo |
 
 ### 👩‍⚕️ Salud femenina y ciclo menstrual
 
