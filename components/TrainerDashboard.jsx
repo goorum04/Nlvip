@@ -427,6 +427,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
           originalDraft: dietDraft.fullDietContent,
           correction: correctionText,
           macros: dietDraft.macros,
+          memberId: dietDraft.memberId,
           memberContext: {
             weight: dietDraft.responses?.['Medida - Peso'],
             goal: dietDraft.responses?.objetivo,

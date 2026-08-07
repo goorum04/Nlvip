@@ -472,6 +472,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
           originalDraft: draft.fullDietContent,
           correction: text,
           macros: draft.macros,
+          memberId: draft.memberId,
           memberContext: {
             weight: draft.responses?.['Medida - Peso'],
             goal: draft.responses?.objetivo,
