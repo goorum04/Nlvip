@@ -752,7 +752,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
       if (data.toolResults) {
         for (const result of Object.values(data.toolResults)) {
           if (!extractedDietData && result?.diet_generated && result?.diet_data) {
-            extractedDietData = result.diet_data
+            extractedDietData = { ...result.diet_data, member_id: result.member_id || null }
           }
           if (!extractedRoutine && result?.routine_generated && result?.routine_data) {
             extractedRoutine = {
@@ -1062,6 +1062,20 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
           }
         : null
 
+      // Mismo mecanismo que lastRoutineContext, pero para la última dieta
+      // generada/ajustada en el hilo — evita que refine_ai_diet tenga que
+      // regenerar la dieta entera de memoria (lo que cambiaba TODAS las
+      // comidas aunque el ajuste pedido fuera mínimo, ej. quitar 1 opción).
+      const lastDietMsg = [...messages].reverse().find(m => m.diet_data?.fullDietContent)
+      const lastDietContext = lastDietMsg
+        ? {
+            member_id: lastDietMsg.diet_data.member_id,
+            member_name: lastDietMsg.diet_data.member_name,
+            fullDietContent: lastDietMsg.diet_data.fullDietContent,
+            macros: lastDietMsg.diet_data.macros
+          }
+        : null
+
       const response = await fetch(getApiUrl() + '/api/admin-assistant', {
         method: 'POST',
         headers: {
@@ -1071,6 +1085,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
         body: JSON.stringify({
           messages: [...messages, userMessage].slice(-MAX_HISTORY_MESSAGES).map(m => ({ role: m.role, content: m.content })),
           lastRoutineContext,
+          lastDietContext,
           // Pide al servidor que responda YA con el jobId y siga generando
           // después, aunque se minimice o cierre la app (ver route.js).
           background: true,

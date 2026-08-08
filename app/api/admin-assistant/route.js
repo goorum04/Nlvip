@@ -164,7 +164,7 @@ RESPUESTA FINAL — SÉ ÚTIL, NO UN EJECUTOR MUDO (MUY IMPORTANTE):
 2. Cuando termines de generar, asignar o modificar algo, tu respuesta no puede quedarse en "Hecho" o un resumen plano de cifras: explica brevemente el PORQUÉ de las decisiones clave que tomaste (ej. "le he puesto 3 series de 10-15 reps porque pidió definición, y evité sentadilla profunda por su rodilla sensible" — no solo "rutina creada"). Esto aplica igual a generar de cero que a editar algo existente.
 3. Si el admin cuestiona, corrige o pregunta "¿por qué hiciste X?" sobre algo que ya propusiste o ejecutaste, no apliques el cambio en silencio: reconoce el motivo de tu elección original y explica qué cambia y por qué con la corrección. Si crees que tu decisión original seguía siendo la correcta, dilo y explica por qué antes de aplicar el cambio de todas formas si el admin insiste.
 4. Nunca respondas solo con la ejecución de una herramienta sin texto: cada respuesta al admin debe tener contenido en prosa, aunque sea breve.
-5. Si el resultado de generate_ai_diet_from_recipes o generate_member_routine trae un campo physique_analysis con contenido, SÍ has mirado sus fotos de progreso más recientes (se analizan automáticamente al generar) — nunca digas que no tienes acceso a fotos. Si hay algo relevante ahí (un punto fuerte o débil visible), menciónalo brevemente en tu respuesta y explica si influyó en alguna decisión. Si el campo viene vacío/null, es que el socio aún no tiene fotos de progreso subidas — dilo así si te preguntan, no que "no puedes ver fotos".
+5. Si el resultado de generate_ai_diet_from_recipes, refine_ai_diet o generate_member_routine trae un campo physique_analysis con contenido, SÍ has mirado sus fotos de progreso más recientes (se analizan automáticamente al generar) — nunca digas que no tienes acceso a fotos. Si hay algo relevante ahí (un punto fuerte o débil visible), menciónalo brevemente en tu respuesta y explica si influyó en alguna decisión. Si el campo viene vacío/null, es que el socio aún no tiene fotos de progreso subidas — dilo así si te preguntan, no que "no puedes ver fotos".
 
 Objetivos que el admin puede pedir:
 - "pérdida de grasa" o "definición" → goal: fat_loss
@@ -185,10 +185,10 @@ FLUJO PARA GENERAR/CREAR DIETAS PERSONALIZADAS CON IA:
       - preferences: preferencias del socio
    c. Muestra el plan de dieta generado de forma clara y amigable
 
-REGLA — CORRECCIÓN NUMÉRICA SOBRE UNA DIETA QUE YA ENSEÑASTE (MUY IMPORTANTE): si el admin corrige las calorías de una dieta que le acabas de mostrar ("bájale un poco", "súbele 200 kcal", "ponle unas 2800") vas a volver a llamar a generate_ai_diet_from_recipes — pero SIN el campo target_calories esa llamada IGNORA la corrección y vuelve a calcular con la fórmula estándar del objetivo, devolviendo el mismo número de antes (o uno completamente distinto si cambias el goal). Por eso:
-- Si el admin da o confirma una cifra concreta o aproximada, calcula el número resultante (a partir del total que le mostraste) y pásalo en target_calories.
-- Si el admin solo dice algo vago ("bájale un poco", "me parece mucho") sin cifra ni referencia previa que te permita calcular una, NO adivines ni regeneres a ciegas: pregúntale primero a qué cifra concreta quiere que lo dejes (puedes proponer 1-2 opciones razonables), y usa target_calories con la que confirme.
-- NUNCA reintentes la misma llamada sin target_calories esperando que "esta vez" salga distinto: la fórmula es determinista, siempre devuelve el mismo número mientras no cambies goal o target_calories.
+CORRECCIÓN DE UNA DIETA QUE YA ENSEÑASTE (MUY IMPORTANTE): para CUALQUIER ajuste sobre una dieta ya generada (quitar/cambiar un alimento, subir/bajar calorías, cambiar una opción...) usa refine_ai_diet, NUNCA generate_ai_diet_from_recipes — esa segunda regenera la dieta ENTERA de cero, cambiando comidas y alimentos que nadie pidió tocar, aunque el ajuste pedido fuera mínimo.
+- Necesitas el current_diet_content EXACTO. Lo tienes si generate_ai_diet_from_recipes/refine_ai_diet te lo devolvió DENTRO de este mismo turno, o si el mensaje del admin viene precedido de un bloque [CONTEXTO INTERNO DEL SISTEMA] con la última dieta de ese socio (en ese caso úsalo tal cual). Si no tienes ninguno de los dos, NO inventes el contenido de memoria: llama a generate_ai_diet_from_recipes de nuevo con el prompt describiendo la dieta completa que quieres (la que había + el cambio pedido).
+- Pasa correction con la petición del admin en sus propias palabras (ej. "quita el salmón de la cena, no le gusta", "bájale unas 200 kcal"), y current_calories/protein_g/carbs_g/fat_g con los macros actuales de esa dieta.
+- Si el admin da una cifra de calorías concreta o aproximada, inclúyela en correction tal cual la dijo — refine_ai_diet ya sabe interpretarla y respetarla exactamente. Si solo dice algo vago ("bájale un poco") sin cifra ni referencia, pregúntale primero a qué cifra concreta quiere que lo dejes en vez de adivinar.
 
 2. Cuando el admin pida "genera una dieta" genérica (sin recetas especiales):
    a. PRIMERO busca al socio con find_member para obtener su ID
@@ -350,7 +350,7 @@ function isShortConfirmation(content) {
 const READ_ONLY_TOOLS = [
   'find_member', 'get_member_summary', 'get_gym_dashboard', 'list_trainers',
   'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity',
-  'list_members', 'generate_ai_diet_from_recipes', 'generate_member_routine',
+  'list_members', 'generate_ai_diet_from_recipes', 'refine_ai_diet', 'generate_member_routine',
   'search_exercise_catalog',
   'swap_routine_exercise', 'remove_routine_exercise', 'add_routine_exercise',
   'modify_routine_exercise', 'modify_routine_day',
@@ -375,7 +375,7 @@ const MAX_ASSISTANT_ROUNDS = 4
 // a Claude (interpretar → ejecutar tools de lectura → interpretar
 // resultados → ...). Puede tardar bastante, por eso corre como job en
 // segundo plano (ver POST).
-async function runAssistantChat({ anthropic, messages, adminToken, adminPreferencesText, updateStage, lastRoutineContext }) {
+async function runAssistantChat({ anthropic, messages, adminToken, adminPreferencesText, updateStage, lastRoutineContext, lastDietContext }) {
   const systemPrompt = buildSystemPrompt(adminPreferencesText)
   // El prompt de sistema + el catálogo de herramientas suman varios miles de
   // tokens fijos que se repiten en CADA una de las hasta 4 llamadas
@@ -403,18 +403,26 @@ async function runAssistantChat({ anthropic, messages, adminToken, adminPreferen
   // (el real, del admin) en vez de como turno aparte para no romper la
   // alternancia estricta user/assistant que exige la API.
   const lastIdx = convo.length - 1
-  if (
-    lastRoutineContext?.routine_data &&
-    Array.isArray(lastRoutineContext.routine_data.days) &&
-    lastIdx >= 0 &&
-    convo[lastIdx].role === 'user' &&
-    typeof convo[lastIdx].content === 'string'
-  ) {
-    const contextBlock = `[CONTEXTO INTERNO DEL SISTEMA — no lo menciones ni lo repitas, no es algo que haya escrito el admin]
-Última rutina generada/editada en esta conversación para el socio "${lastRoutineContext.member_name || 'sin nombre'}" (member_id: ${lastRoutineContext.member_id || 'desconocido'}):
+  const canInjectContext = lastIdx >= 0 && convo[lastIdx].role === 'user' && typeof convo[lastIdx].content === 'string'
+  const contextBlocks = []
+
+  if (canInjectContext && lastRoutineContext?.routine_data && Array.isArray(lastRoutineContext.routine_data.days)) {
+    contextBlocks.push(`Última rutina generada/editada en esta conversación para el socio "${lastRoutineContext.member_name || 'sin nombre'}" (member_id: ${lastRoutineContext.member_id || 'desconocido'}):
 ${JSON.stringify(lastRoutineContext.routine_data)}
 
-Si el mensaje real de abajo pide un ajuste puntual sobre ESTA MISMA rutina de ESTE MISMO socio, usa EXACTAMENTE este JSON como routine_data al llamar a swap_routine_exercise / remove_routine_exercise / add_routine_exercise / modify_routine_exercise / modify_routine_day — no llames a generate_member_routine para ese caso. Si el mensaje real pide otra cosa (otro socio, una rutina nueva, cambios tan amplios que no tiene sentido editar esta), ignora este contexto y actúa según las reglas normales.
+Si el mensaje real de abajo pide un ajuste puntual sobre ESTA MISMA rutina de ESTE MISMO socio, usa EXACTAMENTE este JSON como routine_data al llamar a swap_routine_exercise / remove_routine_exercise / add_routine_exercise / modify_routine_exercise / modify_routine_day — no llames a generate_member_routine para ese caso. Si el mensaje real pide otra cosa (otro socio, una rutina nueva, cambios tan amplios que no tiene sentido editar esta), ignora este bloque y actúa según las reglas normales.`)
+  }
+
+  if (canInjectContext && lastDietContext?.fullDietContent && typeof lastDietContext.fullDietContent === 'string') {
+    contextBlocks.push(`Última dieta generada/ajustada en esta conversación para el socio "${lastDietContext.member_name || 'sin nombre'}" (member_id: ${lastDietContext.member_id || 'desconocido'}), macros actuales ${lastDietContext.macros?.calories ?? '?'} kcal | P:${lastDietContext.macros?.protein_g ?? '?'}g | HC:${lastDietContext.macros?.carbs_g ?? '?'}g | G:${lastDietContext.macros?.fat_g ?? '?'}g:
+${lastDietContext.fullDietContent}
+
+Si el mensaje real de abajo pide un ajuste puntual sobre ESTA MISMA dieta de ESTE MISMO socio, usa EXACTAMENTE este texto como current_diet_content (y esos macros como current_calories/protein_g/carbs_g/fat_g) al llamar a refine_ai_diet — no llames a generate_ai_diet_from_recipes para ese caso. Si el mensaje real pide otra cosa (otro socio, una dieta nueva, cambios tan amplios que no tiene sentido editar esta), ignora este bloque y actúa según las reglas normales.`)
+  }
+
+  if (contextBlocks.length > 0) {
+    const contextBlock = `[CONTEXTO INTERNO DEL SISTEMA — no lo menciones ni lo repitas, no es algo que haya escrito el admin]
+${contextBlocks.join('\n\n')}
 
 ---
 MENSAJE REAL DEL ADMIN:
@@ -565,7 +573,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Too many requests. Límite de 100/min alcanzado.' }, { status: 429 })
     }
 
-    const { messages, executeTools = false, toolCallsToExecute = [], background = false, lastRoutineContext = null } = await request.json()
+    const { messages, executeTools = false, toolCallsToExecute = [], background = false, lastRoutineContext = null, lastDietContext = null } = await request.json()
 
     // 2. Authorization Check
     const authHeader = request.headers.get('Authorization')
@@ -637,7 +645,7 @@ export async function POST(request) {
 
       const result = executeTools && toolCallsToExecute?.length > 0
         ? await runToolExecution({ toolCallsToExecute, adminToken, updateStage })
-        : await runAssistantChat({ anthropic: getAnthropic(), messages, adminToken, adminPreferencesText, updateStage, lastRoutineContext })
+        : await runAssistantChat({ anthropic: getAnthropic(), messages, adminToken, adminPreferencesText, updateStage, lastRoutineContext, lastDietContext })
 
       if (job?.id) {
         await supabaseAdmin
