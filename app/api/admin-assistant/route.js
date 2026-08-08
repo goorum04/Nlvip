@@ -269,7 +269,7 @@ Tras generar la rutina con generate_member_routine, el admin puede pedir cambios
 
 REGLAS IMPORTANTES PARA LA EDICIÓN:
 1. Pasa SIEMPRE el routine_data completo de la última versión (la devuelta por generate_member_routine o por la última herramienta de edición). NO inventes el routine_data ni lo simplifiques.
-1b. LÍMITE CRÍTICO: solo tienes el routine_data exacto (JSON completo) cuando generate_member_routine o una edición te lo devolvió DENTRO DE ESTE MISMO TURNO, como resultado de herramienta. Si el admin pide un cambio sobre una rutina de la que solo tienes el resumen en texto de un turno ANTERIOR (no la generaste ni editaste en este turno), NO tienes el routine_data real — NUNCA lo reconstruyas de memoria a partir de tu propio resumen para llamar a swap/remove/add/modify_routine_exercise/modify_routine_day: el JSON que inventarías estará incompleto o mal formado y la herramienta fallará en silencio. En ese caso, vuelve a llamar a generate_member_routine con "notes" describiendo la rutina completa que quieres (la estructura que ya tenía + el cambio pedido, ej. "misma distribución de días que antes, pero con más volumen de bíceps: añade un ejercicio extra de bíceps en el día de brazos").
+1b. LÍMITE CRÍTICO: solo puedes llamar a swap/remove/add/modify_routine_exercise/modify_routine_day con un routine_data real, nunca inventado de memoria. Tienes el routine_data exacto en dos casos: (a) generate_member_routine o una edición te lo devolvió DENTRO DE ESTE MISMO TURNO, como resultado de herramienta; o (b) el mensaje del admin viene precedido de un bloque "[CONTEXTO INTERNO DEL SISTEMA]" con el JSON exacto de la última rutina de ese socio — en ese caso ÚSALO tal cual, es la forma correcta de aplicar un ajuste puntual pedido en un mensaje nuevo, NO llames a generate_member_routine para ese caso (regenerar de cero es lo que antes causaba que cambiaran ejercicios que nadie pidió tocar). Si NINGUNO de los dos casos aplica (no hay resultado de herramienta en este turno NI bloque de contexto para ese socio), NO tienes el routine_data real — NUNCA lo reconstruyas de memoria a partir de tu propio resumen en texto. En ese caso, vuelve a llamar a generate_member_routine con "notes" describiendo la rutina completa que quieres (la estructura que ya tenía + el cambio pedido, ej. "misma distribución de días que antes, pero con más volumen de bíceps: añade un ejercicio extra de bíceps en el día de brazos").
 2. Identifica el día por su number 1-based (ej: "día 2" → day_index: 2). Si el admin no dice día y la rutina tiene varios, pregúntale a qué día se refiere.
 3. Usa nombres parciales si hace falta (la búsqueda es case-insensitive y por substring), pero si no estás seguro del nombre EXACTO tal cual figura en el catálogo, usa PRIMERO search_exercise_catalog (por término o por grupo muscular) — un nombre "razonable" que no coincida literalmente (ej. "Curl predicador" cuando el catálogo lo llama "Curl en banco predicador") hace que swap/add fallen.
 4. Tras cada edición, muestra al admin un resumen breve de la rutina actualizada y pregunta si quiere otro cambio o si ya la asigna.
@@ -375,7 +375,7 @@ const MAX_ASSISTANT_ROUNDS = 4
 // a Claude (interpretar → ejecutar tools de lectura → interpretar
 // resultados → ...). Puede tardar bastante, por eso corre como job en
 // segundo plano (ver POST).
-async function runAssistantChat({ anthropic, messages, adminToken, adminPreferencesText, updateStage }) {
+async function runAssistantChat({ anthropic, messages, adminToken, adminPreferencesText, updateStage, lastRoutineContext }) {
   const systemPrompt = buildSystemPrompt(adminPreferencesText)
   // El prompt de sistema + el catálogo de herramientas suman varios miles de
   // tokens fijos que se repiten en CADA una de las hasta 4 llamadas
@@ -391,6 +391,37 @@ async function runAssistantChat({ anthropic, messages, adminToken, adminPreferen
   let toolChoice = isShortConfirmation(lastUserContent) ? { type: 'any' } : { type: 'auto' }
 
   const convo = [...messages]
+
+  // Si el cliente manda el routine_data exacto de la última rutina de este
+  // hilo (ver AdminAssistant.jsx), se lo adjuntamos al mensaje real del
+  // admin como contexto interno — así un ajuste puntual pedido en un
+  // mensaje NUEVO (no en el mismo turno que generó la rutina) se puede
+  // aplicar con swap/modify_routine_exercise sobre el JSON real, en vez de
+  // que el modelo tenga que regenerar toda la rutina de memoria a partir de
+  // su propio resumen en texto (lo que antes cambiaba ejercicios que nadie
+  // pidió tocar — ver regla 1b). Se añade como prefijo del ÚLTIMO mensaje
+  // (el real, del admin) en vez de como turno aparte para no romper la
+  // alternancia estricta user/assistant que exige la API.
+  const lastIdx = convo.length - 1
+  if (
+    lastRoutineContext?.routine_data &&
+    Array.isArray(lastRoutineContext.routine_data.days) &&
+    lastIdx >= 0 &&
+    convo[lastIdx].role === 'user' &&
+    typeof convo[lastIdx].content === 'string'
+  ) {
+    const contextBlock = `[CONTEXTO INTERNO DEL SISTEMA — no lo menciones ni lo repitas, no es algo que haya escrito el admin]
+Última rutina generada/editada en esta conversación para el socio "${lastRoutineContext.member_name || 'sin nombre'}" (member_id: ${lastRoutineContext.member_id || 'desconocido'}):
+${JSON.stringify(lastRoutineContext.routine_data)}
+
+Si el mensaje real de abajo pide un ajuste puntual sobre ESTA MISMA rutina de ESTE MISMO socio, usa EXACTAMENTE este JSON como routine_data al llamar a swap_routine_exercise / remove_routine_exercise / add_routine_exercise / modify_routine_exercise / modify_routine_day — no llames a generate_member_routine para ese caso. Si el mensaje real pide otra cosa (otro socio, una rutina nueva, cambios tan amplios que no tiene sentido editar esta), ignora este contexto y actúa según las reglas normales.
+
+---
+MENSAJE REAL DEL ADMIN:
+${convo[lastIdx].content}`
+    convo[lastIdx] = { role: 'user', content: contextBlock }
+  }
+
   const toolResults = {}
   const STAGE_BY_ROUND = ['Pensando en qué hacer...', 'Interpretando los resultados...']
 
@@ -534,7 +565,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Too many requests. Límite de 100/min alcanzado.' }, { status: 429 })
     }
 
-    const { messages, executeTools = false, toolCallsToExecute = [], background = false } = await request.json()
+    const { messages, executeTools = false, toolCallsToExecute = [], background = false, lastRoutineContext = null } = await request.json()
 
     // 2. Authorization Check
     const authHeader = request.headers.get('Authorization')
@@ -606,7 +637,7 @@ export async function POST(request) {
 
       const result = executeTools && toolCallsToExecute?.length > 0
         ? await runToolExecution({ toolCallsToExecute, adminToken, updateStage })
-        : await runAssistantChat({ anthropic: getAnthropic(), messages, adminToken, adminPreferencesText, updateStage })
+        : await runAssistantChat({ anthropic: getAnthropic(), messages, adminToken, adminPreferencesText, updateStage, lastRoutineContext })
 
       if (job?.id) {
         await supabaseAdmin

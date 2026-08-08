@@ -759,7 +759,8 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
               routine_data: result.routine_data,
               replaced: result.replaced || [],
               injuries: result.injuries || [],
-              member_name: result.member_name || null
+              member_name: result.member_name || null,
+              member_id: result.member_id || null
             }
           }
         }
@@ -1045,6 +1046,22 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
       setInput('')
       setAudioBlob(null)
 
+      // Última rutina generada/editada en ESTE hilo (si la hay): se manda tal
+      // cual al servidor para que un ajuste puntual en un mensaje NUEVO
+      // ("sube las series de X") pueda aplicarse quirúrgicamente con
+      // swap/modify_routine_exercise sobre el JSON real, en vez de que el
+      // asistente tenga que regenerar la rutina entera de memoria a partir
+      // de su propio resumen en texto — eso es lo que causaba que una
+      // corrección mínima acabara cambiando ejercicios que nadie pidió tocar.
+      const lastRoutineMsg = [...messages].reverse().find(m => m.routine?.routine_data)
+      const lastRoutineContext = lastRoutineMsg
+        ? {
+            member_id: lastRoutineMsg.routine.member_id,
+            member_name: lastRoutineMsg.routine.member_name,
+            routine_data: lastRoutineMsg.routine.routine_data
+          }
+        : null
+
       const response = await fetch(getApiUrl() + '/api/admin-assistant', {
         method: 'POST',
         headers: {
@@ -1053,6 +1070,7 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
         },
         body: JSON.stringify({
           messages: [...messages, userMessage].slice(-MAX_HISTORY_MESSAGES).map(m => ({ role: m.role, content: m.content })),
+          lastRoutineContext,
           // Pide al servidor que responda YA con el jobId y siga generando
           // después, aunque se minimice o cierre la app (ver route.js).
           background: true,
