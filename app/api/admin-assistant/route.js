@@ -510,10 +510,7 @@ function friendlyJobError(error) {
   if (error?.status === 401 || /invalid api key|incorrect api key/i.test(raw)) {
     return 'Hay un problema de configuración con la IA. Avisa al desarrollador.'
   }
-  // DIAGNÓSTICO TEMPORAL: se añade el stack al mensaje para localizar un
-  // "a is not iterable" (nombre minificado) sin acceso a los runtime logs
-  // de Vercel en este momento. Quitar en cuanto se identifique la causa.
-  return `${raw || 'Error del asistente'}\nSTACK: ${error?.stack || '(sin stack)'}`
+  return raw || 'Error del asistente'
 }
 
 export async function POST(request) {
