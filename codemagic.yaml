@@ -106,3 +106,89 @@ workflows:
         submit_to_testflight: true
         beta_groups:
           - "Internal Testers"
+
+  android-release:
+    name: NL VIP Team - Android Release
+    max_build_duration: 60
+    instance_type: linux_x2
+
+    environment:
+      android_signing:
+        # Debe coincidir con el nombre del keystore subido en Codemagic →
+        # Team/Personal Settings → Code signing identities → Android.
+        - nlvip_release_keystore
+      groups:
+        # Variable group con GCLOUD_SERVICE_ACCOUNT_CREDENTIALS (JSON de la
+        # cuenta de servicio de Google Play). Se crea en Codemagic →
+        # Team/Personal Settings → Environment variables.
+        - google_play
+      vars:
+        PACKAGE_NAME: "com.leonardos.app"
+        # Activa el early-return en rutas API dinámicas (p.ej. cron) para que
+        # Next.js no intente prerenderizar handlers que leen request.headers
+        # cuando se hace `output: 'export'`.
+        STATIC_EXPORT: "true"
+      node: v20.11.0
+      java: 17
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+
+      - name: Build Next.js for mobile
+        script: |
+          set -e
+          rm -rf .next out
+          cp next.config.mobile.js next.config.js
+          npm run build
+          git checkout next.config.js
+          ls -la out
+          # Fail fast if the static export didn't produce an index.html —
+          # de lo contrario cap sync empaquetaría un public/ vacío y el
+          # WebView cargaría una pantalla en blanco.
+          test -f out/index.html || { echo "BUILD FAILED: out/index.html missing"; exit 1; }
+
+      - name: Sync Capacitor
+        script: |
+          npx cap sync android --inline
+
+      - name: Set up Android signing
+        script: |
+          # Codemagic vuelca las credenciales del keystore configurado en
+          # android_signing como CM_KEYSTORE_PATH / CM_KEYSTORE_PASSWORD /
+          # CM_KEY_ALIAS_USERNAME / CM_KEY_ALIAS_PASSWORD. Los traducimos al
+          # keystore.properties que espera android/app/build.gradle.
+          cat > "$CM_BUILD_DIR/android/keystore.properties" <<EOF
+          storeFile=$CM_KEYSTORE_PATH
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS_USERNAME
+          keyPassword=$CM_KEY_ALIAS_PASSWORD
+          EOF
+
+      - name: Build Android App Bundle
+        script: |
+          cd android
+          # versionCode único y monótono creciente basado en el build de
+          # Codemagic, igual que la estrategia de marketing version en iOS.
+          export ANDROID_VERSION_CODE="$BUILD_NUMBER"
+          export ANDROID_VERSION_NAME="1.0.$BUILD_NUMBER"
+          chmod +x ./gradlew
+          ./gradlew bundleRelease
+
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/mapping.txt
+
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true

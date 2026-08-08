@@ -617,11 +617,23 @@ npx cap open ios      # Abre en Xcode
 npx cap open android  # Abre en Android Studio
 ```
 
-La configuración de Capacitor está en `capacitor.config.ts`.
+La configuración de Capacitor está en `capacitor.config.ts`. La plataforma
+`android/` ya está generada y versionada en el repo (Capacitor 5,
+`compileSdk`/`targetSdk` 35, iconos y splash generados desde `resources/`).
 
-Para instrucciones detalladas de publicación en App Store y Google Play, consulta:
-- `docs/GUIA-PUBLICAR-APP.md`
-- `docs/PUBLICAR-APP-STORE.md`
+### CI/CD (Codemagic)
+
+`codemagic.yaml` define dos workflows que compilan y publican la app en cada
+push a `main`:
+
+- `ios-release` — build + firma + TestFlight (App Store Connect).
+- `android-release` — build + firma + subida a Google Play (pista interna).
+
+Para instrucciones detalladas de publicación, consulta:
+- `docs/PUBLICAR-GOOGLE-PLAY.md` — guía completa para Google Play (keystore,
+  cuenta de servicio, ficha de la tienda, primera subida manual).
+- `docs/GUIA-PUBLICAR-APP.md` / `docs/PUBLICAR-APP-STORE.md` — pendientes
+  para App Store (no existen todavía en el repo).
 
 ---
 
