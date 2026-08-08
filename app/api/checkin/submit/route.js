@@ -8,6 +8,11 @@ import { compareProgressPhotos } from '@/lib/photoAnalysis'
 import { generateRoutineForMember, GOAL_FROM_ONBOARDING } from '@/lib/routineGeneration'
 import { gatherStepsCompliance } from '@/lib/activityContext'
 
+// Analiza fotos + adapta dieta (con su propio análisis de fotos) + genera
+// rutina (con su propio análisis de fotos) en paralelo — varias llamadas de
+// IA encadenadas, alguna de visión. Margen amplio para no cortar a mitad.
+export const maxDuration = 120
+
 const schema = z.object({
   memberId: z.string().uuid(),
   groupId: z.string().uuid(),

@@ -4,6 +4,10 @@ import { z } from 'zod'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 import { refineDietDraft } from '@/lib/dietGeneration'
 
+// refineDietDraft ahora también analiza por visión las fotos de progreso más
+// recientes del socio — una llamada extra que no existía antes.
+export const maxDuration = 60
+
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,

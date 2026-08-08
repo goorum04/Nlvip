@@ -6,10 +6,16 @@ import { waitUntil } from '@vercel/functions'
 import { TOOLS_DEFINITIONS, executeTool, generateExecutionPlan } from '@/lib/adminAssistantTools'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 
-// El flujo puede encadenar hasta 3 llamadas a Claude (15-30s+). En modo
-// background (waitUntil) el trabajo real sigue después de responder, así
-// que necesita el mismo margen o más que en modo síncrono.
-export const maxDuration = 60
+// El flujo puede encadenar hasta 3 llamadas a Claude (15-30s+), y algunas
+// herramientas (generate_member_routine, generate_ai_diet_from_recipes)
+// hacen POR SU CUENTA 2-3 llamadas más a OpenAI (planificación + formateo +
+// análisis de fotos de progreso) dentro de esa misma ronda. Con 60s el
+// job se quedaba colgado en "processing" para siempre en peticiones
+// complejas (ej. rutina de 5 días con frecuencia 2 mirando fotos) — Vercel
+// mataba la función a mitad de trabajo y el job nunca llegaba a marcarse
+// como done/error. En modo background (waitUntil) el trabajo real sigue
+// después de responder, así que necesita margen de sobra.
+export const maxDuration = 300
 
 const getSupabaseAdmin = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,

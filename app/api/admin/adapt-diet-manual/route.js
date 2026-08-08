@@ -2,6 +2,10 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { adaptExistingDiet } from '@/lib/dietGeneration'
 
+// adaptExistingDiet ahora también analiza por visión las fotos de progreso
+// más recientes si no se le pasan ya calculadas (este endpoint no las pasa).
+export const maxDuration = 60
+
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,

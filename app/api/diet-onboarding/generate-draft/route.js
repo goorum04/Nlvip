@@ -5,10 +5,12 @@ import { waitUntil } from '@vercel/functions'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 import { generateNLEliteDiet } from '@/lib/dietGeneration'
 
-// Puede tardar bastante (llamada a Claude generando un menú completo). En
-// modo background (waitUntil) el trabajo real sigue después de responder,
-// así que necesita el mismo margen o más que en modo síncrono.
-export const maxDuration = 60
+// Puede tardar bastante (llamada a Claude generando un menú completo, más el
+// análisis de fotos de progreso). Con 60s el job podía quedarse colgado en
+// "processing" para siempre en peticiones largas — Vercel mataba la función
+// a mitad de trabajo. En modo background (waitUntil) el trabajo real sigue
+// después de responder, así que necesita margen de sobra.
+export const maxDuration = 300
 
 const schema = z.object({
   requestId: z.string().uuid(),

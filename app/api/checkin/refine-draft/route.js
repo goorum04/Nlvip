@@ -5,6 +5,11 @@ import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 import { refineRoutineDraft } from '@/lib/routineGeneration'
 import { refineDietDraft } from '@/lib/dietGeneration'
 
+// refineDietDraft/refineRoutineDraft ahora también analizan por visión las
+// fotos de progreso más recientes del socio — una llamada extra que no
+// existía antes; el default de Vercel se quedaba corto en peticiones lentas.
+export const maxDuration = 60
+
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
