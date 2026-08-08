@@ -86,8 +86,19 @@ function normalizeToolCalls(content) {
 // falló — el admin ve un mensaje de éxito vacío y no se entera de que algo
 // no se aplicó. Si hay algún error real entre los resultados, se muestra
 // ese en vez del genérico.
+//
+// Prioridad: un resultado que SÍ tuvo éxito (con su propio mensaje) es
+// siempre más útil que el error de OTRA llamada en paralelo dentro de la
+// misma ronda. Caso real detectado: el modelo intenta primero editar una
+// rutina con datos que no tenía (falla con un error críptico), pero en la
+// MISMA ronda también la regenera bien vía generate_member_routine (éxito
+// con resultado válido) — sin esta prioridad, el admin veía el error del
+// primer intento aunque el segundo hubiera funcionado perfectamente.
 function fallbackMessage(toolResults, generic) {
-  const failed = Object.values(toolResults || {}).find(r => r && r.success === false)
+  const results = Object.values(toolResults || {})
+  const succeeded = results.find(r => r && r.success !== false && r.message)
+  if (succeeded) return succeeded.message
+  const failed = results.find(r => r && r.success === false)
   if (failed?.error) return `Hubo un problema al ejecutar una acción: ${failed.error}`
   return generic
 }
