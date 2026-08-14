@@ -5,9 +5,10 @@ import { supabase } from '@/lib/supabase'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   ClipboardList, ChevronDown, ChevronUp, Sparkles,
-  LoaderCircle as Loader2, Check, History,
+  LoaderCircle as Loader2, Check, History, NotebookPen,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -47,6 +48,7 @@ const parseSupersetGroup = (description) => {
 export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
   const [open, setOpen] = useState(false)
   const [values, setValues] = useState({})      // { [exerciseId]: [{weight, reps}, ...] }
+  const [notes, setNotes] = useState({})        // { [exerciseId]: 'texto de la nota de hoy' }
   const [lastSession, setLastSession] = useState({}) // { [exerciseName]: 'texto resumen' }
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -88,6 +90,20 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
         })
       }
       setValues(initial)
+
+      const { data: noteRows } = await supabase
+        .from('workout_exercise_notes')
+        .select('workout_exercise_id, note')
+        .eq('member_id', memberId)
+        .eq('performed_on', today)
+        .in('workout_exercise_id', ids)
+
+      const initialNotes = {}
+      for (const ex of exercises) {
+        const found = (noteRows || []).find(r => r.workout_exercise_id === ex.id)
+        initialNotes[ex.id] = found?.note || ''
+      }
+      setNotes(initialNotes)
 
       // Resumen de la última sesión anterior por ejercicio.
       const summary = {}
@@ -131,6 +147,11 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
       rows[index] = { ...rows[index], [field]: clean }
       return { ...prev, [exerciseId]: rows }
     })
+  }
+
+  const setNoteField = (exerciseId, raw) => {
+    const clean = raw.length > 500 ? raw.slice(0, 500) : raw
+    setNotes(prev => ({ ...prev, [exerciseId]: clean }))
   }
 
   const handleSave = async () => {
@@ -180,12 +201,50 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
           .eq('set_number', d.setNumber)
       }
 
+      const notesToUpsert = []
+      const notesToDelete = []
+      for (const ex of exercises) {
+        const note = (notes[ex.id] || '').trim()
+        if (note === '') {
+          notesToDelete.push(ex.id)
+        } else {
+          notesToUpsert.push({
+            member_id: memberId,
+            workout_exercise_id: ex.id,
+            exercise_name: ex.name,
+            workout_day_id: dayId || null,
+            performed_on,
+            note,
+            updated_at: new Date().toISOString(),
+          })
+        }
+      }
+
+      if (notesToUpsert.length > 0) {
+        const { error } = await supabase
+          .from('workout_exercise_notes')
+          .upsert(notesToUpsert, { onConflict: 'member_id,workout_exercise_id,performed_on' })
+        if (error) throw error
+      }
+
+      for (const exerciseId of notesToDelete) {
+        await supabase
+          .from('workout_exercise_notes')
+          .delete()
+          .eq('member_id', memberId)
+          .eq('workout_exercise_id', exerciseId)
+          .eq('performed_on', performed_on)
+      }
+
       setSavedAt(new Date())
+      const parts = []
+      if (toUpsert.length > 0) parts.push(`${toUpsert.length} serie(s)`)
+      if (notesToUpsert.length > 0) parts.push(`${notesToUpsert.length} nota(s)`)
       toast({
-        title: toUpsert.length > 0 ? 'Series guardadas' : 'Registro actualizado',
-        description: toUpsert.length > 0
-          ? `${toUpsert.length} serie(s) registradas en el entreno de hoy.`
-          : 'No has dejado ninguna serie registrada hoy.',
+        title: parts.length > 0 ? 'Guardado' : 'Registro actualizado',
+        description: parts.length > 0
+          ? `${parts.join(' y ')} registradas en el entreno de hoy.`
+          : 'No has dejado nada registrado hoy.',
       })
       // No hace falta volver a pedir los datos: `values` ya refleja
       // exactamente lo que se acaba de guardar.
@@ -211,7 +270,7 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-white font-bold">Registra tus series</h3>
+              <h3 className="text-white font-bold">Registra tus series y notas</h3>
               <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-white/10 text-gray-300">
                 Opcional
               </span>
@@ -322,6 +381,18 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
                               </div>
                             ))}
                           </div>
+
+                          <div className="mt-3 flex items-start gap-1.5">
+                            <NotebookPen className="w-3.5 h-3.5 text-gray-500 flex-shrink-0 mt-2" />
+                            <Textarea
+                              placeholder="Notas (opcional): p. ej. 'me costó más acabar' o 'tuve que hacerlo con otra máquina'"
+                              value={notes[ex.id] || ''}
+                              onChange={e => setNoteField(ex.id, e.target.value)}
+                              disabled={saving}
+                              rows={2}
+                              className="bg-black/50 border-[#2a2a2a] rounded-xl text-white text-sm min-h-0 resize-none placeholder:text-gray-600"
+                            />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -337,7 +408,7 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
                 {saving ? (
                   <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Guardando...</>
                 ) : (
-                  <><Check className="w-5 h-5 mr-2" /> Guardar series de hoy</>
+                  <><Check className="w-5 h-5 mr-2" /> Guardar entreno de hoy</>
                 )}
               </Button>
               <p className="text-[11px] text-gray-600 text-center">
