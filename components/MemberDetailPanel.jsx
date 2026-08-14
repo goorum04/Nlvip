@@ -79,13 +79,26 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
     setLoadingSetLogs(true)
     try {
       const since = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      const { data } = await supabase
-        .from('workout_set_logs')
-        .select('exercise_name, performed_on, set_number, weight_kg, reps')
-        .eq('member_id', member.id)
-        .gte('performed_on', since)
-        .order('performed_on', { ascending: false })
-        .order('set_number', { ascending: true })
+      const [{ data }, { data: noteRows }] = await Promise.all([
+        supabase
+          .from('workout_set_logs')
+          .select('exercise_name, performed_on, set_number, weight_kg, reps')
+          .eq('member_id', member.id)
+          .gte('performed_on', since)
+          .order('performed_on', { ascending: false })
+          .order('set_number', { ascending: true }),
+        supabase
+          .from('workout_exercise_notes')
+          .select('exercise_name, performed_on, note')
+          .eq('member_id', member.id)
+          .gte('performed_on', since),
+      ])
+
+      const notesByDate = new Map()
+      for (const row of noteRows || []) {
+        if (!notesByDate.has(row.performed_on)) notesByDate.set(row.performed_on, new Map())
+        notesByDate.get(row.performed_on).set(row.exercise_name, row.note)
+      }
 
       const byDate = new Map()
       for (const row of data || []) {
@@ -94,14 +107,24 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
         if (!byExercise.has(row.exercise_name)) byExercise.set(row.exercise_name, [])
         byExercise.get(row.exercise_name).push(row)
       }
+      // Un ejercicio puede tener nota sin tener ninguna serie rellenada: hay
+      // que asegurarse de que también aparezca como sesión aunque no tenga sets.
+      for (const [date, byExercise] of notesByDate) {
+        if (!byDate.has(date)) byDate.set(date, new Map())
+        const dayExercises = byDate.get(date)
+        for (const name of byExercise.keys()) {
+          if (!dayExercises.has(name)) dayExercises.set(name, [])
+        }
+      }
 
       const sessions = [...byDate.entries()].map(([date, byExercise]) => ({
         date,
         exercises: [...byExercise.entries()].map(([name, sets]) => ({
           name,
           sets: sets.sort((a, b) => a.set_number - b.set_number),
+          note: notesByDate.get(date)?.get(name) || null,
         })),
-      }))
+      })).sort((a, b) => b.date.localeCompare(a.date))
 
       setMemberSetLogs(sessions)
     } catch (e) {
@@ -555,7 +578,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                       </div>
                     ) : memberSetLogs.length === 0 ? (
                       <p className="text-gray-500 text-sm">
-                        Todavía no ha registrado peso ni repeticiones de ningún entreno (es opcional para el socio).
+                        Todavía no ha registrado peso, repeticiones ni notas de ningún entreno (es opcional para el socio).
                       </p>
                     ) : (
                       <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
@@ -564,13 +587,20 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                             <p className="text-xs font-bold text-violet-400 mb-1.5">
                               {new Date(session.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </p>
-                            <div className="space-y-1">
+                            <div className="space-y-1.5">
                               {session.exercises.map(ex => (
-                                <div key={ex.name} className="flex items-baseline justify-between gap-2 text-sm">
-                                  <span className="text-gray-300">{ex.name}</span>
-                                  <span className="text-gray-500 text-xs text-right">
-                                    {ex.sets.map(s => `${s.weight_kg ?? '—'}kg×${s.reps ?? '—'}`).join('  ')}
-                                  </span>
+                                <div key={ex.name}>
+                                  <div className="flex items-baseline justify-between gap-2 text-sm">
+                                    <span className="text-gray-300">{ex.name}</span>
+                                    <span className="text-gray-500 text-xs text-right">
+                                      {ex.sets.map(s => `${s.weight_kg ?? '—'}kg×${s.reps ?? '—'}`).join('  ')}
+                                    </span>
+                                  </div>
+                                  {ex.note && (
+                                    <p className="text-[11px] text-amber-300/80 italic mt-0.5">
+                                      "{ex.note}"
+                                    </p>
+                                  )}
                                 </div>
                               ))}
                             </div>
