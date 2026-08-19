@@ -269,6 +269,21 @@ export async function POST(req) {
   const supabase = getSupabase()
   const openai = getOpenAIClient()
   try {
+    const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!callerProfile || !['admin', 'trainer'].includes(callerProfile.role)) {
+      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+    }
+
     const { memberId, dietId, trainerId } = await req.json()
 
     if (!memberId || !dietId) {

@@ -12,6 +12,7 @@ import {
   RefreshCw, Pencil as Edit2, X, Check, Search, LoaderCircle as Loader2, Calendar, Target
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { authFetch } from '@/lib/utils'
 
 // Días de la semana
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
@@ -623,7 +624,7 @@ export function TrainerRecipePlanEditor({ memberId, memberName, trainerId }) {
         return
       }
 
-      const res = await fetch('/api/generate-recipe-plan', {
+      const res = await authFetch('/api/generate-recipe-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ memberId, dietId: memberDiet.diet_template_id, trainerId })
