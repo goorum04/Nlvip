@@ -495,7 +495,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
       if (error) throw error
       toast({ title: '¡Dieta asignada!', description: 'Generando plan de recetas acorde a los macros...' })
 
-      fetch('/api/generate-recipe-plan', {
+      authFetch('/api/generate-recipe-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ memberId, dietId: templateId, trainerId: user.id })
@@ -593,7 +593,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
 
       toast({ title: '¡Macros asignados!', description: `Dieta asignada a ${member?.name}. Generando plan de recetas...` })
 
-      fetch('/api/generate-recipe-plan', {
+      authFetch('/api/generate-recipe-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ memberId: selectedMemberForMacros, dietId: diet.id, trainerId: user.id })

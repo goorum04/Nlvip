@@ -257,7 +257,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
       if (error) throw error
       toast({ title: '¡Dieta asignada!', description: 'Generando plan de recetas acorde a los macros...' })
 
-      fetch('/api/generate-recipe-plan', {
+      authFetch('/api/generate-recipe-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ memberId: member.id, dietId, trainerId: assignerId })
@@ -279,7 +279,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
     setRegenerating(true)
     try {
       const assignerId = (await supabase.auth.getUser()).data.user?.id
-      const res = await fetch('/api/generate-recipe-plan', {
+      const res = await authFetch('/api/generate-recipe-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ memberId: member.id, dietId: assignedDiet.id, trainerId: assignerId })

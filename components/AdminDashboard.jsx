@@ -1108,7 +1108,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
 
       toast({ title: '¡Macros asignados!', description: `Dieta asignada a ${member?.name}. Generando plan de recetas...` })
 
-      fetch('/api/generate-recipe-plan', {
+      authFetch('/api/generate-recipe-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ memberId: selectedMemberForMacros, dietId: diet.id, trainerId: selectedTrainerForMacros })
