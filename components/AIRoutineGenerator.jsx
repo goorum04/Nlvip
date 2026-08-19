@@ -479,7 +479,11 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
       const res = await authFetch('/api/refine-routine', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ routine: generatedRoutineRef.current, correction: text })
+        body: JSON.stringify({
+          routine: generatedRoutineRef.current,
+          correction: text,
+          memberId: (memberId && memberId !== '__none__') ? memberId : null,
+        })
       })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || 'Error al refinar')
