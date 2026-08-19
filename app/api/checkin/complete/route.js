@@ -89,7 +89,7 @@ export async function POST(req) {
         }, { onConflict: 'member_id' })
       if (aError) throw new Error(`Error asignando la dieta adaptada: ${aError.message}`)
 
-      await supabase.from('macro_goals').upsert({
+      const { error: mError } = await supabase.from('macro_goals').upsert({
         member_id: checkin.member_id,
         calories: template.calories,
         protein_g: template.protein_g,
@@ -98,6 +98,7 @@ export async function POST(req) {
         assigned_by: user.id,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'member_id' })
+      if (mError) console.warn('checkin/complete: no se pudieron actualizar macro_goals:', mError.message)
 
       updatePayload.new_diet_id = template.id
       appliedParts.push('dieta')
@@ -105,7 +106,7 @@ export async function POST(req) {
       try {
         await fetch(new URL('/api/generate-recipe-plan', req.url).toString(), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ memberId: checkin.member_id, dietId: template.id, trainerId: user.id }),
         })
       } catch (e) {
