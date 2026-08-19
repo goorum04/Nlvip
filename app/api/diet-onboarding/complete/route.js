@@ -109,7 +109,7 @@ export async function POST(req) {
     try {
       await fetch(new URL('/api/generate-recipe-plan', req.url).toString(), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           memberId,
           dietId: newDietId,

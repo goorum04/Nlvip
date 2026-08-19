@@ -101,7 +101,7 @@ export async function POST(request) {
         .from('trainer_members')
         .upsert(
           { trainer_id: code.trainer_id, member_id: caller.id },
-          { onConflict: 'trainer_id,member_id' }
+          { onConflict: 'member_id' }
         )
         .then(({ error }) => {
           if (error) console.warn('[redeem-premium-code] could not attach trainer:', error.message)
