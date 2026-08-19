@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { sendNativeApplePush } from '@/lib/apn'
 import { sendPushToUser } from '@/lib/webpush'
 
 function getSupabase() {
@@ -92,12 +93,14 @@ export async function POST(req) {
 
     // 6. Notify the member that their diet plan is ready
     try {
-      await sendPushToUser(supabase, memberId, {
+      const payload = {
         title: '¡Tu plan nutricional está listo!',
         body: `${dietName} ha sido asignado a tu cuenta. ¡Échale un vistazo!`,
         url: '/nutrition',
         icon: '/icons/icon-192x192.png',
-      })
+      }
+      await sendNativeApplePush(supabase, memberId, payload)
+      await sendPushToUser(supabase, memberId, payload)
     } catch (e) {
       console.warn('Could not send push notification:', e.message)
     }
