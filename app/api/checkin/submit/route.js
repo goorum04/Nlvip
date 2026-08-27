@@ -97,6 +97,38 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Solo puedes enviar tu propia revisión' }, { status: 403 })
     }
 
+    // 0. Ciclo de revisión: cada socio tiene un ciclo asignado por su entrenador
+    // (profiles.progress_reminder_days: 7/14/21/30 días). Sin este control el
+    // socio podía mandar revisión cuando quisiera, disparando cada vez análisis
+    // de fotos + regeneración de dieta/rutina con IA. Sin ciclo asignado (null)
+    // no se restringe.
+    const { data: memberProfile } = await supabase
+      .from('profiles')
+      .select('progress_reminder_days')
+      .eq('id', memberId)
+      .maybeSingle()
+
+    if (memberProfile?.progress_reminder_days) {
+      const { data: lastCheckin } = await supabase
+        .from('member_checkins')
+        .select('created_at')
+        .eq('member_id', memberId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (lastCheckin) {
+        const cadenceMs = memberProfile.progress_reminder_days * 24 * 60 * 60 * 1000
+        const nextAllowedAt = new Date(lastCheckin.created_at).getTime() + cadenceMs
+        if (Date.now() < nextAllowedAt) {
+          const nextDate = new Date(nextAllowedAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long' })
+          return NextResponse.json({
+            error: `Todavía no toca tu revisión. Estará disponible el ${nextDate}.`,
+          }, { status: 403 })
+        }
+      }
+    }
+
     // 1. progress_records: peso + medidas + estado, mismo registro que alimenta
     // los gráficos de evolución del socio.
     const feelingNotes = buildFeelingNotes(feeling, notes)

@@ -97,6 +97,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [showCheckInForm, setShowCheckInForm] = useState(false)
   const [postImage, setPostImage] = useState(null)
+  const [lastCheckinAt, setLastCheckinAt] = useState(null)
 
   // Feed form
   const [newPostContent, setNewPostContent] = useState('')
@@ -255,7 +256,8 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
         loadMyTrainer().catch(e => console.error('Error loading trainer:', e)),
         loadGymAdmin().catch(e => console.error('Error loading admin:', e)),
         loadChartData().catch(e => console.error('Error loading chart data:', e)),
-        loadMyPrs().catch(e => console.error('Error loading PRs:', e))
+        loadMyPrs().catch(e => console.error('Error loading PRs:', e)),
+        loadLastCheckin().catch(e => console.error('Error loading last check-in:', e))
       ])
     } catch (err) {
       console.error('Fatal error loading dashboard data:', err)
@@ -484,6 +486,26 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
       .maybeSingle()
     if (data) setMyDiet(data)
   }
+
+  const loadLastCheckin = async () => {
+    const { data } = await supabase
+      .from('member_checkins')
+      .select('created_at')
+      .eq('member_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    setLastCheckinAt(data?.created_at || null)
+  }
+
+  // Ciclo de revisión asignado por el entrenador (profile.progress_reminder_days:
+  // 7/14/21/30 días, o null = sin ciclo asignado). Null significa que el socio
+  // puede enviar revisión libremente; con ciclo asignado, solo puede volver a
+  // enviar cuando el ciclo se haya cumplido desde su última revisión.
+  const nextCheckinDueAt = (profile?.progress_reminder_days && lastCheckinAt)
+    ? new Date(new Date(lastCheckinAt).getTime() + profile.progress_reminder_days * 24 * 60 * 60 * 1000)
+    : null
+  const checkinOnCooldown = !!(nextCheckinDueAt && nextCheckinDueAt.getTime() > Date.now())
 
   const loadProgress = async () => {
     const { data } = await supabase
@@ -1261,10 +1283,24 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                   setShowCheckInForm(false)
                   loadProgress()
                   loadProgressPhotos()
+                  loadLastCheckin()
                   toast({ title: '¡Revisión enviada!', description: 'Tu entrenador la revisará pronto.' })
                 }}
                 onCancel={() => setShowCheckInForm(false)}
               />
+            ) : checkinOnCooldown ? (
+              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+                <CardContent className="py-8 flex flex-col items-center text-center gap-3">
+                  <Lock className="w-10 h-10 text-gray-500" />
+                  <div>
+                    <p className="text-white font-bold">Ya has enviado tu revisión</p>
+                    <p className="text-gray-500 text-sm">
+                      Tu próxima revisión estará disponible el{' '}
+                      {nextCheckinDueAt.toLocaleDateString('es-ES', { day: '2-digit', month: 'long' })}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             ) : (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
                 <CardContent className="py-8 flex flex-col items-center text-center gap-3">
