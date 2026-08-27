@@ -155,17 +155,30 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const [showOnboardingModal, setShowOnboardingModal] = useState(false)
   const [hasSkippedOnboarding, setHasSkippedOnboarding] = useState(false)
 
+  const onboardingSkippedKey = pendingOnboarding
+    ? `nlvip_onboarding_skipped_${user.id}_${pendingOnboarding.id}`
+    : null
+
   // First-run landing: if a premium member has a pending diet onboarding,
-  // show a pop-up modal so they fill it right away.
+  // show a pop-up modal so they fill it right away. Un socio puede haber
+  // pulsado "Rellenar más tarde" en una sesión previa: se comprueba
+  // localStorage aquí mismo (no en un efecto aparte) para que el modal no
+  // llegue a parpadear/abrirse antes de saberlo en cada apertura de la app.
   useEffect(() => {
     if (autoJumpedToOnboardingRef.current) return
     if (!onboardingChecked) return
     if (!pendingOnboarding) return
     if (!hasPremium) return
     if (hasSkippedOnboarding) return
+    try {
+      if (onboardingSkippedKey && localStorage.getItem(onboardingSkippedKey) === '1') {
+        setHasSkippedOnboarding(true)
+        return
+      }
+    } catch {}
     autoJumpedToOnboardingRef.current = true
     setShowOnboardingModal(true)
-  }, [onboardingChecked, pendingOnboarding, hasPremium, hasSkippedOnboarding])
+  }, [onboardingChecked, pendingOnboarding, hasPremium, hasSkippedOnboarding, onboardingSkippedKey])
 
   useEffect(() => {
     loadData()
@@ -1402,6 +1415,9 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                         variant: "destructive",
                         duration: 8000
                       })
+                      try {
+                        if (onboardingSkippedKey) localStorage.setItem(onboardingSkippedKey, '1')
+                      } catch {}
                       setHasSkippedOnboarding(true)
                       setShowOnboardingModal(false)
                     }}
