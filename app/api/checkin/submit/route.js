@@ -122,8 +122,13 @@ export async function POST(req) {
         const nextAllowedAt = new Date(lastCheckin.created_at).getTime() + cadenceMs
         if (Date.now() < nextAllowedAt) {
           const nextDate = new Date(nextAllowedAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long' })
+          // Redactado para no sonar a "algo falló": el caso típico es que el
+          // socio ya mandó su revisión hace poco (a veces en la app antigua,
+          // que aún no oculta el botón) y este es un segundo envío. Sin
+          // contexto, "todavía no toca" sonaba a rechazo de un primer intento
+          // que sí se había guardado bien.
           return NextResponse.json({
-            error: `Todavía no toca tu revisión. Estará disponible el ${nextDate}.`,
+            error: `Ya has enviado tu revisión de este ciclo. La próxima estará disponible el ${nextDate}.`,
           }, { status: 403 })
         }
       }
