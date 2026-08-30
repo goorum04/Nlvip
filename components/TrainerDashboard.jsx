@@ -33,6 +33,7 @@ import { CheckInReviewPanel } from './CheckInReviewPanel'
 
 export default function TrainerDashboard({ user, profile, setProfile, onLogout }) {
   const [members, setMembers] = useState([])
+  const [households, setHouseholds] = useState({}) // member_id -> { household_id, roommates: [{id,name,email}] }
   const [workoutTemplates, setWorkoutTemplates] = useState([])
   const [dietTemplates, setDietTemplates] = useState([])
   const [notices, setNotices] = useState([])
@@ -203,7 +204,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
   }
 
   const loadData = async () => {
-    await Promise.all([
+    const [memberList] = await Promise.all([
       loadMembers(),
       loadWorkoutTemplates(),
       loadDietTemplates(),
@@ -213,6 +214,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
       loadNotifications(),
       loadPendingCheckins()
     ])
+    await loadHouseholds(memberList)
   }
 
   const loadChallenges = async () => {
@@ -273,7 +275,75 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
       .from('trainer_members')
       .select(`member_id, member:profiles!trainer_members_member_id_fkey(id, name, email, created_at, sex, life_stage)`)
       .eq('trainer_id', user.id)
-    if (data) setMembers(data.map(tm => tm.member))
+    const list = data ? data.map(tm => tm.member) : []
+    setMembers(list)
+    return list
+  }
+
+  // Socios que conviven (pareja/familia): mapea cada socio a su hogar y a
+  // sus convivientes, para pintar "Convive con..." en la ficha del socio.
+  const loadHouseholds = async (memberList) => {
+    const list = memberList || members
+    const memberIds = list.map(m => m.id)
+    if (memberIds.length === 0) { setHouseholds({}); return }
+
+    const { data: mine } = await supabase
+      .from('household_members')
+      .select('household_id, member_id')
+      .in('member_id', memberIds)
+    const householdIds = [...new Set((mine || []).map(r => r.household_id))]
+    if (householdIds.length === 0) { setHouseholds({}); return }
+
+    const { data: rosters } = await supabase
+      .from('household_members')
+      .select('household_id, member_id, member:profiles!household_members_member_id_fkey(id, name, email)')
+      .in('household_id', householdIds)
+
+    const byHousehold = {}
+    for (const row of (rosters || [])) {
+      if (!byHousehold[row.household_id]) byHousehold[row.household_id] = []
+      byHousehold[row.household_id].push(row.member)
+    }
+    const byMember = {}
+    for (const row of (mine || [])) {
+      byMember[row.member_id] = {
+        household_id: row.household_id,
+        roommates: (byHousehold[row.household_id] || []).filter(m => m.id !== row.member_id)
+      }
+    }
+    setHouseholds(byMember)
+  }
+
+  const handleLinkHousehold = async (memberId, otherMemberId) => {
+    if (!otherMemberId) return
+    try {
+      let householdId = households[otherMemberId]?.household_id || households[memberId]?.household_id
+      if (!householdId) {
+        const { data: hh, error: hhError } = await supabase.from('households').insert({ created_by: user.id }).select('id').single()
+        if (hhError) throw hhError
+        householdId = hh.id
+      }
+      const { error } = await supabase.from('household_members').upsert([
+        { household_id: householdId, member_id: memberId, added_by: user.id },
+        { household_id: householdId, member_id: otherMemberId, added_by: user.id }
+      ], { onConflict: 'member_id' })
+      if (error) throw error
+      toast({ title: 'Convivencia vinculada', description: 'Compartirán el mismo menú semanal, con las raciones ajustadas a cada uno.' })
+      loadHouseholds()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
+  }
+
+  const handleUnlinkHousehold = async (memberId) => {
+    try {
+      const { error } = await supabase.from('household_members').delete().eq('member_id', memberId)
+      if (error) throw error
+      toast({ title: 'Convivencia desvinculada' })
+      loadHouseholds()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
   }
 
   const loadWorkoutTemplates = async () => {
@@ -807,6 +877,31 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                               {dietTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name} ({t.calories} kcal)</SelectItem>)}
                             </SelectContent>
                           </Select>
+                        </div>
+                        <div>
+                          <Label className="text-gray-400 text-sm">Convive con (mismo menú semanal)</Label>
+                          {households[member.id]?.roommates?.length > 0 ? (
+                            <div className="flex items-center justify-between mt-2 bg-black/50 border border-[#2a2a2a] rounded-xl px-3 py-2.5">
+                              <span className="text-sm text-white truncate">
+                                {households[member.id].roommates.map(r => r.name).join(', ')}
+                              </span>
+                              <Button
+                                size="sm" variant="ghost"
+                                className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-7 px-2 flex-shrink-0"
+                                onClick={() => handleUnlinkHousehold(member.id)}
+                              >
+                                Desvincular
+                              </Button>
+                            </div>
+                          ) : (
+                            <Select onValueChange={(val) => handleLinkHousehold(member.id, val)}>
+                              <SelectTrigger className="bg-black/50 border-[#2a2a2a] rounded-xl text-white mt-2"><SelectValue placeholder="Vincular con otro socio..." /></SelectTrigger>
+                              <SelectContent>
+                                {members.filter(m => m.id !== member.id).map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          <p className="text-xs text-gray-600 mt-1.5">Recibirá las mismas recetas cada semana, con las cantidades ajustadas a sus propios macros.</p>
                         </div>
                       </div>
                     </DialogContent>

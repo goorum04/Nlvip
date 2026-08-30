@@ -119,14 +119,25 @@ function RecipeCard({ item, recipe, onEdit, canEdit = false }) {
               )}
 
               {/* Ingredientes */}
-              {recipe?.ingredients && (
+              {(item.adjusted_ingredients?.length > 0 || recipe?.ingredients) && (
                 <div>
                   <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
                     <Check className="w-4 h-4 text-green-400" />
                     Ingredientes
+                    {item.adjusted_ingredients?.length > 0 && (
+                      <span className="text-xs font-normal text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-full">
+                        Ración ajustada a ti
+                      </span>
+                    )}
                   </h4>
                   <div className="text-gray-400 text-sm bg-white/5 rounded-xl p-4 border border-white/5">
-                    <p className="whitespace-pre-wrap leading-relaxed">{recipe.ingredients}</p>
+                    {item.adjusted_ingredients?.length > 0 ? (
+                      <ul className="space-y-1">
+                        {item.adjusted_ingredients.map((ing, i) => <li key={i}>• {ing}</li>)}
+                      </ul>
+                    ) : (
+                      <p className="whitespace-pre-wrap leading-relaxed">{recipe.ingredients}</p>
+                    )}
                   </div>
                 </div>
               )}
