@@ -2848,6 +2848,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
           setSelectedMember(null)
         }}
         trainers={trainers}
+        allMembers={members}
         onRefresh={loadMembers}
         initialTab={memberDetailTab}
       />

@@ -18,7 +18,7 @@ import { DietViewer } from './DietBuilder'
 import { ProgressPhotoGallery, ProgressPhotoUploader } from './ProgressPhotos'
 import { MemberOnboardingResponses } from './MemberPhotosAndForm'
 
-export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRefresh, onOpenChat, initialTab = 'form' }) {
+export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allMembers = [], onRefresh, onOpenChat, initialTab = 'form' }) {
   const [loading, setLoading] = useState(true)
   const [memberData, setMemberData] = useState(null)
   const [assignedWorkouts, setAssignedWorkouts] = useState({ principal: null, alternativa: null })
@@ -39,6 +39,8 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
   const [showPhotoUploader, setShowPhotoUploader] = useState(false)
   const [memberSetLogs, setMemberSetLogs] = useState([])
   const [loadingSetLogs, setLoadingSetLogs] = useState(false)
+  const [household, setHousehold] = useState(null) // { household_id, roommates: [{id,name,email}] } | null
+  const [linkingHousehold, setLinkingHousehold] = useState(false)
   const { toast } = useToast()
 
   const REMINDER_FREQUENCY_OPTIONS = [
@@ -203,10 +205,85 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
         .order('created_at', { ascending: false })
 
       setAvailableDiets(diets || [])
+
+      await loadHousehold()
     } catch (error) {
       console.error('Error loading member data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Convivientes (pareja/familia): quién comparte hogar con este socio, para
+  // pintar "Convive con..." en la pestaña de dieta.
+  const loadHousehold = async () => {
+    const { data: myHousehold } = await supabase
+      .from('household_members')
+      .select('household_id')
+      .eq('member_id', member.id)
+      .maybeSingle()
+
+    if (!myHousehold) { setHousehold(null); return }
+
+    const { data: roster } = await supabase
+      .from('household_members')
+      .select('member_id, member:profiles!household_members_member_id_fkey(id, name, email)')
+      .eq('household_id', myHousehold.household_id)
+
+    setHousehold({
+      household_id: myHousehold.household_id,
+      roommates: (roster || []).map(r => r.member).filter(m => m?.id !== member.id)
+    })
+  }
+
+  const handleLinkHousehold = async (otherMemberId) => {
+    if (!otherMemberId) return
+    setLinkingHousehold(true)
+    try {
+      const assignerId = (await supabase.auth.getUser()).data.user?.id
+      let householdId = household?.household_id
+
+      if (!householdId) {
+        const { data: otherHousehold } = await supabase
+          .from('household_members')
+          .select('household_id')
+          .eq('member_id', otherMemberId)
+          .maybeSingle()
+        householdId = otherHousehold?.household_id
+      }
+
+      if (!householdId) {
+        const { data: hh, error: hhError } = await supabase.from('households').insert({ created_by: assignerId }).select('id').single()
+        if (hhError) throw hhError
+        householdId = hh.id
+      }
+
+      const { error } = await supabase.from('household_members').upsert([
+        { household_id: householdId, member_id: member.id, added_by: assignerId },
+        { household_id: householdId, member_id: otherMemberId, added_by: assignerId }
+      ], { onConflict: 'member_id' })
+      if (error) throw error
+
+      toast({ title: 'Convivencia vinculada', description: 'Compartirán el mismo menú semanal, con las raciones ajustadas a cada uno.' })
+      await loadHousehold()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setLinkingHousehold(false)
+    }
+  }
+
+  const handleUnlinkHousehold = async () => {
+    setLinkingHousehold(true)
+    try {
+      const { error } = await supabase.from('household_members').delete().eq('member_id', member.id)
+      if (error) throw error
+      toast({ title: 'Convivencia desvinculada' })
+      await loadHousehold()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setLinkingHousehold(false)
     }
   }
 
@@ -699,6 +776,36 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="pt-3 border-t border-violet-500/20">
+                      <p className="text-xs text-gray-400 mb-1">Convive con (mismo menú semanal):</p>
+                      {household?.roommates?.length > 0 ? (
+                        <div className="flex items-center justify-between bg-black/50 border border-violet-500/20 rounded-xl px-3 py-2.5">
+                          <span className="text-sm text-white truncate">
+                            {household.roommates.map(r => r.name).join(', ')}
+                          </span>
+                          <Button
+                            size="sm" variant="ghost"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-7 px-2 flex-shrink-0"
+                            onClick={handleUnlinkHousehold}
+                            disabled={linkingHousehold}
+                          >
+                            Desvincular
+                          </Button>
+                        </div>
+                      ) : (
+                        <Select onValueChange={handleLinkHousehold} disabled={linkingHousehold}>
+                          <SelectTrigger className="bg-black/50 border-violet-500/20 rounded-xl text-white">
+                            <SelectValue placeholder="Vincular con otro socio..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allMembers.filter(m => m.id !== member.id).map(m => (
+                              <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      <p className="text-xs text-gray-600 mt-1.5">Recibirá las mismas recetas cada semana, con las cantidades ajustadas a sus propios macros.</p>
                     </div>
                   </CardContent>
                 </Card>
