@@ -265,6 +265,118 @@ async function saveRecipeToDB(recipe, supabase) {
   return data.id
 }
 
+// Reescribe las cantidades de una lista de ingredientes multiplicándolas por
+// `scale`, para el socio que convive con quien "ancla" el menú del hogar
+// (misma receta, ración distinta). Devuelve null si algo falla, para que el
+// llamador pueda quedarse sin más con los ingredientes originales.
+async function rescaleIngredients(openai, title, ingredientsText, scale) {
+  const prompt = `Estos son los ingredientes de la receta "${title}", para una persona:
+${ingredientsText}
+
+Ajusta las cantidades multiplicándolas por ${scale.toFixed(2)} (otra persona con distinto objetivo calórico va a comer el mismo plato). Redondea a valores prácticos para cocinar (p.ej. 133 g → 130 g). NO cambies los ingredientes ni el orden, solo las cantidades. Si un ingrediente no lleva cantidad numérica, déjalo igual.
+
+Responde SOLO con JSON válido: { "ingredientes": ["ingrediente 1 con cantidad ajustada", "ingrediente 2 con cantidad ajustada"] }`
+
+  try {
+    const res = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'Eres un nutricionista que ajusta cantidades de una receta para raciones distintas de la misma persona/plato. SIEMPRE respondes con el JSON solicitado.' },
+        { role: 'user', content: prompt }
+      ],
+      max_tokens: 500,
+      temperature: 0.2
+    })
+    const content = res.choices[0]?.message?.content || ''
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0])
+      if (Array.isArray(parsed.ingredientes) && parsed.ingredientes.length > 0) return parsed.ingredientes
+    }
+  } catch (err) {
+    console.error('Error rescaling ingredients:', err.message)
+  }
+  return null
+}
+
+// Clona el menú semanal de un conviviente (mismos platos/días/huecos) en vez
+// de generar uno nuevo con Spoonacular, ajustando solo la ración de cada
+// receta a los macros propios de `memberId`.
+async function cloneHouseholdPlan({ supabase, openai, memberId, diet, macros, weekStartStr, anchorPlan, anchorItems }) {
+  console.log(`[Recipe Plan] Household clone: member ${memberId} <- anchor plan ${anchorPlan.id} (member ${anchorPlan.member_id})`)
+
+  let { data: plan } = await supabase
+    .from('member_recipe_plans')
+    .select('id')
+    .eq('member_id', memberId)
+    .eq('week_start_date', weekStartStr)
+    .maybeSingle()
+
+  const planData = {
+    member_id: memberId,
+    week_start_date: weekStartStr,
+    goal: `${diet.name} - ${diet.calories}kcal`,
+    target_calories: macros.calories,
+    target_protein_g: macros.protein,
+    target_carbs_g: macros.carbs,
+    target_fat_g: macros.fat
+  }
+
+  if (plan) {
+    const { data: updatedPlan, error: updateError } = await supabase.from('member_recipe_plans').update(planData).eq('id', plan.id).select().single()
+    if (updateError) throw new Error('Error actualizando el plan: ' + updateError.message)
+    plan = updatedPlan
+  } else {
+    const { data: newPlan, error: insertError } = await supabase.from('member_recipe_plans').insert(planData).select().single()
+    if (insertError) throw new Error('Error creando nuevo plan: ' + insertError.message)
+    plan = newPlan
+  }
+
+  // Factor de ración respecto al menú ancla del hogar. Si el ancla es de
+  // antes de esta función (sin target_calories guardado), asumimos 1:1 antes
+  // que reventar la generación.
+  const anchorCalories = anchorPlan.target_calories || macros.calories
+  const scale = anchorCalories > 0 ? Math.round((macros.calories / anchorCalories) * 100) / 100 : 1
+  const needsRescale = Math.abs(scale - 1) >= 0.05
+
+  const recipeIds = [...new Set(anchorItems.map(i => i.recipe_id).filter(Boolean))]
+  const adjustedByRecipe = new Map()
+
+  if (needsRescale && recipeIds.length > 0) {
+    const { data: baseRecipes } = await supabase.from('recipe_catalog').select('id, title, ingredients').in('id', recipeIds)
+    await Promise.all((baseRecipes || []).map(async (recipe) => {
+      if (!recipe.ingredients?.length) return
+      const original = Array.isArray(recipe.ingredients) ? recipe.ingredients.join('\n') : recipe.ingredients
+      const rewritten = await rescaleIngredients(openai, recipe.title, original, scale)
+      if (rewritten) adjustedByRecipe.set(recipe.id, rewritten)
+    }))
+  }
+
+  const clonedItems = anchorItems.map(item => ({
+    plan_id: plan.id,
+    day_of_week: item.day_of_week,
+    meal_type: item.meal_type,
+    recipe_id: item.recipe_id,
+    portion_scale: scale,
+    adjusted_ingredients: adjustedByRecipe.get(item.recipe_id) || null
+  }))
+
+  await supabase.from('member_recipe_plan_items').delete().eq('plan_id', plan.id)
+  const { error: itemsError } = await supabase.from('member_recipe_plan_items').insert(clonedItems)
+  if (itemsError) throw new Error('Error al insertar las recetas en el plan: ' + itemsError.message)
+
+  console.log(`[Recipe Plan] Cloned ${clonedItems.length} items for member ${memberId}, scale x${scale}`)
+
+  return NextResponse.json({
+    success: true,
+    message: `Menú compartido con tu conviviente (${clonedItems.length} comidas, ración x${scale})`,
+    planId: plan.id,
+    itemsCount: clonedItems.length,
+    clonedFromHousehold: true,
+    portionScale: scale
+  })
+}
+
 export async function POST(req) {
   const supabase = getSupabase()
   const openai = getOpenAIClient()
@@ -370,6 +482,57 @@ export async function POST(req) {
       fat: diet.fat_g
     }
 
+    // Semana objetivo (lunes de esta semana), la necesitamos ya para la
+    // comprobación de convivientes de abajo.
+    const weekStart = new Date()
+    weekStart.setHours(0, 0, 0, 0)
+    const weekDay = weekStart.getDay()
+    const weekDiff = weekStart.getDate() - weekDay + (weekDay === 0 ? -6 : 1)
+    weekStart.setDate(weekDiff)
+    const weekStartStr = weekStart.toISOString().split('T')[0]
+
+    // Convivientes (pareja/familia vinculados por el entrenador): si algún
+    // conviviente YA tiene un plan generado para esta misma semana, clonamos
+    // sus mismas recetas/días en vez de volver a buscar en Spoonacular —
+    // cocinan un solo plato, no dos distintos — y solo ajustamos la ración
+    // (cantidades reescritas por IA) según los macros propios de este socio.
+    const { data: householdRow } = await supabase
+      .from('household_members')
+      .select('household_id')
+      .eq('member_id', memberId)
+      .maybeSingle()
+
+    if (householdRow) {
+      const { data: roommates } = await supabase
+        .from('household_members')
+        .select('member_id')
+        .eq('household_id', householdRow.household_id)
+        .neq('member_id', memberId)
+      const roommateIds = (roommates || []).map(r => r.member_id)
+
+      if (roommateIds.length > 0) {
+        const { data: anchorPlan } = await supabase
+          .from('member_recipe_plans')
+          .select('*')
+          .in('member_id', roommateIds)
+          .eq('week_start_date', weekStartStr)
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+
+        if (anchorPlan) {
+          const { data: anchorItems } = await supabase
+            .from('member_recipe_plan_items')
+            .select('*')
+            .eq('plan_id', anchorPlan.id)
+
+          if (anchorItems && anchorItems.length > 0) {
+            return await cloneHouseholdPlan({ supabase, openai, memberId, diet, macros, weekStartStr, anchorPlan, anchorItems })
+          }
+        }
+      }
+    }
+
     // Build per-slot macro targets: use values from diet content table if available,
     // otherwise fall back to daily totals × slot percentage.
     const perMealFromContent = parseMealMacrosFromContent(diet.content)
@@ -401,13 +564,6 @@ export async function POST(req) {
     )
 
     // 4. Crear/actualizar plan semanal
-    const weekStart = new Date()
-    weekStart.setHours(0, 0, 0, 0)
-    const day = weekStart.getDay()
-    const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1)
-    weekStart.setDate(diff)
-    const weekStartStr = weekStart.toISOString().split('T')[0]
-
     let { data: plan } = await supabase
       .from('member_recipe_plans')
       .select('id')
@@ -418,7 +574,11 @@ export async function POST(req) {
     const planData = {
       member_id: memberId,
       week_start_date: weekStartStr,
-      goal: `${diet.name} - ${diet.calories}kcal`
+      goal: `${diet.name} - ${diet.calories}kcal`,
+      target_calories: macros.calories,
+      target_protein_g: macros.protein,
+      target_carbs_g: macros.carbs,
+      target_fat_g: macros.fat
     }
 
     if (plan) {
