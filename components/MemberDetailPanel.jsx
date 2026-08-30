@@ -22,7 +22,9 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
   const [loading, setLoading] = useState(true)
   const [memberData, setMemberData] = useState(null)
   const [assignedWorkouts, setAssignedWorkouts] = useState({ principal: null, alternativa: null })
+  const [assignedWorkoutsAt, setAssignedWorkoutsAt] = useState({ principal: null, alternativa: null })
   const [assignedDiet, setAssignedDiet] = useState(null)
+  const [assignedDietAt, setAssignedDietAt] = useState(null)
   const [workoutDaysBySlot, setWorkoutDaysBySlot] = useState({ principal: [], alternativa: [] })
   const [availableWorkouts, setAvailableWorkouts] = useState([])
   const [availableDiets, setAvailableDiets] = useState([])
@@ -157,15 +159,18 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
         .eq('member_id', member.id)
 
       const newAssignedWorkouts = { principal: null, alternativa: null }
+      const newAssignedWorkoutsAt = { principal: null, alternativa: null }
       const newWorkoutDaysBySlot = { principal: [], alternativa: [] }
       for (const row of workoutAssignments || []) {
         const slot = row.routine_slot || 'principal'
         if (row.workout) {
           newAssignedWorkouts[slot] = row.workout
+          newAssignedWorkoutsAt[slot] = row.assigned_at || null
           newWorkoutDaysBySlot[slot] = row.workout.workout_days || []
         }
       }
       setAssignedWorkouts(newAssignedWorkouts)
+      setAssignedWorkoutsAt(newAssignedWorkoutsAt)
       setWorkoutDaysBySlot(newWorkoutDaysBySlot)
 
       const { data: dietAssignment } = await supabase
@@ -179,8 +184,10 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
 
       if (dietAssignment?.diet) {
         setAssignedDiet(dietAssignment.diet)
+        setAssignedDietAt(dietAssignment.assigned_at || null)
       } else {
         setAssignedDiet(null)
+        setAssignedDietAt(null)
       }
 
       const { data: workouts } = await supabase
@@ -218,6 +225,18 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
     } finally {
       setLoadingPhotos(false)
     }
+  }
+
+  // Nacho: "que me ponga arriba del todo cuando fue que se envió" — para
+  // saber de un vistazo si a un socio (p.ej. Isma, quejándose de que la
+  // dieta la tiene "aborrecida") hace mucho que no se le cambia nada.
+  const formatAssignedDate = (iso) => {
+    if (!iso) return null
+    const date = new Date(iso)
+    const days = Math.floor((Date.now() - date.getTime()) / (24 * 60 * 60 * 1000))
+    const dateStr = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+    const rel = days <= 0 ? 'hoy' : days === 1 ? 'hace 1 día' : `hace ${days} días`
+    return `${dateStr} · ${rel}`
   }
 
   const handleAssignWorkout = async (workoutId, routineSlot = 'principal') => {
@@ -518,6 +537,11 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
                         <CardTitle className="text-sm font-semibold text-gray-300">{label}</CardTitle>
                       </CardHeader>
                       <CardContent className="pt-4 space-y-3">
+                        {workout && formatAssignedDate(assignedWorkoutsAt[slot]) && (
+                          <p className="text-xs text-gray-500">
+                            Enviada el {formatAssignedDate(assignedWorkoutsAt[slot])}
+                          </p>
+                        )}
                         {workout ? (
                           <div className="space-y-3">
                             <div className="p-4 bg-violet-500/10 border border-violet-500/30 rounded-xl">
@@ -616,6 +640,11 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], onRe
               <TabsContent value="diet" className="mt-4 space-y-4">
                 <Card className="bg-black/30 border-violet-500/20 rounded-2xl">
                   <CardContent className="pt-4 space-y-3">
+                    {assignedDiet && formatAssignedDate(assignedDietAt) && (
+                      <p className="text-xs text-gray-500">
+                        Enviada el {formatAssignedDate(assignedDietAt)}
+                      </p>
+                    )}
                     {assignedDiet ? (
                       <div className="space-y-3">
                         <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
