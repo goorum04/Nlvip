@@ -55,11 +55,14 @@ export async function POST(req) {
     
     // 2. We skip OpenAI since the admin already passed the manipulated `fullDietContent`.
 
-    // 3. Get admin for created_by
+    // 3. Get admin for created_by — excluye cuentas de prueba
+    // (@nlvipnutrition.internal); ver checkin/submit/route.js para el bug
+    // real que motivó este filtro en toda la app.
     const { data: adminProfile } = await supabase
       .from('profiles')
       .select('id')
       .eq('role', 'admin')
+      .not('email', 'like', '%@nlvipnutrition.internal')
       .limit(1)
       .single()
 

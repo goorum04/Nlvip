@@ -103,13 +103,14 @@ export async function POST(req) {
         .single()
       const memberName = memberProfile?.name || memberProfile?.email?.split('@')[0] || 'Un socio'
 
-      // Admin
-      const { data: adminProfile } = await supabaseAdmin
+      // Cuentas reales de admin — excluye las de prueba (@nlvipnutrition.internal,
+      // usadas para QA). Ver checkin/submit/route.js para el bug real que
+      // motivó este filtro (notificaba solo a la cuenta de pruebas).
+      const { data: adminProfiles } = await supabaseAdmin
         .from('profiles')
         .select('id')
         .eq('role', 'admin')
-        .limit(1)
-        .single()
+        .not('email', 'like', '%@nlvipnutrition.internal')
 
       // Trainer que asignó el cuestionario
       const { data: requestData } = await supabaseAdmin
@@ -125,14 +126,17 @@ export async function POST(req) {
         url: '/admin/nutrition',
       }
 
-      // Push al admin
-      if (adminProfile?.id) {
-        await sendNativeApplePush(supabaseAdmin, adminProfile.id, adminPayload)
-        await sendPushToUser(supabaseAdmin, adminProfile.id, { ...adminPayload, icon: '/icons/icon-192x192.png' })
+      const notifiedIds = new Set()
+
+      // Push a los admins
+      for (const admin of (adminProfiles || [])) {
+        await sendNativeApplePush(supabaseAdmin, admin.id, adminPayload)
+        await sendPushToUser(supabaseAdmin, admin.id, { ...adminPayload, icon: '/icons/icon-192x192.png' })
+        notifiedIds.add(admin.id)
       }
 
-      // Push al trainer (si es distinto del admin)
-      if (trainerId && trainerId !== adminProfile?.id) {
+      // Push al trainer (si es distinto de los admins ya notificados)
+      if (trainerId && !notifiedIds.has(trainerId)) {
         const trainerPayload = { ...adminPayload, url: '/diets' }
         await sendNativeApplePush(supabaseAdmin, trainerId, trainerPayload)
         await sendPushToUser(supabaseAdmin, trainerId, { ...trainerPayload, icon: '/icons/icon-192x192.png' })
@@ -140,9 +144,9 @@ export async function POST(req) {
 
       // Registros in-app persistentes
       const notifRows = []
-      if (adminProfile?.id) {
+      for (const admin of (adminProfiles || [])) {
         notifRows.push({
-          user_id: adminProfile.id,
+          user_id: admin.id,
           title: adminPayload.title,
           body: adminPayload.body,
           type: 'diet_submission',
@@ -150,7 +154,7 @@ export async function POST(req) {
           url: adminPayload.url,
         })
       }
-      if (trainerId && trainerId !== adminProfile?.id) {
+      if (trainerId && !notifiedIds.has(trainerId)) {
         notifRows.push({
           user_id: trainerId,
           title: adminPayload.title,
