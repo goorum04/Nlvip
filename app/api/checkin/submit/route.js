@@ -381,8 +381,13 @@ export async function POST(req) {
         .from('profiles').select('name, email').eq('id', memberId).single()
       const memberName = memberProfile?.name || memberProfile?.email?.split('@')[0] || 'Un socio'
 
-      const { data: adminProfile } = await supabase
-        .from('profiles').select('id').eq('role', 'admin').limit(1).single()
+      // Cuentas reales de admin — excluye las de prueba (@nlvipnutrition.internal,
+      // usadas para QA). Bug real verificado en producción: con .limit(1) sin
+      // este filtro, la revisión de Pau Mitjana y la de Elsa Leticia Díaz
+      // Pereira notificaron solo a la cuenta de pruebas, y Nacho no se enteró.
+      const { data: adminProfiles } = await supabase
+        .from('profiles').select('id').eq('role', 'admin')
+        .not('email', 'like', '%@nlvipnutrition.internal')
 
       const { data: trainerLink } = await supabase
         .from('trainer_members').select('trainer_id').eq('member_id', memberId).maybeSingle()
@@ -395,12 +400,14 @@ export async function POST(req) {
       }
 
       const notifRows = []
-      if (adminProfile?.id) {
-        await sendNativeApplePush(supabase, adminProfile.id, payload)
-        await sendPushToUser(supabase, adminProfile.id, { ...payload, icon: '/icons/icon-192x192.png' })
-        notifRows.push({ user_id: adminProfile.id, title: payload.title, body: payload.body, type: 'checkin_submitted', reference_id: checkin.id, url: payload.url })
+      const notifiedIds = new Set()
+      for (const admin of (adminProfiles || [])) {
+        await sendNativeApplePush(supabase, admin.id, payload)
+        await sendPushToUser(supabase, admin.id, { ...payload, icon: '/icons/icon-192x192.png' })
+        notifRows.push({ user_id: admin.id, title: payload.title, body: payload.body, type: 'checkin_submitted', reference_id: checkin.id, url: payload.url })
+        notifiedIds.add(admin.id)
       }
-      if (trainerId && trainerId !== adminProfile?.id) {
+      if (trainerId && !notifiedIds.has(trainerId)) {
         await sendNativeApplePush(supabase, trainerId, payload)
         await sendPushToUser(supabase, trainerId, { ...payload, icon: '/icons/icon-192x192.png' })
         notifRows.push({ user_id: trainerId, title: payload.title, body: payload.body, type: 'checkin_submitted', reference_id: checkin.id, url: payload.url })

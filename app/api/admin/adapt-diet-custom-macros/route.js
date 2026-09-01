@@ -48,10 +48,13 @@ export async function POST(req) {
       .eq('id', memberId)
       .single()
 
+    // Excluye cuentas de prueba (@nlvipnutrition.internal); ver
+    // checkin/submit/route.js para el bug real que motivó este filtro.
     const { data: adminProfile } = await supabase
       .from('profiles')
       .select('id')
       .eq('role', 'admin')
+      .not('email', 'like', '%@nlvipnutrition.internal')
       .limit(1)
       .maybeSingle()
     const trainerId = adminProfile?.id || null
