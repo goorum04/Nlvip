@@ -1,12 +1,23 @@
 'use client'
 
 import { Card, CardContent } from '@/components/ui/card'
-import { 
-  Coffee, Sun, Moon, Apple, Clock, Flame, 
-  ChevronRight, Calendar, Info, ShieldCheck, Droplets
+import { Button } from '@/components/ui/button'
+import {
+  Coffee, Sun, Moon, Apple, Clock, Flame,
+  ChevronRight, Calendar, Info, ShieldCheck, Droplets, Check
 } from 'lucide-react'
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+
+// Nombre de tarjeta (tal y como sale parseado del texto de la dieta) -> slot
+// estructurado que usan meal_logs / meal_reminders_sent.
+const MEAL_NAME_TO_SLOT = {
+  'DESAYUNO': 'breakfast',
+  'MEDIA MAÑANA': 'snack',
+  'COMIDA': 'lunch',
+  'MERIENDA': 'snack',
+  'CENA': 'dinner',
+}
 
 const MEAL_icons = {
   'DESAYUNO': Coffee,
@@ -27,7 +38,7 @@ const MEAL_COLORS = {
   'POST-ENTRENO': 'from-red-500/20 to-orange-500/20 text-red-400',
 }
 
-export function DietDailyView({ content }) {
+export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
   if (!content) return null
 
   // Function to parse the AI generated meals
@@ -84,6 +95,8 @@ export function DietDailyView({ content }) {
       {meals.map((meal, idx) => {
         const Icon = MEAL_icons[meal.name] || Clock
         const colorClass = MEAL_COLORS[meal.name] || 'from-gray-500/20 to-gray-600/20 text-gray-400'
+        const slot = MEAL_NAME_TO_SLOT[meal.name]
+        const isLogged = slot && loggedSlots?.includes(slot)
 
         return (
           <div key={idx} className="relative pl-0 sm:pl-12 animate-in fade-in slide-in-from-left-4 duration-500" style={{ animationDelay: `${idx * 100}ms` }}>
@@ -114,6 +127,21 @@ export function DietDailyView({ content }) {
                       </p>
                     </div>
                   ))}
+
+                  {slot && onToggleMealLog && (
+                    <Button
+                      onClick={() => onToggleMealLog(slot, isLogged)}
+                      variant="ghost"
+                      className={`w-full mt-2 rounded-xl font-bold text-sm ${
+                        isLogged
+                          ? 'bg-green-500/10 text-green-400 hover:bg-green-500/15 hover:text-green-400'
+                          : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      <Check className="w-4 h-4 mr-1.5" />
+                      {isLogged ? 'Comida registrada' : 'Marcar como comida'}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
