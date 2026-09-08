@@ -4,13 +4,9 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m1
 
-    integrations:
-      # This name MUST match the App Store Connect integration configured in
-      # Codemagic → Team/Personal Settings → Integrations. Renaming it here
-      # does NOT rename the integration — it breaks the lookup.
-      app_store_connect: "NL VIP Club Key"
-
     environment:
+      groups:
+        - app_store_credentials
       vars:
         BUNDLE_ID: "com.leonardos.app"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
@@ -102,7 +98,7 @@ workflows:
 
     publishing:
       app_store_connect:
-        auth: integration
+        auth: environment_variable
         submit_to_testflight: true
         beta_groups:
           - "Internal Testers"
