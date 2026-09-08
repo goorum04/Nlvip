@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
-import { getApiUrl } from '@/lib/utils'
+import { getApiUrl, authFetch } from '@/lib/utils'
 import FloatingChat from './FloatingChat'
 import ImageUploader from './ImageUploader'
 import VideoPlayer, { VideoCard } from './VideoPlayer'
@@ -45,6 +45,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const [myWorkouts, setMyWorkouts] = useState({ principal: null, alternativa: null })
   const [activeWorkoutSlot, setActiveWorkoutSlot] = useState('principal')
   const [myDiet, setMyDiet] = useState(null)
+  const [loggedMealSlots, setLoggedMealSlots] = useState([])
   const [progressRecords, setProgressRecords] = useState([])
   const [progressPhotos, setProgressPhotos] = useState([])
   const [notices, setNotices] = useState([])
@@ -257,13 +258,43 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
         loadGymAdmin().catch(e => console.error('Error loading admin:', e)),
         loadChartData().catch(e => console.error('Error loading chart data:', e)),
         loadMyPrs().catch(e => console.error('Error loading PRs:', e)),
-        loadLastCheckin().catch(e => console.error('Error loading last check-in:', e))
+        loadLastCheckin().catch(e => console.error('Error loading last check-in:', e)),
+        loadMealLogs().catch(e => console.error('Error loading meal logs:', e))
       ])
     } catch (err) {
       console.error('Fatal error loading dashboard data:', err)
     } finally {
       setOnboardingChecked(true)
       setDataLoaded(true)
+    }
+  }
+
+  const loadMealLogs = async () => {
+    try {
+      const res = await authFetch('/api/meal-log')
+      if (res.ok) {
+        const data = await res.json()
+        setLoggedMealSlots((data.logs || []).map(l => l.meal_slot))
+      }
+    } catch (e) {
+      console.warn('Error loading meal logs:', e)
+    }
+  }
+
+  const toggleMealLog = async (slot, isLogged) => {
+    // Optimista: refleja el cambio al momento y revierte si falla.
+    setLoggedMealSlots(prev => isLogged ? prev.filter(s => s !== slot) : [...prev, slot])
+    try {
+      const res = await authFetch('/api/meal-log', {
+        method: isLogged ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mealSlot: slot }),
+      })
+      if (!res.ok) throw new Error('No se pudo actualizar')
+    } catch (e) {
+      console.warn('Error toggling meal log:', e)
+      setLoggedMealSlots(prev => isLogged ? [...prev, slot] : prev.filter(s => s !== slot))
+      toast({ title: 'No se pudo guardar', description: 'Inténtalo de nuevo.', variant: 'destructive' })
     }
   }
 
@@ -1206,7 +1237,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
                     {/* Timeline */}
                     <div className="bg-white/[0.01] rounded-[2.5rem] p-6 sm:p-8 border border-white/[0.03]">
-                      <DietDailyView content={myDiet.diet?.content} />
+                      <DietDailyView content={myDiet.diet?.content} loggedSlots={loggedMealSlots} onToggleMealLog={toggleMealLog} />
                     </div>
 
                     {/* Today's Recipe part is already inside MemberRecipePlan which we show below */}

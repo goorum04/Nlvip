@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/award-badges",
       "schedule": "15 6 * * *"
+    },
+    {
+      "path": "/api/cron/meal-workout-reminders",
+      "schedule": "*/10 * * * *"
     }
   ]
 }

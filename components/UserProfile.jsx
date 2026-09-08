@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
@@ -89,6 +90,13 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
   const [heightCm, setHeightCm] = useState(profile?.height_cm || '')
   const [previewUrl, setPreviewUrl] = useState(null)
+  const [breakfastTime, setBreakfastTime] = useState(profile?.breakfast_time?.slice(0, 5) || '08:00')
+  const [lunchTime, setLunchTime] = useState(profile?.lunch_time?.slice(0, 5) || '14:00')
+  const [snackTime, setSnackTime] = useState(profile?.snack_time?.slice(0, 5) || '17:30')
+  const [dinnerTime, setDinnerTime] = useState(profile?.dinner_time?.slice(0, 5) || '21:00')
+  const [workoutTime, setWorkoutTime] = useState(profile?.workout_time?.slice(0, 5) || '')
+  const [mealRemindersEnabled, setMealRemindersEnabled] = useState(profile?.meal_reminders_enabled ?? true)
+  const [workoutReminderEnabled, setWorkoutReminderEnabled] = useState(profile?.workout_reminder_enabled ?? false)
 
   useEffect(() => {
     if (profile) {
@@ -98,6 +106,13 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       setSex(profile.sex || '')
       setAvatarUrl(profile.avatar_url || '')
       setHeightCm(profile.height_cm || '')
+      setBreakfastTime(profile.breakfast_time?.slice(0, 5) || '08:00')
+      setLunchTime(profile.lunch_time?.slice(0, 5) || '14:00')
+      setSnackTime(profile.snack_time?.slice(0, 5) || '17:30')
+      setDinnerTime(profile.dinner_time?.slice(0, 5) || '21:00')
+      setWorkoutTime(profile.workout_time?.slice(0, 5) || '')
+      setMealRemindersEnabled(profile.meal_reminders_enabled ?? true)
+      setWorkoutReminderEnabled(profile.workout_reminder_enabled ?? false)
       loadAvatarPreview()
     }
   }, [profile])
@@ -203,6 +218,13 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
             sex: sex || null,
             height_cm: parseInt(heightCm) || null,
             avatar_url: avatarUrl || null,
+            breakfast_time: breakfastTime || null,
+            lunch_time: lunchTime || null,
+            snack_time: snackTime || null,
+            dinner_time: dinnerTime || null,
+            workout_time: workoutTime || null,
+            meal_reminders_enabled: mealRemindersEnabled,
+            workout_reminder_enabled: workoutReminderEnabled,
             updated_at: new Date().toISOString()
           }
         })
@@ -223,7 +245,14 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
           birth_date: birthDate || null,
           sex: sex || null,
           height_cm: parseInt(heightCm) || null,
-          avatar_url: avatarUrl || null
+          avatar_url: avatarUrl || null,
+          breakfast_time: breakfastTime || null,
+          lunch_time: lunchTime || null,
+          snack_time: snackTime || null,
+          dinner_time: dinnerTime || null,
+          workout_time: workoutTime || null,
+          meal_reminders_enabled: mealRemindersEnabled,
+          workout_reminder_enabled: workoutReminderEnabled
         })
       }
     } catch (error) {
@@ -466,6 +495,46 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                 </p>
               )}
             </div>
+          </div>
+
+          {/* Avisos de comida y entreno */}
+          <div className="space-y-4 pt-4 border-t border-white/5">
+            <div className="flex items-center justify-between">
+              <Label className="text-gray-300 text-sm">Avisos de comida</Label>
+              <Switch checked={mealRemindersEnabled} onCheckedChange={setMealRemindersEnabled} />
+            </div>
+            {mealRemindersEnabled && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-gray-500 text-xs">Desayuno</Label>
+                  <Input type="time" value={breakfastTime} onChange={(e) => setBreakfastTime(e.target.value)} className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1" />
+                </div>
+                <div>
+                  <Label className="text-gray-500 text-xs">Comida</Label>
+                  <Input type="time" value={lunchTime} onChange={(e) => setLunchTime(e.target.value)} className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1" />
+                </div>
+                <div>
+                  <Label className="text-gray-500 text-xs">Merienda</Label>
+                  <Input type="time" value={snackTime} onChange={(e) => setSnackTime(e.target.value)} className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1" />
+                </div>
+                <div>
+                  <Label className="text-gray-500 text-xs">Cena</Label>
+                  <Input type="time" value={dinnerTime} onChange={(e) => setDinnerTime(e.target.value)} className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1" />
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-2">
+              <Label className="text-gray-300 text-sm">Aviso de entreno</Label>
+              <Switch checked={workoutReminderEnabled} onCheckedChange={setWorkoutReminderEnabled} />
+            </div>
+            {workoutReminderEnabled && (
+              <div>
+                <Label className="text-gray-500 text-xs">Hora habitual de entreno</Label>
+                <Input type="time" value={workoutTime} onChange={(e) => setWorkoutTime(e.target.value)} className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1" />
+              </div>
+            )}
+            <p className="text-xs text-gray-500">Te avisaremos por notificación push unos minutos antes de cada hora.</p>
           </div>
 
           {/* Save Button */}
