@@ -21,11 +21,14 @@ function madridNow() {
     timeZone: 'Europe/Madrid',
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', hour12: false,
+    weekday: 'short',
   }).formatToParts(new Date())
   const get = (type) => parts.find(p => p.type === type)?.value
+  const WEEKDAY_TO_ISO = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 }
   return {
     date: `${get('year')}-${get('month')}-${get('day')}`,
     minutesSinceMidnight: parseInt(get('hour'), 10) * 60 + parseInt(get('minute'), 10),
+    isoWeekday: WEEKDAY_TO_ISO[get('weekday')],
   }
 }
 
@@ -61,7 +64,7 @@ export async function GET(request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  const { date: today, minutesSinceMidnight: nowMinutes } = madridNow()
+  const { date: today, minutesSinceMidnight: nowMinutes, isoWeekday } = madridNow()
 
   const { data: candidates, error: loadError } = await supabase
     .from('profiles')
@@ -118,19 +121,48 @@ export async function GET(request) {
         }
       }
 
-      // Entreno: como mucho un aviso al día.
+      // Entreno: como mucho un aviso al día, con el nombre del día de rutina
+      // que le toca hoy (p.ej. "Piernas y Glúteo"), no un aviso genérico.
       if (profile.workout_reminder_enabled && profile.last_workout_reminder_date !== today) {
         const target = timeToMinutes(profile.workout_time)
         if (isDue(target, nowMinutes, REMINDER_LEAD_MINUTES)) {
-          const payload = { title: '💪 Hora de entrenar', body: 'Tu entreno está a punto de empezar. ¡Vamos!', url: '/' }
-          await sendNativeApplePush(supabase, profile.id, payload).catch(err =>
-            console.warn('[cron/meal-workout-reminders] APN error (workout):', profile.id, err.message)
-          )
-          await sendPushToUser(supabase, profile.id, { ...payload, icon: '/icons/icon-192x192.png' }).catch(err =>
-            console.warn('[cron/meal-workout-reminders] WebPush error (workout):', profile.id, err.message)
-          )
-          await supabase.from('profiles').update({ last_workout_reminder_date: today }).eq('id', profile.id)
-          results.workoutsSent++
+          const { data: myWorkout } = await supabase
+            .from('member_workouts')
+            .select('workout_template_id')
+            .eq('member_id', profile.id)
+            .eq('routine_slot', 'principal')
+            .maybeSingle()
+
+          let todaysDayName = null
+          if (myWorkout?.workout_template_id) {
+            const { data: todaysDay } = await supabase
+              .from('workout_days')
+              .select('name')
+              .eq('workout_template_id', myWorkout.workout_template_id)
+              .eq('day_of_week', isoWeekday)
+              .maybeSingle()
+            todaysDayName = todaysDay?.name || null
+          }
+
+          // Sin día de rutina asignado a hoy (día de descanso del split): no
+          // se manda aviso, para no invitar a entrenar en día de descanso.
+          if (todaysDayName) {
+            const payload = {
+              title: '💪 Hora de entrenar',
+              body: `Hoy toca: ${todaysDayName}. ¡Vamos!`,
+              url: '/',
+            }
+            await sendNativeApplePush(supabase, profile.id, payload).catch(err =>
+              console.warn('[cron/meal-workout-reminders] APN error (workout):', profile.id, err.message)
+            )
+            await sendPushToUser(supabase, profile.id, { ...payload, icon: '/icons/icon-192x192.png' }).catch(err =>
+              console.warn('[cron/meal-workout-reminders] WebPush error (workout):', profile.id, err.message)
+            )
+            await supabase.from('profiles').update({ last_workout_reminder_date: today }).eq('id', profile.id)
+            results.workoutsSent++
+          } else {
+            results.skipped++
+          }
         }
       }
     } catch (err) {
