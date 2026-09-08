@@ -9,6 +9,20 @@ import { sendPushToUser } from '@/lib/webpush'
 // ventana asegura que ningún objetivo se cuele entre dos pasadas.
 const REMINDER_LEAD_MINUTES = 15
 
+const WORKOUT_HYPE_PHRASES = [
+  'Cada serie cuenta. ¡A por ello!',
+  'Nadie se arrepiente de haber entrenado.',
+  'Tu mejor versión te está esperando.',
+  'Hoy también toca ser constante.',
+  'El esfuerzo de hoy es el resultado de mañana.',
+  'Dale caña, que tú puedes.',
+  'Un entreno más, un paso más cerca.',
+]
+
+function randomHypePhrase() {
+  return WORKOUT_HYPE_PHRASES[Math.floor(Math.random() * WORKOUT_HYPE_PHRASES.length)]
+}
+
 const MEAL_LABELS = {
   breakfast: { field: 'breakfast_time', title: '🌅 Hora del desayuno', name: 'el desayuno' },
   lunch: { field: 'lunch_time', title: '☀️ Hora de comer', name: 'la comida' },
@@ -149,7 +163,7 @@ export async function GET(request) {
           if (todaysDayName) {
             const payload = {
               title: '💪 Hora de entrenar',
-              body: `Hoy toca: ${todaysDayName}. ¡Vamos!`,
+              body: `Hoy toca: ${todaysDayName}. ${randomHypePhrase()}`,
               url: '/',
             }
             await sendNativeApplePush(supabase, profile.id, payload).catch(err =>
