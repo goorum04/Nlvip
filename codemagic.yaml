@@ -59,8 +59,14 @@ workflows:
       - name: Fetch signing files
         script: |
           keychain initialize
-          # Write private key to file to preserve newlines
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/api_key.p8
+          # printf %b converts \\n escape sequences to real newlines
+          printf '%b' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/api_key.p8
+          echo "=== Key format check ==="
+          head -1 /tmp/api_key.p8
+          echo "Lines: $(wc -l < /tmp/api_key.p8)"
+          echo "Key ID: $APP_STORE_CONNECT_KEY_IDENTIFIER"
+          echo "Issuer ID: $APP_STORE_CONNECT_ISSUER_ID"
+          echo "=== End check ==="
           openssl genrsa -out /tmp/cert_key.pem 2048
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
