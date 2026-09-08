@@ -59,16 +59,45 @@ workflows:
       - name: Fetch signing files
         script: |
           keychain initialize
-          # Write key using printf to handle both raw and escaped newlines
           printf '%b' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/api_key.p8
           echo "=== Key diagnostics ==="
-          echo "First line: $(head -1 /tmp/api_key.p8)"
           echo "Line count: $(wc -l < /tmp/api_key.p8)"
           echo "Char count: $(wc -c < /tmp/api_key.p8)"
-          echo "Key ID var length: ${#APP_STORE_CONNECT_KEY_IDENTIFIER}"
-          echo "Issuer ID var length: ${#APP_STORE_CONNECT_ISSUER_ID}"
-          # Validate key with openssl
-          openssl pkey -in /tmp/api_key.p8 -noout 2>&1 && echo "openssl: key is VALID" || echo "openssl: key is INVALID"
+          echo "KeyID    : $(printf '%s' "$APP_STORE_CONNECT_KEY_IDENTIFIER" | sed 's/./& /g')"
+          echo "IssuerID : $(printf '%s' "$APP_STORE_CONNECT_ISSUER_ID" | sed 's/./& /g')"
+          openssl pkey -in /tmp/api_key.p8 -noout 2>&1 && echo "openssl: VALID" || echo "openssl: INVALID"
+          cat > /tmp/jwt_test.py <<'PYEOF'
+          import os, time, urllib.request, urllib.error
+          try:
+              import jwt
+          except ImportError:
+              print("PyJWT not available in this interpreter")
+              raise SystemExit(0)
+          key = open('/tmp/api_key.p8').read()
+          kid = os.environ['APP_STORE_CONNECT_KEY_IDENTIFIER'].strip()
+          iss = os.environ['APP_STORE_CONNECT_ISSUER_ID'].strip()
+          now = int(time.time())
+          tok = jwt.encode(
+              {'iss': iss, 'iat': now, 'exp': now + 600, 'aud': 'appstoreconnect-v1'},
+              key, algorithm='ES256', headers={'kid': kid, 'typ': 'JWT'})
+          if isinstance(tok, bytes):
+              tok = tok.decode()
+          req = urllib.request.Request(
+              'https://api.appstoreconnect.apple.com/v1/apps?limit=1',
+              headers={'Authorization': 'Bearer ' + tok})
+          try:
+              r = urllib.request.urlopen(req)
+              print('HTTP', r.status, '-> AUTH OK (credenciales correctas)')
+              print(r.read()[:600].decode())
+          except urllib.error.HTTPError as e:
+              print('HTTP', e.code, '-> AUTH FAILED')
+              print(e.read()[:800].decode())
+          PYEOF
+          echo "=== Raw JWT auth test against /v1/apps (no bundle id involved) ==="
+          PY_BIN="$(head -1 "$(command -v app-store-connect)" | sed 's/^#!//' | awk '{print $1}')"
+          [ -x "$PY_BIN" ] || PY_BIN=python3
+          echo "python: $PY_BIN"
+          "$PY_BIN" /tmp/jwt_test.py || true
           echo "=== End diagnostics ==="
           openssl genrsa -out /tmp/cert_key.pem 2048
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
