@@ -291,7 +291,7 @@ function filterByTimeRange(data, range) {
   const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
   
   return data.filter(item => {
-    const itemDate = new Date(item.date || item.week)
+    const itemDate = new Date(item.rawDate || item.date || item.week)
     return itemDate >= cutoff
   })
 }

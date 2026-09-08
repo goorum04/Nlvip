@@ -342,6 +342,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
       // Transform weight data
       const weightData = (progressData || []).map(p => ({
         date: new Date(p.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
+        rawDate: p.date,
         weight: p.weight_kg
       }))
 
