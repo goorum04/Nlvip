@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dumbbell, Heart,
-  LoaderCircle as Loader2, ChevronRight, MessageSquare, Bell, ChevronDown, ChevronUp, RefreshCw, Plus
+  LoaderCircle as Loader2, ChevronRight, MessageSquare, Bell, ChevronDown, ChevronUp, RefreshCw, Plus, ClipboardList
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
@@ -364,6 +364,27 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allM
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
       setAssigning(false)
+    }
+  }
+
+  const [sendingQuestionnaire, setSendingQuestionnaire] = useState(false)
+
+  const handleSendOnboardingQuestionnaire = async () => {
+    setSendingQuestionnaire(true)
+    try {
+      const assignerId = (await supabase.auth.getUser()).data.user?.id
+      const res = await authFetch('/api/diet-onboarding/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: member.id, requestedBy: assignerId })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error enviando el cuestionario')
+      toast({ title: '¡Cuestionario enviado!', description: data.message })
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setSendingQuestionnaire(false)
     }
   }
 
@@ -777,6 +798,16 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allM
                         </SelectContent>
                       </Select>
                     </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full border-amber-500/30 text-amber-300 hover:bg-amber-500/10 gap-2"
+                      onClick={handleSendOnboardingQuestionnaire}
+                      disabled={sendingQuestionnaire}
+                    >
+                      {sendingQuestionnaire ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardList className="w-4 h-4" />}
+                      {sendingQuestionnaire ? 'Enviando...' : 'Enviar cuestionario nutricional'}
+                    </Button>
                     <div className="pt-3 border-t border-violet-500/20">
                       <p className="text-xs text-gray-400 mb-1">Convive con (mismo menú semanal):</p>
                       {household?.roommates?.length > 0 ? (
