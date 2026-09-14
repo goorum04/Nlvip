@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.leonardos.app',
+  appId: 'com.nlvipteam.app',
   appName: 'NL VIP Team',
   webDir: 'out',
   plugins: {

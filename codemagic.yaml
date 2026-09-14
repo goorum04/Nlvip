@@ -8,10 +8,10 @@ workflows:
       groups:
         - app_store_credentials
       vars:
-        BUNDLE_ID: "com.leonardos.app"
+        BUNDLE_ID: "com.nlvipteam.app"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        APP_STORE_APPLE_ID: "6759666320"
+        APP_STORE_APPLE_ID: "6759003518"
         STATIC_EXPORT: "true"
       node: v20.11.0
       xcode: latest
