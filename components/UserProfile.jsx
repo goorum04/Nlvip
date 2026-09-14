@@ -89,6 +89,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
   const [sex, setSex] = useState(profile?.sex || '')
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
   const [heightCm, setHeightCm] = useState(profile?.height_cm || '')
+  const [weightKg, setWeightKg] = useState(profile?.weight_kg || '')
   const [previewUrl, setPreviewUrl] = useState(null)
   const [breakfastTime, setBreakfastTime] = useState(profile?.breakfast_time?.slice(0, 5) || '08:00')
   const [lunchTime, setLunchTime] = useState(profile?.lunch_time?.slice(0, 5) || '14:00')
@@ -106,6 +107,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       setSex(profile.sex || '')
       setAvatarUrl(profile.avatar_url || '')
       setHeightCm(profile.height_cm || '')
+      setWeightKg(profile.weight_kg || '')
       setBreakfastTime(profile.breakfast_time?.slice(0, 5) || '08:00')
       setLunchTime(profile.lunch_time?.slice(0, 5) || '14:00')
       setSnackTime(profile.snack_time?.slice(0, 5) || '17:30')
@@ -217,6 +219,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
             birth_date: birthDate || null,
             sex: sex || null,
             height_cm: parseInt(heightCm) || null,
+            weight_kg: parseFloat(weightKg) || null,
             avatar_url: avatarUrl || null,
             breakfast_time: breakfastTime || null,
             lunch_time: lunchTime || null,
@@ -245,6 +248,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
           birth_date: birthDate || null,
           sex: sex || null,
           height_cm: parseInt(heightCm) || null,
+          weight_kg: parseFloat(weightKg) || null,
           avatar_url: avatarUrl || null,
           breakfast_time: breakfastTime || null,
           lunch_time: lunchTime || null,
@@ -465,8 +469,19 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                 placeholder="Ej: 175"
                 className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
               />
+            </div>
+            <div>
+              <Label className="text-gray-300 text-sm">Peso (kg)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={weightKg}
+                onChange={(e) => setWeightKg(e.target.value)}
+                placeholder="Ej: 68.5"
+                className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1"
+              />
               <p className="text-xs text-gray-500 mt-1.5">
-                Tu peso y medidas se gestionan desde la pestaña <span className="text-violet-400 font-medium">Progreso</span>.
+                Tus medidas completas (cintura, pecho...) se gestionan desde la pestaña <span className="text-violet-400 font-medium">Progreso</span>.
               </p>
             </div>
             <div>
