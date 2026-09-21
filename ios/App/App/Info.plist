@@ -62,7 +62,7 @@
 	
 	<!-- Cámara y Fotos -->
 	<key>NSCameraUsageDescription</key>
-	<string>NL VIP TEAM necesita acceso a la cámara para que puedas tomar fotos o grabar videos en la app.</string>
+	<string>NL VIP TEAM usa la cámara para tres funciones concretas: fotografiar tu progreso físico semanal para el seguimiento con tu entrenador, adjuntar las 4 fotos de tu revisión periódica (frente, ambos lados y espalda), y fotografiar un plato de comida para que la app estime sus calorías y macronutrientes. Por ejemplo, al pulsar "Fotografiar" en la sección de comidas, se abre la cámara para capturar la imagen de tu plato.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>NL VIP TEAM necesita acceso a tu galería para que puedas seleccionar y enviar fotos de progreso o en el chat.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
