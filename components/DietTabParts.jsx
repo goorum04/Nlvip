@@ -38,6 +38,45 @@ const MEAL_COLORS = {
   'POST-ENTRENO': 'from-red-500/20 to-orange-500/20 text-red-400',
 }
 
+// Guideline 1.4.1 (App Store): las recomendaciones nutricionales deben
+// llevar citas/fuentes visibles y fáciles de encontrar para el usuario.
+// Este pie se muestra en ambas vistas de la dieta (diaria y semanal),
+// independientemente de qué entrenador haya escrito el contenido del plan.
+function DietSourcesFooter() {
+  return (
+    <div className="mt-6 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <Info className="w-3.5 h-3.5" />
+        Fuentes y referencias
+      </p>
+      <p className="text-xs text-gray-500 leading-relaxed">
+        Este plan ha sido elaborado por tu entrenador/nutricionista siguiendo principios generales de nutrición
+        deportiva respaldados por:
+      </p>
+      <ul className="text-xs text-gray-500 mt-1.5 space-y-1 list-disc list-inside">
+        <li>
+          <a href="https://www.who.int/news-room/fact-sheets/detail/healthy-diet" target="_blank" rel="noreferrer" className="text-violet-400 hover:underline">
+            Organización Mundial de la Salud (OMS) — Alimentación saludable
+          </a>
+        </li>
+        <li>
+          <a href="https://www.efsa.europa.eu/en/topics/topic/dietary-reference-values" target="_blank" rel="noreferrer" className="text-violet-400 hover:underline">
+            EFSA — Valores de referencia de ingesta de nutrientes (UE)
+          </a>
+        </li>
+        <li>
+          <a href="https://jissn.biomedcentral.com/articles/10.1186/s12970-017-0177-8" target="_blank" rel="noreferrer" className="text-violet-400 hover:underline">
+            International Society of Sports Nutrition — Position Stand: proteína y ejercicio
+          </a>
+        </li>
+      </ul>
+      <p className="text-[11px] text-gray-600 mt-2 italic">
+        Esta información es orientativa y educativa, no sustituye el consejo de un profesional sanitario.
+      </p>
+    </div>
+  )
+}
+
 export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
   if (!content) return null
 
@@ -81,8 +120,11 @@ export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
   if (meals.length === 0) {
     // Fallback if parsing fails or structure is different
     return (
-      <div className="prose prose-invert max-w-none">
-        <ReactMarkdown>{content}</ReactMarkdown>
+      <div>
+        <div className="prose prose-invert max-w-none">
+          <ReactMarkdown>{content}</ReactMarkdown>
+        </div>
+        <DietSourcesFooter />
       </div>
     )
   }
@@ -148,6 +190,8 @@ export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
           </div>
         )
       })}
+
+      <DietSourcesFooter />
     </div>
   )
 }
@@ -186,6 +230,8 @@ export function DietWeeklyView({ content, calories, protein, carbs, fat }) {
         `}</style>
         <ReactMarkdown>{content}</ReactMarkdown>
       </div>
+
+      <DietSourcesFooter />
     </div>
   )
 }

@@ -12,6 +12,16 @@ import {
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { getApiUrl } from '@/lib/utils'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from '@/components/ui/alert-dialog'
+
+// Recordamos el consentimiento de envío a IA por dispositivo (Apple Guideline
+// 5.1.1(i)/5.1.2(i): hay que pedir permiso antes de enviar datos a un
+// servicio de IA de terceros). Solo se vuelve a preguntar si el socio borra
+// datos del navegador/app o cambia de dispositivo.
+const AI_CONSENT_KEY = 'nlvip_ai_food_photo_consent'
 
 // Componente de barra de progreso de macros
 function MacroProgressBar({ label, icon: Icon, consumed, total, color, unit = 'g' }) {
@@ -54,7 +64,9 @@ export default function FoodTracker({ userId }) {
   const [editableAnalysis, setEditableAnalysis] = useState(null)
   const [saving, setSaving] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
-  
+  const [showAiConsent, setShowAiConsent] = useState(false)
+  const [pendingPhotoBase64, setPendingPhotoBase64] = useState(null)
+
   const fileInputRef = useRef(null)
   const { toast } = useToast()
 
@@ -92,9 +104,34 @@ export default function FoodTracker({ userId }) {
     const reader = new FileReader()
     reader.onload = async () => {
       const base64 = reader.result.split(',')[1]
-      await analyzeFood(base64)
+      let alreadyConsented = false
+      try { alreadyConsented = localStorage.getItem(AI_CONSENT_KEY) === 'true' } catch {}
+
+      if (alreadyConsented) {
+        await analyzeFood(base64)
+      } else {
+        // Pedimos permiso explícito antes de enviar la foto a OpenAI —
+        // no se dispara el análisis hasta que el socio lo confirma.
+        setPendingPhotoBase64(base64)
+        setShowAiConsent(true)
+      }
     }
     reader.readAsDataURL(file)
+    // Permite volver a seleccionar la misma foto si se cancela el consentimiento.
+    e.target.value = ''
+  }
+
+  const confirmAiConsentAndAnalyze = async () => {
+    try { localStorage.setItem(AI_CONSENT_KEY, 'true') } catch {}
+    setShowAiConsent(false)
+    const base64 = pendingPhotoBase64
+    setPendingPhotoBase64(null)
+    if (base64) await analyzeFood(base64)
+  }
+
+  const cancelAiConsent = () => {
+    setShowAiConsent(false)
+    setPendingPhotoBase64(null)
   }
 
   const analyzeFood = async (imageBase64) => {
@@ -309,6 +346,42 @@ export default function FoodTracker({ userId }) {
             onChange={handleFileSelect}
             className="hidden"
           />
+
+          <AlertDialog open={showAiConsent} onOpenChange={(open) => { if (!open) cancelAiConsent() }}>
+            <AlertDialogContent className="bg-[#1a1a1a] border-orange-500/30 rounded-3xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-white flex items-center gap-2">
+                  <UtensilsCrossed className="w-5 h-5 text-orange-400" />
+                  Análisis de foto con IA
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-gray-400 space-y-2">
+                  <span className="block">
+                    Para estimar las calorías y macros de tu plato, esta foto se enviará a{' '}
+                    <strong className="text-gray-300">OpenAI</strong> (servicio de inteligencia artificial de terceros)
+                    para su análisis automático.
+                  </span>
+                  <span className="block">
+                    Solo se envía la imagen de la comida — no se incluyen tu nombre, apellidos ni ningún otro dato
+                    personal identificable. Puedes ver más detalles en nuestra política de privacidad.
+                  </span>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel
+                  onClick={cancelAiConsent}
+                  className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 rounded-xl"
+                >
+                  Cancelar
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={confirmAiConsentAndAnalyze}
+                  className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 rounded-xl"
+                >
+                  Aceptar y analizar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* Estado: Analizando */}
           {analyzing && (
