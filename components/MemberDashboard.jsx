@@ -830,8 +830,8 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                       if (isLocked) {
                         e.preventDefault()
                         toast({
-                          title: '🔒 Función Premium',
-                          description: 'Necesitas un código de invitación para acceder a esta función.',
+                          title: '🔒 Acceso de socio',
+                          description: 'Necesitas un código de invitación de tu gimnasio para acceder a esta función.',
                         })
                       }
                     }}

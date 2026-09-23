@@ -197,7 +197,7 @@ export default function App() {
                 variant: 'destructive',
               })
             } else {
-              toast({ title: '¡Bienvenido Premium!', description: 'Tu código se ha activado correctamente.' })
+              toast({ title: '¡Bienvenido a NL VIP Team!', description: 'Tu código se ha activado correctamente.' })
             }
           } catch (redeemErr) {
             console.error('redeem-premium-code network error:', redeemErr)
@@ -303,7 +303,7 @@ export default function App() {
           <div className="space-y-2">
             <p className="text-gray-300 text-lg font-medium">
               {preparingAccount
-                ? 'Preparando tu espacio Premium...'
+                ? 'Preparando tu espacio...'
                 : profileLoading ? 'Preparando tu experiencia...' : 'Cargando sesión...'}
             </p>
             <p className="text-violet-400 text-sm animate-pulse">
@@ -331,7 +331,7 @@ export default function App() {
             />
           </div>
           <div className="space-y-2">
-            <p className="text-gray-300 text-lg font-medium">Preparando tu espacio Premium...</p>
+            <p className="text-gray-300 text-lg font-medium">Preparando tu espacio...</p>
             <p className="text-violet-400 text-sm animate-pulse">Activando tu plan y formulario de dieta.</p>
           </div>
         </div>
