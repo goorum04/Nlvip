@@ -1450,7 +1450,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
       {/* ONBOARDING MODAL */}
       {showOnboardingModal && pendingOnboarding && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
           <div className="relative w-full max-w-lg my-auto pt-8 pb-8 animate-in fade-in zoom-in duration-300">
             <Card className="bg-gradient-to-br from-violet-900/40 to-cyan-900/20 border-violet-500/50 rounded-[2.5rem] shadow-2xl shadow-violet-500/20 overflow-hidden">
               <CardHeader className="text-center pb-2 bg-white/5 border-b border-white/5 mb-4">
