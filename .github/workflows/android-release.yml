@@ -1,0 +1,71 @@
+name: NL VIP Team - Android Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.11.0'
+          cache: 'npm'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js for mobile
+        run: |
+          set -e
+          rm -rf .next out
+          cp next.config.mobile.js next.config.js
+          npm run build
+          git checkout next.config.js
+          test -f out/index.html || { echo "BUILD FAILED: out/index.html missing"; exit 1; }
+
+      - name: Add Android platform
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+
+      - name: Generate app icon from resources/icon.png
+        run: |
+          npx @capacitor/assets generate --android \
+            --iconBackgroundColor "#030303" \
+            --iconBackgroundColorDark "#030303"
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nlvip-team-debug-apk
+          path: android/app/build/outputs/**/*.apk
+          retention-days: 30
