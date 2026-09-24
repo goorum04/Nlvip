@@ -112,8 +112,8 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
   const canSend = hasPremium || userRole === 'trainer' || userRole === 'admin'
   const blockNonPremium = () => {
     toast({
-      title: '🔒 Función Premium',
-      description: 'Necesitas un código de invitación para acceder a esta función.',
+      title: '🔒 Acceso de socio',
+      description: 'Necesitas un código de invitación de tu gimnasio para acceder a esta función.',
     })
   }
   const [isOpen, setIsOpen] = useState(false)
@@ -899,8 +899,8 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
               <div className="flex items-center gap-3 bg-violet-500/10 border border-violet-500/20 rounded-2xl px-4 py-3">
                 <Shield className="w-5 h-5 text-violet-400 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm text-violet-300 font-semibold">🔒 Función Premium</p>
-                  <p className="text-xs text-zinc-400">Solo los socios premium pueden enviar mensajes.</p>
+                  <p className="text-sm text-violet-300 font-semibold">🔒 Acceso de socio</p>
+                  <p className="text-xs text-zinc-400">Solo los socios con código de invitación activo pueden enviar mensajes.</p>
                 </div>
               </div>
             ) : (

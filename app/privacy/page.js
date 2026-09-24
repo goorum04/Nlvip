@@ -22,6 +22,7 @@ export default function Privacy() {
         <li><strong>Datos físicos y de salud:</strong> peso, altura, porcentaje de grasa corporal, medidas corporales (cintura, pecho, caderas, glúteos, gemelos, etc.), objetivo fitness y nivel de actividad.</li>
         <li><strong>Datos de Apple HealthKit:</strong> pasos diarios (solo lectura). Esta información se usa exclusivamente para mostrar tu actividad diaria dentro de la app y ajustar tus objetivos calóricos. <strong>NL VIP TEAM no comparte datos de HealthKit con terceros.</strong></li>
         <li><strong>Datos de audio:</strong> mensajes de voz enviados en el chat con el entrenador, y comandos de voz utilizados con el asistente IA de gestión. El audio se procesa mediante servicios de transcripción de inteligencia artificial (OpenAI **Whisper**) con fines exclusivos de funcionalidad técnica.</li>
+        <li><strong>Fotos de comida:</strong> si el socio usa la función "Fotografiar" para registrar una comida, la imagen se envía a OpenAI (modelo de visión por IA) para estimar automáticamente sus calorías y macronutrientes. Solo se envía la imagen del plato, sin nombre, apellidos ni otros datos identificativos. Esta función pide confirmación expresa del socio antes de cada envío.</li>
         <li><strong>Datos de actividad:</strong> registros de entrenamiento, registros de comida, progreso de medidas y fotos de progreso.</li>
         <li><strong>Datos de notificaciones:</strong> token de dispositivo para el envío de notificaciones push relacionadas con el servicio (recordatorios de entrenamiento, mensajes del entrenador, actualizaciones de plan).</li>
       </ul>
@@ -29,10 +30,11 @@ export default function Privacy() {
       <h2>2. Inteligencia Artificial y Procesamiento de Datos</h2>
       <p>NL VIP TEAM utiliza modelos de Inteligencia Artificial avanzados para asistir a los entrenadores en la creación de planes personalizados:</p>
       <ul>
-        <li><strong>Modelos utilizados:</strong> Utilizamos específicamente los modelos **GPT-4o** y **Whisper** de OpenAI.</li>
+        <li><strong>Modelos utilizados:</strong> Utilizamos los modelos **GPT-4o** y **Whisper** de OpenAI, y el modelo **Claude** de Anthropic, como herramientas internas de apoyo para el entrenador (generación de borradores de dietas y rutinas, y análisis de fotos de comida del socio).</li>
         <li><strong>Supervisión Humana (Human-in-the-loop):</strong> Todos los planes de dieta y entrenamiento generados con asistencia de IA son **revisados, editados y aprobados por un entrenador cualificado humano** antes de ser asignados al socio. La IA actúa únicamente como una herramienta de apoyo al profesional.</li>
-        <li><strong>Anonimización:</strong> Los datos enviados a los modelos de OpenAI para cálculos nutricionales no incluyen nombres reales, apellidos ni direcciones de correo electrónico. Los datos se envían de forma seudonimizada mediante identificadores internos.</li>
-        <li><strong>No Entrenamiento:</strong> Según nuestros acuerdos con proveedores, los datos de los usuarios de NL VIP TEAM **no se utilizan para entrenar los modelos globales** de OpenAI.</li>
+        <li><strong>Anonimización:</strong> Los datos enviados a los modelos de OpenAI y Anthropic para cálculos nutricionales no incluyen nombres reales, apellidos ni direcciones de correo electrónico. Los datos se envían de forma seudonimizada mediante identificadores internos.</li>
+        <li><strong>Consentimiento:</strong> Cuando una acción del propio socio envía datos directamente a un servicio de IA (por ejemplo, fotografiar una comida), la app pide confirmación expresa antes de cada envío.</li>
+        <li><strong>No Entrenamiento:</strong> Según nuestros acuerdos con proveedores, los datos de los usuarios de NL VIP TEAM **no se utilizan para entrenar los modelos globales** de OpenAI ni de Anthropic.</li>
       </ul>
 
       <h2>3. Uso de la información</h2>
@@ -71,7 +73,8 @@ export default function Privacy() {
       <p>Utilizamos los siguientes servicios externos, cada uno con su propia política de privacidad:</p>
       <ul>
         <li><strong>Supabase</strong> (base de datos y autenticación) — <a href="https://supabase.com/privacy" target="_blank" rel="noreferrer">supabase.com/privacy</a></li>
-        <li><strong>OpenAI</strong> (asistente IA y transcripción de voz) — <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noreferrer">openai.com/policies/privacy-policy</a></li>
+        <li><strong>OpenAI</strong> (asistente IA, transcripción de voz y análisis de fotos de comida) — <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noreferrer">openai.com/policies/privacy-policy</a></li>
+        <li><strong>Anthropic</strong> (asistente IA para generación de borradores de dieta y rutina) — <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noreferrer">anthropic.com/legal/privacy</a></li>
         <li><strong>Vercel</strong> (hosting de la aplicación web) — <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noreferrer">vercel.com/legal/privacy-policy</a></li>
         <li><strong>Apple HealthKit</strong> — <a href="https://www.apple.com/legal/privacy/" target="_blank" rel="noreferrer">apple.com/legal/privacy</a></li>
       </ul>
