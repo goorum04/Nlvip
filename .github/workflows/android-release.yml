@@ -42,8 +42,23 @@ jobs:
           set -e
           rm -rf .next out
           cp next.config.mobile.js next.config.js
+          # Server-only routes (cron jobs, app-version check) use request.headers/
+          # request.url, which the static export can't prerender. The mobile app
+          # calls the production API directly, so it never needs these bundled.
+          mkdir -p /tmp/excluded-routes
+          mv app/api/cron /tmp/excluded-routes/cron
+          mv app/api/app-version /tmp/excluded-routes/app-version
+
+          set +e
           npm run build
+          BUILD_STATUS=$?
+          set -e
+
           git checkout next.config.js
+          mv /tmp/excluded-routes/cron app/api/cron
+          mv /tmp/excluded-routes/app-version app/api/app-version
+
+          test $BUILD_STATUS -eq 0 || { echo "BUILD FAILED: npm run build exited $BUILD_STATUS"; exit 1; }
           test -f out/index.html || { echo "BUILD FAILED: out/index.html missing"; exit 1; }
 
       - name: Add Android platform
