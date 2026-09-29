@@ -15,6 +15,7 @@ const MEAL_NAME_TO_SLOT = {
   'DESAYUNO': 'breakfast',
   'MEDIA MAÑANA': 'snack',
   'COMIDA': 'lunch',
+  'ALMUERZO': 'lunch',
   'MERIENDA': 'snack',
   'CENA': 'dinner',
 }
@@ -23,6 +24,7 @@ const MEAL_icons = {
   'DESAYUNO': Coffee,
   'MEDIA MAÑANA': Apple,
   'COMIDA': Sun,
+  'ALMUERZO': Sun,
   'MERIENDA': Apple,
   'CENA': Moon,
   'POST-ENTRENO': Flame,
@@ -33,6 +35,7 @@ const MEAL_COLORS = {
   'DESAYUNO': 'from-amber-500/20 to-orange-500/20 text-orange-400',
   'MEDIA MAÑANA': 'from-blue-400/20 to-cyan-400/20 text-cyan-400',
   'COMIDA': 'from-green-500/20 to-emerald-500/20 text-emerald-400',
+  'ALMUERZO': 'from-green-500/20 to-emerald-500/20 text-emerald-400',
   'MERIENDA': 'from-purple-500/20 to-pink-500/20 text-pink-400',
   'CENA': 'from-indigo-500/20 to-blue-500/20 text-blue-400',
   'POST-ENTRENO': 'from-red-500/20 to-orange-500/20 text-red-400',
