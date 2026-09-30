@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { sendNativeApplePush } from '@/lib/apn'
+import { sendNativePush } from '@/lib/push'
 import { sendPushToUser } from '@/lib/webpush'
 
 function getSupabase() {
@@ -130,7 +130,7 @@ export async function POST(req) {
 
       // Push a los admins
       for (const admin of (adminProfiles || [])) {
-        await sendNativeApplePush(supabaseAdmin, admin.id, adminPayload)
+        await sendNativePush(supabaseAdmin, admin.id, adminPayload)
         await sendPushToUser(supabaseAdmin, admin.id, { ...adminPayload, icon: '/icons/icon-192x192.png' })
         notifiedIds.add(admin.id)
       }
@@ -138,7 +138,7 @@ export async function POST(req) {
       // Push al trainer (si es distinto de los admins ya notificados)
       if (trainerId && !notifiedIds.has(trainerId)) {
         const trainerPayload = { ...adminPayload, url: '/diets' }
-        await sendNativeApplePush(supabaseAdmin, trainerId, trainerPayload)
+        await sendNativePush(supabaseAdmin, trainerId, trainerPayload)
         await sendPushToUser(supabaseAdmin, trainerId, { ...trainerPayload, icon: '/icons/icon-192x192.png' })
       }
 

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { sendNativeApplePush } from '@/lib/apn'
+import { sendNativePush } from '@/lib/push'
 import { sendPushToUser } from '@/lib/webpush'
 
 // Ventana de aviso: se notifica si la hora objetivo cae entre 0 y
@@ -123,7 +123,7 @@ export async function GET(request) {
           if (eaten) { results.skipped++; continue }
 
           const payload = { title, body: `Se acerca ${name}. Márcala como hecha cuando termines.`, url: '/' }
-          await sendNativeApplePush(supabase, profile.id, payload).catch(err =>
+          await sendNativePush(supabase, profile.id, payload).catch(err =>
             console.warn('[cron/meal-workout-reminders] APN error:', profile.id, slot, err.message)
           )
           await sendPushToUser(supabase, profile.id, { ...payload, icon: '/icons/icon-192x192.png' }).catch(err =>
@@ -166,7 +166,7 @@ export async function GET(request) {
               body: `Hoy toca: ${todaysDayName}. ${randomHypePhrase()}`,
               url: '/',
             }
-            await sendNativeApplePush(supabase, profile.id, payload).catch(err =>
+            await sendNativePush(supabase, profile.id, payload).catch(err =>
               console.warn('[cron/meal-workout-reminders] APN error (workout):', profile.id, err.message)
             )
             await sendPushToUser(supabase, profile.id, { ...payload, icon: '/icons/icon-192x192.png' }).catch(err =>

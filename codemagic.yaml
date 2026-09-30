@@ -131,3 +131,94 @@ workflows:
         submit_to_testflight: true
         beta_groups:
           - "Internal Testers"
+
+  android-release:
+    name: NL VIP Team - Android Release
+    max_build_duration: 60
+    instance_type: linux_x2
+
+    environment:
+      # Grupo a crear en Codemagic (Teams → Code signing / Environment
+      # variables) con estas 5 variables, todas marcadas "Secure":
+      #   ANDROID_KEYSTORE_BASE64      — el .keystore/.jks pasado por
+      #                                  `base64 -i mi.keystore | pbcopy`
+      #   ANDROID_KEYSTORE_PASSWORD    — contraseña del keystore
+      #   ANDROID_KEY_ALIAS            — alias de la clave dentro del keystore
+      #   ANDROID_KEY_PASSWORD         — contraseña de esa clave
+      #   FIREBASE_GOOGLE_SERVICES_BASE64 — el google-services.json de Firebase
+      #                                  (Project settings → tu app Android),
+      #                                  pasado también por `base64`
+      groups:
+        - android_credentials
+      vars:
+        STATIC_EXPORT: "true"
+      node: v20.11.0
+
+    # Sin bloque `triggering`: este workflow NO se dispara solo con cada push.
+    # Se lanza a mano desde el dashboard de Codemagic ("Start new build")
+    # hasta que las 5 variables de arriba estén configuradas — así no falla
+    # en rojo en cada commit mientras tanto.
+
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+
+      - name: Build Next.js for mobile
+        script: |
+          set -e
+          rm -rf .next out
+          cp next.config.mobile.js next.config.js
+          npm run build
+          git checkout next.config.js
+          ls -la out
+          test -f out/index.html || { echo "BUILD FAILED: out/index.html missing"; exit 1; }
+
+      - name: Sync Capacitor
+        script: |
+          npx cap sync android --inline
+
+      - name: Write Firebase config (google-services.json)
+        script: |
+          set -e
+          if [ -z "$FIREBASE_GOOGLE_SERVICES_BASE64" ]; then
+            echo "FALTA FIREBASE_GOOGLE_SERVICES_BASE64 — sin esto la app compila pero las notificaciones push en Android no funcionarán."
+          else
+            echo "$FIREBASE_GOOGLE_SERVICES_BASE64" | base64 -d > android/app/google-services.json
+            echo "google-services.json escrito ($(wc -c < android/app/google-services.json) bytes)"
+          fi
+
+      - name: Write release keystore and signing config
+        script: |
+          set -e
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "FALTA ANDROID_KEYSTORE_BASE64 — la build saldrá SIN FIRMAR (solo sirve para comprobar que compila, no para instalar)."
+          else
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+            cat > android/keystore.properties <<EOF
+          storeFile=app/release.keystore
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+            echo "keystore.properties escrito"
+          fi
+
+      - name: Set version code and name
+        script: |
+          set -e
+          cd android/app
+          sed -i "s/versionCode 1/versionCode $BUILD_NUMBER/" build.gradle
+          sed -i "s/versionName \"1.0\"/versionName \"1.0.$BUILD_NUMBER\"/" build.gradle
+          echo "versionCode=$BUILD_NUMBER versionName=1.0.$BUILD_NUMBER"
+
+      - name: Build signed APK and AAB
+        script: |
+          set -e
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease bundleRelease
+
+    artifacts:
+      - android/app/build/outputs/apk/release/*.apk
+      - android/app/build/outputs/bundle/release/*.aab

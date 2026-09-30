@@ -66,6 +66,7 @@
         "cmdk": "^1.1.1",
         "date-fns": "^4.1.0",
         "embla-carousel-react": "^8.6.0",
+        "firebase-admin": "^14.5.0",
         "input-otp": "^1.4.2",
         "lucide-react": "^0.516.0",
         "mongodb": "^6.6.0",
@@ -101,6 +102,10 @@
         "handlebars": ">=4.7.9",
         "lodash": ">=4.17.21",
         "minimatch": ">=3.1.2",
-        "path-to-regexp": ">=0.1.12"
+        "path-to-regexp": ">=0.1.12",
+        "http2": "npm:http2@3.3.7"
+    },
+    "overrides": {
+        "http2": "npm:http2@3.3.7"
     }
 }
