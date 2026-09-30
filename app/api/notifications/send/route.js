@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { sendPushToUser } from '@/lib/webpush'
-import { sendNativeApplePush } from '@/lib/apn'
+import { sendNativePush } from '@/lib/push'
 
 function getSupabase() {
   return createClient(
@@ -50,7 +50,7 @@ export async function POST(req) {
     })
 
     // Native Apple Push
-    await sendNativeApplePush(supabaseAdmin, targetUserId, {
+    await sendNativePush(supabaseAdmin, targetUserId, {
       title,
       body,
       url: url || '/',

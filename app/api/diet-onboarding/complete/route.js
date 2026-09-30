@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { sendNativeApplePush } from '@/lib/apn'
+import { sendNativePush } from '@/lib/push'
 import { sendPushToUser } from '@/lib/webpush'
 
 function getSupabase() {
@@ -102,7 +102,7 @@ export async function POST(req) {
         url: '/nutrition',
         icon: '/icons/icon-192x192.png',
       }
-      await sendNativeApplePush(supabase, memberId, payload)
+      await sendNativePush(supabase, memberId, payload)
       await sendPushToUser(supabase, memberId, payload)
     } catch (e) {
       console.warn('Could not send push notification:', e.message)

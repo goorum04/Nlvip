@@ -83,6 +83,14 @@ agenthub/agents/youtube/db
 # Mobile development
 android-sdk/
 
+# Android release signing + Firebase config: nunca se commitean, los escribe
+# el workflow android-release de Codemagic a partir de variables de entorno
+# secretas (mismo patrón que la clave .p8 de Apple).
+android/keystore.properties
+android/app/*.keystore
+android/app/*.jks
+android/app/google-services.json
+
 # Native binary modules (arm64)
 node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.node
 node_modules/@next/swc-linux-arm64-musl/next-swc.linux-arm64-musl.node

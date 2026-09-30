@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { sendNativeApplePush } from '@/lib/apn'
+import { sendNativePush } from '@/lib/push'
 import { sendPushToUser } from '@/lib/webpush'
 
 function getSupabase() {
@@ -82,7 +82,7 @@ export async function POST(req) {
     await Promise.all(
       participants.map(async ({ user_id }) => {
         try {
-          await sendNativeApplePush(supabaseAdmin, user_id, notifPayload)
+          await sendNativePush(supabaseAdmin, user_id, notifPayload)
           await sendPushToUser(supabaseAdmin, user_id, { ...notifPayload, icon: '/icons/icon-192x192.png' })
         } catch (e) {
           console.warn('[Push] Error enviando a', user_id, e.message)
