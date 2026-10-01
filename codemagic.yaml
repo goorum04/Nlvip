@@ -32,10 +32,20 @@ workflows:
       - name: Build Next.js for mobile
         script: |
           set -e
-          rm -rf .next out
+          rm -rf .next out /tmp/excluded-routes
+          # app/api/cron/* y app/api/app-version usan request.headers/request.url,
+          # incompatibles con `output: 'export'` — Next.js sale con código 0 pero
+          # sin generar out/index.html si se quedan dentro. La app móvil llama a
+          # la API de producción directamente, así que no le hacen falta
+          # empaquetadas (mismo criterio que build-mobile.sh).
+          mkdir -p /tmp/excluded-routes
+          mv app/api/cron /tmp/excluded-routes/cron
+          mv app/api/app-version /tmp/excluded-routes/app-version
           cp next.config.mobile.js next.config.js
           npm run build
           git checkout next.config.js
+          mv /tmp/excluded-routes/cron app/api/cron
+          mv /tmp/excluded-routes/app-version app/api/app-version
           ls -la out
           test -f out/index.html || { echo "BUILD FAILED: out/index.html missing"; exit 1; }
 
@@ -131,3 +141,106 @@ workflows:
         submit_to_testflight: true
         beta_groups:
           - "Internal Testers"
+
+  android-release:
+    name: NL VIP Team - Android Release
+    max_build_duration: 60
+    instance_type: linux_x2
+
+    environment:
+      # Grupo a crear en Codemagic (Teams → Code signing / Environment
+      # variables) con estas 5 variables, todas marcadas "Secure":
+      #   ANDROID_KEYSTORE_BASE64      — el .keystore/.jks pasado por
+      #                                  `base64 -i mi.keystore | pbcopy`
+      #   ANDROID_KEYSTORE_PASSWORD    — contraseña del keystore
+      #   ANDROID_KEY_ALIAS            — alias de la clave dentro del keystore
+      #   ANDROID_KEY_PASSWORD         — contraseña de esa clave
+      #   FIREBASE_GOOGLE_SERVICES_BASE64 — el google-services.json de Firebase
+      #                                  (Project settings → tu app Android),
+      #                                  pasado también por `base64`
+      groups:
+        - android_credentials
+      vars:
+        STATIC_EXPORT: "true"
+      node: v20.11.0
+      # El Gradle Wrapper de este proyecto (8.0.2, el que trae Capacitor por
+      # defecto) no soporta Java 21 ("Unsupported class file major version
+      # 65") — lo comprobé compilando en local. Java 17 es la versión con la
+      # que sí compila.
+      java: 17
+
+    # Sin bloque `triggering`: este workflow NO se dispara solo con cada push.
+    # Se lanza a mano desde el dashboard de Codemagic ("Start new build")
+    # hasta que las 5 variables de arriba estén configuradas — así no falla
+    # en rojo en cada commit mientras tanto.
+
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+
+      - name: Build Next.js for mobile
+        script: |
+          set -e
+          rm -rf .next out /tmp/excluded-routes
+          # Ver el comentario equivalente en el workflow ios-release: estas
+          # rutas rompen `output: 'export'` si se quedan dentro.
+          mkdir -p /tmp/excluded-routes
+          mv app/api/cron /tmp/excluded-routes/cron
+          mv app/api/app-version /tmp/excluded-routes/app-version
+          cp next.config.mobile.js next.config.js
+          npm run build
+          git checkout next.config.js
+          mv /tmp/excluded-routes/cron app/api/cron
+          mv /tmp/excluded-routes/app-version app/api/app-version
+          ls -la out
+          test -f out/index.html || { echo "BUILD FAILED: out/index.html missing"; exit 1; }
+
+      - name: Sync Capacitor
+        script: |
+          npx cap sync android --inline
+
+      - name: Write Firebase config (google-services.json)
+        script: |
+          set -e
+          if [ -z "$FIREBASE_GOOGLE_SERVICES_BASE64" ]; then
+            echo "FALTA FIREBASE_GOOGLE_SERVICES_BASE64 — sin esto la app compila pero las notificaciones push en Android no funcionarán."
+          else
+            echo "$FIREBASE_GOOGLE_SERVICES_BASE64" | base64 -d > android/app/google-services.json
+            echo "google-services.json escrito ($(wc -c < android/app/google-services.json) bytes)"
+          fi
+
+      - name: Write release keystore and signing config
+        script: |
+          set -e
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "FALTA ANDROID_KEYSTORE_BASE64 — la build saldrá SIN FIRMAR (solo sirve para comprobar que compila, no para instalar)."
+          else
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+            cat > android/keystore.properties <<EOF
+          storeFile=app/release.keystore
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+            echo "keystore.properties escrito"
+          fi
+
+      - name: Set version code and name
+        script: |
+          set -e
+          cd android/app
+          sed -i "s/versionCode 1/versionCode $BUILD_NUMBER/" build.gradle
+          sed -i "s/versionName \"1.0\"/versionName \"1.0.$BUILD_NUMBER\"/" build.gradle
+          echo "versionCode=$BUILD_NUMBER versionName=1.0.$BUILD_NUMBER"
+
+      - name: Build signed APK and AAB
+        script: |
+          set -e
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease bundleRelease
+
+    artifacts:
+      - android/app/build/outputs/apk/release/*.apk
+      - android/app/build/outputs/bundle/release/*.aab

@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { sendNativeApplePush } from '@/lib/apn'
+import { sendNativePush } from '@/lib/push'
 import { sendPushToUser } from '@/lib/webpush'
 import { adaptExistingDiet } from '@/lib/dietGeneration'
 import { compareProgressPhotos } from '@/lib/photoAnalysis'
@@ -402,13 +402,13 @@ export async function POST(req) {
       const notifRows = []
       const notifiedIds = new Set()
       for (const admin of (adminProfiles || [])) {
-        await sendNativeApplePush(supabase, admin.id, payload)
+        await sendNativePush(supabase, admin.id, payload)
         await sendPushToUser(supabase, admin.id, { ...payload, icon: '/icons/icon-192x192.png' })
         notifRows.push({ user_id: admin.id, title: payload.title, body: payload.body, type: 'checkin_submitted', reference_id: checkin.id, url: payload.url })
         notifiedIds.add(admin.id)
       }
       if (trainerId && !notifiedIds.has(trainerId)) {
-        await sendNativeApplePush(supabase, trainerId, payload)
+        await sendNativePush(supabase, trainerId, payload)
         await sendPushToUser(supabase, trainerId, { ...payload, icon: '/icons/icon-192x192.png' })
         notifRows.push({ user_id: trainerId, title: payload.title, body: payload.body, type: 'checkin_submitted', reference_id: checkin.id, url: payload.url })
       }

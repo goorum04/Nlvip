@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { sendNativeApplePush } from '@/lib/apn'
+import { sendNativePush } from '@/lib/push'
 import { sendPushToUser } from '@/lib/webpush'
 
 export async function GET(request) {
@@ -103,7 +103,7 @@ export async function GET(request) {
         url: '/',
       }
 
-      await sendNativeApplePush(supabase, profile.id, payload).catch(err =>
+      await sendNativePush(supabase, profile.id, payload).catch(err =>
         console.warn('[cron/progress-reminders] APN error:', profile.id, err.message)
       )
       await sendPushToUser(supabase, profile.id, { ...payload, icon: '/icons/icon-192x192.png' }).catch(err =>
