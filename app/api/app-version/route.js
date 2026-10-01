@@ -15,7 +15,7 @@ function jsonNoStore(body, init) {
 // Id numérico de la ficha de la App Store (de la propia store_url configurada).
 // La API pública de iTunes Lookup no necesita ninguna clave ni login de
 // App Store Connect: devuelve la versión que está publicada AHORA MISMO.
-const IOS_APP_STORE_ID = '6759666320'
+const IOS_APP_STORE_ID = '6759003518'
 
 // Consulta la versión real publicada en la App Store. Si falla por lo que
 // sea (red, Apple caído, etc.), devuelve null y el aviso simplemente usa el
