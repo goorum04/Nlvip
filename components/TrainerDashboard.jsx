@@ -36,6 +36,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
   const [households, setHouseholds] = useState({}) // member_id -> { household_id, roommates: [{id,name,email}] }
   const [workoutTemplates, setWorkoutTemplates] = useState([])
   const [dietTemplates, setDietTemplates] = useState([])
+  const [workoutVideos, setWorkoutVideos] = useState({}) // workout_template_id -> videos[]
   const [notices, setNotices] = useState([])
   const [loading, setLoading] = useState(false)
   const [generatingDietId, setGeneratingDietId] = useState(null)
@@ -361,6 +362,37 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
         videos[workout.id] = (workout.workout_videos || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
       }
       setWorkoutVideos(videos)
+    }
+  }
+
+  const handleDeleteWorkout = async (workoutId) => {
+    if (!confirm('¿Eliminar esta rutina? Se eliminarán también todos los días y ejercicios asociados.')) return
+    try {
+      const { data: days } = await supabase.from('workout_days').select('id').eq('workout_template_id', workoutId)
+      if (days && days.length > 0) {
+        await supabase.from('workout_exercises').delete().in('workout_day_id', days.map(d => d.id))
+      }
+      await supabase.from('workout_days').delete().eq('workout_template_id', workoutId)
+      const { data, error } = await supabase.from('workout_templates').delete().eq('id', workoutId).select()
+      if (error) throw error
+      if (!data || data.length === 0) throw new Error('Operación bloqueada por los permisos del servidor (RLS).')
+      toast({ title: 'Rutina eliminada' })
+      loadWorkoutTemplates()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
+  }
+
+  const handleDeleteDiet = async (dietId) => {
+    if (!confirm('¿Eliminar esta dieta?')) return
+    try {
+      const { data, error } = await supabase.from('diet_templates').delete().eq('id', dietId).select()
+      if (error) throw error
+      if (!data || data.length === 0) throw new Error('Operación bloqueada por los permisos del servidor (RLS).')
+      toast({ title: 'Dieta eliminada' })
+      loadDietTemplates()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
     }
   }
 
