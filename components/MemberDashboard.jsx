@@ -99,6 +99,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const [showCheckInForm, setShowCheckInForm] = useState(false)
   const [postImage, setPostImage] = useState(null)
   const [lastCheckinAt, setLastCheckinAt] = useState(null)
+  const [onboardingCompletedAt, setOnboardingCompletedAt] = useState(null)
 
   // Feed form
   const [newPostContent, setNewPostContent] = useState('')
@@ -327,6 +328,24 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
       console.warn('Error fetching onboarding:', e.message)
     }
 
+    // Fecha en la que completó el cuestionario inicial — sirve de punto de
+    // partida del primer ciclo de revisión cuando todavía no ha enviado
+    // ninguna (si no, el botón de "Nueva revisión" quedaría disponible el
+    // mismo día que empieza, sin sentido para una revisión "periódica").
+    try {
+      const { data } = await supabase
+        .from('diet_onboarding_requests')
+        .select('completed_at')
+        .eq('member_id', user.id)
+        .neq('status', 'pending')
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      setOnboardingCompletedAt(data?.completed_at || null)
+    } catch (e) {
+      console.warn('Error fetching onboarding completion date:', e.message)
+    }
+
     // Muchos socios rellenan el cuestionario sin tener las fotos hechas
     // todavía (las 3 preguntas del cuestionario son obligatorias, las fotos
     // no). Si ya envió el cuestionario al menos una vez y no tiene ninguna
@@ -534,8 +553,13 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   // 7/14/21/30 días, o null = sin ciclo asignado). Null significa que el socio
   // puede enviar revisión libremente; con ciclo asignado, solo puede volver a
   // enviar cuando el ciclo se haya cumplido desde su última revisión.
-  const nextCheckinDueAt = (profile?.progress_reminder_days && lastCheckinAt)
-    ? new Date(new Date(lastCheckinAt).getTime() + profile.progress_reminder_days * 24 * 60 * 60 * 1000)
+  // Si todavía no ha enviado ninguna, el primer ciclo cuenta desde que
+  // completó el cuestionario inicial (no desde el principio de los tiempos):
+  // sin esto, un socio recién dado de alta podía enviar su "revisión
+  // periódica" el mismo día, sin que tocara aún.
+  const checkinCycleAnchor = lastCheckinAt || onboardingCompletedAt
+  const nextCheckinDueAt = (profile?.progress_reminder_days && checkinCycleAnchor)
+    ? new Date(new Date(checkinCycleAnchor).getTime() + profile.progress_reminder_days * 24 * 60 * 60 * 1000)
     : null
   const checkinOnCooldown = !!(nextCheckinDueAt && nextCheckinDueAt.getTime() > Date.now())
 
@@ -1320,6 +1344,23 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 }}
                 onCancel={() => setShowCheckInForm(false)}
               />
+            ) : pendingOnboarding ? (
+              // Enviar una "revisión periódica" sin haber completado el
+              // cuestionario inicial no tiene sentido (todavía no hay dieta
+              // ni rutina asignada que revisar) — y confundía a socios que
+              // acababan aquí sin querer en vez de en el cuestionario.
+              <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
+                <CardContent className="py-8 flex flex-col items-center text-center gap-3">
+                  <Apple className="w-10 h-10 text-violet-500" />
+                  <div>
+                    <p className="text-white font-bold">Completa primero tu cuestionario</p>
+                    <p className="text-gray-500 text-sm">Necesitamos esos datos antes de poder revisar tu progreso.</p>
+                  </div>
+                  <Button onClick={() => setShowOnboardingModal(true)} className="bg-gradient-to-r from-violet-500 to-cyan-500 text-black rounded-xl">
+                    Rellenar cuestionario
+                  </Button>
+                </CardContent>
+              </Card>
             ) : checkinOnCooldown ? (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
                 <CardContent className="py-8 flex flex-col items-center text-center gap-3">
