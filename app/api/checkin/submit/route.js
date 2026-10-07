@@ -117,9 +117,26 @@ export async function POST(req) {
         .limit(1)
         .maybeSingle()
 
-      if (lastCheckin) {
+      // Si todavía no ha enviado ninguna revisión, el primer ciclo cuenta
+      // desde que completó el cuestionario inicial, no desde el alta de la
+      // cuenta — si no, un socio recién registrado podía mandar su
+      // "revisión periódica" el mismo día, sin que tocara aún.
+      let cycleAnchor = lastCheckin?.created_at || null
+      if (!cycleAnchor) {
+        const { data: onboarding } = await supabase
+          .from('diet_onboarding_requests')
+          .select('completed_at')
+          .eq('member_id', memberId)
+          .neq('status', 'pending')
+          .order('completed_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        cycleAnchor = onboarding?.completed_at || null
+      }
+
+      if (cycleAnchor) {
         const cadenceMs = memberProfile.progress_reminder_days * 24 * 60 * 60 * 1000
-        const nextAllowedAt = new Date(lastCheckin.created_at).getTime() + cadenceMs
+        const nextAllowedAt = new Date(cycleAnchor).getTime() + cadenceMs
         if (Date.now() < nextAllowedAt) {
           const nextDate = new Date(nextAllowedAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long' })
           // Redactado para no sonar a "algo falló": el caso típico es que el
