@@ -129,20 +129,24 @@ export function FeedSection({ userId, userRole = 'member', canModerate = false }
 
   const handleHidePost = async (postId) => {
     if (!canModerate) return
-    const { error } = await supabase.from('feed_posts').update({ is_hidden: true }).eq('id', postId)
-    if (!error) {
-      toast({ title: 'Post ocultado', description: 'El post ha sido ocultado del feed' })
-      loadFeed()
+    const { data, error } = await supabase.from('feed_posts').update({ is_hidden: true }).eq('id', postId).select('id')
+    if (error || !data?.length) {
+      toast({ title: 'No se pudo ocultar el post', description: error?.message || 'Sin permisos para modificar este post', variant: 'destructive' })
+      return
     }
+    toast({ title: 'Post ocultado', description: 'El post ha sido ocultado del feed' })
+    loadFeed()
   }
 
   const handleDeletePost = async (postId) => {
     if (!canModerate) return
-    const { error } = await supabase.from('feed_posts').delete().eq('id', postId)
-    if (!error) {
-      toast({ title: 'Post eliminado', description: 'El post ha sido eliminado permanentemente' })
-      loadFeed()
+    const { data, error } = await supabase.from('feed_posts').delete().eq('id', postId).select('id')
+    if (error || !data?.length) {
+      toast({ title: 'No se pudo eliminar el post', description: error?.message || 'Sin permisos para borrar este post', variant: 'destructive' })
+      return
     }
+    toast({ title: 'Post eliminado', description: 'El post ha sido eliminado permanentemente' })
+    loadFeed()
   }
 
   const isLikedByMe = (post) => post.feed_likes?.some(l => l.user_id === userId)
