@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 import { refineRoutineDraft } from '@/lib/routineGeneration'
+import { classifyAndStoreCorrection } from '@/lib/correctionMemory'
 
 // refineRoutineDraft ahora también analiza por visión las fotos de progreso
 // más recientes del socio — una llamada extra que no existía antes.
@@ -68,7 +69,9 @@ export async function POST(req) {
       correction,
     })
 
-    return NextResponse.json({ success: true, updatedRoutine, changeSummary })
+    const memoryUpdate = await classifyAndStoreCorrection({ correction, supabase, memberId: memberId || null, createdBy: caller.id })
+
+    return NextResponse.json({ success: true, updatedRoutine, changeSummary, memoryUpdate })
   } catch (error) {
     console.error('refine-routine error:', error)
     return NextResponse.json({ error: error.message }, { status: error.status || 500 })

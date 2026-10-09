@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 import { refineRoutineDraft } from '@/lib/routineGeneration'
 import { refineDietDraft } from '@/lib/dietGeneration'
+import { classifyAndStoreCorrection } from '@/lib/correctionMemory'
 
 // refineDietDraft/refineRoutineDraft ahora también analizan por visión las
 // fotos de progreso más recientes del socio — una llamada extra que no
@@ -85,7 +86,8 @@ export async function POST(req) {
         draft_fat_g: macros.fat_g,
         diet_change_summary: changeSummary || checkin.diet_change_summary,
       }).eq('id', checkinId)
-      return NextResponse.json({ success: true, target: 'diet', draftDietContent: content, macros, changeSummary, explanation })
+      const memoryUpdate = await classifyAndStoreCorrection({ correction, supabase, memberId: checkin.member_id, createdBy: caller.id })
+      return NextResponse.json({ success: true, target: 'diet', draftDietContent: content, macros, changeSummary, explanation, memoryUpdate })
     }
 
     // target === 'routine'
@@ -102,7 +104,8 @@ export async function POST(req) {
       draft_routine_data: updatedRoutine,
       routine_change_summary: changeSummary || checkin.routine_change_summary,
     }).eq('id', checkinId)
-    return NextResponse.json({ success: true, target: 'routine', draftRoutineData: updatedRoutine, changeSummary })
+    const memoryUpdate = await classifyAndStoreCorrection({ correction, supabase, memberId: checkin.member_id, createdBy: caller.id })
+    return NextResponse.json({ success: true, target: 'routine', draftRoutineData: updatedRoutine, changeSummary, memoryUpdate })
   } catch (error) {
     console.error('checkin/refine-draft error:', error)
     return NextResponse.json({ error: error.message }, { status: error.status || 500 })

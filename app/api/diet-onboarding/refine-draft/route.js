@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 import { refineDietDraft } from '@/lib/dietGeneration'
+import { classifyAndStoreCorrection } from '@/lib/correctionMemory'
 
 // refineDietDraft ahora también analiza por visión las fotos de progreso más
 // recientes del socio — una llamada extra que no existía antes.
@@ -81,12 +82,15 @@ export async function POST(req) {
       memberId: memberId || null,
     })
 
+    const memoryUpdate = await classifyAndStoreCorrection({ correction, supabase, memberId: memberId || null, createdBy: caller.id })
+
     return NextResponse.json({
       success: true,
       updatedDietContent: content,
       explanation: explanation || changeSummary || 'Ajuste aplicado según las indicaciones.',
       changeSummary: changeSummary || explanation,
       macros: updatedMacros,
+      memoryUpdate,
     })
 
   } catch (error) {

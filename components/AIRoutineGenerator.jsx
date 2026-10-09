@@ -492,6 +492,10 @@ export default function AIRoutineGenerator({ open, onClose, trainerId, onRoutine
       setRoutineCorrection('')
       routineCorrectionTranscriptRef.current = ''
       toast({ title: '✅ Corrección aplicada', description: 'La rutina ha sido actualizada.' })
+      if (result.memoryUpdate) {
+        const scopeLabel = result.memoryUpdate.scope === 'member' ? 'Nota guardada sobre este socio' : 'Guardado como preferencia general'
+        toast({ title: `🧠 ${scopeLabel}`, description: result.memoryUpdate.note })
+      }
     } catch (error) {
       toast({ title: 'Error al corregir', description: error.message, variant: 'destructive' })
     } finally {

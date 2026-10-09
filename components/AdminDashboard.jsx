@@ -493,6 +493,10 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       setDraftCorrection('')
       correctionTranscriptRef.current = ''
       toast({ title: '✅ Corrección aplicada', description: result.explanation ? 'La IA ha actualizado el borrador y respondido a tu indicación.' : 'El borrador ha sido actualizado.' })
+      if (result.memoryUpdate) {
+        const scopeLabel = result.memoryUpdate.scope === 'member' ? 'Nota guardada sobre este socio' : 'Guardado como preferencia general'
+        toast({ title: `🧠 ${scopeLabel}`, description: result.memoryUpdate.note })
+      }
     } catch (error) {
       toast({ title: 'Error al corregir', description: error.message, variant: 'destructive' })
     } finally {
