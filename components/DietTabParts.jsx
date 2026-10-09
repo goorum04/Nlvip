@@ -9,6 +9,35 @@ import {
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 
+// Resalta visualmente un item de dieta: el "Opción N:" inicial como etiqueta
+// en negrita, y las cantidades entre paréntesis (p.ej. "(250/200/180g)") en
+// un tono violeta + fuente monoespaciada, para que las cifras se puedan
+// escanear de un vistazo en vez de perderse en un párrafo corrido.
+function renderDietItem(item) {
+  const optionMatch = item.match(/^(Opción\s+\d+):\s*(.*)$/i)
+  const label = optionMatch ? optionMatch[1] : null
+  const rest = optionMatch ? optionMatch[2] : item
+
+  const parts = rest.split(/(\([^)]*\d[^)]*\))/g)
+
+  return (
+    <>
+      {label && (
+        <span className="inline-block mb-1 px-2 py-0.5 rounded-md bg-violet-500/15 text-violet-300 text-xs font-bold uppercase tracking-wide">
+          {label}
+        </span>
+      )}
+      <span className="block">
+        {parts.map((part, i) =>
+          /^\([^)]*\d[^)]*\)$/.test(part)
+            ? <span key={i} className="font-mono text-cyan-300/90 font-semibold">{part}</span>
+            : <span key={i}>{part}</span>
+        )}
+      </span>
+    </>
+  )
+}
+
 // Nombre de tarjeta (tal y como sale parseado del texto de la dieta) -> slot
 // estructurado que usan meal_logs / meal_reminders_sent.
 const MEAL_NAME_TO_SLOT = {
@@ -168,7 +197,7 @@ export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
                     <div key={i} className="flex items-start gap-3 group/item">
                       <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-violet-500/50 group-hover/item:bg-violet-500 transition-colors" />
                       <p className="text-gray-300 text-sm leading-relaxed group-hover/item:text-white transition-colors">
-                        {item}
+                        {renderDietItem(item)}
                       </p>
                     </div>
                   ))}
