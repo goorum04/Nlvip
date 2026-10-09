@@ -47,6 +47,7 @@ const MEAL_NAME_TO_SLOT = {
   'ALMUERZO': 'lunch',
   'MERIENDA': 'snack',
   'CENA': 'dinner',
+  'BATIDO': 'snack',
 }
 
 const MEAL_icons = {
@@ -58,6 +59,7 @@ const MEAL_icons = {
   'CENA': Moon,
   'POST-ENTRENO': Flame,
   'PRE-ENTRENO': Flame,
+  'BATIDO': Flame,
 }
 
 const MEAL_COLORS = {
@@ -68,6 +70,17 @@ const MEAL_COLORS = {
   'MERIENDA': 'from-purple-500/20 to-pink-500/20 text-pink-400',
   'CENA': 'from-indigo-500/20 to-blue-500/20 text-blue-400',
   'POST-ENTRENO': 'from-red-500/20 to-orange-500/20 text-red-400',
+  'BATIDO': 'from-red-500/20 to-orange-500/20 text-red-400',
+}
+
+// Busca el estilo (icono/color) por nombre exacto de comida y, si no hay
+// coincidencia exacta, por la primera clave del diccionario que aparezca
+// como palabra dentro del nombre — así "MERIENDA POST-ENTRENO" hereda el
+// estilo de "MERIENDA" sin tener que listar cada combinación posible.
+function lookupMealStyle(dict, mealName) {
+  if (dict[mealName]) return dict[mealName]
+  const key = Object.keys(dict).find(k => mealName.includes(k))
+  return key ? dict[key] : null
 }
 
 // Guideline 1.4.1 (App Store): las recomendaciones nutricionales deben
@@ -127,7 +140,7 @@ export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
       
       if (mealMatch && !trimmed.includes('REGLAS') && !trimmed.includes('MACROS') && !trimmed.includes('SUPLEMENTACIÓN')) {
         const mealName = mealMatch[1].trim().toUpperCase()
-        if (MEAL_icons[mealName] || mealName.includes('COMIDA') || mealName.includes('MAÑANA')) {
+        if (lookupMealStyle(MEAL_icons, mealName) || mealName.includes('COMIDA') || mealName.includes('MAÑANA')) {
           if (currentMeal) meals.push(currentMeal)
           currentMeal = {
             name: mealName,
@@ -167,9 +180,9 @@ export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
       <div className="absolute left-[21px] top-4 bottom-4 w-px bg-gradient-to-b from-violet-500/50 via-cyan-500/50 to-transparent hidden sm:block" />
 
       {meals.map((meal, idx) => {
-        const Icon = MEAL_icons[meal.name] || Clock
-        const colorClass = MEAL_COLORS[meal.name] || 'from-gray-500/20 to-gray-600/20 text-gray-400'
-        const slot = MEAL_NAME_TO_SLOT[meal.name]
+        const Icon = lookupMealStyle(MEAL_icons, meal.name) || Clock
+        const colorClass = lookupMealStyle(MEAL_COLORS, meal.name) || 'from-gray-500/20 to-gray-600/20 text-gray-400'
+        const slot = lookupMealStyle(MEAL_NAME_TO_SLOT, meal.name)
         const isLogged = slot && loggedSlots?.includes(slot)
 
         return (
