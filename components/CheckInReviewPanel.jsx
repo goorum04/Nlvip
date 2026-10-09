@@ -317,6 +317,10 @@ function CheckInCard({ checkin, onRefresh }) {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error al ajustar')
       toast({ title: 'Ajuste aplicado', description: data.explanation || data.changeSummary || 'Borrador actualizado por la IA.' })
+      if (data.memoryUpdate) {
+        const scopeLabel = data.memoryUpdate.scope === 'member' ? `Nota guardada sobre ${memberName}` : 'Guardado como preferencia general'
+        toast({ title: `🧠 ${scopeLabel}`, description: data.memoryUpdate.note })
+      }
       setCorrection('')
       setCorrectionTarget(null)
       onRefresh?.()
