@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { User, Camera as CameraIcon, Save, Trash2, LoaderCircle as Loader2, X, TriangleAlert as AlertTriangle, KeyRound, ChevronDown, ChevronUp } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
+import { BiometricLockToggle } from '@/components/BiometricLock'
 
 // Avatar Bubble Component - Para mostrar en el header
 export function AvatarBubble({ profile, size = 'md', onClick }) {
@@ -551,6 +552,8 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
             )}
             <p className="text-xs text-gray-500">Te avisaremos por notificación push unos minutos antes de cada hora.</p>
           </div>
+
+          <BiometricLockToggle />
 
           {/* Save Button */}
           <Button

@@ -61,6 +61,8 @@
 	<string>NL VIP TEAM usa reconocimiento de voz para que el administrador del gimnasio pueda dar instrucciones al asistente IA de gestión mediante comandos de voz.</string>
 	
 	<!-- Cámara y Fotos -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>NL VIP TEAM usa Face ID solo si activas "Desbloquear con Face ID" en tu perfil, para que nadie más pueda abrir tu cuenta en este iPhone. Tu cara nunca sale del dispositivo: la verificación la hace iOS y la app solo recibe si ha sido correcta.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>NL VIP TEAM usa la cámara para tres funciones concretas: fotografiar tu progreso físico semanal para el seguimiento con tu entrenador, adjuntar las 4 fotos de tu revisión periódica (frente, ambos lados y espalda), y fotografiar un plato de comida para que la app estime sus calorías y macronutrientes. Por ejemplo, al pulsar "Fotografiar" en la sección de comidas, se abre la cámara para capturar la imagen de tu plato.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

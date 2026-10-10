@@ -12,6 +12,8 @@ import { Dumbbell, Sparkles, Shield, Gift, Lock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { getApiUrl } from '@/lib/utils'
+import BiometricLock from '@/components/BiometricLock'
+import { setBiometricLockEnabled } from '@/lib/biometric'
 
 // Lazy-load dashboards: keeps the initial JS bundle small so the iOS WebView can
 // paint the login screen fast and avoid the TestFlight startup watchdog.
@@ -241,6 +243,9 @@ export default function App() {
   }
 
   const handleLogout = async () => {
+    // El desbloqueo con Face ID es de esta sesión: quien entre después lo
+    // activa de nuevo desde su perfil si lo quiere.
+    await setBiometricLockEnabled(false).catch(() => {})
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
@@ -341,13 +346,19 @@ export default function App() {
 
   const renderContent = () => {
     if (user && profile) {
+      let dashboard
       if (profile.role === 'admin') {
-        return <AdminDashboard user={user} profile={profile} onLogout={handleLogout} />
+        dashboard = <AdminDashboard user={user} profile={profile} onLogout={handleLogout} />
+      } else if (profile.role === 'trainer') {
+        dashboard = <TrainerDashboard user={user} profile={profile} onLogout={handleLogout} />
+      } else {
+        dashboard = <MemberDashboard user={user} profile={profile} setProfile={setProfile} onLogout={handleLogout} />
       }
-      if (profile.role === 'trainer') {
-        return <TrainerDashboard user={user} profile={profile} onLogout={handleLogout} />
-      }
-      return <MemberDashboard user={user} profile={profile} setProfile={setProfile} onLogout={handleLogout} />
+      return (
+        <BiometricLock key={user.id} onLogout={handleLogout}>
+          {dashboard}
+        </BiometricLock>
+      )
     }
 
     // Login / Register Screen
