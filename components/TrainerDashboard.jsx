@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import {
   Dumbbell, Users, Bell, LogOut, Plus, Apple, Sparkles, Eye, Send,
-  Video, Camera, TrendingUp, Trash2, Loader2, Calculator, Target, Trophy, UtensilsCrossed, MessageSquare, ChefHat, Heart
+  Video, Camera, TrendingUp, Trash2, Loader2, Calculator, Target, Trophy, UtensilsCrossed, MessageSquare, ChefHat, Heart, Search
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
@@ -33,6 +33,7 @@ import { CheckInReviewPanel } from './CheckInReviewPanel'
 
 export default function TrainerDashboard({ user, profile, setProfile, onLogout }) {
   const [members, setMembers] = useState([])
+  const [memberSearch, setMemberSearch] = useState('')
   const [households, setHouseholds] = useState({}) // member_id -> { household_id, roommates: [{id,name,email}] }
   const [workoutTemplates, setWorkoutTemplates] = useState([])
   const [dietTemplates, setDietTemplates] = useState([])
@@ -812,9 +813,24 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                   <Users className="w-5 h-5 text-violet-400" />
                   Mis Socios ({members.length})
                 </CardTitle>
+                <div className="relative mt-2">
+                  <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    placeholder="Buscar socio por nombre o email..."
+                    className="bg-black/30 border-[#2a2a2a] rounded-xl text-white pl-9"
+                  />
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {members.map((member) => (
+                {members
+                  .filter((member) => {
+                    const q = memberSearch.trim().toLowerCase()
+                    if (!q) return true
+                    return member.name?.toLowerCase().includes(q) || member.email?.toLowerCase().includes(q)
+                  })
+                  .map((member) => (
                   <Dialog key={member.id}>
                     <DialogTrigger asChild>
                       <div className="flex items-center justify-between gap-3 p-4 bg-black/30 rounded-2xl border border-[#2a2a2a] cursor-pointer hover:border-violet-500/30 transition-all group">
