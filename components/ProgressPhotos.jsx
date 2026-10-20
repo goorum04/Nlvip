@@ -112,14 +112,10 @@ export function ProgressPhotoUploader({ memberId, onSuccess, onCancel }) {
   const handleNativeCamera = async (type) => {
     try {
       const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera')
-      // Verificar permisos primero
-      const status = await Camera.checkPermissions();
-      if (status.camera !== 'granted' || status.photos !== 'granted') {
-        const request = await Camera.requestPermissions();
-        if (request.camera !== 'granted' || request.photos !== 'granted') {
-          setError('Permisos de cámara o galería denegados. Actívalos en ajustes.');
-          return;
-        }
+      const { ensureCameraPermissions, CAMERA_PERMISSION_ERROR } = await import('@/lib/nativeCamera')
+      if (!(await ensureCameraPermissions(Camera))) {
+        setError(CAMERA_PERMISSION_ERROR);
+        return;
       }
 
       const image = await Camera.getPhoto({
