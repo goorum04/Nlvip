@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Heart, MessageCircle, Flag, LoaderCircle as Loader2, Zap, Trash2, EyeOff, Eye } from 'lucide-react'
+import { Heart, MessageCircle, Flag, LoaderCircle as Loader2, Zap, Trash2, EyeOff, Eye, Ban, ShieldAlert } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { authFetch } from '@/lib/utils'
 import ImageUploader from './ImageUploader'
+
+const REPORT_REASONS = ['Contenido ofensivo', 'Acoso o bullying', 'Spam o publicidad', 'Otro motivo']
 
 // Helper to batch-get signed URLs in a single request
 const getSignedUrlsBatch = async (bucket, paths, expiresIn = 3600) => {
@@ -33,6 +36,10 @@ export function FeedSection({ userId, userRole = 'member', canModerate = false }
   const [progress, setProgress] = useState(0)
   const [commentingPost, setCommentingPost] = useState(null)
   const [newComment, setNewComment] = useState('')
+  // Denunciar / bloquear (Guideline 1.2): lo que el usuario ha denunciado o
+  // bloqueado desaparece de SU feed al instante; el admin lo revisa aparte.
+  const [reportingTarget, setReportingTarget] = useState(null) // { type: 'post' | 'comment', id }
+  const [pendingReports, setPendingReports] = useState({}) // solo moderadores: post_id/comment_id -> [{ reason, reporter }]
   const { toast } = useToast()
 
   useEffect(() => {
@@ -40,17 +47,41 @@ export function FeedSection({ userId, userRole = 'member', canModerate = false }
   }, [])
 
   const loadFeed = async () => {
-    const { data } = await supabase
-      .from('feed_posts')
-      .select(`*, author:profiles!feed_posts_author_id_fkey(name, role), feed_likes(id, user_id), feed_comments(id, content, created_at, commenter:profiles!feed_comments_commenter_id_fkey(name))`)
-      .eq('is_hidden', false)
-      .order('created_at', { ascending: false })
-      .limit(50)
-    
-    if (data) {
-      setFeedPosts(data)
+    const [{ data }, { data: blocks }, { data: myReports }, { data: openReports }] = await Promise.all([
+      supabase
+        .from('feed_posts')
+        .select(`*, author:profiles!feed_posts_author_id_fkey(name, role), feed_likes(id, user_id), feed_comments(id, content, created_at, commenter_id, commenter:profiles!feed_comments_commenter_id_fkey(name))`)
+        .eq('is_hidden', false)
+        .order('created_at', { ascending: false })
+        .limit(50),
+      supabase.from('user_blocks').select('blocked_id').eq('blocker_id', userId),
+      supabase.from('feed_reports').select('post_id, comment_id').eq('reporter_id', userId),
+      canModerate
+        ? supabase.from('feed_reports').select('post_id, comment_id, reason, reporter:profiles!feed_reports_reporter_id_fkey(name)').eq('status', 'pending')
+        : Promise.resolve({ data: [] }),
+    ])
 
-      const postsWithImages = data.filter(p => p.image_url)
+    if (data) {
+      const blocked = new Set((blocks || []).map(b => b.blocked_id))
+      const reportedPosts = new Set((myReports || []).filter(r => r.post_id).map(r => r.post_id))
+      const reportedComments = new Set((myReports || []).filter(r => r.comment_id).map(r => r.comment_id))
+      const visible = data
+        .filter(p => !blocked.has(p.author_id) && !reportedPosts.has(p.id))
+        .map(p => ({
+          ...p,
+          feed_comments: (p.feed_comments || []).filter(c => !blocked.has(c.commenter_id) && !reportedComments.has(c.id)),
+        }))
+      setFeedPosts(visible)
+
+      const grouped = {}
+      for (const r of (openReports || [])) {
+        const key = r.post_id || r.comment_id
+        if (!grouped[key]) grouped[key] = []
+        grouped[key].push({ reason: r.reason, reporter: r.reporter?.name || 'Socio' })
+      }
+      setPendingReports(grouped)
+
+      const postsWithImages = visible.filter(p => p.image_url)
       if (postsWithImages.length > 0) {
         const paths = postsWithImages.map(p => p.image_url)
         const signed = await getSignedUrlsBatch('feed_images', paths, 3600)
@@ -145,6 +176,65 @@ export function FeedSection({ userId, userRole = 'member', canModerate = false }
     }
   }
 
+  const handleReport = async (reason) => {
+    if (!reportingTarget) return
+    const { type, id } = reportingTarget
+    setReportingTarget(null)
+    try {
+      const res = await authFetch('/api/feed/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(type === 'post' ? { postId: id, reason } : { commentId: id, reason }),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'No se pudo enviar la denuncia')
+      toast({ title: 'Gracias por avisar', description: 'Lo hemos ocultado para ti y el equipo lo revisará en menos de 24 horas.' })
+      loadFeed()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
+  }
+
+  const handleBlockUser = async (blockedId, name) => {
+    if (!window.confirm(`¿Bloquear a ${name || 'este usuario'}? Dejarás de ver sus publicaciones y comentarios.`)) return
+    const { error } = await supabase.from('user_blocks').insert([{ blocker_id: userId, blocked_id: blockedId }])
+    if (error && error.code !== '23505') {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      return
+    }
+    toast({ title: 'Usuario bloqueado', description: 'Ya no verás su contenido. Puedes deshacerlo desde tu perfil.' })
+    loadFeed()
+  }
+
+  const handleMarkReviewed = async (targetId) => {
+    if (!canModerate) return
+    const { error } = await supabase
+      .from('feed_reports')
+      .update({ status: 'reviewed', reviewed_by: userId, reviewed_at: new Date().toISOString() })
+      .or(`post_id.eq.${targetId},comment_id.eq.${targetId}`)
+      .eq('status', 'pending')
+    if (!error) {
+      toast({ title: 'Denuncia revisada' })
+      loadFeed()
+    }
+  }
+
+  const ReportReasonPicker = ({ target }) => (
+    reportingTarget?.type === target.type && reportingTarget?.id === target.id ? (
+      <div className="mt-2 p-3 rounded-2xl bg-red-500/5 border border-red-500/20 space-y-2">
+        <p className="text-xs text-gray-400">¿Por qué lo denuncias?</p>
+        <div className="flex flex-wrap gap-2">
+          {REPORT_REASONS.map(reason => (
+            <Button key={reason} size="sm" variant="outline" className="rounded-xl border-red-500/30 text-red-300 hover:bg-red-500/10" onClick={() => handleReport(reason)}>
+              {reason}
+            </Button>
+          ))}
+          <Button size="sm" variant="ghost" className="rounded-xl text-gray-500" onClick={() => setReportingTarget(null)}>Cancelar</Button>
+        </div>
+      </div>
+    ) : null
+  )
+
   const isLikedByMe = (post) => post.feed_likes?.some(l => l.user_id === userId)
 
   const getRoleBadge = (role) => {
@@ -201,31 +291,70 @@ export function FeedSection({ userId, userRole = 'member', canModerate = false }
                 <p className="text-xs text-gray-500">{new Date(post.created_at).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
               </div>
               
-              {/* Moderation buttons */}
-              {canModerate && (
-                <div className="flex gap-1">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="rounded-xl text-gray-500 hover:text-yellow-500 hover:bg-yellow-500/10" 
-                    onClick={() => handleHidePost(post.id)}
-                    title="Ocultar post"
-                  >
-                    <EyeOff className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="rounded-xl text-gray-500 hover:text-red-500 hover:bg-red-500/10" 
-                    onClick={() => handleDeletePost(post.id)}
-                    title="Eliminar post"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
+              <div className="flex gap-1">
+                {post.author_id !== userId && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-500/10"
+                      onClick={() => setReportingTarget({ type: 'post', id: post.id })}
+                      title="Denunciar publicación"
+                    >
+                      <Flag className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-500/10"
+                      onClick={() => handleBlockUser(post.author_id, post.author?.name)}
+                      title="Bloquear usuario"
+                    >
+                      <Ban className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+                {/* Moderation buttons */}
+                {canModerate && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-xl text-gray-500 hover:text-yellow-500 hover:bg-yellow-500/10"
+                      onClick={() => handleHidePost(post.id)}
+                      title="Ocultar post"
+                    >
+                      <EyeOff className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-xl text-gray-500 hover:text-red-500 hover:bg-red-500/10"
+                      onClick={() => handleDeletePost(post.id)}
+                      title="Eliminar post"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
-            
+
+            {canModerate && pendingReports[post.id] && (
+              <div className="mb-4 p-3 rounded-2xl bg-red-500/10 border border-red-500/30">
+                <p className="text-xs font-bold text-red-300 flex items-center gap-1.5 mb-1">
+                  <ShieldAlert className="w-4 h-4" /> Denunciado {pendingReports[post.id].length > 1 ? `${pendingReports[post.id].length} veces` : ''}
+                </p>
+                <ul className="text-xs text-red-200/80 space-y-0.5">
+                  {pendingReports[post.id].map((r, i) => <li key={i}>• {r.reason} — {r.reporter}</li>)}
+                </ul>
+                <Button size="sm" variant="outline" className="mt-2 rounded-xl border-red-500/30 text-red-200" onClick={() => handleMarkReviewed(post.id)}>
+                  Marcar como revisado (sin acción)
+                </Button>
+              </div>
+            )}
+            <ReportReasonPicker target={{ type: 'post', id: post.id }} />
+
             {post.content && <p className="text-gray-200 mb-4 leading-relaxed">{post.content}</p>}
             
             {/* Post Image */}
@@ -264,10 +393,31 @@ export function FeedSection({ userId, userRole = 'member', canModerate = false }
             {post.feed_comments?.length > 0 && (
               <div className="mt-4 space-y-2 pl-4 border-l-2 border-violet-500/20">
                 {post.feed_comments.slice(0, 3).map((c) => (
-                  <p key={c.id} className="text-sm">
-                    <span className="text-violet-500 font-semibold">{c.commenter?.name}</span>{' '}
-                    <span className="text-gray-300">{c.content}</span>
-                  </p>
+                  <div key={c.id}>
+                    <p className="text-sm flex items-start gap-2">
+                      <span className="flex-1">
+                        <span className="text-violet-500 font-semibold">{c.commenter?.name}</span>{' '}
+                        <span className="text-gray-300">{c.content}</span>
+                      </span>
+                      {c.commenter_id !== userId && (
+                        <button
+                          type="button"
+                          className="text-gray-600 hover:text-red-400 shrink-0"
+                          onClick={() => setReportingTarget({ type: 'comment', id: c.id })}
+                          title="Denunciar comentario"
+                        >
+                          <Flag className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </p>
+                    {canModerate && pendingReports[c.id] && (
+                      <p className="text-xs text-red-300 flex items-center gap-1 mt-0.5">
+                        <ShieldAlert className="w-3 h-3" /> Denunciado: {pendingReports[c.id].map(r => r.reason).join(', ')}
+                        <button type="button" className="underline ml-1" onClick={() => handleMarkReviewed(c.id)}>revisado</button>
+                      </p>
+                    )}
+                    <ReportReasonPicker target={{ type: 'comment', id: c.id }} />
+                  </div>
                 ))}
               </div>
             )}

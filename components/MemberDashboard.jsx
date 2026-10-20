@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Home, Dumbbell, Apple, TrendingUp, Bell, LogOut, Plus, Heart, MessageCircle,
-  Flag, Sparkles, Flame, Target, Zap, Star, ShoppingBag, CheckCircle2,
+  Flag, Ban, Sparkles, Flame, Target, Zap, Star, ShoppingBag, CheckCircle2,
   Camera, Video, Image as ImageIcon, Loader2, Trophy, BarChart3, UtensilsCrossed, Footprints, Lock, Gift, Sun, Calendar, Trash2
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
@@ -490,13 +490,27 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   }
 
   const loadFeed = async () => {
-    const { data } = await supabase
-      .from('feed_posts')
-      .select(`*, author:profiles!feed_posts_author_id_fkey(name), feed_likes(id, user_id), feed_comments(id, content, created_at, commenter:profiles!feed_comments_commenter_id_fkey(name))`)
-      .eq('is_hidden', false)
-      .order('created_at', { ascending: false })
-      .limit(50)
-    
+    // Lo que el socio ha denunciado o los usuarios que ha bloqueado desaparecen
+    // de SU feed al instante (Guideline 1.2); el admin lo revisa por su lado.
+    const [{ data: rawData }, { data: blocks }, { data: myReports }] = await Promise.all([
+      supabase
+        .from('feed_posts')
+        .select(`*, author:profiles!feed_posts_author_id_fkey(name), feed_likes(id, user_id), feed_comments(id, content, created_at, commenter_id, commenter:profiles!feed_comments_commenter_id_fkey(name))`)
+        .eq('is_hidden', false)
+        .order('created_at', { ascending: false })
+        .limit(50),
+      supabase.from('user_blocks').select('blocked_id').eq('blocker_id', user.id),
+      supabase.from('feed_reports').select('post_id, comment_id').eq('reporter_id', user.id),
+    ])
+    const blocked = new Set((blocks || []).map(b => b.blocked_id))
+    const reportedPosts = new Set((myReports || []).filter(r => r.post_id).map(r => r.post_id))
+    const reportedComments = new Set((myReports || []).filter(r => r.comment_id).map(r => r.comment_id))
+    const data = rawData
+      ? rawData
+          .filter(p => !blocked.has(p.author_id) && !reportedPosts.has(p.id))
+          .map(p => ({ ...p, feed_comments: (p.feed_comments || []).filter(c => !blocked.has(c.commenter_id) && !reportedComments.has(c.id)) }))
+      : null
+
     if (data) {
       setFeedPosts(data)
       // Batch-load all signed URLs in a single request instead of one per image
@@ -688,10 +702,55 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
     }
   }
 
-  const handleReportPost = async (postId) => {
-    await supabase.from('feed_reports').insert([{ post_id: postId, reporter_id: user.id, reason: 'Contenido inapropiado' }])
-    toast({ title: 'Post reportado', description: 'El administrador lo revisará' })
+  // Denunciar (post o comentario) con motivo, y bloquear usuarios. Guideline 1.2.
+  const [reportingTarget, setReportingTarget] = useState(null) // { type: 'post' | 'comment', id }
+  const REPORT_REASONS = ['Contenido ofensivo', 'Acoso o bullying', 'Spam o publicidad', 'Otro motivo']
+
+  const handleReport = async (reason) => {
+    if (!reportingTarget) return
+    const { type, id } = reportingTarget
+    setReportingTarget(null)
+    try {
+      const res = await authFetch('/api/feed/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(type === 'post' ? { postId: id, reason } : { commentId: id, reason }),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'No se pudo enviar la denuncia')
+      toast({ title: 'Gracias por avisar', description: 'Lo hemos ocultado para ti y el equipo lo revisará en menos de 24 horas.' })
+      loadFeed()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
   }
+
+  const handleBlockUser = async (blockedId, name) => {
+    if (!window.confirm(`¿Bloquear a ${name || 'este usuario'}? Dejarás de ver sus publicaciones y comentarios.`)) return
+    const { error } = await supabase.from('user_blocks').insert([{ blocker_id: user.id, blocked_id: blockedId }])
+    if (error && error.code !== '23505') {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      return
+    }
+    toast({ title: 'Usuario bloqueado', description: 'Ya no verás su contenido.' })
+    loadFeed()
+  }
+
+  const ReportReasonPicker = ({ type, id }) => (
+    reportingTarget?.type === type && reportingTarget?.id === id ? (
+      <div className="mt-2 mb-3 p-3 rounded-2xl bg-red-500/5 border border-red-500/20 space-y-2">
+        <p className="text-xs text-gray-400">¿Por qué lo denuncias?</p>
+        <div className="flex flex-wrap gap-2">
+          {REPORT_REASONS.map(reason => (
+            <Button key={reason} size="sm" variant="outline" className="rounded-xl border-red-500/30 text-red-300 hover:bg-red-500/10" onClick={() => handleReport(reason)}>
+              {reason}
+            </Button>
+          ))}
+          <Button size="sm" variant="ghost" className="rounded-xl text-gray-500" onClick={() => setReportingTarget(null)}>Cancelar</Button>
+        </div>
+      </div>
+    ) : null
+  )
 
   const isLikedByMe = (post) => post.feed_likes?.some(like => like.user_id === user.id)
 
@@ -933,11 +992,19 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                       <p className="font-bold text-white">{post.author?.name}</p>
                       <p className="text-xs text-gray-500">{new Date(post.created_at).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
-                    <Button variant="ghost" size="icon" className="rounded-xl text-gray-500 hover:text-violet-500" onClick={() => handleReportPost(post.id)}>
-                      <Flag className="w-4 h-4" />
-                    </Button>
+                    {post.author_id !== user.id && (
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-500/10" title="Denunciar publicación" onClick={() => setReportingTarget({ type: 'post', id: post.id })}>
+                          <Flag className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-500/10" title="Bloquear usuario" onClick={() => handleBlockUser(post.author_id, post.author?.name)}>
+                          <Ban className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  
+                  <ReportReasonPicker type="post" id={post.id} />
+
                   {post.content && <p className="text-gray-200 mb-4 leading-relaxed">{post.content}</p>}
                   
                   {/* Post Image */}
@@ -964,7 +1031,17 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                   {post.feed_comments?.length > 0 && (
                     <div className="mt-4 space-y-2 pl-4 border-l-2 border-violet-500/20">
                       {post.feed_comments.slice(0, 3).map((c) => (
-                        <p key={c.id} className="text-sm"><span className="text-violet-500 font-semibold">{c.commenter?.name}</span> <span className="text-gray-300">{c.content}</span></p>
+                        <div key={c.id}>
+                          <p className="text-sm flex items-start gap-2">
+                            <span className="flex-1"><span className="text-violet-500 font-semibold">{c.commenter?.name}</span> <span className="text-gray-300">{c.content}</span></span>
+                            {c.commenter_id !== user.id && (
+                              <button type="button" className="text-gray-600 hover:text-red-400 shrink-0" title="Denunciar comentario" onClick={() => setReportingTarget({ type: 'comment', id: c.id })}>
+                                <Flag className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </p>
+                          <ReportReasonPicker type="comment" id={c.id} />
+                        </div>
                       ))}
                     </div>
                   )}

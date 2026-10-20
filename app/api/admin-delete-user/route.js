@@ -69,6 +69,7 @@ export async function POST(request) {
       supabaseAdmin.from('feed_comments').delete().eq('commenter_id', userId),
       supabaseAdmin.from('feed_likes').delete().eq('user_id', userId),
       supabaseAdmin.from('feed_reports').delete().eq('reporter_id', userId),
+      supabaseAdmin.from('user_blocks').delete().or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`),
       supabaseAdmin.from('notice_reads').delete().eq('member_id', userId),
     ]
 
