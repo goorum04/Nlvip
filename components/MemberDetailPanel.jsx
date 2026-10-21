@@ -7,13 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Dumbbell, Heart,
-  LoaderCircle as Loader2, ChevronRight, MessageSquare, Bell, ChevronDown, ChevronUp, RefreshCw, Plus, ClipboardList
+  LoaderCircle as Loader2, ChevronRight, MessageSquare, Bell, ChevronDown, ChevronUp, RefreshCw, Plus, ClipboardList, Pencil
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
-import { WorkoutViewer } from './WorkoutBuilder'
+import { WorkoutViewer, WorkoutBuilder } from './WorkoutBuilder'
 import { DietViewer } from './DietBuilder'
 import { ProgressPhotoGallery, ProgressPhotoUploader } from './ProgressPhotos'
 import { MemberOnboardingResponses } from './MemberPhotosAndForm'
@@ -30,6 +33,14 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allM
   const [availableDiets, setAvailableDiets] = useState([])
   const [showWorkoutDetailSlot, setShowWorkoutDetailSlot] = useState(null)
   const [showDietContent, setShowDietContent] = useState(false)
+  // Edición directa de la rutina/dieta asignada (sin pasar por el asistente
+  // ni crear una plantilla nueva): se modifica la plantilla en sitio y el
+  // socio lo ve al momento.
+  const [editingWorkoutSlot, setEditingWorkoutSlot] = useState(null)
+  const [editingDiet, setEditingDiet] = useState(false)
+  const [dietDraft, setDietDraft] = useState(null)
+  const [savingDiet, setSavingDiet] = useState(false)
+  const [planVersion, setPlanVersion] = useState(0)
   const [assigning, setAssigning] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const [savingReminderFreq, setSavingReminderFreq] = useState(false)
@@ -388,6 +399,55 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allM
     }
   }
 
+  const openDietEditor = () => {
+    setDietDraft({
+      name: assignedDiet.name || '',
+      calories: assignedDiet.calories ?? '',
+      protein_g: assignedDiet.protein_g ?? '',
+      carbs_g: assignedDiet.carbs_g ?? '',
+      fat_g: assignedDiet.fat_g ?? '',
+      content: assignedDiet.content || '',
+    })
+    setEditingDiet(true)
+  }
+
+  const handleSaveDietEdit = async () => {
+    if (!dietDraft?.content?.trim()) {
+      toast({ title: 'La dieta no puede quedar vacía', variant: 'destructive' })
+      return
+    }
+    setSavingDiet(true)
+    try {
+      const macros = {
+        calories: parseInt(dietDraft.calories) || 0,
+        protein_g: parseInt(dietDraft.protein_g) || 0,
+        carbs_g: parseInt(dietDraft.carbs_g) || 0,
+        fat_g: parseInt(dietDraft.fat_g) || 0,
+      }
+      const { error } = await supabase
+        .from('diet_templates')
+        .update({ name: dietDraft.name.trim() || assignedDiet.name, content: dietDraft.content, ...macros })
+        .eq('id', assignedDiet.id)
+      if (error) throw error
+
+      const macrosChanged = ['calories', 'protein_g', 'carbs_g', 'fat_g'].some(k => macros[k] !== assignedDiet[k])
+      if (macrosChanged) {
+        const assignerId = (await supabase.auth.getUser()).data.user?.id
+        const { error: mError } = await supabase.from('macro_goals').upsert({ member_id: member.id, assigned_by: assignerId, ...macros }, { onConflict: 'member_id' })
+        if (mError) console.warn('No se pudieron actualizar los macros del socio:', mError.message)
+      }
+
+      toast({ title: 'Dieta actualizada', description: 'El socio ya ve los cambios.' })
+      setEditingDiet(false)
+      setPlanVersion(v => v + 1)
+      await loadMemberData()
+    } catch (error) {
+      toast({ title: 'Error al guardar', description: error.message, variant: 'destructive' })
+    } finally {
+      setSavingDiet(false)
+    }
+  }
+
   const handleRegeneratePlan = async () => {
     if (!assignedDiet) {
       toast({ title: 'Error', description: 'El socio no tiene dieta asignada', variant: 'destructive' })
@@ -648,14 +708,24 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allM
                                   <h4 className="font-semibold text-white">{workout.name}</h4>
                                   <p className="text-sm text-gray-400">{days.length} días de entrenamiento</p>
                                 </div>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-violet-400 hover:text-violet-300 gap-1"
-                                  onClick={() => setShowWorkoutDetailSlot(slot)}
-                                >
-                                  Ver detalle <ChevronRight className="w-4 h-4" />
-                                </Button>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-amber-400 hover:text-amber-300 gap-1"
+                                    onClick={() => setEditingWorkoutSlot(slot)}
+                                  >
+                                    <Pencil className="w-4 h-4" /> Editar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-violet-400 hover:text-violet-300 gap-1"
+                                    onClick={() => setShowWorkoutDetailSlot(slot)}
+                                  >
+                                    Ver detalle <ChevronRight className="w-4 h-4" />
+                                  </Button>
+                                </div>
                               </div>
                               {days.length > 0 && (
                                 <div className="flex flex-wrap gap-2 mt-2">
@@ -753,19 +823,29 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allM
                                 {assignedDiet.calories} kcal · P:{assignedDiet.protein_g}g · HC:{assignedDiet.carbs_g}g · G:{assignedDiet.fat_g}g
                               </p>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-green-400 hover:text-green-300 gap-1"
-                              onClick={() => setShowDietContent(v => !v)}
-                            >
-                              {showDietContent ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                              {showDietContent ? 'Ocultar' : 'Ver dieta'}
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-amber-400 hover:text-amber-300 gap-1"
+                                onClick={openDietEditor}
+                              >
+                                <Pencil className="w-4 h-4" /> Editar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-green-400 hover:text-green-300 gap-1"
+                                onClick={() => setShowDietContent(v => !v)}
+                              >
+                                {showDietContent ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                {showDietContent ? 'Ocultar' : 'Ver dieta'}
+                              </Button>
+                            </div>
                           </div>
                           {showDietContent && (
                             <div className="mt-3 border-t border-green-500/20 pt-3">
-                              <DietViewer dietId={assignedDiet.id} />
+                              <DietViewer key={planVersion} dietId={assignedDiet.id} />
                             </div>
                           )}
                         </div>
@@ -854,7 +934,70 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allM
                   Rutina: {assignedWorkouts[showWorkoutDetailSlot].name}
                 </DialogTitle>
               </DialogHeader>
-              <WorkoutViewer workoutId={assignedWorkouts[showWorkoutDetailSlot].id} />
+              <WorkoutViewer key={planVersion} workoutId={assignedWorkouts[showWorkoutDetailSlot].id} />
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {editingWorkoutSlot && assignedWorkouts[editingWorkoutSlot] && (
+          <Dialog open onOpenChange={() => setEditingWorkoutSlot(null)}>
+            <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-white flex items-center gap-2">
+                  <Pencil className="w-5 h-5 text-amber-400" />
+                  Editar rutina {editingWorkoutSlot} de {member.name}
+                </DialogTitle>
+              </DialogHeader>
+              <p className="text-xs text-gray-500 -mt-2">Los cambios se guardan sobre la rutina que ya tiene asignada: el socio los ve al momento, sin reasignar nada.</p>
+              <WorkoutBuilder
+                trainerId={null}
+                existingWorkout={assignedWorkouts[editingWorkoutSlot]}
+                onSave={async () => {
+                  setEditingWorkoutSlot(null)
+                  setPlanVersion(v => v + 1)
+                  await loadMemberData()
+                }}
+                onCancel={() => setEditingWorkoutSlot(null)}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {editingDiet && dietDraft && assignedDiet && (
+          <Dialog open onOpenChange={() => !savingDiet && setEditingDiet(false)}>
+            <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-white flex items-center gap-2">
+                  <Pencil className="w-5 h-5 text-amber-400" />
+                  Editar dieta de {member.name}
+                </DialogTitle>
+              </DialogHeader>
+              <p className="text-xs text-gray-500 -mt-2">Se guarda sobre la dieta que ya tiene asignada: el socio la ve al momento. Mantén el formato (cabeceras de comida y "- Opción N:") para que se siga viendo bien en la app.</p>
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-gray-400 text-sm">Nombre</Label>
+                  <Input value={dietDraft.name} onChange={e => setDietDraft(d => ({ ...d, name: e.target.value }))} className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1" />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[['calories', 'Calorías'], ['protein_g', 'Proteína (g)'], ['carbs_g', 'Hidratos (g)'], ['fat_g', 'Grasas (g)']].map(([key, label]) => (
+                    <div key={key}>
+                      <Label className="text-gray-400 text-xs">{label}</Label>
+                      <Input type="number" inputMode="numeric" value={dietDraft[key]} onChange={e => setDietDraft(d => ({ ...d, [key]: e.target.value }))} className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1" />
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <Label className="text-gray-400 text-sm">Contenido de la dieta</Label>
+                  <Textarea value={dietDraft.content} onChange={e => setDietDraft(d => ({ ...d, content: e.target.value }))} className="bg-black/50 border-violet-500/20 rounded-xl text-white mt-1 font-mono text-xs min-h-[50vh]" />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" className="rounded-xl text-gray-400" onClick={() => setEditingDiet(false)} disabled={savingDiet}>Cancelar</Button>
+                  <Button className="rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold" onClick={handleSaveDietEdit} disabled={savingDiet}>
+                    {savingDiet ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    Guardar cambios
+                  </Button>
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
         )}
