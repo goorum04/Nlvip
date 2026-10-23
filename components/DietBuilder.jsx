@@ -459,7 +459,7 @@ export function DietViewer({ dietId }) {
 
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-3">
-                                        <span className="text-green-400 font-black text-sm">{meal.hour}</span>
+                                        <span className="text-green-400 font-black text-sm">{meal.hour || meal.label}</span>
                                         <h4 className="text-lg font-bold text-white">
                                             {meal.emoji ? <span className="mr-1.5">{meal.emoji}</span> : null}
                                             {meal.name}
