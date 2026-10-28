@@ -11,6 +11,7 @@ import {
   Apple, Dumbbell, Camera as CameraIcon, Footprints
 } from 'lucide-react'
 import { useSignedUrl } from '@/hooks/useStorage'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { authFetch } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 
@@ -164,6 +165,7 @@ function PhotoCompare({ groupId, previousGroupId }) {
   const [newUrls, setNewUrls] = useState({})
   const [prevUrls, setPrevUrls] = useState({})
   const [loading, setLoading] = useState(true)
+  const [zoomType, setZoomType] = useState(null)
   const { getSignedUrls } = useSignedUrl()
 
   useEffect(() => {
@@ -197,21 +199,108 @@ function PhotoCompare({ groupId, previousGroupId }) {
   const types = hasRightSide ? ['front', 'side', 'side_right', 'back'] : ['front', 'side', 'back']
 
   return (
-    <div className={`grid gap-2 ${hasRightSide ? 'grid-cols-4' : 'grid-cols-3'}`}>
-      {types.map(type => (
-        <div key={type} className="space-y-1">
-          <p className="text-[10px] text-gray-500 uppercase text-center">{PHOTO_LABELS[type]}</p>
-          <div className="grid grid-cols-2 gap-1">
-            <div className="aspect-[3/4] rounded-lg overflow-hidden bg-[#1a1a1a] border border-[#2a2a2a]">
-              {prevUrls[type] ? <img src={prevUrls[type]} className="w-full h-full object-cover opacity-60" /> : <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-600">Sin anterior</div>}
+    <>
+      <div className={`grid gap-2 ${hasRightSide ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        {types.map(type => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => (newUrls[type] || prevUrls[type]) && setZoomType(type)}
+            className="space-y-1 text-left group"
+            title="Ampliar y comparar"
+          >
+            <p className="text-[10px] text-gray-500 uppercase text-center group-hover:text-violet-300">{PHOTO_LABELS[type]}</p>
+            <div className="grid grid-cols-2 gap-1">
+              <div className="aspect-[3/4] rounded-lg overflow-hidden bg-[#1a1a1a] border border-[#2a2a2a]">
+                {prevUrls[type] ? <img src={prevUrls[type]} className="w-full h-full object-cover opacity-60" /> : <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-600">Sin anterior</div>}
+              </div>
+              <div className="aspect-[3/4] rounded-lg overflow-hidden bg-[#1a1a1a] border border-violet-500/40">
+                {newUrls[type] ? <img src={newUrls[type]} className="w-full h-full object-cover" /> : null}
+              </div>
             </div>
-            <div className="aspect-[3/4] rounded-lg overflow-hidden bg-[#1a1a1a] border border-violet-500/40">
-              {newUrls[type] ? <img src={newUrls[type]} className="w-full h-full object-cover" /> : null}
+          </button>
+        ))}
+      </div>
+      <p className="text-[10px] text-gray-600 mt-1">Toca una vista para ampliarla y compararla con un deslizador.</p>
+
+      {zoomType && (
+        <PhotoCompareZoom
+          label={PHOTO_LABELS[zoomType]}
+          prevUrl={prevUrls[zoomType]}
+          newUrl={newUrls[zoomType]}
+          onClose={() => setZoomType(null)}
+        />
+      )}
+    </>
+  )
+}
+
+// Comparación ampliada de una vista: modo "superpuesta" (deslizador que
+// descubre la foto nueva sobre la anterior, para notar cambios sutiles) y
+// modo "lado a lado".
+function PhotoCompareZoom({ label, prevUrl, newUrl, onClose }) {
+  const [mode, setMode] = useState(prevUrl && newUrl ? 'overlay' : 'side')
+  const [split, setSplit] = useState(50)
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="bg-[#111] border-[#2a2a2a] rounded-3xl max-w-3xl p-4">
+        <DialogHeader>
+          <DialogTitle className="text-white text-base flex items-center justify-between gap-3">
+            <span>{label}: anterior vs. nueva</span>
+            {prevUrl && newUrl && (
+              <span className="flex p-0.5 bg-black/40 rounded-xl border border-white/5 text-xs">
+                <button type="button" onClick={() => setMode('overlay')} className={`px-3 py-1 rounded-lg ${mode === 'overlay' ? 'bg-violet-600 text-white' : 'text-gray-400'}`}>Superpuesta</button>
+                <button type="button" onClick={() => setMode('side')} className={`px-3 py-1 rounded-lg ${mode === 'side' ? 'bg-violet-600 text-white' : 'text-gray-400'}`}>Lado a lado</button>
+              </span>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+
+        {mode === 'overlay' && prevUrl && newUrl ? (
+          <div className="space-y-2">
+            <div className="relative w-full max-h-[70vh] aspect-[3/4] mx-auto rounded-2xl overflow-hidden bg-black select-none">
+              <img src={prevUrl} alt="Anterior" className="absolute inset-0 w-full h-full object-contain" draggable={false} />
+              <img
+                src={newUrl}
+                alt="Nueva"
+                className="absolute inset-0 w-full h-full object-contain"
+                style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}
+                draggable={false}
+              />
+              <div className="absolute top-0 bottom-0 w-0.5 bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.9)]" style={{ left: `${split}%` }} />
+              <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-violet-600/90 text-white">NUEVA</span>
+              <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-black/70 text-gray-300">ANTERIOR</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={split}
+              onChange={e => setSplit(Number(e.target.value))}
+              className="w-full accent-violet-500"
+              aria-label="Deslizar para comparar"
+            />
+            <p className="text-[11px] text-gray-500 text-center">Desliza para descubrir la foto nueva sobre la anterior.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <p className="text-[11px] text-gray-500 uppercase text-center">Anterior</p>
+              <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-black border border-[#2a2a2a]">
+                {prevUrl ? <img src={prevUrl} className="w-full h-full object-contain" /> : <div className="w-full h-full flex items-center justify-center text-xs text-gray-600">Sin anterior</div>}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[11px] text-violet-300 uppercase text-center">Nueva</p>
+              <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-black border border-violet-500/40">
+                {newUrl ? <img src={newUrl} className="w-full h-full object-contain" /> : null}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
-    </div>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
 
