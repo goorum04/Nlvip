@@ -19,7 +19,7 @@ function getSupabase() {
 
 const schema = z.object({
   routine: z.object({}).passthrough(),
-  correction: z.string().min(1).max(1000),
+  correction: z.string().min(1).max(6000),
   memberId: z.string().uuid().optional().nullable(),
 })
 

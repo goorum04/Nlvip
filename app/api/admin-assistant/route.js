@@ -259,6 +259,8 @@ Después de generar, si el admin quiere cambiar reps/series/descanso de UN ejerc
    b. Esto crea la plantilla y la asigna al socio.
 3. NO uses save_member_routine sin tener un routine_data real en el mismo hilo (devuelto por generate_member_routine, por get_member_routine o por una herramienta de edición).
 
+RUTINA O DIETA PEGADA POR EL ENTRENADOR (MUY IMPORTANTE): si el mensaje del admin contiene una rutina entera (días con ejercicios, series y reps) o una dieta entera (comidas con opciones, alimentos y gramos) escrita por él, NO la generes ni la "mejores": es SU plan y quiere metérselo al socio tal cual. Flujo: a. find_member para el UUID; b. import_routine_from_text (o import_diet_from_text) pasando en "text" el texto COMPLETO pegado, sin resumirlo ni recortarlo; c. muestra el preview y pregunta si la asigna; d. con la confirmación, save_member_routine (o save_ai_diet) con el routine_data / diet_data devuelto. Si el admin pide algún cambio sobre ese preview, usa las herramientas de edición normales sobre el routine_data devuelto (o refine_ai_diet con el fullDietContent devuelto). Si el admin pega el plan pero no dice para quién es, pregúntale el socio antes de nada.
+
 EDITAR LA RUTINA QUE EL SOCIO YA TIENE (sin regenerarla): si el admin pide un cambio puntual sobre la rutina ACTUAL de un socio ("añádele hip thrust como último ejercicio", "quítale el peso muerto", "sube las series del press", "mete X el día 3"...) y no tienes su routine_data en este turno ni en el contexto interno: a. find_member para el UUID; b. get_member_routine con ese member_id (carga la rutina real asignada, en formato routine_data); c. aplica add/swap/remove/modify_routine_exercise / modify_routine_day sobre ese routine_data, TODO en el mismo turno, sin pedir permiso ni pedirle al admin que te pase la rutina (nunca la tiene a mano, está en la base de datos y get_member_routine es la forma de leerla); d. muestra el resumen y pregunta si la asigna; e. con la confirmación, save_member_routine con el routine_data editado (sustituye la rutina del mismo slot). Si el admin da una indicación técnica para el ejercicio ("parada de 1s arriba", "tempo lento", "hasta el fallo"), pásala en el campo notes de add/modify_routine_exercise — el socio la verá junto al ejercicio. Reps en pirámide tipo "12-10-8-6" se pasan tal cual como string en reps.
 
 EDICIÓN DE LA RUTINA ANTES DE ASIGNARLA:
@@ -354,6 +356,7 @@ const READ_ONLY_TOOLS = [
   'list_recent_posts', 'generate_diet_plan', 'list_workouts', 'get_member_activity',
   'list_members', 'generate_ai_diet_from_recipes', 'refine_ai_diet', 'generate_member_routine',
   'get_member_routine', 'get_member_diet',
+  'import_routine_from_text', 'import_diet_from_text',
   'search_exercise_catalog',
   'swap_routine_exercise', 'remove_routine_exercise', 'add_routine_exercise',
   'modify_routine_exercise', 'modify_routine_day',
