@@ -108,6 +108,24 @@ export async function POST(req) {
       .eq('id', memberId)
       .maybeSingle()
 
+    // Doble envío (doble toque en "enviar", reintento tras un corte...): visto
+    // en producción con dos revisiones a 3 y 20 minutos de distancia, que
+    // generaban dos borradores casi idénticos y gastaban IA dos veces.
+    const { data: recentCheckin } = await supabase
+      .from('member_checkins')
+      .select('id, created_at')
+      .eq('member_id', memberId)
+      .gte('created_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (recentCheckin) {
+      return NextResponse.json({
+        error: 'Tu revisión ya se ha enviado hace un momento y tu entrenador la tiene. No hace falta volver a enviarla.',
+        checkinId: recentCheckin.id,
+      }, { status: 409 })
+    }
+
     if (memberProfile?.progress_reminder_days) {
       const { data: lastCheckin } = await supabase
         .from('member_checkins')

@@ -290,13 +290,29 @@ function CheckInCard({ checkin, onRefresh }) {
     }
   }
 
-  const handleDismiss = async () => {
-    if (!window.confirm(`¿Descartar la revisión de ${memberName}? No se tocará su dieta ni rutina.`)) return
+  // Descartar con motivo: el motivo se guarda como memoria del asistente para
+  // que la próxima propuesta no repita el fallo. "Error / sin motivo" descarta
+  // sin aprender nada.
+  const [dismissing, setDismissing] = useState(false)
+  const [dismissReason, setDismissReason] = useState('')
+
+  const handleDismiss = async (reason) => {
     setBusy(true)
     try {
-      const { error } = await supabase.from('member_checkins').update({ status: 'dismissed' }).eq('id', checkin.id)
-      if (error) throw error
-      toast({ title: 'Revisión descartada' })
+      const res = await authFetch('/api/checkin/dismiss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkinId: checkin.id, reason: reason || '' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al descartar')
+      toast({ title: 'Revisión descartada', description: reason ? 'No se tocará su dieta ni rutina.' : 'Descartada sin guardar motivo.' })
+      if (data.memoryUpdate) {
+        const scopeLabel = data.memoryUpdate.scope === 'member' ? `Nota guardada sobre ${memberName}` : 'Guardado como preferencia general'
+        toast({ title: `🧠 ${scopeLabel}`, description: data.memoryUpdate.note })
+      }
+      setDismissing(false)
+      setDismissReason('')
       onRefresh?.()
     } catch (e) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' })
@@ -484,10 +500,34 @@ function CheckInCard({ checkin, onRefresh }) {
               <Button size="sm" disabled={busy || !canConfirm} onClick={handleConfirm} className="bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-xl disabled:opacity-50">
                 <Check className="w-3.5 h-3.5 mr-1" /> Confirmar
               </Button>
-              <Button size="sm" variant="ghost" disabled={busy} onClick={handleDismiss} className="text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-xl ml-auto">
+              <Button size="sm" variant="ghost" disabled={busy} onClick={() => setDismissing(v => !v)} className="text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-xl ml-auto">
                 <X className="w-3.5 h-3.5 mr-1" /> Descartar revisión
               </Button>
             </div>
+            {dismissing && (
+              <div className="mt-2 p-3 rounded-2xl bg-red-500/5 border border-red-500/20 space-y-2">
+                <p className="text-xs text-gray-300">
+                  ¿Por qué descartas esta propuesta? Dímelo en una línea y la IA aprenderá para la próxima vez (de {memberName} o de tu forma de trabajar en general).
+                </p>
+                <Textarea
+                  value={dismissReason}
+                  onChange={e => setDismissReason(e.target.value)}
+                  placeholder="Ej: le ha subido demasiado las calorías, yo nunca subo más de 200 de golpe..."
+                  className="bg-black/50 border-[#2a2a2a] rounded-xl text-white text-sm min-h-[60px]"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" disabled={busy || !dismissReason.trim()} onClick={() => handleDismiss(dismissReason.trim())} className="bg-red-500/80 hover:bg-red-500 text-white rounded-xl">
+                    Descartar y que aprenda
+                  </Button>
+                  <Button size="sm" variant="outline" disabled={busy} onClick={() => handleDismiss('')} className="rounded-xl border-[#2a2a2a] text-gray-300">
+                    Error / sin motivo (no aprender)
+                  </Button>
+                  <Button size="sm" variant="ghost" disabled={busy} onClick={() => { setDismissing(false); setDismissReason('') }} className="rounded-xl text-gray-500">
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       )}
