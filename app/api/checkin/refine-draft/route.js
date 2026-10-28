@@ -22,7 +22,7 @@ function getSupabase() {
 const schema = z.object({
   checkinId: z.string().uuid(),
   target: z.enum(['diet', 'routine']),
-  correction: z.string().min(1).max(1000),
+  correction: z.string().min(1).max(6000),
 })
 
 // POST /api/checkin/refine-draft
