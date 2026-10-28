@@ -113,7 +113,18 @@ workflows:
           echo "python: $PY_BIN"
           "$PY_BIN" /tmp/jwt_test.py || true
           echo "=== End diagnostics ==="
-          openssl genrsa -out /tmp/cert_key.pem 2048
+          # Clave privada del certificado de distribución. Si existe la variable
+          # CERTIFICATE_PRIVATE_KEY (grupo app_store_credentials) se reutiliza y
+          # el certificado de Apple se crea UNA sola vez. Si no, se genera una
+          # clave nueva en cada build -> certificado nuevo en cada build -> se
+          # llega al límite de 3 certificados de Apple y la build falla.
+          if [ -n "${CERTIFICATE_PRIVATE_KEY:-}" ]; then
+            printf '%b' "$CERTIFICATE_PRIVATE_KEY" > /tmp/cert_key.pem
+            echo "Usando CERTIFICATE_PRIVATE_KEY guardada (certificado reutilizable)"
+          else
+            echo "AVISO: CERTIFICATE_PRIVATE_KEY no definida; se genera clave nueva (certificado nuevo en Apple)"
+            openssl genrsa -out /tmp/cert_key.pem 2048
+          fi
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --private-key @file:/tmp/api_key.p8 \
