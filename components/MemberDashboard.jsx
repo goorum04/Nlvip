@@ -1072,6 +1072,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
               memberId={user.id}
               workoutId={myWorkouts?.principal?.workout?.id || myWorkouts?.alternativa?.workout?.id || null}
               stepsGoal={Number(profile?.steps_goal) || 8000}
+              memberName={profile?.name}
             />
             <ActivityTracker userId={user.id} />
           </TabsContent>
