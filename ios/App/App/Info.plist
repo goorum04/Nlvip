@@ -76,5 +76,11 @@
 	<string>NL VIP TEAM requiere permisos para leer y sincronizar tus datos de actividad física de Apple Health con tu perfil de entrenamiento.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>NL VIP TEAM usa el sensor de movimiento para registrar tus pasos diarios y mostrarte tu progreso de actividad.</string>
+
+	<!-- Cumplimiento de exportación: la app solo usa HTTPS estándar (exento).
+	     Sin esta clave cada build queda en TestFlight como "Missing Compliance"
+	     y no se puede repartir a los grupos de prueba automáticamente. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
