@@ -39,6 +39,7 @@ import { SymptomsTracker } from './SymptomsTracker'
 import PRTracker from './PRTracker'
 import { WorkoutViewer } from './WorkoutBuilder'
 import { WeekOverview } from './WeekOverview'
+import { EvolutionCard } from './EvolutionCard'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function MemberDashboard({ user, profile, setProfile, onLogout }) {
@@ -1470,6 +1471,10 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                   </Button>
                 </CardContent>
               </Card>
+            )}
+
+            {!showCheckInForm && progressPhotos.length > 0 && (
+              <EvolutionCard memberId={user.id} memberName={profile?.name} />
             )}
 
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
