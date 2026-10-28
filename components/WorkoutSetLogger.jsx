@@ -8,9 +8,11 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
   ClipboardList, ChevronDown, ChevronUp, Sparkles,
-  LoaderCircle as Loader2, Check, History, NotebookPen,
+  LoaderCircle as Loader2, Check, History, NotebookPen, Trophy, Share2, Download,
 } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
+import { renderPrCard } from '@/lib/shareCards'
 
 // Acepta coma o punto decimal: en el teclado español lo natural es "62,5".
 const parseDecimal = (value) => {
@@ -53,6 +55,12 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState(null)
+  // Récords: máximo histórico por ejercicio (series registradas + PRs
+  // guardados) para detectar al guardar si hoy se ha superado.
+  const [historicalMax, setHistoricalMax] = useState({})
+  const [newPrs, setNewPrs] = useState([])
+  const [prShareUrl, setPrShareUrl] = useState(null)
+  const [prShareBuilding, setPrShareBuilding] = useState(false)
   const { toast } = useToast()
 
   const dayId = day?.id
@@ -119,6 +127,22 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
           .join('  ')
       }
       setLastSession(summary)
+
+      const { data: prRows } = await supabase
+        .from('member_prs')
+        .select('exercise_name, weight_kg')
+        .eq('member_id', memberId)
+      const maxes = {}
+      for (const ex of exercises) {
+        const fromLogs = previousRows
+          .filter(r => r.workout_exercise_id === ex.id && r.weight_kg != null)
+          .reduce((m, r) => Math.max(m, Number(r.weight_kg)), 0)
+        const fromPrs = (prRows || [])
+          .filter(p => (p.exercise_name || '').toLowerCase() === ex.name.toLowerCase() && p.weight_kg != null)
+          .reduce((m, p) => Math.max(m, Number(p.weight_kg)), 0)
+        maxes[ex.id] = Math.max(fromLogs, fromPrs)
+      }
+      setHistoricalMax(maxes)
     } catch (e) {
       console.warn('WorkoutSetLogger load error:', e.message)
     } finally {
@@ -246,6 +270,34 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
           ? `${parts.join(' y ')} registradas en el entreno de hoy.`
           : 'No has dejado nada registrado hoy.',
       })
+
+      // ¿Récord? Solo cuenta si ya había un máximo anterior y hoy se supera.
+      const prs = []
+      for (const ex of exercises) {
+        const prev = historicalMax[ex.id] || 0
+        if (prev <= 0) continue
+        const best = toUpsert
+          .filter(r => r.workout_exercise_id === ex.id && r.weight_kg != null)
+          .reduce((b, r) => (r.weight_kg > (b?.weight_kg ?? -1) ? r : b), null)
+        if (best && best.weight_kg > prev) prs.push({ exercise: ex, weight: best.weight_kg, reps: best.reps, previous: prev })
+      }
+      if (prs.length > 0) {
+        await supabase.from('member_prs').insert(prs.map(p => ({
+          member_id: memberId,
+          exercise_name: p.exercise.name,
+          weight_kg: p.weight,
+          reps: p.reps,
+          estimated_1rm: p.reps ? Math.round(p.weight * (1 + p.reps / 30) * 10) / 10 : p.weight,
+          date: performed_on,
+        })))
+        setHistoricalMax(prev => {
+          const next = { ...prev }
+          for (const p of prs) next[p.exercise.id] = p.weight
+          return next
+        })
+        setNewPrs(prs)
+        setPrShareUrl(null)
+      }
       // No hace falta volver a pedir los datos: `values` ya refleja
       // exactamente lo que se acaba de guardar.
     } catch (e) {
@@ -257,8 +309,74 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
 
   if (!day || exercises.length === 0) return null
 
+  const buildPrShare = async (pr) => {
+    setPrShareBuilding(true)
+    try {
+      const { data: profile } = await supabase.from('profiles').select('name').eq('id', memberId).maybeSingle()
+      const name = profile?.name || ''
+      const canvas = document.createElement('canvas')
+      await renderPrCard(canvas, { exerciseName: pr.exercise.name, weight: pr.weight, reps: pr.reps, previous: pr.previous, memberName: name })
+      setPrShareUrl(canvas.toDataURL('image/jpeg', 0.92))
+    } catch (e) {
+      toast({ title: 'No se pudo crear la imagen', description: e.message, variant: 'destructive' })
+    } finally {
+      setPrShareBuilding(false)
+    }
+  }
+
+  const sharePr = async () => {
+    try {
+      const blob = await (await fetch(prShareUrl)).blob()
+      const file = new File([blob], 'nuevo-record-nlvip.jpg', { type: 'image/jpeg' })
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Nuevo récord · NL VIP Team' })
+        return
+      }
+      const a = document.createElement('a'); a.href = prShareUrl; a.download = 'nuevo-record-nlvip.jpg'; a.click()
+    } catch (e) {
+      if (e?.name !== 'AbortError') toast({ title: 'No se pudo compartir', description: 'Descárgala y compártela desde tu galería.', variant: 'destructive' })
+    }
+  }
+
+  const prDialog = newPrs.length > 0 && (
+    <Dialog open onOpenChange={() => { setNewPrs([]); setPrShareUrl(null) }}>
+      <DialogContent className="bg-[#111] border-amber-500/30 rounded-3xl max-w-sm p-5">
+        <DialogHeader>
+          <DialogTitle className="text-white text-lg flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-amber-400" /> ¡Nuevo récord{newPrs.length > 1 ? 's' : ''}!
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          {newPrs.map(pr => (
+            <div key={pr.exercise.id} className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+              <p className="text-white font-bold">{pr.exercise.name}</p>
+              <p className="text-amber-300 text-sm">
+                {String(pr.weight).replace('.', ',')} kg{pr.reps ? ` × ${pr.reps}` : ''} <span className="text-gray-500">· antes {String(pr.previous).replace('.', ',')} kg</span>
+              </p>
+              {!prShareUrl && (
+                <Button size="sm" disabled={prShareBuilding} onClick={() => buildPrShare(pr)} className="mt-2 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold">
+                  {prShareBuilding ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Share2 className="w-4 h-4 mr-1" />} Crear imagen para compartir
+                </Button>
+              )}
+            </div>
+          ))}
+          {prShareUrl && (
+            <div className="space-y-2">
+              <img src={prShareUrl} alt="Nuevo récord" className="w-full rounded-2xl border border-[#2a2a2a]" />
+              <div className="flex gap-2">
+                <Button onClick={sharePr} className="flex-1 bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-xl"><Share2 className="w-4 h-4 mr-2" /> Compartir</Button>
+                <Button variant="outline" onClick={() => { const a = document.createElement('a'); a.href = prShareUrl; a.download = 'nuevo-record-nlvip.jpg'; a.click() }} className="rounded-xl border-[#2a2a2a] text-gray-200"><Download className="w-4 h-4" /></Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+
   return (
     <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
+      {prDialog}
       {/* Banner: deja claro que es opcional y por qué merece la pena */}
       <button
         onClick={() => setOpen(o => !o)}
