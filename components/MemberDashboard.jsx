@@ -38,6 +38,7 @@ import { DietDailyView, DietWeeklyView } from './DietTabParts'
 import { SymptomsTracker } from './SymptomsTracker'
 import PRTracker from './PRTracker'
 import { WorkoutViewer } from './WorkoutBuilder'
+import { WeekOverview } from './WeekOverview'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function MemberDashboard({ user, profile, setProfile, onLogout }) {
@@ -1066,6 +1067,11 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)} 
               />
             )}
+            <WeekOverview
+              memberId={user.id}
+              workoutId={myWorkouts?.principal?.workout?.id || myWorkouts?.alternativa?.workout?.id || null}
+              stepsGoal={Number(profile?.steps_goal) || 8000}
+            />
             <ActivityTracker userId={user.id} />
           </TabsContent>
 
