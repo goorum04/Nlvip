@@ -2,7 +2,9 @@ workflows:
   ios-release:
     name: NL VIP Team - iOS Release
     max_build_duration: 60
-    instance_type: mac_mini_m1
+    # Mac mini M4 en vez de M2: la cola de M2 se satura (confirmado por soporte
+    # de Codemagic, oct-2026). Cuesta algo más por minuto pero arranca al momento.
+    instance_type: mac_mini_m4
 
     environment:
       groups:
@@ -14,7 +16,9 @@ workflows:
         APP_STORE_APPLE_ID: "6759003518"
         STATIC_EXPORT: "true"
       node: v20.11.0
-      xcode: latest
+      # Versión fija en vez de `latest`: soporte recomienda cambiar de versión
+      # de Xcode para salir de la cola saturada de la imagen por defecto.
+      xcode: 26.5
       cocoapods: default
 
     triggering:
