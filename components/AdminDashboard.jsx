@@ -38,6 +38,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const [trainers, setTrainers] = useState([])
   const [codes, setCodes] = useState([])
   const [members, setMembers] = useState([])
+  const [memberSearch, setMemberSearch] = useState('')
   const [feedPosts, setFeedPosts] = useState([])
   const [allProgress, setAllProgress] = useState([])
   const [activeTab, setActiveTab] = useState('assistant')
@@ -1658,10 +1659,25 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
             <Card className="bg-[#1a1a1a] border-violet-500/20">
               <CardHeader>
                 <CardTitle className="text-violet-400">Socios Registrados ({members.length})</CardTitle>
+                <div className="relative mt-2">
+                  <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    placeholder="Buscar socio por nombre o email..."
+                    className="bg-black/30 border-[#2a2a2a] rounded-xl text-white pl-9"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {(members || []).map((member) => (
+                  {(members || [])
+                    .filter((member) => {
+                      const q = memberSearch.trim().toLowerCase()
+                      if (!q) return true
+                      return member.name?.toLowerCase().includes(q) || member.email?.toLowerCase().includes(q)
+                    })
+                    .map((member) => (
                     <div
                       key={member.id}
                       className="p-4 bg-black/50 rounded-lg border border-violet-500/10 hover:border-violet-500/20 transition-all space-y-2"
