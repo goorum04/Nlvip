@@ -93,7 +93,7 @@ export async function POST(req) {
     const native = await sendNativePush(supabase, memberId, payload).catch(e => ({ sent: 0, error: e.message }))
     await sendPushToUser(supabase, memberId, payload).catch(() => {})
 
-    return NextResponse.json({ success: true, message, pushSent: native?.sent || 0 })
+    return NextResponse.json({ success: true, message, pushSent: native?.sent || 0, voiceVersion: 2 })
   } catch (error) {
     console.error('admin-nudge error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
