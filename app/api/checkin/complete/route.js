@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { sendNativePush } from '@/lib/push'
 import { sendPushToUser } from '@/lib/webpush'
 import { persistRoutine } from '@/lib/routinePersistence'
+import { generateTrainerMessage, resolveTrainerName } from '@/lib/trainerVoice'
 
 function getSupabase() {
   return createClient(
@@ -140,14 +141,54 @@ export async function POST(req) {
     const { error: updateError } = await supabase.from('member_checkins').update(updatePayload).eq('id', checkinId)
     if (updateError) throw new Error(`Error actualizando la revisión: ${updateError.message}`)
 
+    // Aviso al socio con un mensaje personal en la voz del entrenador (varía
+    // en cada aprobación y respeta el género). Se guarda en `notifications`
+    // (type trainer_message) para que el socio lo vea también dentro de la app.
     try {
-      const label = appliedParts.length === 2 ? 'plan (dieta y rutina)' : appliedParts[0]
+      const [{ data: memberFull }, { data: records }, { data: notes }, trainerName] = await Promise.all([
+        supabase.from('profiles').select('sex, name, email').eq('id', checkin.member_id).maybeSingle(),
+        supabase.from('progress_records').select('date, weight_kg').eq('member_id', checkin.member_id).not('weight_kg', 'is', null).order('date', { ascending: false }).limit(2),
+        supabase.from('member_notes').select('note').eq('member_id', checkin.member_id).order('created_at', { ascending: false }).limit(4),
+        resolveTrainerName(supabase, checkin.member_id, user.id),
+      ])
+
+      let weightDelta = null
+      let weightDeltaWeeks = null
+      if (records?.length === 2 && records[0].weight_kg != null && records[1].weight_kg != null) {
+        weightDelta = Number(records[0].weight_kg) - Number(records[1].weight_kg)
+        weightDeltaWeeks = Math.max(1, Math.round((new Date(records[0].date) - new Date(records[1].date)) / (7 * 24 * 3600 * 1000)))
+      }
+
+      const message = await generateTrainerMessage({
+        supabase,
+        kind: 'approval',
+        member: { id: checkin.member_id, name: memberFull?.name || name, email: memberFull?.email, sex: memberFull?.sex },
+        trainerName,
+        context: {
+          dietChanged: appliedParts.includes('dieta'),
+          routineChanged: appliedParts.includes('rutina'),
+          dietSummary: checkin.diet_change_summary || '',
+          routineSummary: checkin.routine_change_summary || '',
+          weightDelta,
+          weightDeltaWeeks,
+          memberNotes: (notes || []).map(n => n.note),
+        },
+      })
+
       const payload = {
-        title: '¡Tu plan se ha actualizado!',
-        body: `Tras tu última revisión, hemos actualizado tu ${label}. ¡Échale un vistazo!`,
+        title: `💬 ${trainerName} te ha dejado un mensaje`,
+        body: message,
         url: appliedParts.includes('dieta') ? '/nutrition' : '/workout',
         icon: '/icons/icon-192x192.png',
       }
+      await supabase.from('notifications').insert({
+        user_id: checkin.member_id,
+        title: `Mensaje de ${trainerName}`,
+        body: message,
+        type: 'trainer_message',
+        reference_id: checkinId,
+        url: payload.url,
+      })
       await sendNativePush(supabase, checkin.member_id, payload)
       await sendPushToUser(supabase, checkin.member_id, payload)
     } catch (e) {

@@ -40,6 +40,9 @@ import PRTracker from './PRTracker'
 import { WorkoutViewer } from './WorkoutBuilder'
 import { WeekOverview } from './WeekOverview'
 import { EvolutionCard } from './EvolutionCard'
+import { StreakCard } from './StreakCard'
+import { TrainerMessageCard } from './TrainerMessageCard'
+import { FirstWeekGuide } from './FirstWeekGuide'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function MemberDashboard({ user, profile, setProfile, onLogout }) {
@@ -1068,6 +1071,17 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)} 
               />
             )}
+            <TrainerMessageCard memberId={user.id} />
+            <FirstWeekGuide
+              memberId={user.id}
+              createdAt={profile?.created_at}
+              hasPremium={hasPremium}
+              onNavigate={(tab) => {
+                setActiveTab(tab)
+                setVisitedTabs(prev => prev.has(tab) ? prev : new Set(prev).add(tab))
+              }}
+            />
+            <StreakCard memberId={user.id} refreshKey={loggedMealSlots.length} />
             <WeekOverview
               memberId={user.id}
               workoutId={myWorkouts?.principal?.workout?.id || myWorkouts?.alternativa?.workout?.id || null}

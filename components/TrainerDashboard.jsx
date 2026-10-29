@@ -30,10 +30,12 @@ import { AvatarBubble, ProfileModal } from './UserProfile'
 import { WorkoutBuilder } from './WorkoutBuilder'
 import { DietBuilder } from './DietBuilder'
 import { CheckInReviewPanel } from './CheckInReviewPanel'
+import { useMemberActivity, MemberActivityLine } from './MemberNudge'
 
 export default function TrainerDashboard({ user, profile, setProfile, onLogout }) {
   const [members, setMembers] = useState([])
   const [memberSearch, setMemberSearch] = useState('')
+  const { activity: memberActivity, refresh: refreshMemberActivity } = useMemberActivity(members)
   const [households, setHouseholds] = useState({}) // member_id -> { household_id, roommates: [{id,name,email}] }
   const [workoutTemplates, setWorkoutTemplates] = useState([])
   const [dietTemplates, setDietTemplates] = useState([])
@@ -844,6 +846,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                               {member.sex === 'female' && <Heart className="w-3 h-3 text-pink-400 flex-shrink-0" />}
                             </p>
                             <p className="text-sm text-gray-500 truncate">{member.email}</p>
+                            <MemberActivityLine memberId={member.id} info={memberActivity[member.id]} onNudged={refreshMemberActivity} compact />
                           </div>
                         </div>
                         <Button size="sm" className="flex-shrink-0 bg-gradient-to-r from-violet-500 to-cyan-500 text-black rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
