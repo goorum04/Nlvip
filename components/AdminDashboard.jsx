@@ -33,12 +33,14 @@ import AIRoutineGenerator from './AIRoutineGenerator'
 import { getApiUrl, authFetch } from '@/lib/utils'
 import { calculateMacros as sharedCalculateMacros } from '@/lib/macroCalculator'
 import { useBackgroundJob } from '@/hooks/useBackgroundJob'
+import { useMemberActivity, MemberActivityLine } from './MemberNudge'
 
 export default function AdminDashboard({ user, profile, setProfile, onLogout }) {
   const [trainers, setTrainers] = useState([])
   const [codes, setCodes] = useState([])
   const [members, setMembers] = useState([])
   const [memberSearch, setMemberSearch] = useState('')
+  const { activity: memberActivity, refresh: refreshMemberActivity } = useMemberActivity(members)
   const [feedPosts, setFeedPosts] = useState([])
   const [allProgress, setAllProgress] = useState([])
   const [activeTab, setActiveTab] = useState('assistant')
@@ -1690,6 +1692,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold text-white truncate">{member.name}</p>
                           <p className="text-sm text-gray-400 truncate">{member.email}</p>
+                          <MemberActivityLine memberId={member.id} info={memberActivity[member.id]} onNudged={refreshMemberActivity} />
                         </div>
                       </div>
                       {/* Fila inferior: selector de entrenador + botones de acción */}
