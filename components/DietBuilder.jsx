@@ -370,6 +370,7 @@ export function DietViewer({ dietId }) {
     const recommendations = hasParsed ? diet.parsed.recommendations : []
     const sections = hasParsed ? diet.parsed.sections : null
     const disclaimer = hasParsed ? diet.parsed.disclaimer : ''
+    const intro = hasParsed ? diet.parsed.intro : ''
 
     // Diets that encode a day-type split (día de entreno/descanso, entre
     // semana/fin de semana...) repeat the SAME meal once per variant, with
@@ -422,6 +423,14 @@ export function DietViewer({ dietId }) {
                     <p className="text-[10px] text-purple-400 font-bold uppercase tracking-tighter">Grasas</p>
                 </div>
             </div>
+
+            {/* Intro escrita por el entrenador (ej. dieta familiar: a quién corresponde cada cantidad) */}
+            {intro && (
+                <div className="bg-amber-500/5 rounded-2xl p-4 border border-amber-500/15 flex gap-3">
+                    <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <p className="text-sm text-amber-100/90 leading-relaxed whitespace-pre-wrap">{intro}</p>
+                </div>
+            )}
 
             {/* Timeline of Meals */}
             {meals.length > 0 && (
