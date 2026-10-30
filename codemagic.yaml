@@ -63,9 +63,15 @@ workflows:
 
       - name: Set marketing version and build number
         script: |
+          # La versión visible (CFBundleShortVersionString) sale de package.json
+          # ("version"), NO del número de build. Antes era 1.(build-39), que no
+          # coincidía con la versión creada en App Store Connect (1.2) y el
+          # aviso automático de "actualiza la app" nunca saltaba: compara la
+          # versión instalada (1.7x) con la de la App Store (1.2).
+          # Regla: la versión de package.json y la de App Store Connect tienen
+          # que ser la misma. El número de build sí sigue siendo automático.
+          NEW_VERSION="$(node -p "require('./package.json').version")"
           cd ios/App
-          MARKETING_OFFSET=39
-          NEW_VERSION="1.$((BUILD_NUMBER - MARKETING_OFFSET))"
           agvtool new-marketing-version "$NEW_VERSION"
           echo "Marketing version set to $NEW_VERSION (BUILD_NUMBER=$BUILD_NUMBER)"
           agvtool new-version -all $(($BUILD_NUMBER + 10))

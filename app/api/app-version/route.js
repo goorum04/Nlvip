@@ -17,6 +17,17 @@ function jsonNoStore(body, init) {
 // App Store Connect: devuelve la versión que está publicada AHORA MISMO.
 const IOS_APP_STORE_ID = '6759003518'
 
+// "1.80" > "1.9" > "1.2": comparación numérica por tramos, no alfabética.
+function compareVersions(a, b) {
+  const pa = String(a).split('.').map(n => parseInt(n, 10) || 0)
+  const pb = String(b).split('.').map(n => parseInt(n, 10) || 0)
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0)
+    if (d !== 0) return d
+  }
+  return 0
+}
+
 // Consulta la versión real publicada en la App Store. Si falla por lo que
 // sea (red, Apple caído, etc.), devuelve null y el aviso simplemente usa el
 // valor manual de la tabla como respaldo — nunca rompe la comprobación.
@@ -72,7 +83,11 @@ export async function GET(request) {
     // Android no tiene un endpoint público equivalente sin credenciales de
     // Google Play, así que sigue usando el valor configurado a mano.
     const realVersion = platform === 'ios' ? await fetchRealIosVersion() : null
-    const latestVersion = realVersion || data.latest_version
+    // Se usa la MAYOR de las dos (App Store vs tabla). Motivo: hasta la 1.2
+    // las builds llevaban un número interno (1.6x, 1.7x) distinto del de la
+    // ficha de la App Store (1.2), así que con solo la App Store el aviso no
+    // saltaba nunca. La tabla guarda el número interno de la build publicada.
+    const latestVersion = [realVersion, data.latest_version].filter(Boolean).sort(compareVersions).pop()
 
     return jsonNoStore({
       configured: data.configured,

@@ -34,6 +34,7 @@ import { getApiUrl, authFetch } from '@/lib/utils'
 import { calculateMacros as sharedCalculateMacros } from '@/lib/macroCalculator'
 import { useBackgroundJob } from '@/hooks/useBackgroundJob'
 import { useMemberActivity, MemberActivityLine } from './MemberNudge'
+import { BroadcastUpdateButton } from './BroadcastUpdateButton'
 
 export default function AdminDashboard({ user, profile, setProfile, onLogout }) {
   const [trainers, setTrainers] = useState([])
@@ -1660,7 +1661,10 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
           <TabsContent value="members" className="space-y-4">
             <Card className="bg-[#1a1a1a] border-violet-500/20">
               <CardHeader>
-                <CardTitle className="text-violet-400">Socios Registrados ({members.length})</CardTitle>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <CardTitle className="text-violet-400">Socios Registrados ({members.length})</CardTitle>
+                  <BroadcastUpdateButton memberCount={members.length} />
+                </div>
                 <div className="relative mt-2">
                   <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                   <Input

@@ -1,6 +1,6 @@
 {
     "name": "nl-vip-club",
-    "version": "1.0.0",
+    "version": "1.80",
     "private": true,
     "scripts": {
         "dev": "next dev --hostname 0.0.0.0 --port 3000",
