@@ -228,8 +228,13 @@ export default function App() {
     e.preventDefault()
     setForgotLoading(true)
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo: window.location.origin + '/auth/callback?type=recovery'
+      // Siempre la web (https), nunca window.location.origin: dentro de la app
+      // nativa eso es "capacitor://localhost", que ni Supabase acepta como
+      // redirección ni se puede abrir desde un correo. El socio cambia la
+      // contraseña en la web y luego entra en la app con la nueva.
+      const siteUrl = getApiUrl() || window.location.origin
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim().toLowerCase(), {
+        redirectTo: siteUrl + '/auth/callback?type=recovery'
       })
       if (error) throw error
       setForgotSent(true)
