@@ -879,7 +879,11 @@ export function WorkoutViewer({ workoutId, memberPrs = [], highlightToday = fals
   const [loading, setLoading] = useState(true)
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [selectedDayId, setSelectedDayId] = useState(null)
-  const overrideKey = `nlvip_day_override:${workoutId}:${new Date().toISOString().slice(0, 10)}`
+  // Último entreno registrado de esta rutina (para proponer el siguiente en
+  // orden, no el que "toca" por día de la semana).
+  const [lastLog, setLastLog] = useState(null)
+  const todayIso = (() => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10) })()
+  const overrideKey = `nlvip_day_override:${workoutId}:${todayIso}`
 
   useEffect(() => {
     loadWorkout()
@@ -912,6 +916,19 @@ export function WorkoutViewer({ workoutId, memberPrs = [], highlightToday = fals
           exercisesMap[day.id] = [...(day.workout_exercises || [])].sort((a, b) => a.order_index - b.order_index)
         }
         setExercisesByDay(exercisesMap)
+
+        if (logSetsForMemberId && sorted.length > 0) {
+          const { data: last } = await supabase
+            .from('workout_set_logs')
+            .select('workout_day_id, performed_on')
+            .eq('member_id', logSetsForMemberId)
+            .in('workout_day_id', sorted.map(d => d.id))
+            .order('performed_on', { ascending: false })
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          setLastLog(last || null)
+        }
       }
     } catch (error) {
       console.error('Error loading workout:', error)
@@ -958,10 +975,31 @@ export function WorkoutViewer({ workoutId, memberPrs = [], highlightToday = fals
   // que mostrar siempre día 1 por defecto.
   const weekday = ((new Date().getDay() + 6) % 7) + 1 // 1=Lunes ... 7=Domingo
   const todayDayNumber = weekday <= days.length ? weekday : null
-  const todayDay = todayDayNumber ? days.find(d => d.day_number === todayDayNumber) : null
+  const weekdayDay = todayDayNumber ? days.find(d => d.day_number === todayDayNumber) : null
+
+  // Qué entreno proponer hoy. Si el socio ya ha registrado series de esta
+  // rutina, se propone EL SIGUIENTE en orden al último que hizo (si se saltó
+  // el martes, el miércoles le sale el día 2, no el 3). Si hoy ya ha
+  // registrado algo, se queda en ese día. Solo sin historial se usa el día
+  // de la semana como pista.
+  const lastDay = lastLog ? days.find(d => d.id === lastLog.workout_day_id) : null
+  let suggestedDay = weekdayDay
+  let suggestionNote = ''
+  if (lastDay) {
+    if (lastLog.performed_on === todayIso) {
+      suggestedDay = lastDay
+      suggestionNote = 'Hoy ya has registrado series de este día.'
+    } else {
+      const nextNumber = (lastDay.day_number % days.length) + 1
+      suggestedDay = days.find(d => d.day_number === nextNumber) || days[0]
+      const when = new Date(`${lastLog.performed_on}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })
+      suggestionNote = `Tu último entreno fue el día ${lastDay.day_number} (${when}), así que te toca el siguiente.`
+    }
+  }
+  const todayDay = suggestedDay
   // El socio puede hacer hoy cualquier día de la rutina (p. ej. el día del
   // miércoles un sábado, o intercambiar dos días). La elección se recuerda
-  // solo para la fecha de hoy; mañana vuelve al día que toque.
+  // solo para la fecha de hoy; mañana vuelve al que le toque.
   const overrideDay = selectedDayId ? days.find(d => d.id === selectedDayId) : null
   const activeDay = overrideDay || todayDay
   const otherDays = activeDay ? days.filter(d => d.id !== activeDay.id) : days
@@ -977,9 +1015,11 @@ export function WorkoutViewer({ workoutId, memberPrs = [], highlightToday = fals
   const dayChooser = (
     <div className="bg-[#151515] border border-[#2a2a2a] rounded-2xl p-3 space-y-2">
       <p className="text-xs text-gray-400">
-        {activeDay
-          ? '¿Hoy haces otro día de la rutina? Elígelo aquí y registra ahí tus series.'
-          : 'Si entrenas hoy igualmente, elige qué día de la rutina haces:'}
+        {suggestionNote
+          ? `${suggestionNote} ¿Haces otro? Tócalo y registra ahí tus series:`
+          : activeDay
+            ? 'Elige qué día de la rutina haces hoy y registra ahí tus series:'
+            : 'Si entrenas hoy igualmente, elige qué día de la rutina haces:'}
       </p>
       <div className="flex flex-wrap gap-2">
         {days.map(d => {
@@ -1059,6 +1099,9 @@ export function WorkoutViewer({ workoutId, memberPrs = [], highlightToday = fals
               <Sun className="w-4 h-4 text-amber-400" />
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">Entreno de hoy</h3>
             </div>
+            {/* El selector va ARRIBA del entreno: abajo del registro de series
+                nadie lo veía y creían que no podían cambiar de día. */}
+            {days.length > 0 && dayChooser}
             {activeDay ? (
               <>
                 {renderDayCard(activeDay)}
@@ -1075,10 +1118,9 @@ export function WorkoutViewer({ workoutId, memberPrs = [], highlightToday = fals
               <div className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-[#2a2a2a] rounded-3xl p-6 text-center">
                 <Coffee className="w-10 h-10 mx-auto text-violet-400/60 mb-2" />
                 <p className="text-white font-semibold">Hoy descansas</p>
-                <p className="text-gray-500 text-sm mt-1">Tu rutina tiene {days.length} días y hoy toca recuperar. Nos vemos mañana.</p>
+                <p className="text-gray-500 text-sm mt-1">Tu rutina tiene {days.length} días y hoy toca recuperar. Si entrenas igualmente, elige arriba qué día haces.</p>
               </div>
             )}
-            {days.length > 0 && dayChooser}
           </div>
 
           {otherDays.length > 0 && (
