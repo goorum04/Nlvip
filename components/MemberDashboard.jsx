@@ -485,12 +485,18 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
   const loadGymAdmin = async () => {
     // Fetch the owner/admin (assuming there is one with role admin)
+    // El admin "del gimnasio" es el más antiguo de verdad: sin esto, el
+    // `limit(1)` devolvía la cuenta de pruebas (@nlvipnutrition.internal) y
+    // los mensajes de los socios al "admin" iban a un chat que nadie leía.
     const { data } = await supabase
       .from('profiles')
       .select('id, name, email')
       .eq('role', 'admin')
+      .not('email', 'like', '%@nlvipnutrition.internal')
+      .not('email', 'like', '%@example.com')
+      .order('created_at', { ascending: true })
       .limit(1)
-      .single()
+      .maybeSingle()
     if (data) setGymAdmin(data)
   }
 
