@@ -347,12 +347,16 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
     try {
       const { data } = await supabase
         .from('diet_onboarding_requests')
-        .select('id, status')
+        .select('id, status, created_at')
         .eq('member_id', user.id)
-        .eq('status', 'pending')
         .order('created_at', { ascending: false })
         .limit(1)
-      setPendingOnboarding(data?.[0] || null)
+      // Solo cuenta como pendiente si es el cuestionario MÁS RECIENTE. Una
+      // petición vieja que quedó "pending" junto a otra posterior ya
+      // completada (visto en producción) bloqueaba la pestaña Progreso con
+      // "Completa primero tu cuestionario" y el socio no podía enviar revisión.
+      const latest = data?.[0] || null
+      setPendingOnboarding(latest && latest.status === 'pending' ? latest : null)
     } catch (e) {
       console.warn('Error fetching onboarding:', e.message)
     }
