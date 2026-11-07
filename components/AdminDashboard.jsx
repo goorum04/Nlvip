@@ -1695,7 +1695,14 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold text-white truncate">{member.name}</p>
-                          <p className="text-sm text-gray-400 truncate">{member.email}</p>
+                          <p className="text-sm text-gray-400 truncate">
+                            {member.email}
+                            {member.app_version && (
+                              <span className="ml-2 text-[10px] text-gray-500 bg-white/5 border border-white/10 rounded-md px-1.5 py-0.5" title={`Versión de la app (vista ${member.app_version_seen_at ? new Date(member.app_version_seen_at).toLocaleDateString('es-ES') : ''})`}>
+                                app {member.app_version}
+                              </span>
+                            )}
+                          </p>
                           <MemberActivityLine memberId={member.id} info={memberActivity[member.id]} onNudged={refreshMemberActivity} />
                         </div>
                       </div>

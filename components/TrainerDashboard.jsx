@@ -276,7 +276,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
   const loadMembers = async () => {
     const { data } = await supabase
       .from('trainer_members')
-      .select(`member_id, member:profiles!trainer_members_member_id_fkey(id, name, email, created_at, sex, life_stage)`)
+      .select(`member_id, member:profiles!trainer_members_member_id_fkey(id, name, email, created_at, sex, life_stage, app_version, app_version_seen_at)`)
       .eq('trainer_id', user.id)
     const list = data ? data.map(tm => tm.member) : []
     setMembers(list)
@@ -845,7 +845,12 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                               <span className="truncate">{member.name}</span>
                               {member.sex === 'female' && <Heart className="w-3 h-3 text-pink-400 flex-shrink-0" />}
                             </p>
-                            <p className="text-sm text-gray-500 truncate">{member.email}</p>
+                            <p className="text-sm text-gray-500 truncate">
+                              {member.email}
+                              {member.app_version && (
+                                <span className="ml-2 text-[10px] text-gray-500 bg-white/5 border border-white/10 rounded-md px-1.5 py-0.5">app {member.app_version}</span>
+                              )}
+                            </p>
                             <MemberActivityLine memberId={member.id} info={memberActivity[member.id]} onNudged={refreshMemberActivity} compact />
                           </div>
                         </div>
