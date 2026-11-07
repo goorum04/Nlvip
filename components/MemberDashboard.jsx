@@ -87,6 +87,30 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   // Check if user has premium access (registered with invitation code)
   const hasPremium = profile?.has_premium === true
 
+  // Guarda en el perfil qué versión de la app nativa usa el socio, para
+  // poder verlo desde el panel ("¿tiene la app actualizada?") sin tener que
+  // deducirlo de los logs.
+  useEffect(() => {
+    if (!user?.id) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const { Capacitor } = await import('@capacitor/core')
+        if (!Capacitor.isNativePlatform()) return
+        const { App } = await import('@capacitor/app')
+        const { version, build } = await App.getInfo()
+        if (cancelled || !version) return
+        const label = build ? `${version} (${build})` : version
+        if (profile?.app_version === label) return
+        await supabase.from('profiles').update({ app_version: label, app_version_seen_at: new Date().toISOString() }).eq('id', user.id)
+      } catch (e) {
+        console.warn('No se pudo guardar la versión de la app:', e?.message)
+      }
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
   // Premium-only features
   const premiumFeatures = ['feed', 'badges', 'workout', 'diet', 'progress']
 
