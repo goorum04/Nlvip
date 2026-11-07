@@ -333,6 +333,20 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     }
   }
 
+  // Entre varias conversaciones duplicadas: SIEMPRE una con mensajes antes
+  // que una vacía (aunque la vacía sea más nueva: se crearon vacías cada vez
+  // que se abría el chat); entre las que tienen mensajes, la del mensaje
+  // más reciente; entre vacías, la más antigua.
+  const pickBestConversation = (convs, lastByConv) => {
+    return [...convs].sort((a, b) => {
+      const la = lastByConv[a.id], lb = lastByConv[b.id]
+      if (la && !lb) return -1
+      if (!la && lb) return 1
+      if (la && lb) return new Date(lb) - new Date(la)
+      return new Date(a.created_at) - new Date(b.created_at)
+    })[0]
+  }
+
   const findMemberAdminConversation = async (memberId) => {
     try {
       const { data: parts } = await supabase
@@ -356,8 +370,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
         .limit(50)
       const lastByConv = {}
       for (const m of lastMsgs || []) if (!lastByConv[m.conversation_id]) lastByConv[m.conversation_id] = m.created_at
-      convs.sort((a, b) => new Date(lastByConv[b.id] || b.created_at) - new Date(lastByConv[a.id] || a.created_at))
-      const conv = convs[0]
+      const conv = pickBestConversation(convs, lastByConv)
 
       const { data: mine } = await supabase
         .from('conversation_participants')
@@ -422,7 +435,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
               .limit(50)
             const lastByConv = {}
             for (const m of lastMsgs || []) if (!lastByConv[m.conversation_id]) lastByConv[m.conversation_id] = m.created_at
-            chosen = [...existing].sort((a, b) => new Date(lastByConv[b.id] || b.created_at) - new Date(lastByConv[a.id] || a.created_at))[0]
+            chosen = pickBestConversation(existing, lastByConv)
           }
           return {
             id: chosen.id,
