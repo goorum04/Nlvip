@@ -281,7 +281,11 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
       if (!isOpen) setIsOpen(true)
       
       setLoading(true)
-      const conv = await getOrCreateConversation('admin_member', [userId, memberId])
+      // Primero, el chat "con el admin" que YA tenga el socio, sea con el
+      // admin que sea (visto en producción: el socio escribía a la cuenta QA
+      // y al abrir su chat desde el panel se creaba otro vacío). Si existe y
+      // este admin no está dentro, se le añade para que pueda contestar.
+      const conv = (await findMemberAdminConversation(memberId)) || (await getOrCreateConversation('admin_member', [userId, memberId]))
       if (conv) {
         setActiveConversation({ ...conv, display_name: name })
         setView('chat')
@@ -301,10 +305,15 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     }
 
     // 2. Get or Create Admin Conversation
+    // Admin real más antiguo (nunca cuentas de prueba/demo): con `limit(1)` a
+    // secas salía la cuenta QA y el chat del socio con "el admin" se perdía.
     const { data: adminUser } = await supabase
       .from('profiles')
       .select('id')
       .eq('role', 'admin')
+      .not('email', 'like', '%@nlvipnutrition.internal')
+      .not('email', 'like', '%@example.com')
+      .order('created_at', { ascending: true })
       .limit(1)
       .maybeSingle()
 
@@ -321,6 +330,49 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     } else if (adminConv) {
       setActiveTab('admin')
       setActiveConversation(adminConv)
+    }
+  }
+
+  const findMemberAdminConversation = async (memberId) => {
+    try {
+      const { data: parts } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', memberId)
+      const ids = (parts || []).map(p => p.conversation_id)
+      if (ids.length === 0) return null
+      const { data: convs } = await supabase
+        .from('conversations')
+        .select('id, type, last_message_at, created_at')
+        .in('id', ids)
+        .eq('type', 'admin_member')
+      if (!convs || convs.length === 0) return null
+      // Si hay varias, la que tenga mensajes más recientes.
+      const { data: lastMsgs } = await supabase
+        .from('messages')
+        .select('conversation_id, created_at')
+        .in('conversation_id', convs.map(c => c.id))
+        .order('created_at', { ascending: false })
+        .limit(50)
+      const lastByConv = {}
+      for (const m of lastMsgs || []) if (!lastByConv[m.conversation_id]) lastByConv[m.conversation_id] = m.created_at
+      convs.sort((a, b) => new Date(lastByConv[b.id] || b.created_at) - new Date(lastByConv[a.id] || a.created_at))
+      const conv = convs[0]
+
+      const { data: mine } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('conversation_id', conv.id)
+        .eq('user_id', userId)
+        .maybeSingle()
+      if (!mine) {
+        const { error } = await supabase.from('conversation_participants').insert({ conversation_id: conv.id, user_id: userId })
+        if (error) console.warn('No se pudo unir al admin a la conversación:', error.message)
+      }
+      return { id: conv.id, type: conv.type, conversation_participants: [{ user_id: userId }, { user_id: memberId }] }
+    } catch (err) {
+      console.error('findMemberAdminConversation:', err)
+      return null
     }
   }
 
