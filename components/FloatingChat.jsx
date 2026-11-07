@@ -397,18 +397,36 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
 
       const myConvIds = (myParts || []).map(p => p.conversation_id)
       const theirConvIds = (theirParts || []).map(p => p.conversation_id)
-      const commonConvId = myConvIds.find(id => theirConvIds.includes(id))
+      // TODAS las conversaciones en común, filtradas por tipo. Antes se cogía
+      // solo la primera en común y, si era de otro tipo (p. ej. la de
+      // entrenador-socio cuando se buscaba admin-socio), se creaba una nueva
+      // CADA VEZ que se abría el chat: una socia acumuló 8 chats vacíos.
+      const commonConvIds = myConvIds.filter(id => theirConvIds.includes(id))
 
-      if (commonConvId) {
-        const { data: existingConv } = await supabase
+      if (commonConvIds.length > 0) {
+        const { data: existing } = await supabase
           .from('conversations')
-          .select('id, type')
-          .eq('id', commonConvId)
-          .single()
-          
-        if (existingConv && existingConv.type === type) {
+          .select('id, type, created_at')
+          .in('id', commonConvIds)
+          .eq('type', type)
+
+        if (existing && existing.length > 0) {
+          // Si hay duplicadas, la que tenga mensajes más recientes.
+          let chosen = existing[0]
+          if (existing.length > 1) {
+            const { data: lastMsgs } = await supabase
+              .from('messages')
+              .select('conversation_id, created_at')
+              .in('conversation_id', existing.map(c => c.id))
+              .order('created_at', { ascending: false })
+              .limit(50)
+            const lastByConv = {}
+            for (const m of lastMsgs || []) if (!lastByConv[m.conversation_id]) lastByConv[m.conversation_id] = m.created_at
+            chosen = [...existing].sort((a, b) => new Date(lastByConv[b.id] || b.created_at) - new Date(lastByConv[a.id] || a.created_at))[0]
+          }
           return {
-            ...existingConv,
+            id: chosen.id,
+            type: chosen.type,
             conversation_participants: validParticipants.map(id => ({ user_id: id }))
           }
         }
@@ -855,7 +873,9 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
                     key={member.id}
                     onClick={async () => {
                       setLoading(true)
-                      const conv = await getOrCreateConversation('admin_member', [userId, member.id])
+                      // El chat admin-socio que ya exista (con el admin que sea),
+                      // y solo si no hay ninguno se crea uno nuevo.
+                      const conv = (await findMemberAdminConversation(member.id)) || (await getOrCreateConversation('admin_member', [userId, member.id]))
                       if (conv) {
                         setActiveConversation({ ...conv, display_name: member.name })
                         setView('chat')
