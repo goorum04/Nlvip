@@ -9,6 +9,7 @@ import { Flame, MapPin, Target, Plus, Minus, CircleAlert as AlertCircle,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
+import { aggregateHealthKitSteps } from '@/lib/healthkitSteps'
 // ⚠️ Capacitor plugin imports are dynamic to prevent iOS crash at module evaluation time
 
 // Componente principal de Actividad Diaria
@@ -21,6 +22,9 @@ export default function ActivityTracker({ userId, compact = false }) {
   const [stepsToAdd, setStepsToAdd] = useState('')
   const [healthKitAvailable, setHealthKitAvailable] = useState(false)
   const [healthKitSyncing, setHealthKitSyncing] = useState(false)
+  // Dispositivo del que vienen los pasos ("Apple Watch de Nacho", "WHOOP",
+  // "Garmin Connect"...) para que el socio vea que su reloj está contando.
+  const [stepsSource, setStepsSource] = useState(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -161,11 +165,19 @@ export default function ActivityTracker({ userId, compact = false }) {
 
       if (showToast) toast({ title: 'Paso 4/4', description: 'Procesando resultados...' })
 
-      const totalSteps = (stepsResult.resultData || []).reduce((sum, s) => sum + (s.value || 0), 0)
+      // NO sumar todas las muestras a lo bruto: con iPhone + reloj cada paso
+      // llega dos veces (una por fuente). Se agrupa por dispositivo y se usa
+      // el que más registró. Ver lib/healthkitSteps.js.
+      const { steps: totalSteps, sourceName, sourceCount } = aggregateHealthKitSteps(stepsResult.resultData)
 
       if (totalSteps > 0) {
-        await updateSteps(Math.round(totalSteps), false, 'device')
-        if (showToast) toast({ title: '¡Sincronizado!', description: `${Math.round(totalSteps).toLocaleString()} pasos cargados.` })
+        setStepsSource(sourceName)
+        await updateSteps(totalSteps, false, 'device')
+        if (showToast) {
+          const from = sourceName ? ` desde ${sourceName}` : ''
+          const extra = sourceCount > 1 ? ` (${sourceCount} dispositivos detectados, se usa el que más registra)` : ''
+          toast({ title: '¡Sincronizado!', description: `${totalSteps.toLocaleString()} pasos cargados${from}${extra}.` })
+        }
       } else if (showToast) {
         toast({ title: 'Sin datos', description: 'No hay pasos registrados en Apple Health para hoy todavía.' })
       }
@@ -384,7 +396,9 @@ export default function ActivityTracker({ userId, compact = false }) {
           {healthKitAvailable ? (
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/20">
               <Heart className="w-3 h-3 text-pink-500 fill-pink-500" />
-              <span className="text-[10px] font-semibold text-pink-400 uppercase tracking-wider">Sincronizado con Apple Health</span>
+              <span className="text-[10px] font-semibold text-pink-400 uppercase tracking-wider">
+                {stepsSource ? `Apple Health · ${stepsSource}` : 'Sincronizado con Apple Health'}
+              </span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-500/10 border border-gray-500/20">
