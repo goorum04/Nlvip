@@ -10,7 +10,7 @@ import { authFetch } from '@/lib/utils'
 // Lista de la compra semanal de la dieta. Se genera con IA la primera vez
 // (y queda guardada en la dieta); el socio va marcando lo que ya tiene y
 // puede enviarla por WhatsApp. Los ticks se guardan en el móvil.
-export function ShoppingList({ dietTemplateId, dietName, canRegenerate = false, defaultOpen = false }) {
+export function ShoppingList({ dietTemplateId, dietName, canRegenerate = false, defaultOpen = false, prefetch = false }) {
   const [list, setList] = useState(null)
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(defaultOpen)
@@ -21,10 +21,13 @@ export function ShoppingList({ dietTemplateId, dietName, canRegenerate = false, 
   useEffect(() => {
     setList(null)
     try { setChecked(JSON.parse(localStorage.getItem(checkKey) || '{}')) } catch { setChecked({}) }
+    // En la app del socio se pide nada más abrir la pestaña Dieta: la primera
+    // generación tarda ~30 s y así, cuando la toca, ya suele estar lista.
+    if (prefetch && dietTemplateId) load(false, true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dietTemplateId])
 
-  const load = async (force = false) => {
+  const load = async (force = false, silent = false) => {
     if (!dietTemplateId) return
     setLoading(true)
     try {
@@ -41,7 +44,7 @@ export function ShoppingList({ dietTemplateId, dietName, canRegenerate = false, 
         try { localStorage.removeItem(checkKey) } catch {}
       }
     } catch (e) {
-      toast({ title: 'Lista de la compra', description: e.message, variant: 'destructive' })
+      if (!silent) toast({ title: 'Lista de la compra', description: e.message, variant: 'destructive' })
     } finally {
       setLoading(false)
     }
@@ -94,7 +97,7 @@ export function ShoppingList({ dietTemplateId, dietName, canRegenerate = false, 
             </div>
             <div className="min-w-0">
               <p className="text-white font-bold text-sm">Lista de la compra</p>
-              <p className="text-gray-500 text-xs truncate">{list ? `${done}/${total} cogidos · para una semana` : 'Todo lo que necesitas para una semana de esta dieta'}</p>
+              <p className="text-gray-500 text-xs truncate">{list ? `${done}/${total} cogidos · para una semana` : loading ? 'Preparando tu lista…' : 'Todo lo que necesitas para una semana de esta dieta'}</p>
             </div>
           </div>
           {open ? <ChevronUp className="w-4 h-4 text-gray-500 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-500 shrink-0" />}
