@@ -1703,7 +1703,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                               </span>
                             )}
                           </p>
-                          <MemberActivityLine memberId={member.id} info={memberActivity[member.id]} onNudged={refreshMemberActivity} />
+                          <MemberActivityLine memberId={member.id} memberName={member.name} info={memberActivity[member.id]} onNudged={refreshMemberActivity} />
                         </div>
                       </div>
                       {/* Fila inferior: selector de entrenador + botones de acción */}

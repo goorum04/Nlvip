@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { sendNativePush } from '@/lib/push'
+import { sendPushToUser } from '@/lib/webpush'
+import { getActiveDates, computeStreak, isoDateMadrid } from '@/lib/memberActivity'
 
 // user_badges nunca se escribía en ningún sitio — 7 insignias definidas con
 // condiciones claras (badges.condition_type/condition_value) pero ninguna
@@ -27,7 +30,7 @@ export async function GET(request) {
 
   const { data: badges, error: badgesError } = await supabase
     .from('badges')
-    .select('id, condition_type, condition_value')
+    .select('id, title, description, condition_type, condition_value')
 
   if (badgesError) {
     console.error('[cron/award-badges] no se pudieron cargar las insignias:', badgesError)
@@ -71,6 +74,13 @@ export async function GET(request) {
             if (insertError.code !== '23505') throw insertError
           } else {
             results.awarded++
+            // Que se entere: una insignia sin aviso no engancha a nadie.
+            const body = badge.condition_type === 'streak'
+              ? `${badge.condition_value} días seguidos registrando. Entra y mírala en Logros.`
+              : `${badge.description}. Entra y mírala en Logros.`
+            const payload = { title: `🏅 Nueva insignia: ${badge.title}`, body, url: '/' }
+            await sendNativePush(supabase, member.id, payload).catch(() => {})
+            await sendPushToUser(supabase, member.id, { ...payload, icon: '/icons/icon-192x192.png' }).catch(() => {})
           }
         }
       }
@@ -113,15 +123,11 @@ async function computeMemberStats(supabase, memberId, pendingBadges) {
   }
 
   if (needsStreak) {
-    const [{ data: checkins }, { data: activity }] = await Promise.all([
-      supabase.from('workout_checkins').select('checked_in_at').eq('member_id', memberId),
-      supabase.from('daily_activity').select('activity_date').eq('member_id', memberId).gt('steps', 0),
-    ])
-    const activeDays = new Set([
-      ...(checkins || []).map(c => c.checked_in_at.slice(0, 10)),
-      ...(activity || []).map(a => a.activity_date),
-    ])
-    stats.longestStreak = longestConsecutiveStreak(activeDays)
+    // Misma definición de racha que la tarjeta del socio (lib/memberActivity):
+    // días seguidos marcando comidas o registrando entrenos. Los pasos no
+    // cuentan (se sincronizan solos y no demuestran uso de la app).
+    const dates = await getActiveDates(supabase, [memberId], '2026-01-01')
+    stats.longestStreak = computeStreak(dates.get(memberId) || new Set(), isoDateMadrid()).best
   }
 
   if (needsChallenges) {
