@@ -22,7 +22,7 @@ const isoDate = (d) => {
 // ha registrado, cuántas comidas ha marcado y los pasos frente a su objetivo.
 // Todo sale de tablas que ya existen; no guarda nada. El botón "Compartir"
 // genera en el móvil una imagen formato story con esos mismos datos.
-export function WeekOverview({ memberId, workoutId, stepsGoal = 8000, memberName = '' }) {
+export function WeekOverview({ memberId, workoutId, stepsGoal = 8000, memberName = '', showShare = true, title = 'Tu semana' }) {
   const [days, setDays] = useState(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [shareUrl, setShareUrl] = useState(null)
@@ -132,15 +132,17 @@ export function WeekOverview({ memberId, workoutId, stepsGoal = 8000, memberName
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <p className="text-white font-bold text-sm flex items-center gap-2">
-            <CalendarDays className="w-4 h-4 text-violet-400" /> Tu semana
+            <CalendarDays className="w-4 h-4 text-violet-400" /> {title}
           </p>
           <div className="flex items-center gap-2">
             <p className="text-[11px] text-gray-500">
-              {trainedCount}/{plannedCount || 0} entrenos · {stepsDaysOk} días de pasos
+              {trainedCount}/{plannedCount || 0} entrenos · {mealsTotal} comidas · {stepsDaysOk} días de pasos
             </p>
-            <Button size="sm" variant="ghost" onClick={openShare} className="h-7 px-2 rounded-lg text-violet-300 hover:text-violet-200 hover:bg-violet-500/10" title="Compartir mi semana">
-              <Share2 className="w-4 h-4" />
-            </Button>
+            {showShare && (
+              <Button size="sm" variant="ghost" onClick={openShare} className="h-7 px-2 rounded-lg text-violet-300 hover:text-violet-200 hover:bg-violet-500/10" title="Compartir mi semana">
+                <Share2 className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
 

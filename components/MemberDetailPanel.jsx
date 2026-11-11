@@ -20,6 +20,7 @@ import { WorkoutViewer, WorkoutBuilder } from './WorkoutBuilder'
 import { DietViewer } from './DietBuilder'
 import { ProgressPhotoGallery, ProgressPhotoUploader } from './ProgressPhotos'
 import { MemberOnboardingResponses } from './MemberPhotosAndForm'
+import { MemberWeekPanel } from './MemberWeekPanel'
 
 export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allMembers = [], onRefresh, onOpenChat, initialTab = 'form' }) {
   const [loading, setLoading] = useState(true)
@@ -577,6 +578,14 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allM
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Semana del socio: entrenos, comidas, pasos y peso de un vistazo */}
+            <MemberWeekPanel
+              memberId={member.id}
+              workoutId={assignedWorkouts.principal?.id || assignedWorkouts.alternativa?.id || null}
+              stepsGoal={Number(memberData?.steps_goal) || 8000}
+              memberName={memberData?.name || member.name}
+            />
 
             {/* Tabs de 4 secciones */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>

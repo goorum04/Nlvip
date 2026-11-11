@@ -851,7 +851,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                                 <span className="ml-2 text-[10px] text-gray-500 bg-white/5 border border-white/10 rounded-md px-1.5 py-0.5">app {member.app_version}</span>
                               )}
                             </p>
-                            <MemberActivityLine memberId={member.id} info={memberActivity[member.id]} onNudged={refreshMemberActivity} compact />
+                            <MemberActivityLine memberId={member.id} memberName={member.name} info={memberActivity[member.id]} onNudged={refreshMemberActivity} compact />
                           </div>
                         </div>
                         <Button size="sm" className="flex-shrink-0 bg-gradient-to-r from-violet-500 to-cyan-500 text-black rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
