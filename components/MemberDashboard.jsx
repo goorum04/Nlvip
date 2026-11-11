@@ -1398,7 +1398,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                       <DietDailyView content={myDiet.diet?.content} loggedSlots={loggedMealSlots} onToggleMealLog={toggleMealLog} />
                     </div>
 
-                    <ShoppingList dietTemplateId={myDiet.diet?.id} dietName={myDiet.diet?.name} prefetch />
+                    <ShoppingList dietTemplateId={myDiet.diet?.id} dietName={myDiet.diet?.name} memberId={user.id} prefetch />
 
                     {/* Today's Recipe part is already inside MemberRecipePlan which we show below */}
                     <MemberRecipePlan userId={user.id} />
