@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { parseDietContent } from '@/lib/dietContentParser'
+import { ShoppingList } from './ShoppingList'
 import { useToast } from '@/hooks/use-toast'
 import { useSignedUrl } from '@/hooks/useStorage'
 
@@ -556,6 +557,9 @@ export function DietViewer({ dietId }) {
                     <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{diet.rawContent}</p>
                 </div>
             )}
+
+            {/* Lista de la compra (el entrenador puede regenerarla) */}
+            <ShoppingList dietTemplateId={diet.id} dietName={diet.name} canRegenerate />
 
             {/* Disclaimer */}
             {disclaimer && (

@@ -43,6 +43,7 @@ import { EvolutionCard } from './EvolutionCard'
 import { StreakCard } from './StreakCard'
 import { TrainerMessageCard } from './TrainerMessageCard'
 import { FirstWeekGuide } from './FirstWeekGuide'
+import { ShoppingList } from './ShoppingList'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function MemberDashboard({ user, profile, setProfile, onLogout }) {
@@ -1396,6 +1397,8 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                     <div className="bg-white/[0.01] rounded-[2.5rem] p-6 sm:p-8 border border-white/[0.03]">
                       <DietDailyView content={myDiet.diet?.content} loggedSlots={loggedMealSlots} onToggleMealLog={toggleMealLog} />
                     </div>
+
+                    <ShoppingList dietTemplateId={myDiet.diet?.id} dietName={myDiet.diet?.name} />
 
                     {/* Today's Recipe part is already inside MemberRecipePlan which we show below */}
                     <MemberRecipePlan userId={user.id} />
