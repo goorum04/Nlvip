@@ -80,7 +80,8 @@ ${dietContent}`
   const response = await client.messages.create({
     model: CLAUDE_MODEL,
     max_tokens: 8000,
-    output_config: { effort: 'medium', format: { type: 'json_schema', schema: SHOPPING_LIST_SCHEMA } },
+    // Esfuerzo bajo: para una lista de la compra sobra, y tarda la mitad.
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: SHOPPING_LIST_SCHEMA } },
     messages: [{ role: 'user', content: prompt }],
   })
   if (response.stop_reason === 'refusal') throw new Error('No se pudo generar la lista (respuesta rechazada)')
