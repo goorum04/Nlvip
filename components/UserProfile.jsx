@@ -98,6 +98,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
   const [workoutTime, setWorkoutTime] = useState(profile?.workout_time?.slice(0, 5) || '')
   const [mealRemindersEnabled, setMealRemindersEnabled] = useState(profile?.meal_reminders_enabled ?? true)
   const [workoutReminderEnabled, setWorkoutReminderEnabled] = useState(profile?.workout_reminder_enabled ?? false)
+  const [hydrationRemindersEnabled, setHydrationRemindersEnabled] = useState(profile?.hydration_reminders_enabled ?? true)
 
   useEffect(() => {
     if (profile) {
@@ -115,6 +116,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
       setWorkoutTime(profile.workout_time?.slice(0, 5) || '')
       setMealRemindersEnabled(profile.meal_reminders_enabled ?? true)
       setWorkoutReminderEnabled(profile.workout_reminder_enabled ?? false)
+      setHydrationRemindersEnabled(profile.hydration_reminders_enabled ?? true)
       loadAvatarPreview()
     }
   }, [profile])
@@ -228,6 +230,7 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
             workout_time: workoutTime || null,
             meal_reminders_enabled: mealRemindersEnabled,
             workout_reminder_enabled: workoutReminderEnabled,
+            hydration_reminders_enabled: hydrationRemindersEnabled,
             updated_at: new Date().toISOString()
           }
         })
@@ -256,7 +259,8 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
           dinner_time: dinnerTime || null,
           workout_time: workoutTime || null,
           meal_reminders_enabled: mealRemindersEnabled,
-          workout_reminder_enabled: workoutReminderEnabled
+          workout_reminder_enabled: workoutReminderEnabled,
+          hydration_reminders_enabled: hydrationRemindersEnabled
         })
       }
     } catch (error) {
@@ -550,6 +554,14 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
               </div>
             )}
             <p className="text-xs text-gray-500">Te avisaremos por notificación push unos minutos antes de cada hora.</p>
+
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <Label className="text-gray-300 text-sm">Avisos de hidratación</Label>
+                <p className="text-[11px] text-gray-500">Dos recordatorios al día para beber agua (mañana y mediodía).</p>
+              </div>
+              <Switch checked={hydrationRemindersEnabled} onCheckedChange={setHydrationRemindersEnabled} />
+            </div>
           </div>
 
           {/* Save Button */}
