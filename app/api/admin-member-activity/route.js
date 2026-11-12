@@ -3,8 +3,6 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getLastActivity, getActiveDates, computeStreak, isoDateMadrid, addDaysIso } from '@/lib/memberActivity'
 
-export const dynamic = 'force-dynamic'
-
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,

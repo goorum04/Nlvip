@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import Anthropic from '@anthropic-ai/sdk'
 
-export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 const CLAUDE_MODEL = 'claude-opus-5-5'
