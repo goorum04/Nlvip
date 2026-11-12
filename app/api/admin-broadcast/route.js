@@ -4,8 +4,6 @@ import { z } from 'zod'
 import { sendNativePush } from '@/lib/push'
 import { sendPushToUser } from '@/lib/webpush'
 
-export const dynamic = 'force-dynamic'
-
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,

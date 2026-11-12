@@ -6,8 +6,6 @@ import { sendPushToUser } from '@/lib/webpush'
 import { generateTrainerMessage, resolveTrainerName } from '@/lib/trainerVoice'
 import { getLastActivity, getActiveDates, computeStreak, isoDateMadrid, addDaysIso } from '@/lib/memberActivity'
 
-export const dynamic = 'force-dynamic'
-
 // Como mucho un "toque" por socio cada 3 días: si no, deja de tener gracia.
 const NUDGE_COOLDOWN_DAYS = 3
 
