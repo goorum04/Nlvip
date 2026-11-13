@@ -138,6 +138,23 @@ async function registerAndListen(PushNotifications, Capacitor) {
       }
     })
 
+    // Android 8+: el servidor (lib/fcm.js) envía al canal "default". Si no
+    // existe, Android lo mete en un canal genérico sin aviso emergente.
+    if (Capacitor.getPlatform() === 'android') {
+      try {
+        await PushNotifications.createChannel({
+          id: 'default',
+          name: 'Avisos de NL VIP Team',
+          description: 'Mensajes de tu entrenador, recordatorios y retos',
+          importance: 4,
+          visibility: 1,
+          vibration: true,
+        })
+      } catch (e) {
+        console.warn('[Push] No se pudo crear el canal default:', e)
+      }
+    }
+
     // Now it's safe to trigger registration — listeners are in place
     await PushNotifications.register()
     if (PUSH_DEBUG) toast({ title: '🔧 register() devolvió OK', description: 'Esperando el token de APNs…' })
