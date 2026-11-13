@@ -250,10 +250,16 @@ workflows:
       - name: Set version code and name
         script: |
           set -e
+          # versionName sale de package.json (misma versión que iOS); el
+          # versionCode debe crecer siempre: 180 es la base del 1.80 y se le
+          # suma el número de build de Codemagic.
+          APP_VERSION=$(node -p "require('./package.json').version")
+          BASE_CODE=$(grep -o 'versionCode [0-9]*' android/app/build.gradle | awk '{print $2}')
+          VERSION_CODE=$((BASE_CODE + BUILD_NUMBER))
           cd android/app
-          sed -i "s/versionCode 1/versionCode $BUILD_NUMBER/" build.gradle
-          sed -i "s/versionName \"1.0\"/versionName \"1.0.$BUILD_NUMBER\"/" build.gradle
-          echo "versionCode=$BUILD_NUMBER versionName=1.0.$BUILD_NUMBER"
+          sed -i "s/versionCode [0-9]*/versionCode $VERSION_CODE/" build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"$APP_VERSION\"/" build.gradle
+          echo "versionCode=$VERSION_CODE versionName=$APP_VERSION"
 
       - name: Build signed APK and AAB
         script: |
