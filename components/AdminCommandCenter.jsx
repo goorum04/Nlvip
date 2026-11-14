@@ -119,7 +119,7 @@ function SkeletonCard() {
 }
 
 // Builds a natural-language prompt from the member's questionnaire responses
-function buildPlanPrompt(memberName, responses) {
+export function buildPlanPrompt(memberName, responses) {
   if (!responses) return `Genera y aplica un plan completo (dieta + rutina) para ${memberName}.`
 
   const goalMap = {
@@ -148,6 +148,32 @@ Datos de su cuestionario nutricional:
 Aplica el plan completo directamente.`
 }
 
+// Socios sin rutina y/o sin dieta, con el estado de su cuestionario, en el
+// orden en que conviene atenderlos (lo usan este panel y la pantalla Hoy del
+// diseño nuevo).
+export function buildAttentionMembers(membersWithoutWorkout, membersWithoutDiet, dietRequests) {
+  const dietRequestByMember = new Map()
+  for (const req of (dietRequests || [])) {
+    if (!dietRequestByMember.has(req.member_id)) dietRequestByMember.set(req.member_id, req)
+  }
+  const map = new Map()
+  for (const m of (membersWithoutWorkout || []))
+    map.set(m.id, { ...m, missingWorkout: true, missingDiet: false })
+  for (const m of (membersWithoutDiet || [])) {
+    if (map.has(m.id)) map.get(m.id).missingDiet = true
+    else map.set(m.id, { ...m, missingWorkout: false, missingDiet: true })
+  }
+  return Array.from(map.values())
+    .map(m => ({ ...m, dietRequest: dietRequestByMember.get(m.id) || null }))
+    .sort((a, b) => {
+      const score = x =>
+        (x.dietRequest?.status === 'submitted' ? 4 : 0) +
+        (x.missingWorkout ? 2 : 0) +
+        (x.missingDiet ? 1 : 0)
+      return score(b) - score(a)
+    })
+}
+
 // --- Main component ---
 
 export default function AdminCommandCenter({
@@ -158,39 +184,39 @@ export default function AdminCommandCenter({
   membersWithoutWorkout, membersWithoutDiet,
   dietRequests,
   onNavigate, onSelectMember,
+  assistantOnly = false, pendingPrompt = null, onPromptConsumed,
 }) {
   const aiSendRef = useRef(null)
-
-  // Map member_id → dietRequest for O(1) lookup
-  const dietRequestByMember = useMemo(() => {
-    const map = new Map()
-    for (const req of (dietRequests || [])) {
-      if (!map.has(req.member_id)) map.set(req.member_id, req)
-    }
-    return map
-  }, [dietRequests])
+  const sentPromptRef = useRef(null)
 
   // Merge members missing workout and/or diet, attach questionnaire state
-  const attentionMembers = useMemo(() => {
-    const map = new Map()
-    for (const m of (membersWithoutWorkout || []))
-      map.set(m.id, { ...m, missingWorkout: true, missingDiet: false })
-    for (const m of (membersWithoutDiet || [])) {
-      if (map.has(m.id)) map.get(m.id).missingDiet = true
-      else map.set(m.id, { ...m, missingWorkout: false, missingDiet: true })
-    }
-    return Array.from(map.values())
-      .map(m => ({ ...m, dietRequest: dietRequestByMember.get(m.id) || null }))
-      .sort((a, b) => {
-        const score = x =>
-          (x.dietRequest?.status === 'submitted' ? 4 : 0) +
-          (x.missingWorkout ? 2 : 0) +
-          (x.missingDiet ? 1 : 0)
-        return score(b) - score(a)
-      })
-  }, [membersWithoutWorkout, membersWithoutDiet, dietRequestByMember])
+  const attentionMembers = useMemo(
+    () => buildAttentionMembers(membersWithoutWorkout, membersWithoutDiet, dietRequests),
+    [membersWithoutWorkout, membersWithoutDiet, dietRequests]
+  )
 
   const isLoading = members.length === 0
+
+  // Recibe la función de enviar del asistente y, si se ha pedido algo desde
+  // otra pantalla (p. ej. "Generar IA" en Hoy), lo envía una sola vez.
+  const handleInputReady = (_setInput, sendFn) => {
+    aiSendRef.current = sendFn
+    if (pendingPrompt && sentPromptRef.current !== pendingPrompt) {
+      sentPromptRef.current = pendingPrompt
+      setTimeout(() => sendFn(pendingPrompt), 60)
+      onPromptConsumed?.()
+    }
+  }
+
+  // Diseño nuevo: el asistente a pantalla completa (las cifras y la lista de
+  // socios que necesitan atención están en la pantalla Hoy).
+  if (assistantOnly) {
+    return (
+      <div className="flex flex-col rounded-3xl overflow-hidden border border-white/[0.08] bg-[#0f0f0f]" style={{ height: 'calc(100dvh - 330px)', minHeight: 460 }}>
+        <AdminAssistant userId={userId} voiceTrigger={voiceTrigger} onInputReady={handleInputReady} />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col lg:flex-row gap-4" style={{ minHeight: 'calc(100vh - 240px)' }}>
@@ -200,7 +226,7 @@ export default function AdminCommandCenter({
         <AdminAssistant
           userId={userId}
           voiceTrigger={voiceTrigger}
-          onInputReady={(_setInput, sendFn) => { aiSendRef.current = sendFn }}
+          onInputReady={handleInputReady}
         />
       </div>
 

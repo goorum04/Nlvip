@@ -77,16 +77,17 @@ export function GoldTopBar({ profile, unreadNotices, onBell, onAvatar, bellActiv
   )
 }
 
-export function GoldBottomNav({ activeSection, onSection }) {
+export function GoldBottomNav({ activeSection, onSection, sections = MEMBER_SECTIONS, badges = {} }) {
   return (
     <nav
       className="nl-bottomnav fixed left-0 right-0 bottom-0 z-40 border-t border-white/[0.07] backdrop-blur-xl"
       style={{ background: 'rgba(11, 11, 12, 0.94)', paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="max-w-xl mx-auto flex justify-around px-2 pt-2 pb-1.5">
-        {MEMBER_SECTIONS.map(s => {
+        {sections.map(s => {
           const on = s.id === activeSection
           const Icon = s.icon
+          const badge = badges[s.id] || 0
           return (
             <button
               key={s.id}
@@ -96,7 +97,17 @@ export function GoldBottomNav({ activeSection, onSection }) {
               className="flex flex-col items-center gap-1 w-16 py-1 text-[10.5px] font-semibold transition-colors"
               style={{ color: on ? 'var(--nl-text)' : 'var(--nl-dim)' }}
             >
-              <Icon className="w-[23px] h-[23px]" strokeWidth={on ? 2.1 : 1.8} style={{ color: on ? 'var(--nl-accent)' : undefined }} />
+              <span className="relative">
+                <Icon className="w-[23px] h-[23px]" strokeWidth={on ? 2.1 : 1.8} style={{ color: on ? 'var(--nl-accent)' : undefined }} />
+                {badge > 0 && (
+                  <span
+                    className="absolute -top-1.5 -right-2.5 min-w-[17px] h-[17px] px-1 rounded-full text-[9.5px] font-bold flex items-center justify-center"
+                    style={{ background: 'var(--nl-accent)', color: 'var(--nl-ink)', boxShadow: '0 0 0 2px #0B0B0C' }}
+                  >
+                    {badge > 9 ? '9+' : badge}
+                  </span>
+                )}
+              </span>
               {s.label}
             </button>
           )

@@ -27,7 +27,9 @@ import { WorkoutBuilder } from './WorkoutBuilder'
 import { DietBuilder } from './DietBuilder'
 import { AvatarBubble, ProfileModal } from './UserProfile'
 import { isGoldDesign } from '@/lib/design'
-import { GoldStaffBar, GoldStaffGreeting } from './GoldStaffBar'
+import { GoldStaffBar } from './GoldStaffBar'
+import { GoldBottomNav, GoldSectionHeader } from './GoldNav'
+import { ADMIN_SECTIONS, adminSectionForTab, GoldAdminToday, GoldAdminMembers } from './GoldAdmin'
 import FloatingChat from './FloatingChat'
 import FloatingAdminAssistant from './FloatingAdminAssistant'
 import { FeedSection } from './FeedSection'
@@ -48,7 +50,12 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   const { activity: memberActivity, refresh: refreshMemberActivity } = useMemberActivity(members)
   const [feedPosts, setFeedPosts] = useState([])
   const [allProgress, setAllProgress] = useState([])
-  const [activeTab, setActiveTab] = useState('assistant')
+  // En el diseño nuevo se entra a Hoy (lo pendiente); en el clásico, al asistente.
+  const [activeTab, setActiveTab] = useState(() => (isGoldDesign() ? 'today' : 'assistant'))
+  // Diseño nuevo: filtro de la lista de socios y petición para el asistente
+  // ("Generar IA" desde Hoy se envía al abrir el asistente).
+  const [memberFilter, setMemberFilter] = useState('todos')
+  const [pendingAssistantPrompt, setPendingAssistantPrompt] = useState(null)
   const [tabHistory, setTabHistory] = useState([])
   const [voiceTrigger, setVoiceTrigger] = useState(0)
   const [allAssignments, setAllAssignments] = useState([])
@@ -371,6 +378,25 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
     setSelectedMember(member)
     setMemberDetailTab(tab)
     setShowMemberDetail(true)
+  }
+
+  // Diseño nuevo: ir a una pestaña (opcionalmente con un filtro de socios) o
+  // a la primera pestaña de una sección de la barra inferior.
+  const goToTab = (tab, filter) => {
+    setTabHistory(prev => [...prev, activeTab])
+    setActiveTab(tab)
+    if (filter) setMemberFilter(filter)
+    if (tab === 'diets') markNotificationsRead()
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
+  }
+  const goToSection = (sectionId) => {
+    const section = ADMIN_SECTIONS.find(s => s.id === sectionId)
+    if (!section) return
+    if (sectionId === adminSectionForTab(activeTab)) {
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    goToTab(section.tabs[0].value)
   }
 
 // Create workout template
@@ -1247,10 +1273,28 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
         onLogout={onLogout}
       />
 
-      <main className="container mx-auto px-4 py-8 overflow-x-hidden">
-        {isGold && <GoldStaffGreeting profile={profile} kicker="Administración" />}
-        {/* Aviso in-app: formularios nutricionales pendientes de revisión */}
-        {pendingDietSubmissions > 0 && activeTab !== 'diets' && (
+      <main
+        className={isGold ? 'container mx-auto px-4 pt-6 overflow-x-hidden' : 'container mx-auto px-4 py-8 overflow-x-hidden'}
+        style={isGold ? { paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' } : undefined}
+      >
+        {isGold && (() => {
+          const section = ADMIN_SECTIONS.find(s => s.id === adminSectionForTab(activeTab))
+          const firstName = profile?.name?.split(' ')[0]
+          const date = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' }).replace(',', '').replace('.', '')
+          return (
+            <GoldSectionHeader
+              kicker={section.id === 'hoy' ? `Administración · ${date}` : null}
+              title={section.id === 'hoy' ? (firstName ? `Hola, ${firstName}` : 'Hola') : section.title}
+              tabs={section.tabs}
+              activeTab={activeTab}
+              onTab={(tab) => goToTab(tab)}
+              hasPremium
+            />
+          )
+        })()}
+        {/* Aviso in-app: formularios nutricionales pendientes de revisión
+            (en el diseño nuevo está en Hoy y en el aviso de la barra inferior). */}
+        {!isGold && pendingDietSubmissions > 0 && activeTab !== 'diets' && (
           <div className="mb-6">
             <button
               type="button"
@@ -1282,6 +1326,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
         )}
 
         <Tabs value={activeTab} onValueChange={(tab) => { setTabHistory(prev => [...prev, activeTab]); setActiveTab(tab); if (tab === 'diets') markNotificationsRead() }} className="space-y-6">
+          {!isGold && (
           <div className="flex items-center gap-2 pb-2 flex-wrap">
 
             {/* Botón Atrás */}
@@ -1463,10 +1508,33 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
             </DropdownMenu>
 
           </div>
+          )}
+
+          {/* Diseño nuevo: Hoy */}
+          {isGold && (
+            <TabsContent value="today" className="space-y-4">
+              <GoldAdminToday
+                members={members}
+                membersWithoutWorkout={membersWithoutWorkout}
+                membersWithoutDiet={membersWithoutDiet}
+                dietRequests={dietRequests}
+                pendingCheckinsCount={pendingCheckinsCount}
+                pendingDietSubmissions={pendingDietSubmissions}
+                memberActivity={memberActivity}
+                onGo={goToTab}
+                onOpenMember={openMemberPanel}
+                onGeneratePlan={(prompt) => { setPendingAssistantPrompt(prompt); goToTab('assistant') }}
+                onAssistant={(voice) => { goToTab('assistant'); if (voice) setVoiceTrigger(Date.now()) }}
+              />
+            </TabsContent>
+          )}
 
           {/* Centro de Mando */}
           <TabsContent value="assistant" className="space-y-4">
             <AdminCommandCenter
+              assistantOnly={isGold}
+              pendingPrompt={pendingAssistantPrompt}
+              onPromptConsumed={() => setPendingAssistantPrompt(null)}
               userId={user.id}
               voiceTrigger={voiceTrigger}
               members={members}
@@ -1686,10 +1754,29 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
 
           {/* Socios */}
           <TabsContent value="checkins" className="space-y-4">
-            <CheckInReviewPanel checkins={pendingCheckins} onRefresh={loadPendingCheckins} />
+            <CheckInReviewPanel checkins={pendingCheckins} onRefresh={loadPendingCheckins} variant={isGold ? 'queue' : undefined} />
           </TabsContent>
 
           <TabsContent value="members" className="space-y-4">
+            {isGold ? (
+              <GoldAdminMembers
+                members={members}
+                trainers={trainers}
+                memberActivity={memberActivity}
+                refreshMemberActivity={refreshMemberActivity}
+                membersWithoutWorkout={membersWithoutWorkout}
+                membersWithoutDiet={membersWithoutDiet}
+                pendingCheckins={pendingCheckins}
+                loading={loading}
+                search={memberSearch}
+                onSearch={setMemberSearch}
+                filter={memberFilter}
+                onFilter={setMemberFilter}
+                onOpenMember={openMemberPanel}
+                onAssignTrainer={handleAssignTrainerToMember}
+                onDelete={handleDeleteMember}
+              />
+            ) : (
             <Card className="bg-[#1a1a1a] border-violet-500/20">
               <CardHeader>
                 <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -1809,6 +1896,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                 </div>
               </CardContent>
             </Card>
+            )}
           </TabsContent>
 
           {/* RETOS / CHALLENGES */}
@@ -1987,9 +2075,9 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
                   <CardContent className="pt-6 space-y-3">
                     <Button
                       onClick={() => setShowWorkoutBuilder(true)}
-                      className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-2xl py-6"
+                      className="w-full h-auto whitespace-normal text-center bg-gradient-to-r from-violet-600 to-cyan-600 text-white font-bold rounded-2xl py-4"
                     >
-                      <Plus className="w-5 h-5 mr-2" /> Crear Nueva Rutina (con días y ejercicios)
+                      <Plus className="w-5 h-5 mr-2 shrink-0" /> Crear Nueva Rutina (con días y ejercicios)
                     </Button>
                     <Button
                       onClick={() => setShowAIGenerator(true)}
@@ -2919,6 +3007,14 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       />
 
       <FloatingAdminAssistant userId={user.id} />
+      {isGold && (
+        <GoldBottomNav
+          sections={ADMIN_SECTIONS}
+          activeSection={adminSectionForTab(activeTab)}
+          onSection={goToSection}
+          badges={{ revisiones: pendingCheckinsCount, contenido: pendingDietSubmissions }}
+        />
+      )}
       {showDietBuilder && (
         <Dialog open={showDietBuilder} onOpenChange={setShowDietBuilder}>
           <DialogContent className="max-w-4xl bg-[#1a1a1a] border-white/5 rounded-[40px] p-0 overflow-hidden">
