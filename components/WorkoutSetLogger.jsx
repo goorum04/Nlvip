@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,332 +10,27 @@ import {
   LoaderCircle as Loader2, Check, History, NotebookPen, Trophy, Share2, Download,
 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useToast } from '@/hooks/use-toast'
-import { renderPrCard } from '@/lib/shareCards'
-
-// Acepta coma o punto decimal: en el teclado español lo natural es "62,5".
-const parseDecimal = (value) => {
-  if (value === null || value === undefined) return null
-  const normalized = String(value).trim().replace(',', '.')
-  if (normalized === '') return null
-  const n = parseFloat(normalized)
-  return Number.isFinite(n) ? n : null
-}
-
-const parseIntOrNull = (value) => {
-  const n = parseInt(String(value ?? '').trim(), 10)
-  return Number.isFinite(n) ? n : null
-}
-
-const todayISO = () => new Date().toISOString().split('T')[0]
-
-// El generador de IA marca los ejercicios encadenados en bi-serie/tri-serie
-// con un prefijo [bi-serie:N] / [tri-serie:N] en description (ver
-// lib/routinePersistence.js). Cada ejercicio sigue siendo su propia fila con
-// sus propias series/peso/reps — esto solo agrupa las tarjetas visualmente.
-const SUPERSET_TAG_RE = /^\[(bi-serie|tri-serie):(\d+)\]\s*/i
-const parseSupersetGroup = (description) => {
-  const m = (description || '').match(SUPERSET_TAG_RE)
-  return m ? parseInt(m[2], 10) : 0
-}
+import { useWorkoutSetLog, groupExercises } from '@/hooks/useWorkoutSetLog'
 
 /**
  * Registro OPCIONAL de series del socio para el entreno de hoy.
  *
  * Nada es obligatorio: si no rellena nada, no se guarda nada y la app se
  * comporta exactamente igual que antes. Solo se envían las series en las que
- * haya puesto peso y/o repeticiones.
+ * haya puesto peso y/o repeticiones. La lectura y el guardado están en
+ * hooks/useWorkoutSetLog.js (los comparte con el modo entreno del diseño nuevo).
  */
 export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
   const [open, setOpen] = useState(false)
-  const [values, setValues] = useState({})      // { [exerciseId]: [{weight, reps}, ...] }
-  const [notes, setNotes] = useState({})        // { [exerciseId]: 'texto de la nota de hoy' }
-  const [lastSession, setLastSession] = useState({}) // { [exerciseName]: 'texto resumen' }
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [savedAt, setSavedAt] = useState(null)
-  // Récords: máximo histórico por ejercicio (series registradas + PRs
-  // guardados) para detectar al guardar si hoy se ha superado.
-  const [historicalMax, setHistoricalMax] = useState({})
-  const [newPrs, setNewPrs] = useState([])
-  const [prShareUrl, setPrShareUrl] = useState(null)
-  const [prShareBuilding, setPrShareBuilding] = useState(false)
-  const { toast } = useToast()
+  const {
+    values, notes, lastSession, loading, saving, savedAt,
+    setField, setNoteField, save,
+    newPrs, setNewPrs, prShareUrl, setPrShareUrl, prShareBuilding, buildPrShare, sharePr, downloadPr,
+  } = useWorkoutSetLog({ memberId, day, exercises, active: open })
 
-  const dayId = day?.id
-  const exerciseIds = exercises.map(e => e.id).join(',')
-
-  // Carga lo ya registrado hoy (para poder corregir) y la última sesión previa
-  // de cada ejercicio (para saber con qué peso se quedó la vez anterior).
-  const load = useCallback(async () => {
-    if (!memberId || exercises.length === 0) return
-    setLoading(true)
-    try {
-      const ids = exercises.map(e => e.id)
-      const { data: rows } = await supabase
-        .from('workout_set_logs')
-        .select('workout_exercise_id, exercise_name, performed_on, set_number, weight_kg, reps')
-        .eq('member_id', memberId)
-        .in('workout_exercise_id', ids)
-        .order('performed_on', { ascending: false })
-        .limit(400)
-
-      const today = todayISO()
-      const todayRows = (rows || []).filter(r => r.performed_on === today)
-      const previousRows = (rows || []).filter(r => r.performed_on !== today)
-
-      const initial = {}
-      for (const ex of exercises) {
-        const planned = Math.max(1, Math.min(20, parseInt(ex.sets, 10) || 3))
-        const mine = todayRows.filter(r => r.workout_exercise_id === ex.id)
-        initial[ex.id] = Array.from({ length: planned }, (_, i) => {
-          const found = mine.find(r => r.set_number === i + 1)
-          return {
-            weight: found?.weight_kg != null ? String(found.weight_kg) : '',
-            reps: found?.reps != null ? String(found.reps) : '',
-          }
-        })
-      }
-      setValues(initial)
-
-      const { data: noteRows } = await supabase
-        .from('workout_exercise_notes')
-        .select('workout_exercise_id, note')
-        .eq('member_id', memberId)
-        .eq('performed_on', today)
-        .in('workout_exercise_id', ids)
-
-      const initialNotes = {}
-      for (const ex of exercises) {
-        const found = (noteRows || []).find(r => r.workout_exercise_id === ex.id)
-        initialNotes[ex.id] = found?.note || ''
-      }
-      setNotes(initialNotes)
-
-      // Resumen de la última sesión anterior por ejercicio.
-      const summary = {}
-      for (const ex of exercises) {
-        const mine = previousRows.filter(r => r.workout_exercise_id === ex.id)
-        if (mine.length === 0) continue
-        const lastDate = mine[0].performed_on
-        const sameDay = mine
-          .filter(r => r.performed_on === lastDate)
-          .sort((a, b) => a.set_number - b.set_number)
-        summary[ex.id] = sameDay
-          .map(r => `${r.weight_kg ?? '—'}kg×${r.reps ?? '—'}`)
-          .join('  ')
-      }
-      setLastSession(summary)
-
-      const { data: prRows } = await supabase
-        .from('member_prs')
-        .select('exercise_name, weight_kg')
-        .eq('member_id', memberId)
-      const maxes = {}
-      for (const ex of exercises) {
-        const fromLogs = previousRows
-          .filter(r => r.workout_exercise_id === ex.id && r.weight_kg != null)
-          .reduce((m, r) => Math.max(m, Number(r.weight_kg)), 0)
-        const fromPrs = (prRows || [])
-          .filter(p => (p.exercise_name || '').toLowerCase() === ex.name.toLowerCase() && p.weight_kg != null)
-          .reduce((m, p) => Math.max(m, Number(p.weight_kg)), 0)
-        maxes[ex.id] = Math.max(fromLogs, fromPrs)
-      }
-      setHistoricalMax(maxes)
-    } catch (e) {
-      console.warn('WorkoutSetLogger load error:', e.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [memberId, exerciseIds])
-
-  // Solo recarga la primera vez que se abre este día/lista de ejercicios:
-  // antes recargaba (con su spinner de pantalla completa) cada vez que se
-  // cerraba y se volvía a abrir el panel, aunque fuera exactamente lo mismo.
-  const loadedKeyRef = useRef(null)
-  useEffect(() => {
-    if (!open) return
-    const key = `${dayId || ''}:${exerciseIds}`
-    if (loadedKeyRef.current === key) return
-    loadedKeyRef.current = key
-    load()
-  }, [open, load, dayId, exerciseIds])
-
-  const setField = (exerciseId, index, field, raw) => {
-    const clean = field === 'weight'
-      ? raw.replace(/[^0-9.,]/g, '')
-      : raw.replace(/[^0-9]/g, '')
-    setValues(prev => {
-      const rows = [...(prev[exerciseId] || [])]
-      rows[index] = { ...rows[index], [field]: clean }
-      return { ...prev, [exerciseId]: rows }
-    })
-  }
-
-  const setNoteField = (exerciseId, raw) => {
-    const clean = raw.length > 500 ? raw.slice(0, 500) : raw
-    setNotes(prev => ({ ...prev, [exerciseId]: clean }))
-  }
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const performed_on = todayISO()
-      const toUpsert = []
-      const toDelete = []
-
-      for (const ex of exercises) {
-        const rows = values[ex.id] || []
-        rows.forEach((row, i) => {
-          const weight = parseDecimal(row.weight)
-          const reps = parseIntOrNull(row.reps)
-          if (weight === null && reps === null) {
-            // Serie vacía: si antes tenía algo guardado, se borra al vaciarla.
-            toDelete.push({ exerciseId: ex.id, setNumber: i + 1 })
-            return
-          }
-          toUpsert.push({
-            member_id: memberId,
-            workout_exercise_id: ex.id,
-            exercise_name: ex.name,
-            workout_day_id: dayId || null,
-            performed_on,
-            set_number: i + 1,
-            weight_kg: weight,
-            reps,
-          })
-        })
-      }
-
-      if (toUpsert.length > 0) {
-        const { error } = await supabase
-          .from('workout_set_logs')
-          .upsert(toUpsert, { onConflict: 'member_id,workout_exercise_id,performed_on,set_number' })
-        if (error) throw error
-      }
-
-      for (const d of toDelete) {
-        await supabase
-          .from('workout_set_logs')
-          .delete()
-          .eq('member_id', memberId)
-          .eq('workout_exercise_id', d.exerciseId)
-          .eq('performed_on', performed_on)
-          .eq('set_number', d.setNumber)
-      }
-
-      const notesToUpsert = []
-      const notesToDelete = []
-      for (const ex of exercises) {
-        const note = (notes[ex.id] || '').trim()
-        if (note === '') {
-          notesToDelete.push(ex.id)
-        } else {
-          notesToUpsert.push({
-            member_id: memberId,
-            workout_exercise_id: ex.id,
-            exercise_name: ex.name,
-            workout_day_id: dayId || null,
-            performed_on,
-            note,
-            updated_at: new Date().toISOString(),
-          })
-        }
-      }
-
-      if (notesToUpsert.length > 0) {
-        const { error } = await supabase
-          .from('workout_exercise_notes')
-          .upsert(notesToUpsert, { onConflict: 'member_id,workout_exercise_id,performed_on' })
-        if (error) throw error
-      }
-
-      for (const exerciseId of notesToDelete) {
-        await supabase
-          .from('workout_exercise_notes')
-          .delete()
-          .eq('member_id', memberId)
-          .eq('workout_exercise_id', exerciseId)
-          .eq('performed_on', performed_on)
-      }
-
-      setSavedAt(new Date())
-      const parts = []
-      if (toUpsert.length > 0) parts.push(`${toUpsert.length} serie(s)`)
-      if (notesToUpsert.length > 0) parts.push(`${notesToUpsert.length} nota(s)`)
-      toast({
-        title: parts.length > 0 ? 'Guardado' : 'Registro actualizado',
-        description: parts.length > 0
-          ? `${parts.join(' y ')} registradas en el entreno de hoy.`
-          : 'No has dejado nada registrado hoy.',
-      })
-
-      // ¿Récord? Solo cuenta si ya había un máximo anterior y hoy se supera.
-      const prs = []
-      for (const ex of exercises) {
-        const prev = historicalMax[ex.id] || 0
-        if (prev <= 0) continue
-        const best = toUpsert
-          .filter(r => r.workout_exercise_id === ex.id && r.weight_kg != null)
-          .reduce((b, r) => (r.weight_kg > (b?.weight_kg ?? -1) ? r : b), null)
-        if (best && best.weight_kg > prev) prs.push({ exercise: ex, weight: best.weight_kg, reps: best.reps, previous: prev })
-      }
-      if (prs.length > 0) {
-        await supabase.from('member_prs').insert(prs.map(p => ({
-          member_id: memberId,
-          exercise_name: p.exercise.name,
-          weight_kg: p.weight,
-          reps: p.reps,
-          estimated_1rm: p.reps ? Math.round(p.weight * (1 + p.reps / 30) * 10) / 10 : p.weight,
-          date: performed_on,
-        })))
-        setHistoricalMax(prev => {
-          const next = { ...prev }
-          for (const p of prs) next[p.exercise.id] = p.weight
-          return next
-        })
-        setNewPrs(prs)
-        setPrShareUrl(null)
-      }
-      // No hace falta volver a pedir los datos: `values` ya refleja
-      // exactamente lo que se acaba de guardar.
-    } catch (e) {
-      toast({ title: 'No se pudo guardar', description: e.message, variant: 'destructive' })
-    } finally {
-      setSaving(false)
-    }
-  }
+  const handleSave = () => save()
 
   if (!day || exercises.length === 0) return null
-
-  const buildPrShare = async (pr) => {
-    setPrShareBuilding(true)
-    try {
-      const { data: profile } = await supabase.from('profiles').select('name').eq('id', memberId).maybeSingle()
-      const name = profile?.name || ''
-      const canvas = document.createElement('canvas')
-      await renderPrCard(canvas, { exerciseName: pr.exercise.name, weight: pr.weight, reps: pr.reps, previous: pr.previous, memberName: name })
-      setPrShareUrl(canvas.toDataURL('image/jpeg', 0.92))
-    } catch (e) {
-      toast({ title: 'No se pudo crear la imagen', description: e.message, variant: 'destructive' })
-    } finally {
-      setPrShareBuilding(false)
-    }
-  }
-
-  const sharePr = async () => {
-    try {
-      const blob = await (await fetch(prShareUrl)).blob()
-      const file = new File([blob], 'nuevo-record-nlvip.jpg', { type: 'image/jpeg' })
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Nuevo récord · NL VIP Team' })
-        return
-      }
-      const a = document.createElement('a'); a.href = prShareUrl; a.download = 'nuevo-record-nlvip.jpg'; a.click()
-    } catch (e) {
-      if (e?.name !== 'AbortError') toast({ title: 'No se pudo compartir', description: 'Descárgala y compártela desde tu galería.', variant: 'destructive' })
-    }
-  }
 
   const prDialog = newPrs.length > 0 && (
     <Dialog open onOpenChange={() => { setNewPrs([]); setPrShareUrl(null) }}>
@@ -364,8 +58,8 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
             <div className="space-y-2">
               <img src={prShareUrl} alt="Nuevo récord" className="w-full rounded-2xl border border-[#2a2a2a]" />
               <div className="flex gap-2">
-                <Button onClick={sharePr} className="flex-1 bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-xl"><Share2 className="w-4 h-4 mr-2" /> Compartir</Button>
-                <Button variant="outline" onClick={() => { const a = document.createElement('a'); a.href = prShareUrl; a.download = 'nuevo-record-nlvip.jpg'; a.click() }} className="rounded-xl border-[#2a2a2a] text-gray-200"><Download className="w-4 h-4" /></Button>
+                <Button onClick={() => sharePr()} className="flex-1 bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-xl"><Share2 className="w-4 h-4 mr-2" /> Compartir</Button>
+                <Button variant="outline" onClick={() => downloadPr()} className="rounded-xl border-[#2a2a2a] text-gray-200"><Download className="w-4 h-4" /></Button>
               </div>
             </div>
           )}
@@ -422,20 +116,7 @@ export function WorkoutSetLogger({ memberId, day, exercises = [] }) {
           ) : (
             <>
               {(() => {
-                const groups = []
-                let current = null
-                exercises.forEach(ex => {
-                  const g = parseSupersetGroup(ex.description)
-                  if (g && current && current.id === g) {
-                    current.items.push(ex)
-                  } else if (g) {
-                    current = { id: g, items: [ex] }
-                    groups.push(current)
-                  } else {
-                    groups.push({ id: 0, items: [ex] })
-                    current = null
-                  }
-                })
+                const groups = groupExercises(exercises)
 
                 return groups.map((grp, gi) => {
                   const size = grp.items.length

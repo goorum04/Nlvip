@@ -47,6 +47,7 @@ import { ShoppingList } from './ShoppingList'
 import { isGoldDesign } from '@/lib/design'
 import { GoldTopBar, GoldBottomNav, GoldSectionHeader, MEMBER_SECTIONS, sectionForTab, sectionTabs } from './GoldNav'
 import TodayView, { todayGreeting, todayKicker } from './TodayView'
+import { GoldWorkoutView } from './GoldWorkout'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function MemberDashboard({ user, profile, setProfile, onLogout }) {
@@ -150,6 +151,8 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const { uploadFile, uploading, progress } = useFileUpload()
   const [isCheckingIn, setIsCheckingIn] = useState(false)
   const [showCheckinConfetti, setShowCheckinConfetti] = useState(false)
+  // "Empezar entreno" desde Hoy (diseño nuevo): abre directamente el modo entreno.
+  const [sessionRequest, setSessionRequest] = useState(0)
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false)
 
   const CONGRATS_MESSAGES = [
@@ -1064,6 +1067,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 isActive={activeTab === 'today'}
                 onNavigate={goToTab}
                 onLocked={showLockedToast}
+                onStartWorkout={() => { setSessionRequest(Date.now()); goToTab('workout') }}
               />
             </TabsContent>
           )}
@@ -1259,6 +1263,22 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
           {/* WORKOUT TAB */}
           <TabsContent value="workout" forceMount={visitedTabs.has('workout') || undefined} className="nl-gold-scope space-y-4 data-[state=inactive]:hidden">
+            {isGold ? (
+              <GoldWorkoutView
+                memberId={user.id}
+                myWorkouts={myWorkouts}
+                activeWorkoutSlot={activeWorkoutSlot}
+                setActiveWorkoutSlot={setActiveWorkoutSlot}
+                memberPrs={myPrs}
+                dataLoaded={dataLoaded}
+                hasCheckedInToday={hasCheckedInToday}
+                isCheckingIn={isCheckingIn}
+                onCheckin={handleWorkoutCheckin}
+                showCheckinConfetti={showCheckinConfetti}
+                onPlayRoutineVideo={setSelectedVideo}
+                sessionRequest={sessionRequest}
+              />
+            ) : (<>
             {!dataLoaded && !myWorkouts.principal && !myWorkouts.alternativa && (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
                 <CardContent className="p-5 space-y-4">
@@ -1401,6 +1421,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 </CardContent>
               </Card>
             )}
+            </>)}
           </TabsContent>
 
           {/* DIET TAB */}
