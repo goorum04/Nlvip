@@ -13,7 +13,7 @@ export function GoldStaffBar({ profile, roleLabel, onAvatar, onLogout, actions =
       className="sticky top-0 z-50 border-b border-white/[0.06] backdrop-blur-xl"
       style={{ background: 'rgba(11, 11, 12, 0.88)', paddingTop: 'env(safe-area-inset-top)' }}
     >
-      <div className="container mx-auto px-4 h-14 flex items-center justify-between gap-3">
+      <div className="mx-auto w-full max-w-[1120px] px-4 md:px-8 h-14 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <img src="/logo-nl-vip.jpg" alt="NL VIP Team" className="w-9 h-9 rounded-[10px] object-cover border border-white/10 shrink-0" />
           <span className="nl-label truncate">{roleLabel}</span>

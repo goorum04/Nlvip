@@ -872,7 +872,21 @@ html.nl-gold:has(.nl-bottomnav) .nl-admin-fab {
   bottom: calc(84px + env(safe-area-inset-bottom)) !important;
   left: 16px !important;
 }
-html.nl-gold:has(.nl-bottomnav) .nl-admin-fab > button { width: 52px; height: 52px; }
+/* Botón del asistente más discreto: 46 px, sin el halo que late y con el
+   distintivo "IA" pequeño (antes era un círculo grande que tapaba contenido). */
+html.nl-gold:has(.nl-bottomnav) .nl-admin-fab > button { width: 46px; height: 46px; }
+html.nl-gold .nl-admin-fab > button > div.animate-pulse { display: none; }
+html.nl-gold .nl-admin-fab > button > svg { width: 21px; height: 21px; }
+html.nl-gold .nl-admin-fab > button > span { width: 19px; height: 19px; font-size: 8.5px; top: -3px; right: -3px; }
+/* Con el asistente abierto, el botón del chat no tapa su esquina. */
+html.nl-gold:has(.nl-admin-panel:not(.hidden)) .nl-chat-fab { display: none !important; }
+/* Cabecera del asistente en el móvil: sin partirse en dos líneas. */
+@media (max-width: 480px) {
+  html.nl-gold .nl-assist-pro,
+  html.nl-gold .nl-assist-sub { display: none; }
+  html.nl-gold .nl-assist-title { font-size: 17px; white-space: nowrap; }
+  html.nl-gold .nl-assist-icon { width: 42px; height: 42px; }
+}
 html.nl-gold:has(.nl-bottomnav) .nl-admin-panel { bottom: calc(84px + env(safe-area-inset-bottom)) !important; }
 html.nl-gold:has([role='dialog']) .nl-admin-fab,
 html.nl-gold:has([role='alertdialog']) .nl-admin-fab { display: none !important; }

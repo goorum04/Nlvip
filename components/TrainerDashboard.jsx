@@ -800,7 +800,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
         onLogout={onLogout}
       />
 
-      <main className="container mx-auto px-4 py-6">
+      <main className={isGold ? 'mx-auto w-full max-w-[1120px] px-4 md:px-8 py-6' : 'container mx-auto px-4 py-6'}>
         {isGold && <GoldStaffGreeting profile={profile} kicker="Entrenador" />}
         <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); if (tab === 'diets') markNotificationsRead() }} className="space-y-6">
           {activeTab !== 'members' && (
