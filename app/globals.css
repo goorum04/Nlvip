@@ -614,3 +614,9 @@ html.nl-gold :is(.nl-gold-scope, :has(.nl-bottomnav) [role='dialog'], :has(.nl-b
   .from-blue-500, .from-blue-600, .from-teal-500, .from-teal-600) :is(.text-white, svg) {
   color: var(--nl-ink);
 }
+
+/* En el diseño nuevo la cabecera se queda fija arriba al hacer scroll.
+   overflow-x: hidden en html/body convertía el body en contenedor de scroll y
+   anulaba position: sticky; clip recorta igual sin ese efecto. */
+html.nl-gold,
+html.nl-gold body { overflow-x: clip; }
