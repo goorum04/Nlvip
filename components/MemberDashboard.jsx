@@ -549,7 +549,9 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
     const [{ data: rawData }, { data: blocks }, { data: myReports }] = await Promise.all([
       supabase
         .from('feed_posts')
-        .select(`*, author:profiles!feed_posts_author_id_fkey(name), feed_likes(id, user_id), feed_comments(id, content, created_at, commenter_id, commenter:profiles!feed_comments_commenter_id_fkey(name))`)
+        // Nombres de autores vía public_profiles: un socio ya no puede leer la
+        // ficha completa (email, teléfono, salud...) de otros socios.
+        .select(`*, author:public_profiles!feed_posts_author_id_fkey(name), feed_likes(id, user_id), feed_comments(id, content, created_at, commenter_id, commenter:public_profiles!feed_comments_commenter_id_fkey(name))`)
         .eq('is_hidden', false)
         .order('created_at', { ascending: false })
         .limit(50),

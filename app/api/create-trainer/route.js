@@ -49,7 +49,10 @@ export async function POST(request) {
       user_metadata: {
         name,
         role: 'trainer'
-      }
+      },
+      // El rol se toma de app_metadata (solo lo puede poner el servidor);
+      // user_metadata lo manda quien se registra y ya no se usa para el rol.
+      app_metadata: { role: 'trainer' }
     })
     
     if (authError) throw authError

@@ -478,7 +478,7 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
 
     const { data, error } = await supabase
       .from('messages')
-      .select(`*, sender:profiles!messages_sender_id_fkey(name, role)`)
+      .select(`*, sender:public_profiles!messages_sender_id_fkey(name, role)`)
       .eq('conversation_id', convId)
       .order('created_at', { ascending: false })
       .range(from, to)
