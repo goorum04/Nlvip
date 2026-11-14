@@ -135,7 +135,7 @@ export default function AppUpdateBanner() {
     // aviso completo. Envuelto en un div con padding + safe-area para que
     // flote separado del borde y del home indicator del iPhone.
     <div
-      className="fixed left-0 right-0 bottom-0 z-[100] px-4 pointer-events-none"
+      className="nl-update-banner fixed left-0 right-0 bottom-0 z-[100] px-4 pointer-events-none"
       style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
     >
       <div className="max-w-lg mx-auto bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-3xl shadow-2xl shadow-black/40 p-5 flex items-start gap-4 pointer-events-auto">

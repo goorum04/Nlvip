@@ -9,7 +9,8 @@ import { computeStreak, isoDateMadrid, addDaysIso } from '@/lib/memberActivity'
 // Racha de días seguidos registrando algo (comida marcada o entreno).
 // Se calcula en el móvil a partir de las tablas que ya existen; el aviso
 // push de "racha en juego" lo manda el cron streak-guard a las 20:00.
-export function StreakCard({ memberId, refreshKey }) {
+// Devuelve { current, best, todayDone } o null mientras carga.
+export function useStreak(memberId, refreshKey) {
   const [streak, setStreak] = useState(null)
 
   useEffect(() => {
@@ -34,15 +35,26 @@ export function StreakCard({ memberId, refreshKey }) {
     return () => { cancelled = true }
   }, [memberId, refreshKey])
 
+  return streak
+}
+
+// Mensaje que acompaña a la racha (también lo usa la pantalla Hoy).
+export function streakMessage({ current, best, todayDone }) {
+  const atRisk = current > 0 && !todayDone
+  if (current === 0) return 'Marca una comida o un entreno hoy y empieza tu racha.'
+  if (atRisk) return 'Hoy aún no has registrado nada. Marca algo y la racha sigue.'
+  if (current >= best && current >= 7) return 'Tu mejor racha hasta ahora. Sigue así.'
+  return 'Hoy ya cuenta. Mañana, otro día más.'
+}
+
+export function StreakCard({ memberId, refreshKey }) {
+  const streak = useStreak(memberId, refreshKey)
+
   if (!streak) return null
   const { current, best, todayDone } = streak
   const atRisk = current > 0 && !todayDone
 
-  let message
-  if (current === 0) message = 'Marca una comida o un entreno hoy y empieza tu racha.'
-  else if (atRisk) message = 'Hoy aún no has registrado nada. Marca algo y la racha sigue.'
-  else if (current >= best && current >= 7) message = 'Tu mejor racha hasta ahora. Sigue así.'
-  else message = 'Hoy ya cuenta. Mañana, otro día más.'
+  const message = streakMessage(streak)
 
   return (
     <Card className={`rounded-3xl border ${atRisk ? 'bg-amber-500/5 border-amber-500/30' : current > 0 ? 'bg-gradient-to-br from-orange-500/10 to-rose-500/5 border-orange-500/25' : 'bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a]'}`}>

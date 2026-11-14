@@ -4,6 +4,7 @@ import CapacitorPushInit from '@/components/CapacitorPushInit'
 import AppUpdateBanner from '@/components/AppUpdateBanner'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Toaster } from '@/components/ui/toaster'
+import { DESIGN_BOOT_SCRIPT } from '@/lib/design'
 
 export const metadata = {
   title: 'NL VIP Team',
@@ -36,8 +37,10 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es" className="dark" suppressHydrationWarning>
       <head>
+        {/* Diseño negro y oro en pruebas: pone la clase antes de pintar (ver lib/design.js) */}
+        <script dangerouslySetInnerHTML={{ __html: DESIGN_BOOT_SCRIPT }} />
         <meta name="msapplication-TileColor" content="#7c3aed" />
         <meta name="msapplication-tap-highlight" content="no" />
         <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />

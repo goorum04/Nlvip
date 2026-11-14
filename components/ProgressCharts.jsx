@@ -8,6 +8,10 @@ import {
   Tooltip, ResponsiveContainer, Legend, Area, AreaChart 
 } from 'recharts'
 import { TrendingUp, TrendingDown, Dumbbell, Scale, Target, Calendar } from 'lucide-react'
+import { themeRgb } from '@/lib/design'
+
+// Colores de la paleta actual (violeta/cian en el diseño clásico, oro/champán en el nuevo).
+const chartColors = () => ({ violet: themeRgb('violet-500', 'rgb(139, 92, 246)'), cyan: themeRgb('cyan-500', 'rgb(6, 182, 212)') })
 
 // Custom tooltip component
 const CustomTooltip = ({ active, payload, label }) => {
@@ -28,6 +32,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 // Componente de gráfica de peso
 export function WeightChart({ data, timeRange = '30d' }) {
+  const { violet, cyan } = chartColors()
   const filteredData = filterByTimeRange(data, timeRange)
   
   if (!filteredData || filteredData.length === 0) {
@@ -66,8 +71,8 @@ export function WeightChart({ data, timeRange = '30d' }) {
             <AreaChart data={filteredData}>
               <defs>
                 <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="rgb(139, 92, 246)" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="rgb(139, 92, 246)" stopOpacity={0}/>
+                  <stop offset="5%" stopColor={violet} stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor={violet} stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
@@ -77,7 +82,7 @@ export function WeightChart({ data, timeRange = '30d' }) {
               <Area 
                 type="monotone" 
                 dataKey="weight" 
-                stroke="rgb(139, 92, 246)" 
+                stroke={violet} 
                 strokeWidth={3}
                 fill="url(#weightGradient)"
                 name="Peso"
@@ -93,6 +98,7 @@ export function WeightChart({ data, timeRange = '30d' }) {
 
 // Componente de gráfica de entrenamientos por semana
 export function WorkoutsChart({ data, timeRange = '30d' }) {
+  const { violet, cyan } = chartColors()
   const filteredData = filterByTimeRange(data, timeRange)
   
   if (!filteredData || filteredData.length === 0) {
@@ -131,7 +137,7 @@ export function WorkoutsChart({ data, timeRange = '30d' }) {
               <Tooltip content={<CustomTooltip />} />
               <Bar 
                 dataKey="workouts" 
-                fill="rgb(139, 92, 246)" 
+                fill={violet} 
                 radius={[8, 8, 0, 0]}
                 name="Entrenos"
               />
@@ -145,6 +151,7 @@ export function WorkoutsChart({ data, timeRange = '30d' }) {
 
 // Componente de adherencia al plan
 export function AdherenceChart({ completedWorkouts, targetWorkouts }) {
+  const { violet, cyan } = chartColors()
   const percentage = targetWorkouts > 0 ? Math.round((completedWorkouts / targetWorkouts) * 100) : 0
   const circumference = 2 * Math.PI * 45
   const strokeDashoffset = circumference - (percentage / 100) * circumference
@@ -182,8 +189,8 @@ export function AdherenceChart({ completedWorkouts, targetWorkouts }) {
             />
             <defs>
               <linearGradient id="adherenceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="rgb(139, 92, 246)" />
-                <stop offset="100%" stopColor="rgb(6, 182, 212)" />
+                <stop offset="0%" stopColor={violet} />
+                <stop offset="100%" stopColor={cyan} />
               </linearGradient>
             </defs>
           </svg>
@@ -204,6 +211,7 @@ export function AdherenceChart({ completedWorkouts, targetWorkouts }) {
 
 // Componente de comparativa mensual
 export function MonthlyComparisonChart({ currentMonth, previousMonth }) {
+  const { violet, cyan } = chartColors()
   const data = [
     { name: 'Entrenos', current: currentMonth.workouts || 0, previous: previousMonth.workouts || 0 },
     { name: 'Duración (h)', current: Math.round((currentMonth.duration || 0) / 60), previous: Math.round((previousMonth.duration || 0) / 60) },
@@ -228,7 +236,7 @@ export function MonthlyComparisonChart({ currentMonth, previousMonth }) {
               <Tooltip content={<CustomTooltip />} />
               <Legend />
               <Bar dataKey="previous" fill="#666" name="Mes anterior" radius={[0, 4, 4, 0]} />
-              <Bar dataKey="current" fill="rgb(139, 92, 246)" name="Este mes" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="current" fill={violet} name="Este mes" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

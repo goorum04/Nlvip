@@ -1,3 +1,12 @@
+// Las familias de color "de marca" (violeta, púrpura, fucsia y cian) se leen de
+// variables CSS. Con el diseño clásico valen exactamente lo mismo que los
+// colores por defecto de Tailwind (ver :root en globals.css); con el diseño
+// negro y oro (html.nl-gold) pasan a ser oro y champán, de modo que toda la
+// app cambia de color sin tocar cada componente.
+const SHADES = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950']
+const cssVarPalette = (name) =>
+  Object.fromEntries(SHADES.map((s) => [s, `rgb(var(--nlc-${name}-${s}) / <alpha-value>)`]))
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
     darkMode: ["class"],
@@ -17,7 +26,15 @@ module.exports = {
     		}
     	},
     	extend: {
+    		fontFamily: {
+    			display: ['"Barlow Condensed"', '"Arial Narrow"', 'sans-serif']
+    		},
     		colors: {
+    			violet: cssVarPalette('violet'),
+    			purple: cssVarPalette('purple'),
+    			fuchsia: cssVarPalette('fuchsia'),
+    			cyan: cssVarPalette('cyan'),
+    			emerald: cssVarPalette('emerald'),
     			border: 'hsl(var(--border))',
     			input: 'hsl(var(--input))',
     			ring: 'hsl(var(--ring))',

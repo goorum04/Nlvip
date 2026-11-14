@@ -242,3 +242,231 @@ code {
 .theme-lactating .header-gradient {
     background-image: linear-gradient(to bottom right, rgb(59, 130, 246, 0.2), transparent, rgb(34, 211, 238, 0.1));
 }
+/* =============================================================
+   PALETA POR VARIABLES
+   Diseño clásico: exactamente los colores por defecto de Tailwind.
+   Diseño negro y oro (html.nl-gold): oro y champán.
+   ============================================================= */
+:root {
+  --nlc-violet-50: 245 243 255; --nlc-violet-100: 237 233 254; --nlc-violet-200: 221 214 254;
+  --nlc-violet-300: 196 181 253; --nlc-violet-400: 167 139 250; --nlc-violet-500: 139 92 246;
+  --nlc-violet-600: 124 58 237; --nlc-violet-700: 109 40 217; --nlc-violet-800: 91 33 182;
+  --nlc-violet-900: 76 29 149; --nlc-violet-950: 46 16 101;
+
+  --nlc-purple-50: 250 245 255; --nlc-purple-100: 243 232 255; --nlc-purple-200: 233 213 255;
+  --nlc-purple-300: 216 180 254; --nlc-purple-400: 192 132 252; --nlc-purple-500: 168 85 247;
+  --nlc-purple-600: 147 51 234; --nlc-purple-700: 126 34 206; --nlc-purple-800: 107 33 168;
+  --nlc-purple-900: 88 28 135; --nlc-purple-950: 59 7 100;
+
+  --nlc-fuchsia-50: 253 244 255; --nlc-fuchsia-100: 250 232 255; --nlc-fuchsia-200: 245 208 254;
+  --nlc-fuchsia-300: 240 171 252; --nlc-fuchsia-400: 232 121 249; --nlc-fuchsia-500: 217 70 239;
+  --nlc-fuchsia-600: 192 38 211; --nlc-fuchsia-700: 162 28 175; --nlc-fuchsia-800: 134 25 143;
+  --nlc-fuchsia-900: 112 26 117; --nlc-fuchsia-950: 74 4 78;
+
+  --nlc-cyan-50: 236 254 255; --nlc-cyan-100: 207 250 254; --nlc-cyan-200: 165 243 252;
+  --nlc-cyan-300: 103 232 249; --nlc-cyan-400: 34 211 238; --nlc-cyan-500: 6 182 212;
+  --nlc-cyan-600: 8 145 178; --nlc-cyan-700: 14 116 144; --nlc-cyan-800: 21 94 117;
+  --nlc-cyan-900: 22 78 99; --nlc-cyan-950: 8 51 68;
+
+  --nlc-emerald-50: 236 253 245; --nlc-emerald-100: 209 250 229; --nlc-emerald-200: 167 243 208;
+  --nlc-emerald-300: 110 231 183; --nlc-emerald-400: 52 211 153; --nlc-emerald-500: 16 185 129;
+  --nlc-emerald-600: 5 150 105; --nlc-emerald-700: 4 120 87; --nlc-emerald-800: 6 95 70;
+  --nlc-emerald-900: 6 78 59; --nlc-emerald-950: 2 44 34;
+}
+
+/* ---------- Tipografías del diseño negro y oro (autoalojadas, OFL) ---------- */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/inter-latin-var.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-700.woff2') format('woff2');
+}
+
+/* =============================================================
+   DISEÑO NEGRO Y ORO
+   Se activa con la clase nl-gold en <html> (ver app/layout.js).
+   ============================================================= */
+html.nl-gold {
+  /* Oro: sustituye a violeta, púrpura y fucsia */
+  --nlc-violet-50: 251 247 237; --nlc-violet-100: 245 236 214; --nlc-violet-200: 236 219 178;
+  --nlc-violet-300: 228 202 146; --nlc-violet-400: 221 190 127; --nlc-violet-500: 212 175 106;
+  --nlc-violet-600: 191 154 87; --nlc-violet-700: 156 124 66; --nlc-violet-800: 112 89 49;
+  --nlc-violet-900: 74 59 34; --nlc-violet-950: 41 33 20;
+
+  --nlc-purple-50: 251 247 237; --nlc-purple-100: 245 236 214; --nlc-purple-200: 236 219 178;
+  --nlc-purple-300: 228 202 146; --nlc-purple-400: 221 190 127; --nlc-purple-500: 212 175 106;
+  --nlc-purple-600: 191 154 87; --nlc-purple-700: 156 124 66; --nlc-purple-800: 112 89 49;
+  --nlc-purple-900: 74 59 34; --nlc-purple-950: 41 33 20;
+
+  --nlc-fuchsia-50: 251 247 237; --nlc-fuchsia-100: 245 236 214; --nlc-fuchsia-200: 236 219 178;
+  --nlc-fuchsia-300: 228 202 146; --nlc-fuchsia-400: 221 190 127; --nlc-fuchsia-500: 212 175 106;
+  --nlc-fuchsia-600: 191 154 87; --nlc-fuchsia-700: 156 124 66; --nlc-fuchsia-800: 112 89 49;
+  --nlc-fuchsia-900: 74 59 34; --nlc-fuchsia-950: 41 33 20;
+
+  /* Champán: sustituye al cian (los degradados violeta→cian quedan oro→champán) */
+  --nlc-cyan-50: 252 249 242; --nlc-cyan-100: 247 241 226; --nlc-cyan-200: 239 228 200;
+  --nlc-cyan-300: 233 216 176; --nlc-cyan-400: 228 208 160; --nlc-cyan-500: 222 199 146;
+  --nlc-cyan-600: 199 175 124; --nlc-cyan-700: 160 140 98; --nlc-cyan-800: 116 101 71;
+  --nlc-cyan-900: 77 67 47; --nlc-cyan-950: 43 37 26;
+
+  /* Tokens propios del diseño */
+  --nl-bg: #0B0B0C;
+  --nl-surface: #151517;
+  --nl-surface2: #1D1D20;
+  --nl-line: rgba(255, 255, 255, 0.07);
+  --nl-text: #F4F1EA;
+  --nl-muted: #8E8C87;
+  --nl-dim: #5E5D5A;
+  --nl-accent: #D4AF6A;
+  --nl-accent2: #E9CF97;
+  --nl-ink: #1B150A;
+  --nl-soft: rgba(212, 175, 106, 0.12);
+  --nl-cycle: #E7A3B5;
+  --nl-cyclesoft: rgba(231, 163, 181, 0.12);
+
+  /* Tokens de shadcn/ui */
+  --background: 240 4% 4.5%;
+  --foreground: 42 32% 94%;
+  --card: 240 5% 8.6%;
+  --card-foreground: 42 32% 94%;
+  --popover: 240 6% 9.6%;
+  --popover-foreground: 42 32% 94%;
+  --primary: 39 55% 62%;
+  --primary-foreground: 39 46% 7%;
+  --secondary: 240 5% 12%;
+  --secondary-foreground: 42 32% 94%;
+  --muted: 240 5% 12%;
+  --muted-foreground: 43 3% 54%;
+  --accent: 240 5% 14%;
+  --accent-foreground: 42 32% 94%;
+  --border: 240 2% 11%;
+  --input: 240 3% 14%;
+  --ring: 39 55% 62%;
+}
+
+html.nl-gold body {
+  background-color: var(--nl-bg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: 'cv11';
+}
+
+/* Texto blanco sobre un fondo oro macizo no se lee: pasa a tinta oscura. */
+html.nl-gold :is(.bg-violet-400, .bg-violet-500, .bg-violet-600, .bg-violet-700,
+  .bg-purple-500, .bg-purple-600, .bg-fuchsia-500, .bg-fuchsia-600,
+  .bg-cyan-400, .bg-cyan-500, .bg-cyan-600,
+  .from-violet-400, .from-violet-500, .from-violet-600, .from-violet-700,
+  .from-purple-500, .from-purple-600, .from-fuchsia-500, .from-fuchsia-600,
+  .from-cyan-500, .from-cyan-600):is(.text-white, .text-white *),
+html.nl-gold :is(.bg-violet-400, .bg-violet-500, .bg-violet-600, .bg-violet-700,
+  .bg-purple-500, .bg-purple-600, .bg-fuchsia-500, .bg-fuchsia-600,
+  .bg-cyan-400, .bg-cyan-500, .bg-cyan-600,
+  .from-violet-400, .from-violet-500, .from-violet-600, .from-violet-700,
+  .from-purple-500, .from-purple-600, .from-fuchsia-500, .from-fuchsia-600,
+  .from-cyan-500, .from-cyan-600) .text-white {
+  color: var(--nl-ink);
+}
+html.nl-gold [data-state='active']:is([class*='data-[state=active]:bg-violet'], [class*='data-[state=active]:from-violet'], [class*='data-[state=active]:bg-cyan']) {
+  color: var(--nl-ink);
+}
+
+/* Bordes y fondos neutros un punto más suaves */
+html.nl-gold .border-\[\#2a2a2a\] { border-color: rgba(255, 255, 255, 0.07); }
+
+/* ---------- Piezas del diseño ---------- */
+.nl-display {
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 0.95;
+}
+.nl-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--nl-muted);
+}
+.nl-card {
+  background: var(--nl-surface);
+  border: 1px solid var(--nl-line);
+  border-radius: 22px;
+}
+.nl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: var(--nl-surface2);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--nl-text);
+}
+.nl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--nl-accent);
+  color: var(--nl-ink);
+  font-weight: 700;
+  font-size: 16px;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.nl-btn:active { transform: scale(0.98); filter: brightness(0.95); }
+.nl-btn-ghost { background: var(--nl-surface2); color: var(--nl-text); }
+.nl-tabular { font-variant-numeric: tabular-nums; }
+
+/* La barra inferior ocupa el pie de pantalla: el chat flotante y el aviso de
+   actualización se colocan por encima de ella. */
+html.nl-gold:has(.nl-bottomnav) .nl-chat-fab {
+  bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+  right: 16px !important;
+  width: 52px !important;
+  height: 52px !important;
+}
+html.nl-gold:has(.nl-bottomnav) .nl-chat-panel { bottom: calc(84px + env(safe-area-inset-bottom)) !important; }
+html.nl-gold:has(.nl-bottomnav) .nl-update-banner { bottom: calc(76px + env(safe-area-inset-bottom)) !important; }
+
+/* Con una ventana abierta (perfil, avisos de confirmación...) el botón del chat
+   no debe quedar por encima. */
+html.nl-gold:has([role='dialog']) .nl-chat-fab,
+html.nl-gold:has([role='alertdialog']) .nl-chat-fab { display: none !important; }
+
+/* Actividad (cuentapasos): su verde pasa a oro solo en el diseño nuevo; el
+   verde de "hecho/registrado" del resto de la app no cambia. */
+html.nl-gold .nl-activity {
+  --nlc-emerald-50: 251 247 237; --nlc-emerald-100: 245 236 214; --nlc-emerald-200: 236 219 178;
+  --nlc-emerald-300: 228 202 146; --nlc-emerald-400: 221 190 127; --nlc-emerald-500: 212 175 106;
+  --nlc-emerald-600: 191 154 87; --nlc-emerald-700: 156 124 66; --nlc-emerald-800: 112 89 49;
+  --nlc-emerald-900: 74 59 34; --nlc-emerald-950: 41 33 20;
+}
+html.nl-gold .nl-activity :is(.bg-emerald-500, .bg-emerald-600, .from-emerald-500, .from-emerald-600):is(.text-white),
+html.nl-gold .nl-activity :is(.bg-emerald-500, .bg-emerald-600, .from-emerald-500, .from-emerald-600) :is(.text-white, svg) {
+  color: var(--nl-ink);
+}

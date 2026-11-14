@@ -44,6 +44,9 @@ import { StreakCard } from './StreakCard'
 import { TrainerMessageCard } from './TrainerMessageCard'
 import { FirstWeekGuide } from './FirstWeekGuide'
 import { ShoppingList } from './ShoppingList'
+import { isGoldDesign } from '@/lib/design'
+import { GoldTopBar, GoldBottomNav, GoldSectionHeader, MEMBER_SECTIONS, sectionForTab, sectionTabs } from './GoldNav'
+import TodayView, { todayGreeting, todayKicker } from './TodayView'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function MemberDashboard({ user, profile, setProfile, onLogout }) {
@@ -75,11 +78,17 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   const { toast } = useToast()
   const { getSignedUrl, getSignedUrls } = useSignedUrl()
   const [dataLoaded, setDataLoaded] = useState(false)
-  const [activeTab, setActiveTab] = useState('activity')
+  // Diseño negro y oro (en pruebas, ver lib/design.js). Se lee una vez.
+  const [isGold] = useState(() => isGoldDesign())
+  const [activeTab, setActiveTab] = useState(() => (isGoldDesign() ? 'today' : 'activity'))
+  // Diseño nuevo: última subpestaña abierta en cada sección y pestaña a la
+  // que volver al cerrar Avisos.
+  const [lastTabBySection, setLastTabBySection] = useState({})
+  const [tabBeforeNotices, setTabBeforeNotices] = useState(null)
   // Pestañas que ya se han abierto alguna vez: se mantienen montadas (solo
   // ocultas con CSS) para no volver a cargar y mostrar el spinner de nuevo
   // cada vez que el socio vuelve a una pestaña que ya había visitado.
-  const [visitedTabs, setVisitedTabs] = useState(() => new Set(['activity']))
+  const [visitedTabs, setVisitedTabs] = useState(() => new Set([isGoldDesign() ? 'today' : 'activity']))
   // Tracks whether we've already auto-jumped the newly-registered premium
   // member to the diet onboarding tab — only happens once per session so
   // we don't fight the user if they navigate away.
@@ -827,6 +836,41 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
     loadNotices()
   }
 
+  const goToTab = (val) => {
+    setActiveTab(val)
+    setVisitedTabs(prev => prev.has(val) ? prev : new Set(prev).add(val))
+    if (val !== 'bienestar') setPageTheme('default')
+    if (isGold) {
+      const sec = sectionForTab(val)
+      if (sec) setLastTabBySection(prev => ({ ...prev, [sec]: val }))
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
+    }
+  }
+
+  const showLockedToast = () => toast({
+    title: '🔒 Acceso de socio',
+    description: 'Necesitas un código de invitación de tu gimnasio para acceder a esta función.',
+  })
+
+  const currentSection = activeTab === 'notices' ? null : sectionForTab(activeTab)
+
+  // Barra inferior: abre la sección en la subpestaña donde se dejó. Tocar la
+  // sección en la que ya estás vuelve a su primera subpestaña.
+  const goToSection = (secId) => {
+    const sec = MEMBER_SECTIONS.find(x => x.id === secId)
+    if (!sec) return
+    const open = sectionTabs(sec, profile).filter(t => !(t.premium && !hasPremium))
+    if (open.length === 0) { showLockedToast(); return }
+    const remembered = secId !== currentSection && open.find(t => t.value === lastTabBySection[secId])
+    goToTab((remembered || open[0]).value)
+  }
+
+  const toggleNotices = () => {
+    if (activeTab === 'notices') { goToTab(tabBeforeNotices || 'today'); return }
+    setTabBeforeNotices(activeTab)
+    goToTab('notices')
+  }
+
   const getThemeClasses = () => {
     switch (pageTheme) {
       case 'menstrual': return 'theme-menstrual'
@@ -841,70 +885,85 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a] transition-colors duration-700 ${getThemeClasses()}`}>
-      {/* Navbar Estática */}
-      <header className="sticky top-0 z-50 bg-[#030303]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-violet-500/5 header-gradient opacity-50" />
+    <div
+      className={isGold ? 'min-h-screen' : `min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a] transition-colors duration-700 ${getThemeClasses()}`}
+      style={isGold ? { background: 'var(--nl-bg)' } : undefined}
+    >
+      {isGold ? (
+        <GoldTopBar
+          profile={profile}
+          unreadNotices={unreadNotices}
+          bellActive={activeTab === 'notices'}
+          onBell={toggleNotices}
+          onAvatar={() => setShowProfileModal(true)}
+        />
+      ) : (
+        <>
+          {/* Navbar Estática */}
+          <header className="sticky top-0 z-50 bg-[#030303]/80 backdrop-blur-xl border-b border-white/5">
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-violet-500/5 header-gradient opacity-50" />
         
-        <div className="relative container mx-auto px-4 pt-12 pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img 
-                src="/logo-nl-vip.jpg" 
-                alt="NL VIP TEAM" 
-                className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-violet-500/20"
-              />
-              <div>
-                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP Team</h1>
-                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Premium Fitness</p>
+            <div className="relative container mx-auto px-4 pt-12 pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src="/logo-nl-vip.jpg" 
+                    alt="NL VIP TEAM" 
+                    className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-violet-500/20"
+                  />
+                  <div>
+                    <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP Team</h1>
+                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Premium Fitness</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <AvatarBubble 
+                    profile={profile} 
+                    size="md" 
+                    onClick={() => setShowProfileModal(true)} 
+                  />
+                  <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
+                    <LogOut className="w-5 h-5" />
+                  </Button>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <AvatarBubble 
-                profile={profile} 
-                size="md" 
-                onClick={() => setShowProfileModal(true)} 
-              />
-              <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+          </header>
 
-      {/* Hero / Welcome Section (Este sí hace scroll) */}
-      <div className="relative overflow-hidden pt-4 pb-4">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-        <div className="container mx-auto px-4">
-          <div className="flex items-end gap-4">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-3xl font-black text-black shadow-xl shadow-violet-500/30 overflow-hidden">
-              {profile.avatar_url ? (
-                <AvatarBubble profile={profile} size="xl" onClick={() => setShowProfileModal(true)} />
-              ) : (
-                profile.name?.charAt(0)
-              )}
-            </div>
-            <div className="pb-1">
-              <p className="text-gray-400 text-sm font-medium">Bienvenido de vuelta,</p>
-              <h2 className="text-3xl font-black text-white">{profile.name?.split(' ')[0]}</h2>
-              <div className="flex items-center gap-2 mt-1">
-                {hasPremium ? (
-                  <>
-                    <Sparkles className="w-4 h-4 text-violet-500" />
-                    <span className="text-sm text-violet-500 font-bold uppercase tracking-wider">Socio VIP</span>
-                  </>
-                ) : (
-                  <>
-                    <Gift className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-400 font-bold uppercase tracking-wider">Cuenta Básica</span>
-                  </>
-                )}
+          {/* Hero / Welcome Section (Este sí hace scroll) */}
+          <div className="relative overflow-hidden pt-4 pb-4">
+            <div className="absolute top-0 left-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+            <div className="container mx-auto px-4">
+              <div className="flex items-end gap-4">
+                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-3xl font-black text-black shadow-xl shadow-violet-500/30 overflow-hidden">
+                  {profile.avatar_url ? (
+                    <AvatarBubble profile={profile} size="xl" onClick={() => setShowProfileModal(true)} />
+                  ) : (
+                    profile.name?.charAt(0)
+                  )}
+                </div>
+                <div className="pb-1">
+                  <p className="text-gray-400 text-sm font-medium">Bienvenido de vuelta,</p>
+                  <h2 className="text-3xl font-black text-white">{profile.name?.split(' ')[0]}</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    {hasPremium ? (
+                      <>
+                        <Sparkles className="w-4 h-4 text-violet-500" />
+                        <span className="text-sm text-violet-500 font-bold uppercase tracking-wider">Socio VIP</span>
+                      </>
+                    ) : (
+                      <>
+                        <Gift className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-400 font-bold uppercase tracking-wider">Cuenta Básica</span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Profile Modal */}
       <ProfileModal
@@ -916,60 +975,98 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
           setProfile(updatedProfile)
         }}
         onLogout={onLogout}
+        showLogout={isGold}
       />
 
-      <main className="container mx-auto px-4 py-6 pb-24">
+      <main
+        className={isGold ? 'max-w-xl mx-auto px-[18px] pt-5' : 'container mx-auto px-4 py-6 pb-24'}
+        style={isGold ? { paddingBottom: 'calc(150px + env(safe-area-inset-bottom))' } : undefined}
+      >
+        {isGold && (() => {
+          if (activeTab === 'notices') return <GoldSectionHeader title="Avisos" onBack={toggleNotices} />
+          const sec = MEMBER_SECTIONS.find(x => x.id === currentSection)
+          if (!sec) return null
+          const firstName = profile.name?.split(' ')[0]
+          return (
+            <GoldSectionHeader
+              kicker={sec.id === 'hoy' ? todayKicker(hasPremium) : undefined}
+              title={sec.id === 'hoy' ? (firstName ? `${todayGreeting()}, ${firstName}` : todayGreeting()) : sec.title}
+              tabs={sectionTabs(sec, profile)}
+              activeTab={activeTab}
+              onTab={goToTab}
+              hasPremium={hasPremium}
+              onLocked={showLockedToast}
+            />
+          )
+        })()}
         <Tabs 
           value={activeTab}
-          onValueChange={(val) => {
-            setActiveTab(val)
-            setVisitedTabs(prev => prev.has(val) ? prev : new Set(prev).add(val))
-            if (val !== 'bienestar') setPageTheme('default')
-          }}
-          className="space-y-6"
+          onValueChange={goToTab}
+          className={isGold ? '' : 'space-y-6'}
         >
-          <div className="overflow-x-auto pb-2 -mx-4 px-4">
-            <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
-              {[
-                { value: 'activity', icon: Footprints, label: 'Actividad', premium: false },
-                profile?.sex === 'female' ? { value: 'bienestar', icon: Heart, label: 'Bienestar', premium: false } : null,
-                { value: 'feed', icon: Home, label: 'Feed', premium: true },
-                { value: 'challenges', icon: Target, label: 'Retos', premium: false },
-                { value: 'badges', icon: Trophy, label: 'Logros', premium: true },
-                { value: 'workout', icon: Dumbbell, label: 'Rutina', premium: true },
-                { value: 'diet', icon: Apple, label: 'Dieta', premium: true },
-                { value: 'recipes', icon: UtensilsCrossed, label: 'Recetas', premium: false },
-                { value: 'stats', icon: BarChart3, label: 'Estadísticas', premium: false },
-                { value: 'progress', icon: TrendingUp, label: 'Progreso', premium: true },
-                { value: 'notices', icon: Bell, label: 'Avisos', badge: unreadNotices, premium: false }
-              ].filter(Boolean).map(tab => {
-                const isLocked = tab.premium && !hasPremium
-                return (
-                  <TabsTrigger 
-                    key={tab.value}
-                    value={isLocked ? 'locked' : tab.value}
-                    disabled={isLocked}
-                    onClick={(e) => {
-                      if (isLocked) {
-                        e.preventDefault()
-                        toast({
-                          title: '🔒 Acceso de socio',
-                          description: 'Necesitas un código de invitación de tu gimnasio para acceder a esta función.',
-                        })
-                      }
-                    }}
-                    className={`relative px-4 py-2.5 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-cyan-500 data-[state=active]:text-black data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:shadow-violet-500/20 transition-all duration-300 ${isLocked ? 'opacity-50' : ''}`}
-                  >
-                    {isLocked ? <Lock className="w-4 h-4 mr-2" /> : <tab.icon className="w-4 h-4 mr-2" />}
-                    {tab.label}
-                    {tab.badge > 0 && (
-                      <span className="ml-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{tab.badge}</span>
-                    )}
-                  </TabsTrigger>
-                )
-              })}
-            </TabsList>
-          </div>
+          {!isGold && (
+            <div className="overflow-x-auto pb-2 -mx-4 px-4">
+              <TabsList className="inline-flex gap-2 bg-transparent p-0 min-w-max">
+                {[
+                  { value: 'activity', icon: Footprints, label: 'Actividad', premium: false },
+                  profile?.sex === 'female' ? { value: 'bienestar', icon: Heart, label: 'Bienestar', premium: false } : null,
+                  { value: 'feed', icon: Home, label: 'Feed', premium: true },
+                  { value: 'challenges', icon: Target, label: 'Retos', premium: false },
+                  { value: 'badges', icon: Trophy, label: 'Logros', premium: true },
+                  { value: 'workout', icon: Dumbbell, label: 'Rutina', premium: true },
+                  { value: 'diet', icon: Apple, label: 'Dieta', premium: true },
+                  { value: 'recipes', icon: UtensilsCrossed, label: 'Recetas', premium: false },
+                  { value: 'stats', icon: BarChart3, label: 'Estadísticas', premium: false },
+                  { value: 'progress', icon: TrendingUp, label: 'Progreso', premium: true },
+                  { value: 'notices', icon: Bell, label: 'Avisos', badge: unreadNotices, premium: false }
+                ].filter(Boolean).map(tab => {
+                  const isLocked = tab.premium && !hasPremium
+                  return (
+                    <TabsTrigger 
+                      key={tab.value}
+                      value={isLocked ? 'locked' : tab.value}
+                      disabled={isLocked}
+                      onClick={(e) => {
+                        if (isLocked) {
+                          e.preventDefault()
+                          toast({
+                            title: '🔒 Acceso de socio',
+                            description: 'Necesitas un código de invitación de tu gimnasio para acceder a esta función.',
+                          })
+                        }
+                      }}
+                      className={`relative px-4 py-2.5 rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-cyan-500 data-[state=active]:text-black data-[state=active]:border-transparent data-[state=active]:shadow-lg data-[state=active]:shadow-violet-500/20 transition-all duration-300 ${isLocked ? 'opacity-50' : ''}`}
+                    >
+                      {isLocked ? <Lock className="w-4 h-4 mr-2" /> : <tab.icon className="w-4 h-4 mr-2" />}
+                      {tab.label}
+                      {tab.badge > 0 && (
+                        <span className="ml-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{tab.badge}</span>
+                      )}
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
+            </div>
+          )}
+
+          {/* HOY (solo diseño nuevo): resumen del día con accesos a cada sección */}
+          {isGold && (
+            <TabsContent value="today" forceMount={visitedTabs.has('today') || undefined} className="mt-0 data-[state=inactive]:hidden">
+              <TodayView
+                user={user}
+                profile={profile}
+                hasPremium={hasPremium}
+                myWorkouts={myWorkouts}
+                myDiet={myDiet}
+                dataLoaded={dataLoaded}
+                loggedMealSlots={loggedMealSlots}
+                hasCheckedInToday={hasCheckedInToday}
+                isActive={activeTab === 'today'}
+                onNavigate={goToTab}
+                onLocked={showLockedToast}
+              />
+            </TabsContent>
+          )}
 
           {/* FEED TAB */}
           <TabsContent value="feed" forceMount={visitedTabs.has('feed') || undefined} className="space-y-4 data-[state=inactive]:hidden">
@@ -1098,31 +1195,36 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
           {/* ACTIVITY TAB - Step Counter */}
           <TabsContent value="activity" forceMount={visitedTabs.has('activity') || undefined} className="space-y-4 data-[state=inactive]:hidden">
-            {profile?.sex === 'female' && (
-              <CycleModule 
-                user={user} 
-                profile={profile} 
-                variant="compact" 
-                onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)} 
-              />
+            {/* En el diseño nuevo, ciclo, mensaje, guía, racha y semana están en Hoy → Resumen */}
+            {!isGold && (
+              <>
+                {profile?.sex === 'female' && (
+                  <CycleModule 
+                    user={user} 
+                    profile={profile} 
+                    variant="compact" 
+                    onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)} 
+                  />
+                )}
+                <TrainerMessageCard memberId={user.id} />
+                <FirstWeekGuide
+                  memberId={user.id}
+                  createdAt={profile?.created_at}
+                  hasPremium={hasPremium}
+                  onNavigate={(tab) => {
+                    setActiveTab(tab)
+                    setVisitedTabs(prev => prev.has(tab) ? prev : new Set(prev).add(tab))
+                  }}
+                />
+                <StreakCard memberId={user.id} refreshKey={loggedMealSlots.length} />
+                <WeekOverview
+                  memberId={user.id}
+                  workoutId={myWorkouts?.principal?.workout?.id || myWorkouts?.alternativa?.workout?.id || null}
+                  stepsGoal={Number(profile?.steps_goal) || 8000}
+                  memberName={profile?.name}
+                />
+              </>
             )}
-            <TrainerMessageCard memberId={user.id} />
-            <FirstWeekGuide
-              memberId={user.id}
-              createdAt={profile?.created_at}
-              hasPremium={hasPremium}
-              onNavigate={(tab) => {
-                setActiveTab(tab)
-                setVisitedTabs(prev => prev.has(tab) ? prev : new Set(prev).add(tab))
-              }}
-            />
-            <StreakCard memberId={user.id} refreshKey={loggedMealSlots.length} />
-            <WeekOverview
-              memberId={user.id}
-              workoutId={myWorkouts?.principal?.workout?.id || myWorkouts?.alternativa?.workout?.id || null}
-              stepsGoal={Number(profile?.steps_goal) || 8000}
-              memberName={profile?.name}
-            />
             <ActivityTracker userId={user.id} />
           </TabsContent>
 
@@ -1617,6 +1719,9 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
           onClose={() => setSelectedVideo(null)}
         />
       )}
+
+      {/* Barra inferior del diseño nuevo */}
+      {isGold && <GoldBottomNav activeSection={currentSection} onSection={goToSection} />}
 
       {/* Floating Chat */}
       <FloatingChat

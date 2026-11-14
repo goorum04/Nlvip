@@ -262,7 +262,7 @@ export default function ActivityTracker({ userId, compact = false }) {
   // Modo compacto para cards pequeñas
   if (compact) {
     return (
-      <Card className="bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 border-emerald-500/20 rounded-2xl overflow-hidden">
+      <Card className="nl-activity bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 border-emerald-500/20 rounded-2xl overflow-hidden">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -295,7 +295,7 @@ export default function ActivityTracker({ userId, compact = false }) {
   }
 
   return (
-    <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border-violet-500/20 rounded-3xl overflow-hidden">
+    <Card className="nl-activity bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border-violet-500/20 rounded-3xl overflow-hidden">
       {/* Header con gradiente */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/20 via-cyan-600/20 to-violet-600/20"></div>
@@ -365,8 +365,8 @@ export default function ActivityTracker({ userId, compact = false }) {
               />
               <defs>
                 <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#10b981" />
-                  <stop offset="100%" stopColor="#06b6d4" />
+                  <stop offset="0%" style={{ stopColor: 'rgb(var(--nlc-emerald-500))' }} />
+                  <stop offset="100%" style={{ stopColor: 'rgb(var(--nlc-cyan-500))' }} />
                 </linearGradient>
               </defs>
             </svg>
