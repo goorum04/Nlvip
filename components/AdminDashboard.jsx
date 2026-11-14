@@ -26,6 +26,8 @@ import { CheckInReviewPanel } from './CheckInReviewPanel'
 import { WorkoutBuilder } from './WorkoutBuilder'
 import { DietBuilder } from './DietBuilder'
 import { AvatarBubble, ProfileModal } from './UserProfile'
+import { isGoldDesign } from '@/lib/design'
+import { GoldStaffBar, GoldStaffGreeting } from './GoldStaffBar'
 import FloatingChat from './FloatingChat'
 import FloatingAdminAssistant from './FloatingAdminAssistant'
 import { FeedSection } from './FeedSection'
@@ -37,6 +39,8 @@ import { useMemberActivity, MemberActivityLine } from './MemberNudge'
 import { BroadcastUpdateButton } from './BroadcastUpdateButton'
 
 export default function AdminDashboard({ user, profile, setProfile, onLogout }) {
+  // Diseño negro y oro (en pruebas, ver lib/design.js)
+  const [isGold] = useState(() => isGoldDesign())
   const [trainers, setTrainers] = useState([])
   const [codes, setCodes] = useState([])
   const [members, setMembers] = useState([])
@@ -1133,77 +1137,103 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B]">
-      {/* Navbar Estática */}
-      <header className="sticky top-0 z-50 bg-[#0B0B0B]/80 backdrop-blur-xl border-b border-violet-500/20">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-violet-500/5 header-gradient opacity-30" />
+    <div className="min-h-screen bg-[#0B0B0B]" style={isGold ? { background: 'var(--nl-bg)' } : undefined}>
+      {isGold ? (
+        <GoldStaffBar
+          profile={profile}
+          roleLabel="Administración"
+          onAvatar={() => setShowProfileModal(true)}
+          onLogout={onLogout}
+          actions={
+            <button
+              type="button"
+              aria-label="Asistente por voz"
+              onClick={() => {
+                setTabHistory(prev => [...prev, activeTab])
+                setActiveTab('assistant')
+                setVoiceTrigger(Date.now())
+              }}
+              className="w-10 h-10 rounded-full flex items-center justify-center border border-white/[0.07] shrink-0"
+              style={{ background: 'var(--nl-soft)', color: 'var(--nl-accent)' }}
+            >
+              <Mic className="w-[18px] h-[18px]" />
+            </button>
+          }
+        />
+      ) : (
+        <>
+        {/* Navbar Estática */}
+        <header className="sticky top-0 z-50 bg-[#0B0B0B]/80 backdrop-blur-xl border-b border-violet-500/20">
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-violet-500/5 header-gradient opacity-30" />
         
-        <div className="relative container mx-auto px-4 pt-12 pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="relative container mx-auto px-4 pt-12 pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src="/logo-nl-vip.jpg" 
+                    alt="NL VIP TEAM" 
+                    className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-violet-500/20"
+                  />
+                  <div className="hidden sm:block">
+                    <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP Team</h1>
+                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Master Admin</p>
+                  </div>
+                </div>
+
+                {/* Botón de Voz Compacto */}
+                <Button 
+                  size="icon"
+                  variant="outline"
+                  onClick={() => {
+                    setTabHistory(prev => [...prev, activeTab])
+                    setActiveTab('assistant')
+                    setVoiceTrigger(Date.now())
+                  }}
+                  className="h-10 w-10 rounded-xl border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition-all flex-shrink-0"
+                >
+                  <Mic className="w-5 h-5" />
+                </Button>
+              </div>
+
               <div className="flex items-center gap-3">
-                <img 
-                  src="/logo-nl-vip.jpg" 
-                  alt="NL VIP TEAM" 
-                  className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-violet-500/20"
+                <AvatarBubble 
+                  profile={profile} 
+                  size="md" 
+                  onClick={() => setShowProfileModal(true)} 
                 />
-                <div className="hidden sm:block">
-                  <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP Team</h1>
-                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Master Admin</p>
+                <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
+                  <LogOut className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Hero Section (Scrollable) */}
+        <div className="relative overflow-hidden pt-4 pb-4 border-b border-white/5 bg-black/40">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl" />
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-3xl font-black text-black shadow-xl shadow-violet-500/30">
+                  A
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm font-medium">Control Total,</p>
+                  <h2 className="text-2xl font-black text-white">{profile.name}</h2>
+                  <div className="flex items-center gap-1 mt-1">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <p className="text-xs text-emerald-500 font-bold uppercase tracking-wider">Sistema Activo</p>
+                  </div>
                 </div>
               </div>
-
-              {/* Botón de Voz Compacto */}
-              <Button 
-                size="icon"
-                variant="outline"
-                onClick={() => {
-                  setTabHistory(prev => [...prev, activeTab])
-                  setActiveTab('assistant')
-                  setVoiceTrigger(Date.now())
-                }}
-                className="h-10 w-10 rounded-xl border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition-all flex-shrink-0"
-              >
-                <Mic className="w-5 h-5" />
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <AvatarBubble 
-                profile={profile} 
-                size="md" 
-                onClick={() => setShowProfileModal(true)} 
-              />
-              <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
-                <LogOut className="w-5 h-5" />
-              </Button>
+              {/* Quick stats could go here */}
             </div>
           </div>
         </div>
-      </header>
-
-      {/* Hero Section (Scrollable) */}
-      <div className="relative overflow-hidden pt-4 pb-4 border-b border-white/5 bg-black/40">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl" />
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-3xl font-black text-black shadow-xl shadow-violet-500/30">
-                A
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm font-medium">Control Total,</p>
-                <h2 className="text-2xl font-black text-white">{profile.name}</h2>
-                <div className="flex items-center gap-1 mt-1">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                  <p className="text-xs text-emerald-500 font-bold uppercase tracking-wider">Sistema Activo</p>
-                </div>
-              </div>
-            </div>
-            {/* Quick stats could go here */}
-          </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Profile Modal */}
       <ProfileModal
@@ -1218,6 +1248,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       />
 
       <main className="container mx-auto px-4 py-8 overflow-x-hidden">
+        {isGold && <GoldStaffGreeting profile={profile} kicker="Administración" />}
         {/* Aviso in-app: formularios nutricionales pendientes de revisión */}
         {pendingDietSubmissions > 0 && activeTab !== 'diets' && (
           <div className="mb-6">

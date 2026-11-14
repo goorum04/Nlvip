@@ -454,29 +454,32 @@ html.nl-gold body {
   font-feature-settings: 'cv11';
 }
 
-/* Texto blanco sobre un fondo oro macizo no se lee: pasa a tinta oscura. */
+/* Texto blanco sobre un fondo oro macizo no se lee: pasa a tinta oscura.
+   Los "from-*" solo cuentan si el elemento lleva de verdad un degradado
+   (bg-gradient-to-* sin prefijo de estado); si no, son colores sueltos que no
+   pintan fondo y el texto debe seguir siendo claro. */
 html.nl-gold :is(.bg-violet-400, .bg-violet-500, .bg-violet-600, .bg-violet-700,
   .bg-purple-500, .bg-purple-600, .bg-fuchsia-500, .bg-fuchsia-600,
   .bg-cyan-400, .bg-cyan-500, .bg-cyan-600,
   .bg-amber-400, .bg-amber-500, .bg-amber-600, .bg-orange-400, .bg-orange-500, .bg-orange-600,
   .bg-yellow-400, .bg-yellow-500, .bg-pink-400, .bg-pink-500, .bg-pink-600,
-  .bg-rose-400, .bg-rose-500, .bg-rose-600,
-  .from-violet-400, .from-violet-500, .from-violet-600, .from-violet-700,
+  .bg-rose-400, .bg-rose-500, .bg-rose-600):not(.text-transparent, .bg-clip-text):is(.text-white, .text-white *),
+html.nl-gold :is(.from-violet-400, .from-violet-500, .from-violet-600, .from-violet-700,
   .from-purple-500, .from-purple-600, .from-fuchsia-500, .from-fuchsia-600,
   .from-cyan-500, .from-cyan-600, .from-amber-400, .from-amber-500, .from-amber-600,
   .from-orange-400, .from-orange-500, .from-orange-600, .from-yellow-400, .from-yellow-500,
-  .from-pink-400, .from-pink-500, .from-pink-600, .from-rose-400, .from-rose-500, .from-rose-600):not(.text-transparent, .bg-clip-text):is(.text-white, .text-white *),
+  .from-pink-400, .from-pink-500, .from-pink-600, .from-rose-400, .from-rose-500, .from-rose-600):is([class^='bg-gradient-to-'], [class*=' bg-gradient-to-']):not(.text-transparent, .bg-clip-text):is(.text-white, .text-white *),
 html.nl-gold :is(.bg-violet-400, .bg-violet-500, .bg-violet-600, .bg-violet-700,
   .bg-purple-500, .bg-purple-600, .bg-fuchsia-500, .bg-fuchsia-600,
   .bg-cyan-400, .bg-cyan-500, .bg-cyan-600,
   .bg-amber-400, .bg-amber-500, .bg-amber-600, .bg-orange-400, .bg-orange-500, .bg-orange-600,
   .bg-yellow-400, .bg-yellow-500, .bg-pink-400, .bg-pink-500, .bg-pink-600,
-  .bg-rose-400, .bg-rose-500, .bg-rose-600,
-  .from-violet-400, .from-violet-500, .from-violet-600, .from-violet-700,
+  .bg-rose-400, .bg-rose-500, .bg-rose-600) .text-white,
+html.nl-gold :is(.from-violet-400, .from-violet-500, .from-violet-600, .from-violet-700,
   .from-purple-500, .from-purple-600, .from-fuchsia-500, .from-fuchsia-600,
   .from-cyan-500, .from-cyan-600, .from-amber-400, .from-amber-500, .from-amber-600,
   .from-orange-400, .from-orange-500, .from-orange-600, .from-yellow-400, .from-yellow-500,
-  .from-pink-400, .from-pink-500, .from-pink-600, .from-rose-400, .from-rose-500, .from-rose-600) .text-white {
+  .from-pink-400, .from-pink-500, .from-pink-600, .from-rose-400, .from-rose-500, .from-rose-600):is([class^='bg-gradient-to-'], [class*=' bg-gradient-to-']) .text-white {
   color: var(--nl-ink);
 }
 html.nl-gold [data-state='active']:is([class*='data-[state=active]:bg-violet'], [class*='data-[state=active]:from-violet'], [class*='data-[state=active]:bg-cyan']) {
