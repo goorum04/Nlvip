@@ -28,7 +28,7 @@ function highlightQuantities(text, className, style) {
 //   P 30 g · HC 23 g · G 12 g
 // Si no se puede separar con seguridad, se muestra el texto como antes, con
 // las cantidades resaltadas. La usan el diseño clásico y el negro y oro.
-function DietOption({ item, gold = false }) {
+function DietOption({ item, gold = false, compact = false }) {
   const opt = parseDietOption(item)
   const qtyCh = Math.max(4, ...opt.ingredients.map(i => formatQty(i).length)) + 1
   const ui = gold
@@ -61,7 +61,7 @@ function DietOption({ item, gold = false }) {
 
   return (
     <div>
-      {(opt.label || opt.title) && (
+      {!compact && (opt.label || opt.title) && (
         <div className="flex items-center gap-2 flex-wrap">
           {opt.label && <span className={ui.label} style={ui.labelStyle}>{opt.label}</span>}
           {opt.title && <span className={ui.title} style={ui.titleStyle}>{opt.title}</span>}
@@ -80,7 +80,7 @@ function DietOption({ item, gold = false }) {
           ))}
         </ul>
       ) : (
-        <p className={`${ui.text} ${opt.label || opt.title ? 'mt-1' : ''}`} style={ui.textStyle}>
+        <p className={`${ui.text} ${!compact && (opt.label || opt.title) ? 'mt-1' : ''}`} style={ui.textStyle}>
           {highlightQuantities(opt.body, ui.hi, ui.hiStyle)}
         </p>
       )}
@@ -90,6 +90,115 @@ function DietOption({ item, gold = false }) {
           <span className={ui.macro} style={ui.macroStyle}>P {opt.macros.p} g</span>
           <span className={ui.macro} style={ui.macroStyle}>HC {opt.macros.hc} g</span>
           <span className={ui.macro} style={ui.macroStyle}>G {opt.macros.g} g</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+// Las opciones de una comida: se eligen en unas tarjetas y solo la elegida
+// enseña su gramaje (antes salían las cuatro listas seguidas). La elección se
+// recuerda en el móvil para cada comida. Si la comida no tiene "Opción N"
+// (una lista normal de alimentos), se muestra todo como siempre.
+const OPTION_KEY = 'nlvip_diet_option:'
+
+function optionSummary(opt) {
+  if (opt.title) return opt.title
+  if (opt.ingredients.length >= 2) {
+    const names = opt.ingredients.map(i => i.name).filter(Boolean)
+    return names.slice(0, 3).join(', ') + (names.length > 3 ? '…' : '')
+  }
+  return opt.body
+}
+
+function MealOptions({ items, gold = false, mealKey }) {
+  const parsed = items.map(item => ({ item, opt: parseDietOption(item) }))
+  const options = parsed.filter(p => p.opt.label)
+  const [sel, setSel] = useState(() => {
+    try {
+      const saved = parseInt(localStorage.getItem(OPTION_KEY + mealKey), 10)
+      return Number.isFinite(saved) ? saved : 0
+    } catch { return 0 }
+  })
+
+  if (options.length < 2) {
+    return (
+      <div className={gold ? 'space-y-4' : 'space-y-3'}>
+        {items.map((item, i) => (
+          gold ? <DietOption key={i} item={item} gold /> : (
+            <div key={i} className="flex items-start gap-3">
+              <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-violet-500/50" />
+              <div className="flex-1 min-w-0 text-gray-300 text-sm leading-relaxed"><DietOption item={item} /></div>
+            </div>
+          )
+        ))}
+      </div>
+    )
+  }
+
+  const current = Math.min(Math.max(0, sel), options.length - 1)
+  const choose = (i) => {
+    setSel(i)
+    try { localStorage.setItem(OPTION_KEY + mealKey, String(i)) } catch {}
+  }
+  // Líneas que no son opciones (p. ej. una nota suelta) se mantienen debajo.
+  const extras = parsed.filter(p => !p.opt.label)
+  const chosen = options[current]
+
+  return (
+    <div>
+      <p className={gold ? 'text-[12px] mb-2' : 'text-xs text-gray-500 mb-2'} style={gold ? { color: G.muted } : undefined}>
+        Elige una de las {options.length} opciones para ver sus cantidades:
+      </p>
+      <div role="radiogroup" aria-label="Opciones de esta comida" className="grid grid-cols-2 gap-2">
+        {options.map((o, i) => {
+          const on = i === current
+          return (
+            <button
+              key={i}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => choose(i)}
+              className={gold
+                ? 'text-left rounded-[14px] px-3 py-2.5 border transition-colors'
+                : `text-left rounded-xl px-3 py-2.5 border transition-colors ${on ? 'border-violet-500/60 bg-violet-500/10' : 'border-white/10 bg-black/30 hover:border-white/20'}`}
+              style={gold
+                ? (on
+                  ? { background: 'rgba(212,175,106,0.12)', borderColor: 'rgba(212,175,106,0.55)' }
+                  : { background: 'rgba(255,255,255,0.03)', borderColor: 'var(--nl-line)' })
+                : undefined}
+            >
+              <span
+                className={gold ? 'block text-[10.5px] font-bold uppercase tracking-[0.1em]' : `block text-[10px] font-bold uppercase tracking-wide ${on ? 'text-violet-300' : 'text-gray-500'}`}
+                style={gold ? { color: on ? G.accent : G.dim } : undefined}
+              >
+                {o.opt.label}
+              </span>
+              <span
+                className={gold ? 'block text-[13px] leading-snug mt-0.5 line-clamp-2' : `block text-xs leading-snug mt-0.5 line-clamp-2 ${on ? 'text-white' : 'text-gray-400'}`}
+                style={gold ? { color: on ? G.text : G.muted } : undefined}
+              >
+                {optionSummary(o.opt)}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      <div key={current} className={`mt-3 ${gold ? 'nl-step-in' : 'animate-in fade-in duration-300'}`}>
+        {chosen.opt.title && (
+          <p className={gold ? 'text-[13.5px] font-semibold mb-1' : 'text-sm font-semibold text-white mb-1'} style={gold ? { color: G.text } : undefined}>
+            {chosen.opt.title}
+          </p>
+        )}
+        <div className={gold ? '' : 'text-gray-300 text-sm leading-relaxed'}>
+          <DietOption item={chosen.item} gold={gold} compact />
+        </div>
+      </div>
+      {extras.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {extras.map((p, i) => <DietOption key={i} item={p.item} gold={gold} />)}
         </div>
       )}
     </div>
@@ -278,14 +387,7 @@ export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
                 </div>
                 
                 <div className="p-5 space-y-3">
-                  {meal.items.map((item, i) => (
-                    <div key={i} className="flex items-start gap-3 group/item">
-                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-violet-500/50 group-hover/item:bg-violet-500 transition-colors" />
-                      <div className="flex-1 min-w-0 text-gray-300 text-sm leading-relaxed">
-                        <DietOption item={item} />
-                      </div>
-                    </div>
-                  ))}
+                  <MealOptions items={meal.items} mealKey={meal.name} />
 
                   {slot && onToggleMealLog && (
                     <Button
@@ -356,13 +458,9 @@ function GoldDietDaily({ meals, loggedSlots, onToggleMealLog }) {
                       <span className="shrink-0 mt-0.5 text-[10.5px] font-bold uppercase tracking-[0.1em] px-2 py-1 rounded-full" style={{ background: G.soft, color: G.accent }}>Hecha</span>
                     )}
                   </div>
-                  <ul className="mt-3 space-y-4">
-                    {meal.items.map((item, i) => (
-                      <li key={i}>
-                        <DietOption item={item} gold />
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="mt-3">
+                    <MealOptions items={meal.items} gold mealKey={meal.name} />
+                  </div>
                   {slot && onToggleMealLog && (
                     <button
                       type="button"
