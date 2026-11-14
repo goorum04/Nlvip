@@ -10,33 +10,89 @@ import {
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { heroBackground, HERO_IMAGES } from '@/lib/heroImages'
+import { parseDietOption, formatQty, INLINE_QTY_RE } from '@/lib/dietOptionParser'
 
-// Resalta visualmente un item de dieta: el "Opción N:" inicial como etiqueta
-// en negrita, y las cantidades entre paréntesis (p.ej. "(250/200/180g)") en
-// un tono violeta + fuente monoespaciada, para que las cifras se puedan
-// escanear de un vistazo en vez de perderse en un párrafo corrido.
-function renderDietItem(item) {
-  const optionMatch = item.match(/^(Opción\s+\d+):\s*(.*)$/i)
-  const label = optionMatch ? optionMatch[1] : null
-  const rest = optionMatch ? optionMatch[2] : item
+// Resalta las cantidades sueltas de un texto (cuando no se puede hacer lista).
+function highlightQuantities(text, className, style) {
+  return String(text).split(INLINE_QTY_RE).map((part, i) =>
+    i % 2 === 1
+      ? <span key={i} className={className} style={style}>{part}</span>
+      : <span key={i}>{part}</span>
+  )
+}
 
-  const parts = rest.split(/(\([^)]*\d[^)]*\))/g)
+// Una opción de la dieta con el gramaje de cada ingrediente en su línea:
+//   OPCIÓN 1 · Bowl de skyr
+//   200 g   Skyr 0%
+//   120 g   Fresas
+//   P 30 g · HC 23 g · G 12 g
+// Si no se puede separar con seguridad, se muestra el texto como antes, con
+// las cantidades resaltadas. La usan el diseño clásico y el negro y oro.
+function DietOption({ item, gold = false }) {
+  const opt = parseDietOption(item)
+  const qtyCh = Math.max(4, ...opt.ingredients.map(i => formatQty(i).length)) + 1
+  const ui = gold
+    ? {
+        label: 'inline-block px-2 py-0.5 rounded-md text-[10.5px] font-bold uppercase tracking-[0.1em]',
+        labelStyle: { background: 'var(--nl-soft)', color: 'var(--nl-accent)' },
+        title: 'text-[13.5px] font-semibold', titleStyle: { color: 'var(--nl-text)' },
+        list: 'mt-2 rounded-[14px] overflow-hidden', listStyle: { background: 'rgba(255,255,255,0.03)', border: '1px solid var(--nl-line)' },
+        rowBorder: '1px solid var(--nl-line)',
+        qty: 'shrink-0 text-right nl-tabular font-semibold text-[13.5px]', qtyStyle: { color: 'var(--nl-accent2)' },
+        name: 'flex-1 min-w-0 text-[14px]', nameStyle: { color: 'rgba(244,241,234,0.9)' },
+        note: 'block text-[12px] mt-0.5', noteStyle: { color: 'var(--nl-muted)' },
+        text: 'text-[14px] leading-relaxed', textStyle: { color: 'rgba(244,241,234,0.86)' },
+        hi: 'nl-tabular font-semibold', hiStyle: { color: 'var(--nl-accent2)' },
+        macro: 'text-[11.5px] font-semibold px-2 py-1 rounded-full nl-tabular', macroStyle: { background: 'rgba(255,255,255,0.06)', color: 'var(--nl-muted)' },
+        ins: 'text-[12.5px] mt-2 leading-relaxed', insStyle: { color: 'var(--nl-muted)' },
+      }
+    : {
+        label: 'inline-block px-2 py-0.5 rounded-md bg-violet-500/15 text-violet-300 text-xs font-bold uppercase tracking-wide',
+        title: 'text-sm font-semibold text-white',
+        list: 'mt-2 rounded-xl overflow-hidden bg-black/20 border border-white/5',
+        rowBorder: '1px solid rgba(255,255,255,0.05)',
+        qty: 'shrink-0 text-right font-mono font-semibold text-cyan-300/90 text-[13px]',
+        name: 'flex-1 min-w-0 text-gray-200',
+        note: 'block text-xs text-gray-500 mt-0.5',
+        text: '', hi: 'font-mono text-cyan-300/90 font-semibold',
+        macro: 'text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-gray-400',
+        ins: 'text-xs text-gray-500 mt-2 leading-relaxed',
+      }
 
   return (
-    <>
-      {label && (
-        <span className="inline-block mb-1 px-2 py-0.5 rounded-md bg-violet-500/15 text-violet-300 text-xs font-bold uppercase tracking-wide">
-          {label}
-        </span>
+    <div>
+      {(opt.label || opt.title) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {opt.label && <span className={ui.label} style={ui.labelStyle}>{opt.label}</span>}
+          {opt.title && <span className={ui.title} style={ui.titleStyle}>{opt.title}</span>}
+        </div>
       )}
-      <span className="block">
-        {parts.map((part, i) =>
-          /^\([^)]*\d[^)]*\)$/.test(part)
-            ? <span key={i} className="font-mono text-cyan-300/90 font-semibold">{part}</span>
-            : <span key={i}>{part}</span>
-        )}
-      </span>
-    </>
+      {opt.structured ? (
+        <ul className={ui.list} style={ui.listStyle}>
+          {opt.ingredients.map((ing, i) => (
+            <li key={i} className="flex items-baseline gap-3 px-3 py-2" style={{ borderTop: i ? ui.rowBorder : 'none' }}>
+              <span className={ui.qty} style={{ ...ui.qtyStyle, width: `${qtyCh}ch` }}>{formatQty(ing)}</span>
+              <span className={ui.name} style={ui.nameStyle}>
+                {ing.name}
+                {ing.note && <span className={ui.note} style={ui.noteStyle}>{ing.note}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className={`${ui.text} ${opt.label || opt.title ? 'mt-1' : ''}`} style={ui.textStyle}>
+          {highlightQuantities(opt.body, ui.hi, ui.hiStyle)}
+        </p>
+      )}
+      {opt.structured && opt.instructions && <p className={ui.ins} style={ui.insStyle}>{opt.instructions}</p>}
+      {opt.macros && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          <span className={ui.macro} style={ui.macroStyle}>P {opt.macros.p} g</span>
+          <span className={ui.macro} style={ui.macroStyle}>HC {opt.macros.hc} g</span>
+          <span className={ui.macro} style={ui.macroStyle}>G {opt.macros.g} g</span>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -225,9 +281,9 @@ export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
                   {meal.items.map((item, i) => (
                     <div key={i} className="flex items-start gap-3 group/item">
                       <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-violet-500/50 group-hover/item:bg-violet-500 transition-colors" />
-                      <p className="text-gray-300 text-sm leading-relaxed group-hover/item:text-white transition-colors">
-                        {renderDietItem(item)}
-                      </p>
+                      <div className="flex-1 min-w-0 text-gray-300 text-sm leading-relaxed">
+                        <DietOption item={item} />
+                      </div>
                     </div>
                   ))}
 
@@ -266,31 +322,6 @@ const G = {
   line: 'var(--nl-line)', ink: 'var(--nl-ink)', soft: 'var(--nl-soft)',
 }
 
-// Igual que renderDietItem, con los colores del diseño nuevo: "Opción N"
-// como etiqueta dorada y las cantidades en champán.
-function renderGoldDietItem(item) {
-  const optionMatch = item.match(/^(Opción\s+\d+):\s*(.*)$/i)
-  const label = optionMatch ? optionMatch[1] : null
-  const rest = optionMatch ? optionMatch[2] : item
-  const parts = rest.split(/(\([^)]*\d[^)]*\))/g)
-  return (
-    <>
-      {label && (
-        <span className="inline-block mb-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold uppercase tracking-[0.1em]" style={{ background: G.soft, color: G.accent }}>
-          {label}
-        </span>
-      )}
-      <span className="block">
-        {parts.map((part, i) =>
-          /^\([^)]*\d[^)]*\)$/.test(part)
-            ? <span key={i} className="nl-tabular font-semibold" style={{ color: G.accent2 }}>{part}</span>
-            : <span key={i}>{part}</span>
-        )}
-      </span>
-    </>
-  )
-}
-
 const mealTitle = (name) => name.charAt(0) + name.slice(1).toLowerCase()
 
 function GoldDietDaily({ meals, loggedSlots, onToggleMealLog }) {
@@ -325,10 +356,10 @@ function GoldDietDaily({ meals, loggedSlots, onToggleMealLog }) {
                       <span className="shrink-0 mt-0.5 text-[10.5px] font-bold uppercase tracking-[0.1em] px-2 py-1 rounded-full" style={{ background: G.soft, color: G.accent }}>Hecha</span>
                     )}
                   </div>
-                  <ul className="mt-2.5 space-y-2.5">
+                  <ul className="mt-3 space-y-4">
                     {meal.items.map((item, i) => (
-                      <li key={i} className="text-[14px] leading-relaxed" style={{ color: 'rgba(244,241,234,0.86)' }}>
-                        {renderGoldDietItem(item)}
+                      <li key={i}>
+                        <DietOption item={item} gold />
                       </li>
                     ))}
                   </ul>
