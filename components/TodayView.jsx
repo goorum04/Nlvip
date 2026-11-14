@@ -17,6 +17,7 @@ import { useStreak, streakMessage } from './StreakCard'
 import { TrainerMessageCard } from './TrainerMessageCard'
 import { FirstWeekGuide } from './FirstWeekGuide'
 import { WeekOverview } from './WeekOverview'
+import { dayHeroImage, heroBackground, HERO_IMAGES } from '@/lib/heroImages'
 
 const C = {
   text: 'var(--nl-text)', muted: 'var(--nl-muted)', dim: 'var(--nl-dim)', accent: 'var(--nl-accent)',
@@ -44,7 +45,7 @@ function Ring({ pct, size = 46, stroke = 4.5, color = C.accent, children }) {
       <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }} aria-hidden="true">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" style={{ stroke: 'rgba(255,255,255,0.07)' }} strokeWidth={stroke} />
         {p > 0 && (
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" style={{ stroke: color }} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${c * p} ${c}`} />
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" className="nl-ring-fill" style={{ stroke: color, '--nl-ring-c': `${c}px` }} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${c * p} ${c}`} />
         )}
       </svg>
       <span className="absolute inset-0 flex items-center justify-center" style={{ color: C.muted }}>{children}</span>
@@ -126,7 +127,10 @@ function TodayWorkoutCard({ memberId, workoutRow, hasCheckedInToday, onOpen, onS
   const rest = exercises.length - shown.length
 
   return (
-    <div className="nl-card p-[18px]" style={{ background: 'linear-gradient(160deg,#1E1B15 0%,#151517 55%)' }}>
+    <div
+      className="nl-card p-[18px] nl-hero-photo"
+      style={{ ...heroBackground(day ? dayHeroImage(day.name || data.name) : HERO_IMAGES.descanso), borderColor: 'rgba(212,175,106,0.2)' }}
+    >
       <div className="flex items-center justify-between mb-3 gap-3">
         <span className="nl-label" style={{ color: C.accent }}>{day ? `Entreno de hoy · Día ${day.day_number}` : 'Hoy toca descanso'}</span>
         {day && exercises.length > 0 && <span className="text-[12.5px] shrink-0" style={{ color: C.muted }}>{exercises.length} ejercicios</span>}
@@ -255,7 +259,7 @@ export default function TodayView({
   const atRisk = streak && streak.current > 0 && !streak.todayDone
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 nl-stagger">
       {hasPremium && (
         workoutRow ? (
           <TodayWorkoutCard

@@ -13,7 +13,7 @@ import { loadImage, renderEvolutionCard } from '@/lib/shareCards'
 // Tarjeta "antes / ahora" para compartir (formato story): primera y última
 // foto de frente, peso y cintura al inicio y ahora, y las semanas de proceso.
 // Se genera solo cuando el socio lo pide, en su móvil; no se guarda nada.
-export function EvolutionCard({ memberId, memberName }) {
+export function EvolutionCard({ memberId, memberName, variant = 'classic' }) {
   const [open, setOpen] = useState(false)
   const [building, setBuilding] = useState(false)
   const [dataUrl, setDataUrl] = useState(null)
@@ -83,6 +83,11 @@ export function EvolutionCard({ memberId, memberName }) {
 
   return (
     <>
+      {variant === 'gold' ? (
+        <button type="button" onClick={openAndBuild} className="nl-btn nl-btn-ghost w-full h-12 text-[15px]">
+          <Share2 className="w-[18px] h-[18px]" style={{ color: 'var(--nl-accent)' }} /> Crear tarjeta para compartir
+        </button>
+      ) : (
       <Card className="bg-gradient-to-br from-violet-500/10 to-cyan-500/5 border-violet-500/20 rounded-3xl">
         <CardContent className="p-4 flex items-center justify-between gap-3">
           <div>
@@ -92,6 +97,7 @@ export function EvolutionCard({ memberId, memberName }) {
           <Button size="sm" onClick={openAndBuild} className="bg-gradient-to-r from-violet-500 to-cyan-500 text-black font-bold rounded-xl shrink-0">Crear</Button>
         </CardContent>
       </Card>
+      )}
 
       {open && (
         <Dialog open onOpenChange={() => setOpen(false)}>
