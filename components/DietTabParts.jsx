@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { heroBackground, HERO_IMAGES } from '@/lib/heroImages'
 
 // Resalta visualmente un item de dieta: el "Opción N:" inicial como etiqueta
 // en negrita, y las cantidades entre paréntesis (p.ej. "(250/200/180g)") en
@@ -185,6 +186,8 @@ export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
     )
   }
 
+  if (gold) return <GoldDietDaily meals={meals} loggedSlots={loggedSlots} onToggleMealLog={onToggleMealLog} />
+
   return (
     <div className="space-y-6 relative">
       {/* Vertical line for timeline */}
@@ -250,6 +253,195 @@ export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
       })}
 
       <DietSourcesFooter />
+    </div>
+  )
+}
+
+
+// ───────────── Diseño negro y oro ─────────────
+
+const G = {
+  text: 'var(--nl-text)', muted: 'var(--nl-muted)', dim: 'var(--nl-dim)', accent: 'var(--nl-accent)',
+  accent2: 'var(--nl-accent2)', surface: 'var(--nl-surface)', surface2: 'var(--nl-surface2)',
+  line: 'var(--nl-line)', ink: 'var(--nl-ink)', soft: 'var(--nl-soft)',
+}
+
+// Igual que renderDietItem, con los colores del diseño nuevo: "Opción N"
+// como etiqueta dorada y las cantidades en champán.
+function renderGoldDietItem(item) {
+  const optionMatch = item.match(/^(Opción\s+\d+):\s*(.*)$/i)
+  const label = optionMatch ? optionMatch[1] : null
+  const rest = optionMatch ? optionMatch[2] : item
+  const parts = rest.split(/(\([^)]*\d[^)]*\))/g)
+  return (
+    <>
+      {label && (
+        <span className="inline-block mb-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold uppercase tracking-[0.1em]" style={{ background: G.soft, color: G.accent }}>
+          {label}
+        </span>
+      )}
+      <span className="block">
+        {parts.map((part, i) =>
+          /^\([^)]*\d[^)]*\)$/.test(part)
+            ? <span key={i} className="nl-tabular font-semibold" style={{ color: G.accent2 }}>{part}</span>
+            : <span key={i}>{part}</span>
+        )}
+      </span>
+    </>
+  )
+}
+
+const mealTitle = (name) => name.charAt(0) + name.slice(1).toLowerCase()
+
+function GoldDietDaily({ meals, loggedSlots, onToggleMealLog }) {
+  return (
+    <div>
+      <div className="relative">
+        <span aria-hidden className="absolute left-[27px] top-6 bottom-6 w-px" style={{ background: 'linear-gradient(180deg, rgba(212,175,106,0.5), rgba(212,175,106,0.06))' }} />
+        <div className="space-y-3 nl-stagger">
+          {meals.map((meal, idx) => {
+            const Icon = lookupMealStyle(MEAL_icons, meal.name) || Clock
+            const slot = lookupMealStyle(MEAL_NAME_TO_SLOT, meal.name)
+            const isLogged = !!(slot && loggedSlots?.includes(slot))
+            return (
+              <div key={idx} className="relative flex gap-3">
+                <div className="w-[56px] shrink-0 flex flex-col items-center pt-4">
+                  <span
+                    className="relative z-[1] w-[34px] h-[34px] rounded-full flex items-center justify-center transition-colors duration-300"
+                    style={isLogged
+                      ? { background: G.accent, color: G.ink, boxShadow: '0 0 0 4px rgba(212,175,106,0.15)' }
+                      : { background: '#151517', border: '1px solid rgba(212,175,106,0.35)', color: G.accent }}
+                  >
+                    {isLogged ? <Check className="w-4 h-4" strokeWidth={2.6} /> : <Icon className="w-4 h-4" />}
+                  </span>
+                  {meal.time && (
+                    <span className="nl-display nl-tabular text-[15px] mt-1.5" style={{ color: isLogged ? G.accent : G.muted }}>{meal.time}</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 nl-card p-4 transition-colors duration-300" style={isLogged ? { borderColor: 'rgba(212,175,106,0.3)' } : undefined}>
+                  <div className="flex items-start justify-between gap-3">
+                    <h4 className="nl-display text-[24px]" style={{ color: G.text }}>{mealTitle(meal.name)}</h4>
+                    {isLogged && (
+                      <span className="shrink-0 mt-0.5 text-[10.5px] font-bold uppercase tracking-[0.1em] px-2 py-1 rounded-full" style={{ background: G.soft, color: G.accent }}>Hecha</span>
+                    )}
+                  </div>
+                  <ul className="mt-2.5 space-y-2.5">
+                    {meal.items.map((item, i) => (
+                      <li key={i} className="text-[14px] leading-relaxed" style={{ color: 'rgba(244,241,234,0.86)' }}>
+                        {renderGoldDietItem(item)}
+                      </li>
+                    ))}
+                  </ul>
+                  {slot && onToggleMealLog && (
+                    <button
+                      type="button"
+                      onClick={() => onToggleMealLog(slot, isLogged)}
+                      className="nl-btn nl-btn-ghost w-full h-11 mt-4 text-[14px]"
+                      style={isLogged ? { background: G.soft, color: G.accent } : undefined}
+                    >
+                      <Check className="w-4 h-4" strokeWidth={2.6} style={{ color: G.accent }} />
+                      {isLogged ? 'Comida registrada' : 'Marcar como comida'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      <DietSourcesFooter />
+    </div>
+  )
+}
+
+// Cabecera de la dieta en el diseño nuevo: calorías del día, reparto de
+// macros, comidas hechas y el cambio Diario / Semanal.
+export function GoldDietHero({ diet, assignedAt, loggedSlots = [], mode, onMode }) {
+  const slots = getDietMealSlots(diet?.content)
+  const done = slots.filter(sl => loggedSlots.includes(sl)).length
+  const kcal = Number(diet?.calories) || null
+  const p = Number(diet?.protein_g) || 0
+  const c = Number(diet?.carbs_g) || 0
+  const f = Number(diet?.fat_g) || 0
+  const total = p * 4 + c * 4 + f * 9
+  const R = 34
+  const CIRC = 2 * Math.PI * R
+  const pct = slots.length ? done / slots.length : 0
+  const macros = [
+    { key: 'p', label: 'Proteína', grams: p, kcal: p * 4, color: '#D4AF6A' },
+    { key: 'c', label: 'Carbos', grams: c, kcal: c * 4, color: '#E9CF97' },
+    { key: 'f', label: 'Grasas', grams: f, kcal: f * 9, color: '#8E7444' },
+  ]
+  return (
+    <div
+      className="nl-card relative overflow-hidden p-5 nl-hero-photo"
+      style={{ ...heroBackground(HERO_IMAGES.nutricion), borderColor: 'rgba(212,175,106,0.2)' }}
+    >
+      <p className="nl-label">
+        Mi dieta{assignedAt ? ` · desde el ${new Date(assignedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', '')}` : ''}
+      </p>
+      <h2 className="nl-display text-[34px] mt-1.5" style={{ color: G.text }}>{diet?.name || 'Tu plan'}</h2>
+
+      <div className="flex items-center gap-5 mt-5">
+        {slots.length > 0 && (
+          <div className="relative w-[84px] h-[84px] shrink-0">
+            <svg viewBox="0 0 84 84" className="w-full h-full -rotate-90">
+              <circle cx="42" cy="42" r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="7" />
+              <circle
+                cx="42" cy="42" r={R} fill="none" stroke="#D4AF6A" strokeWidth="7" strokeLinecap="round"
+                strokeDasharray={CIRC} strokeDashoffset={CIRC * (1 - pct)}
+                style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.2,0.7,0.2,1)' }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="nl-display nl-tabular text-[24px] leading-none" style={{ color: G.text }}>{done}/{slots.length}</span>
+              <span className="text-[10px] mt-0.5" style={{ color: G.muted }}>comidas</span>
+            </div>
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="nl-display nl-tabular text-[42px] leading-none" style={{ color: G.text }}>
+            {kcal ? kcal.toLocaleString('es-ES') : '—'}<span className="text-[16px] ml-1.5" style={{ color: G.muted }}>kcal</span>
+          </p>
+          {total > 0 && (
+            <div className="flex h-2 rounded-full overflow-hidden mt-3 gap-[2px]">
+              {macros.map(m => (
+                <span key={m.key} className="h-full nl-grow-x" style={{ width: `${(m.kcal / total) * 100}%`, background: m.color }} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {total > 0 && (
+        <div className="grid grid-cols-3 gap-2 mt-4">
+          {macros.map(m => (
+            <div key={m.key} className="rounded-[14px] px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.05)' }}>
+              <p className="flex items-center gap-1.5 text-[11px]" style={{ color: G.muted }}>
+                <span className="w-2 h-2 rounded-full" style={{ background: m.color }} /> {m.label}
+              </p>
+              <p className="nl-display nl-tabular text-[22px] mt-0.5" style={{ color: G.text }}>{m.grams}<span className="text-[13px] ml-0.5" style={{ color: G.muted }}>g</span></p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {onMode && (
+        <div className="grid grid-cols-2 p-1 rounded-[14px] mt-4" style={{ background: 'rgba(0,0,0,0.3)', border: `1px solid ${G.line}` }}>
+          {[['daily', 'Hoy', Sun], ['weekly', 'Semana completa', Calendar]].map(([value, label, Icon]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onMode(value)}
+              aria-pressed={mode === value}
+              className="h-9 rounded-[10px] text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              style={mode === value ? { background: G.text, color: '#0B0B0C' } : { color: G.muted }}
+            >
+              <Icon className="w-3.5 h-3.5" /> {label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

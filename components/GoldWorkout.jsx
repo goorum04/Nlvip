@@ -13,13 +13,14 @@ import { useToast } from '@/hooks/use-toast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   Play, Check, X, ChevronLeft, ChevronRight, ChevronDown, Clock, Dumbbell, Flame, Trophy,
-  History, NotebookPen, SkipForward, Share2, Download, Coffee, HeartPulse, Calendar,
+  History, NotebookPen, SkipForward, Share2, Download, HeartPulse, Calendar,
   LoaderCircle as Loader2, Volume2, VolumeX, Timer, Layers, Repeat,
 } from 'lucide-react'
 import { pickTodayDay, localTodayIso, dayOverrideKey } from '@/lib/todayWorkout'
 import { useWorkoutSetLog, groupExercises, todayISO, SUPERSET_TAG_RE } from '@/hooks/useWorkoutSetLog'
 import { VideoCard } from './VideoPlayer'
 import PRTracker from './PRTracker'
+import { dayHeroImage, heroBackground, HERO_IMAGES } from '@/lib/heroImages'
 
 const C = {
   text: 'var(--nl-text)', muted: 'var(--nl-muted)', dim: 'var(--nl-dim)', accent: 'var(--nl-accent)',
@@ -305,8 +306,7 @@ export function GoldWorkoutView({
             />
           ) : (
             <>
-              <div className="nl-card relative overflow-hidden p-5" style={{ background: 'linear-gradient(165deg,#18181B 0%,#121214 100%)' }}>
-                <Coffee aria-hidden className="absolute -right-4 -top-3 w-36 h-36" style={{ color: 'rgba(255,255,255,0.035)' }} />
+              <div className="nl-card relative overflow-hidden p-5 nl-hero-photo" style={heroBackground(HERO_IMAGES.descanso)}>
                 <div className="relative">
                   <p className="nl-label">Hoy toca descanso</p>
                   <h2 className="nl-display text-[46px] mt-2" style={{ color: C.text }}>Recupera</h2>
@@ -499,20 +499,13 @@ function DayBlock({
 }
 
 function SessionHero({ day, routineName, exercises, doneSets, totalSets, loaded, hasCheckedInToday, isOverride, onStart }) {
-  const num = String(day.day_number).padStart(2, '0')
   const pct = totalSets ? doneSets / totalSets : 0
   const started = doneSets > 0
   return (
     <div
-      className="nl-card relative overflow-hidden p-5"
-      style={{
-        background: 'radial-gradient(120% 85% at 100% 0%, rgba(212,175,106,0.20) 0%, rgba(212,175,106,0) 55%), linear-gradient(165deg,#1F1B14 0%,#151517 58%)',
-        borderColor: 'rgba(212,175,106,0.18)',
-      }}
+      className="nl-card relative overflow-hidden p-5 nl-hero-photo"
+      style={{ ...heroBackground(dayHeroImage(day.name || routineName)), borderColor: 'rgba(212,175,106,0.2)' }}
     >
-      <span aria-hidden className="nl-display absolute -right-1 -top-7 text-[150px] select-none pointer-events-none" style={{ color: 'rgba(212,175,106,0.08)', lineHeight: 1 }}>
-        {num}
-      </span>
       <div className="relative">
         <p className="nl-label" style={{ color: C.accent }}>
           {isOverride ? `Hoy eliges · Día ${day.day_number}` : `Entreno de hoy · Día ${day.day_number}`}

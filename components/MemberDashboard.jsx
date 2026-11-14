@@ -34,7 +34,7 @@ import { CycleModule } from './CycleModule'
 import { LifeStageSelector, PregnancyMode, PostpartumMode, LactationTracker } from './LifeStageModules'
 import DietOnboardingForm, { DietOnboardingBanner } from './DietOnboardingForm'
 import CompleteProfileBanner from './CompleteProfileBanner'
-import { DietDailyView, DietWeeklyView } from './DietTabParts'
+import { DietDailyView, DietWeeklyView, GoldDietHero } from './DietTabParts'
 import { SymptomsTracker } from './SymptomsTracker'
 import PRTracker from './PRTracker'
 import { WorkoutViewer } from './WorkoutBuilder'
@@ -48,6 +48,8 @@ import { isGoldDesign } from '@/lib/design'
 import { GoldTopBar, GoldBottomNav, GoldSectionHeader, MEMBER_SECTIONS, sectionForTab, sectionTabs } from './GoldNav'
 import TodayView, { todayGreeting, todayKicker } from './TodayView'
 import { GoldWorkoutView } from './GoldWorkout'
+import { GoldProgressView } from './GoldProgress'
+import { GoldComposer, GoldPost } from './GoldFeed'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function MemberDashboard({ user, profile, setProfile, onLogout }) {
@@ -834,6 +836,22 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
     }
   }
 
+  // Formulario de revisión (lo usan el diseño clásico y el nuevo).
+  const renderCheckInForm = () => (
+    <CheckInForm
+      memberId={user.id}
+      onSuccess={() => {
+        setShowCheckInForm(false)
+        loadProgress()
+        loadProgressPhotos()
+        loadLastCheckin()
+        loadChartData()
+        toast({ title: '¡Revisión enviada!', description: 'Tu entrenador la revisará pronto.' })
+      }}
+      onCancel={() => setShowCheckInForm(false)}
+    />
+  )
+
   const markNoticeAsRead = async (noticeId) => {
     await supabase.from('notice_reads').insert([{ notice_id: noticeId, member_id: user.id }])
     loadNotices()
@@ -1074,6 +1092,55 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
           {/* FEED TAB */}
           <TabsContent value="feed" forceMount={visitedTabs.has('feed') || undefined} className="nl-gold-scope space-y-4 data-[state=inactive]:hidden">
+            {isGold ? (
+              <>
+                <GoldComposer
+                  authorName={profile?.name}
+                  value={newPostContent}
+                  onChange={setNewPostContent}
+                  image={postImage}
+                  onImage={setPostImage}
+                  onRemoveImage={() => setPostImage(null)}
+                  onSubmit={handleCreatePost}
+                  busy={loading}
+                  uploading={uploading}
+                  progress={progress}
+                />
+                {!dataLoaded && feedPosts.length === 0 && [1, 2].map(i => (
+                  <div key={i} className="nl-card p-4 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-10 h-10 rounded-full" />
+                      <div className="space-y-2 flex-1"><Skeleton className="h-3.5 w-1/3" /><Skeleton className="h-3 w-1/5" /></div>
+                    </div>
+                    <Skeleton className="h-44 w-full rounded-[18px]" />
+                  </div>
+                ))}
+                {dataLoaded && feedPosts.length === 0 && (
+                  <div className="nl-card px-6 py-10 text-center">
+                    <p className="nl-display text-[26px]" style={{ color: 'var(--nl-text)' }}>Estrena el muro</p>
+                    <p className="text-[13.5px] mt-1.5" style={{ color: 'var(--nl-muted)' }}>Comparte tu primer logro con el equipo.</p>
+                  </div>
+                )}
+                {feedPosts.map(post => (
+                  <GoldPost
+                    key={post.id}
+                    post={post}
+                    userId={user.id}
+                    imageUrl={feedImageUrls[post.id]}
+                    liked={isLikedByMe(post)}
+                    onLike={handleLikePost}
+                    commentsOpen={commentingPost === post.id}
+                    onToggleComments={(id) => setCommentingPost(commentingPost === id ? null : id)}
+                    newComment={newComment}
+                    onNewComment={setNewComment}
+                    onComment={handleComment}
+                    onReport={setReportingTarget}
+                    onBlock={handleBlockUser}
+                    renderReportPicker={(type, id) => <ReportReasonPicker type={type} id={id} />}
+                  />
+                ))}
+              </>
+            ) : (<>
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
               <CardContent className="p-5">
                 <form onSubmit={handleCreatePost} className="space-y-4">
@@ -1195,6 +1262,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 </CardContent>
               </Card>
             ))}
+            </>)}
           </TabsContent>
 
           {/* ACTIVITY TAB - Step Counter */}
@@ -1456,6 +1524,18 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
             {myDiet ? (
               <div className="space-y-6">
                 {/* Header with Switcher */}
+                {isGold ? (
+                  <GoldDietHero
+                    diet={myDiet.diet}
+                    assignedAt={myDiet.assigned_at}
+                    loggedSlots={loggedMealSlots}
+                    mode={dietViewMode}
+                    onMode={(mode) => {
+                      setDietViewMode(mode)
+                      setVisitedDietModes(prev => prev.has(mode) ? prev : new Set(prev).add(mode))
+                    }}
+                  />
+                ) : (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/[0.03] p-4 rounded-3xl border border-white/5">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-2xl bg-violet-600/20 flex items-center justify-center">
@@ -1498,10 +1578,12 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                     </button>
                   </div>
                 </div>
+                )}
 
                 {visitedDietModes.has('daily') && (
                   <div className={`space-y-8 ${dietViewMode === 'daily' ? '' : 'hidden'}`}>
-                    {/* Compact Macros for Daily */}
+                    {/* Compact Macros for Daily (en el diseño nuevo van en la cabecera) */}
+                    {!isGold && (
                     <div className="grid grid-cols-4 gap-2 sm:gap-4">
                       {[
                         { label: 'Kcal', value: myDiet.diet?.calories, color: 'text-orange-400' },
@@ -1515,11 +1597,16 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                         </div>
                       ))}
                     </div>
+                    )}
 
                     {/* Timeline */}
+                    {isGold ? (
+                      <DietDailyView content={myDiet.diet?.content} loggedSlots={loggedMealSlots} onToggleMealLog={toggleMealLog} />
+                    ) : (
                     <div className="bg-white/[0.01] rounded-[2.5rem] p-6 sm:p-8 border border-white/[0.03]">
                       <DietDailyView content={myDiet.diet?.content} loggedSlots={loggedMealSlots} onToggleMealLog={toggleMealLog} />
                     </div>
+                    )}
 
                     <ShoppingList dietTemplateId={myDiet.diet?.id} dietName={myDiet.diet?.name} memberId={user.id} prefetch />
 
@@ -1590,19 +1677,26 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
           {/* PROGRESS TAB */}
           <TabsContent value="progress" forceMount={visitedTabs.has('progress') || undefined} className="nl-gold-scope space-y-4 data-[state=inactive]:hidden">
+            {isGold ? (
+              <GoldProgressView
+                memberId={user.id}
+                memberName={profile?.name}
+                weightSeries={chartData.weight}
+                records={progressRecords}
+                photos={progressPhotos}
+                checkinState={showCheckInForm ? 'form' : pendingOnboarding ? 'onboarding' : checkinOnCooldown ? 'cooldown' : 'available'}
+                nextCheckinDueAt={nextCheckinDueAt}
+                reminderDays={profile?.progress_reminder_days}
+                checkInForm={renderCheckInForm()}
+                onNewCheckin={() => setShowCheckInForm(true)}
+                onOnboarding={() => setShowOnboardingModal(true)}
+                onDeletePhoto={handleDeletePhoto}
+                onDeleteRecord={handleDeleteProgressRecord}
+              />
+            ) : (<>
             {/* Revisión: formulario único (medidas + cómo te sientes + fotos) */}
             {showCheckInForm ? (
-              <CheckInForm
-                memberId={user.id}
-                onSuccess={() => {
-                  setShowCheckInForm(false)
-                  loadProgress()
-                  loadProgressPhotos()
-                  loadLastCheckin()
-                  toast({ title: '¡Revisión enviada!', description: 'Tu entrenador la revisará pronto.' })
-                }}
-                onCancel={() => setShowCheckInForm(false)}
-              />
+              renderCheckInForm()
             ) : pendingOnboarding ? (
               // Enviar una "revisión periódica" sin haber completado el
               // cuestionario inicial no tiene sentido (todavía no hay dieta
@@ -1702,6 +1796,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                 </CardContent>
               </Card>
             )}
+            </>)}
           </TabsContent>
 
           {/* NOTICES TAB */}
