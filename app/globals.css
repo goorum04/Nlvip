@@ -490,52 +490,56 @@ html.nl-gold [data-state='active']:is([class*='data-[state=active]:bg-violet'], 
 html.nl-gold .border-\[\#2a2a2a\] { border-color: rgba(255, 255, 255, 0.07); }
 
 /* ---------- Piezas del diseño ---------- */
-.nl-display {
-  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
-  line-height: 0.95;
+/* En la capa de componentes para que las utilidades de Tailwind (normal-case,
+   text-*...) puedan ajustarlas en cada sitio. */
+@layer components {
+  .nl-display {
+    font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 0.95;
+  }
+  .nl-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--nl-muted);
+  }
+  .nl-card {
+    background: var(--nl-surface);
+    border: 1px solid var(--nl-line);
+    border-radius: 22px;
+  }
+  .nl-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: var(--nl-surface2);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--nl-text);
+  }
+  .nl-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 52px;
+    border-radius: 16px;
+    background: var(--nl-accent);
+    color: var(--nl-ink);
+    font-weight: 700;
+    font-size: 16px;
+    transition: transform 0.15s ease, filter 0.15s ease;
+  }
+  .nl-btn:active { transform: scale(0.98); filter: brightness(0.95); }
+  .nl-btn-ghost { background: var(--nl-surface2); color: var(--nl-text); }
+  .nl-tabular { font-variant-numeric: tabular-nums; }
 }
-.nl-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--nl-muted);
-}
-.nl-card {
-  background: var(--nl-surface);
-  border: 1px solid var(--nl-line);
-  border-radius: 22px;
-}
-.nl-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 11px;
-  border-radius: 999px;
-  background: var(--nl-surface2);
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--nl-text);
-}
-.nl-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 52px;
-  border-radius: 16px;
-  background: var(--nl-accent);
-  color: var(--nl-ink);
-  font-weight: 700;
-  font-size: 16px;
-  transition: transform 0.15s ease, filter 0.15s ease;
-}
-.nl-btn:active { transform: scale(0.98); filter: brightness(0.95); }
-.nl-btn-ghost { background: var(--nl-surface2); color: var(--nl-text); }
-.nl-tabular { font-variant-numeric: tabular-nums; }
 
 /* La barra inferior ocupa el pie de pantalla: el chat flotante y el aviso de
    actualización se colocan por encima de ella. */
