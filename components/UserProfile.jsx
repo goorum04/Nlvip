@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { User, Camera as CameraIcon, Save, Trash2, LoaderCircle as Loader2, X, TriangleAlert as AlertTriangle, KeyRound, ChevronDown, ChevronUp } from 'lucide-react'
+import { User, Camera as CameraIcon, Save, Trash2, LoaderCircle as Loader2, X, TriangleAlert as AlertTriangle, KeyRound, ChevronDown, ChevronUp, LogOut } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
 
@@ -70,7 +70,7 @@ export function AvatarBubble({ profile, size = 'md', onClick }) {
 }
 
 // Profile Modal Component
-export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, onLogout }) {
+export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, onLogout, showLogout = false }) {
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
@@ -634,6 +634,21 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
               </form>
             )}
           </div>
+
+          {/* Cerrar sesión (diseño nuevo: ya no hay botón en la cabecera) */}
+          {showLogout && onLogout && (
+            <div className="pt-4 border-t border-white/10">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => { onClose?.(); onLogout() }}
+                className="w-full text-gray-300 hover:text-white hover:bg-white/5 rounded-xl"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Cerrar sesión
+              </Button>
+            </div>
+          )}
 
           {/* Delete Account Section */}
           <div className="pt-4 border-t border-red-500/20">

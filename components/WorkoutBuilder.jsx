@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { pickTodayDay, localTodayIso, dayOverrideKey } from '@/lib/todayWorkout'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -882,8 +883,8 @@ export function WorkoutViewer({ workoutId, memberPrs = [], highlightToday = fals
   // Último entreno registrado de esta rutina (para proponer el siguiente en
   // orden, no el que "toca" por día de la semana).
   const [lastLog, setLastLog] = useState(null)
-  const todayIso = (() => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10) })()
-  const overrideKey = `nlvip_day_override:${workoutId}:${todayIso}`
+  const todayIso = localTodayIso()
+  const overrideKey = dayOverrideKey(workoutId, todayIso)
 
   useEffect(() => {
     loadWorkout()
@@ -964,39 +965,8 @@ export function WorkoutViewer({ workoutId, memberPrs = [], highlightToday = fals
     return <p className="text-gray-500 text-center py-8">Rutina no encontrada</p>
   }
 
-  // Mapeo simple semana → día de rutina:
-  // Lunes = day_number 1, Martes = 2 ... hasta days.length.
-  // Si hoy es fin de semana o excede la cantidad de días de la rutina,
-  // hoy es un día de descanso.
-  //
-  // Decisión de diseño: sin columna `weekday` en BBDD, usar getDay() es la
-  // heurística más sencilla. Si el entrenador diseña un 4-días Lun/Mar/Jue/Vie,
-  // el jueves el socio verá "día 4" y no "día 3" — pero sigue siendo mejor
-  // que mostrar siempre día 1 por defecto.
-  const weekday = ((new Date().getDay() + 6) % 7) + 1 // 1=Lunes ... 7=Domingo
-  const todayDayNumber = weekday <= days.length ? weekday : null
-  const weekdayDay = todayDayNumber ? days.find(d => d.day_number === todayDayNumber) : null
-
-  // Qué entreno proponer hoy. Si el socio ya ha registrado series de esta
-  // rutina, se propone EL SIGUIENTE en orden al último que hizo (si se saltó
-  // el martes, el miércoles le sale el día 2, no el 3). Si hoy ya ha
-  // registrado algo, se queda en ese día. Solo sin historial se usa el día
-  // de la semana como pista.
-  const lastDay = lastLog ? days.find(d => d.id === lastLog.workout_day_id) : null
-  let suggestedDay = weekdayDay
-  let suggestionNote = ''
-  if (lastDay) {
-    if (lastLog.performed_on === todayIso) {
-      suggestedDay = lastDay
-      suggestionNote = 'Hoy ya has registrado series de este día.'
-    } else {
-      const nextNumber = (lastDay.day_number % days.length) + 1
-      suggestedDay = days.find(d => d.day_number === nextNumber) || days[0]
-      const when = new Date(`${lastLog.performed_on}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })
-      suggestionNote = `Tu último entreno fue el día ${lastDay.day_number} (${when}), así que te toca el siguiente.`
-    }
-  }
-  const todayDay = suggestedDay
+  // Qué día toca hoy (misma lógica que la tarjeta "Entreno de hoy" de la pantalla Hoy).
+  const { todayDay, suggestionNote } = pickTodayDay(days, lastLog, todayIso)
   // El socio puede hacer hoy cualquier día de la rutina (p. ej. el día del
   // miércoles un sábado, o intercambiar dos días). La elección se recuerda
   // solo para la fecha de hoy; mañana vuelve al que le toque.
