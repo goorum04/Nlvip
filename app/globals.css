@@ -865,3 +865,14 @@ html.nl-gold .nl-hero-photo { background-repeat: no-repeat; }
 .nl-ring-fill { animation: nl-ring-fill 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.25s both; }
 @keyframes nl-ring-fill { from { stroke-dasharray: 0 var(--nl-ring-c); } }
 @media (prefers-reduced-motion: reduce) { .nl-ring-fill { animation: none; } }
+
+/* ---------- Administración (v2) ---------- */
+/* Con la barra inferior, el botón del asistente IA sube por encima de ella. */
+html.nl-gold:has(.nl-bottomnav) .nl-admin-fab {
+  bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+  left: 16px !important;
+}
+html.nl-gold:has(.nl-bottomnav) .nl-admin-fab > button { width: 52px; height: 52px; }
+html.nl-gold:has(.nl-bottomnav) .nl-admin-panel { bottom: calc(84px + env(safe-area-inset-bottom)) !important; }
+html.nl-gold:has([role='dialog']) .nl-admin-fab,
+html.nl-gold:has([role='alertdialog']) .nl-admin-fab { display: none !important; }

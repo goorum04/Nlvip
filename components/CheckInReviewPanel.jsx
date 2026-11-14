@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import {
   ClipboardCheck, Loader2, ChevronDown, ChevronUp, Check, X, MessageSquarePlus,
-  Apple, Dumbbell, Camera as CameraIcon, Footprints
+  Apple, Dumbbell, Camera as CameraIcon, Footprints, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { useSignedUrl } from '@/hooks/useStorage'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -321,8 +321,8 @@ function ChoiceButton({ active, variant, onClick, disabled, children }) {
   )
 }
 
-function CheckInCard({ checkin, onRefresh }) {
-  const [expanded, setExpanded] = useState(false)
+function CheckInCard({ checkin, onRefresh, defaultExpanded = false }) {
+  const [expanded, setExpanded] = useState(defaultExpanded)
   const [progressRecord, setProgressRecord] = useState(null)
   const [previousRecord, setPreviousRecord] = useState(null)
   const [correctionTarget, setCorrectionTarget] = useState(null) // 'diet' | 'routine' | null
@@ -627,7 +627,79 @@ function CheckInCard({ checkin, onRefresh }) {
 // Panel de revisión para admin/entrenador: lista las revisiones pendientes
 // (status='draft_ready' o 'analyzing'/'failed') y permite aprobar, pedir un
 // ajuste o descartar la dieta y/o rutina propuestas para cada una.
-export function CheckInReviewPanel({ checkins, onRefresh }) {
+// Diseño negro y oro (panel de administración): las revisiones en cola, una
+// cada vez y de la más antigua a la más nueva, con Anterior / Siguiente. Al
+// aprobar o descartar una, la siguiente ocupa su lugar.
+function CheckInQueue({ checkins, onRefresh }) {
+  const ordered = useMemo(() => [...(checkins || [])].sort((a, b) => {
+    const waiting = (c) => (c.status === 'analyzing' ? 1 : 0)
+    return waiting(a) - waiting(b) || new Date(a.created_at) - new Date(b.created_at)
+  }), [checkins])
+  const [pos, setPos] = useState(0)
+
+  if (ordered.length === 0) {
+    return (
+      <div className="nl-card px-6 py-12 text-center">
+        <ClipboardCheck className="w-11 h-11 mx-auto" style={{ color: 'rgba(212,175,106,0.4)' }} />
+        <p className="nl-display text-[28px] mt-4" style={{ color: 'var(--nl-text)' }}>Todo revisado</p>
+        <p className="text-[13.5px] mt-1.5" style={{ color: 'var(--nl-muted)' }}>No hay revisiones pendientes. Aparecerán aquí en cuanto un socio envíe la suya.</p>
+      </div>
+    )
+  }
+
+  const idx = Math.min(pos, ordered.length - 1)
+  const current = ordered[idx]
+  const ready = ordered.filter(c => c.status === 'draft_ready' || c.status === 'failed').length
+  const analyzing = ordered.length - ready
+  const nameOf = (c) => c.member?.name || c.member?.email?.split('@')[0] || 'Socio'
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-end justify-between gap-3">
+        <p className="text-[13px]" style={{ color: 'var(--nl-muted)' }}>
+          <b className="nl-tabular" style={{ color: 'var(--nl-text)' }}>{ready}</b> por revisar{analyzing > 0 ? ` · ${analyzing} analizándose` : ''}
+        </p>
+        <p className="nl-display nl-tabular text-[20px] leading-none" style={{ color: 'var(--nl-text)' }}>{idx + 1}<span style={{ color: 'var(--nl-dim)' }}> / {ordered.length}</span></p>
+      </div>
+      <div className="nl-noscroll -mx-4 px-4 overflow-x-auto">
+        <div className="flex gap-1.5 w-max">
+          {ordered.map((c, i) => {
+            const on = i === idx
+            const dot = c.status === 'failed' ? '#EF7F7F' : c.status === 'analyzing' ? 'var(--nl-dim)' : 'var(--nl-accent)'
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setPos(i)}
+                aria-pressed={on}
+                className="h-9 px-3 rounded-full text-[12.5px] font-semibold flex items-center gap-1.5 border transition-colors"
+                style={on ? { background: 'var(--nl-text)', color: '#0B0B0C', borderColor: 'transparent' } : { background: 'var(--nl-surface)', color: 'var(--nl-muted)', borderColor: 'var(--nl-line)' }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: dot }} />
+                {nameOf(c)}
+                <span className="opacity-60">{new Date(c.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', '')}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <CheckInCard key={current.id} checkin={current} onRefresh={onRefresh} defaultExpanded />
+      {ordered.length > 1 && (
+        <div className="flex gap-2.5">
+          <button type="button" disabled={idx === 0} onClick={() => setPos(idx - 1)} className="nl-btn nl-btn-ghost flex-1 h-12 text-[15px] disabled:opacity-35">
+            <ChevronLeft className="w-5 h-5" /> Anterior
+          </button>
+          <button type="button" disabled={idx >= ordered.length - 1} onClick={() => setPos(idx + 1)} className="nl-btn nl-btn-ghost flex-1 h-12 text-[15px] disabled:opacity-35">
+            Siguiente <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function CheckInReviewPanel({ checkins, onRefresh, variant }) {
+  if (variant === 'queue') return <CheckInQueue checkins={checkins} onRefresh={onRefresh} />
   if (!checkins || checkins.length === 0) {
     return (
       <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
