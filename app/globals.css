@@ -272,6 +272,61 @@ code {
   --nlc-emerald-300: 110 231 183; --nlc-emerald-400: 52 211 153; --nlc-emerald-500: 16 185 129;
   --nlc-emerald-600: 5 150 105; --nlc-emerald-700: 4 120 87; --nlc-emerald-800: 6 95 70;
   --nlc-emerald-900: 6 78 59; --nlc-emerald-950: 2 44 34;
+
+  --nlc-amber-50: 255 251 235; --nlc-amber-100: 254 243 199; --nlc-amber-200: 253 230 138;
+  --nlc-amber-300: 252 211 77; --nlc-amber-400: 251 191 36; --nlc-amber-500: 245 158 11;
+  --nlc-amber-600: 217 119 6; --nlc-amber-700: 180 83 9; --nlc-amber-800: 146 64 14;
+  --nlc-amber-900: 120 53 15; --nlc-amber-950: 69 26 3;
+
+  --nlc-orange-50: 255 247 237; --nlc-orange-100: 255 237 213; --nlc-orange-200: 254 215 170;
+  --nlc-orange-300: 253 186 116; --nlc-orange-400: 251 146 60; --nlc-orange-500: 249 115 22;
+  --nlc-orange-600: 234 88 12; --nlc-orange-700: 194 65 12; --nlc-orange-800: 154 52 18;
+  --nlc-orange-900: 124 45 18; --nlc-orange-950: 67 20 7;
+
+  --nlc-yellow-50: 254 252 232; --nlc-yellow-100: 254 249 195; --nlc-yellow-200: 254 240 138;
+  --nlc-yellow-300: 253 224 71; --nlc-yellow-400: 250 204 21; --nlc-yellow-500: 234 179 8;
+  --nlc-yellow-600: 202 138 4; --nlc-yellow-700: 161 98 7; --nlc-yellow-800: 133 77 14;
+  --nlc-yellow-900: 113 63 18; --nlc-yellow-950: 66 32 6;
+
+  --nlc-pink-50: 253 242 248; --nlc-pink-100: 252 231 243; --nlc-pink-200: 251 207 232;
+  --nlc-pink-300: 249 168 212; --nlc-pink-400: 244 114 182; --nlc-pink-500: 236 72 153;
+  --nlc-pink-600: 219 39 119; --nlc-pink-700: 190 24 93; --nlc-pink-800: 157 23 77;
+  --nlc-pink-900: 131 24 67; --nlc-pink-950: 80 7 36;
+
+  --nlc-rose-50: 255 241 242; --nlc-rose-100: 255 228 230; --nlc-rose-200: 254 205 211;
+  --nlc-rose-300: 253 164 175; --nlc-rose-400: 251 113 133; --nlc-rose-500: 244 63 94;
+  --nlc-rose-600: 225 29 72; --nlc-rose-700: 190 18 60; --nlc-rose-800: 159 18 57;
+  --nlc-rose-900: 136 19 55; --nlc-rose-950: 76 5 25;
+
+  --nlc-green-50: 240 253 244; --nlc-green-100: 220 252 231; --nlc-green-200: 187 247 208;
+  --nlc-green-300: 134 239 172; --nlc-green-400: 74 222 128; --nlc-green-500: 34 197 94;
+  --nlc-green-600: 22 163 74; --nlc-green-700: 21 128 61; --nlc-green-800: 22 101 52;
+  --nlc-green-900: 20 83 45; --nlc-green-950: 5 46 22;
+
+  --nlc-lime-50: 247 254 231; --nlc-lime-100: 236 252 203; --nlc-lime-200: 217 249 157;
+  --nlc-lime-300: 190 242 100; --nlc-lime-400: 163 230 53; --nlc-lime-500: 132 204 22;
+  --nlc-lime-600: 101 163 13; --nlc-lime-700: 77 124 15; --nlc-lime-800: 63 98 18;
+  --nlc-lime-900: 54 83 20; --nlc-lime-950: 26 46 5;
+
+  --nlc-teal-50: 240 253 250; --nlc-teal-100: 204 251 241; --nlc-teal-200: 153 246 228;
+  --nlc-teal-300: 94 234 212; --nlc-teal-400: 45 212 191; --nlc-teal-500: 20 184 166;
+  --nlc-teal-600: 13 148 136; --nlc-teal-700: 15 118 110; --nlc-teal-800: 17 94 89;
+  --nlc-teal-900: 19 78 74; --nlc-teal-950: 4 47 46;
+
+  --nlc-blue-50: 239 246 255; --nlc-blue-100: 219 234 254; --nlc-blue-200: 191 219 254;
+  --nlc-blue-300: 147 197 253; --nlc-blue-400: 96 165 250; --nlc-blue-500: 59 130 246;
+  --nlc-blue-600: 37 99 235; --nlc-blue-700: 29 78 216; --nlc-blue-800: 30 64 175;
+  --nlc-blue-900: 30 58 138; --nlc-blue-950: 23 37 84;
+
+  --nlc-sky-50: 240 249 255; --nlc-sky-100: 224 242 254; --nlc-sky-200: 186 230 253;
+  --nlc-sky-300: 125 211 252; --nlc-sky-400: 56 189 248; --nlc-sky-500: 14 165 233;
+  --nlc-sky-600: 2 132 199; --nlc-sky-700: 3 105 161; --nlc-sky-800: 7 89 133;
+  --nlc-sky-900: 12 74 110; --nlc-sky-950: 8 47 73;
+
+  --nlc-indigo-50: 238 242 255; --nlc-indigo-100: 224 231 255; --nlc-indigo-200: 199 210 254;
+  --nlc-indigo-300: 165 180 252; --nlc-indigo-400: 129 140 248; --nlc-indigo-500: 99 102 241;
+  --nlc-indigo-600: 79 70 229; --nlc-indigo-700: 67 56 202; --nlc-indigo-800: 55 48 163;
+  --nlc-indigo-900: 49 46 129; --nlc-indigo-950: 30 27 75;
 }
 
 /* ---------- Tipografías del diseño negro y oro (autoalojadas, OFL) ---------- */
@@ -331,6 +386,33 @@ html.nl-gold {
   --nlc-cyan-600: 199 175 124; --nlc-cyan-700: 160 140 98; --nlc-cyan-800: 116 101 71;
   --nlc-cyan-900: 77 67 47; --nlc-cyan-950: 43 37 26;
 
+  /* Ámbar y amarillo → oro; naranja → oro tostado (racha, avisos) */
+  --nlc-amber-50: 251 247 237; --nlc-amber-100: 245 236 214; --nlc-amber-200: 236 219 178;
+  --nlc-amber-300: 228 202 146; --nlc-amber-400: 221 190 127; --nlc-amber-500: 212 175 106;
+  --nlc-amber-600: 191 154 87; --nlc-amber-700: 156 124 66; --nlc-amber-800: 112 89 49;
+  --nlc-amber-900: 74 59 34; --nlc-amber-950: 41 33 20;
+
+  --nlc-yellow-50: 251 247 237; --nlc-yellow-100: 245 236 214; --nlc-yellow-200: 236 219 178;
+  --nlc-yellow-300: 228 202 146; --nlc-yellow-400: 221 190 127; --nlc-yellow-500: 212 175 106;
+  --nlc-yellow-600: 191 154 87; --nlc-yellow-700: 156 124 66; --nlc-yellow-800: 112 89 49;
+  --nlc-yellow-900: 74 59 34; --nlc-yellow-950: 41 33 20;
+
+  --nlc-orange-50: 251 245 235; --nlc-orange-100: 246 230 204; --nlc-orange-200: 238 207 160;
+  --nlc-orange-300: 230 184 118; --nlc-orange-400: 224 165 90; --nlc-orange-500: 214 148 72;
+  --nlc-orange-600: 190 126 58; --nlc-orange-700: 152 99 45; --nlc-orange-800: 110 72 34;
+  --nlc-orange-900: 72 48 24; --nlc-orange-950: 40 27 14;
+
+  /* Rosa intenso → rosa suave (bienestar y ciclo) */
+  --nlc-pink-50: 252 245 247; --nlc-pink-100: 249 234 238; --nlc-pink-200: 243 214 222;
+  --nlc-pink-300: 237 192 204; --nlc-pink-400: 231 163 181; --nlc-pink-500: 222 139 162;
+  --nlc-pink-600: 201 114 139; --nlc-pink-700: 163 89 110; --nlc-pink-800: 120 66 82;
+  --nlc-pink-900: 80 45 55; --nlc-pink-950: 45 25 31;
+
+  --nlc-rose-50: 252 245 247; --nlc-rose-100: 249 234 238; --nlc-rose-200: 243 214 222;
+  --nlc-rose-300: 237 192 204; --nlc-rose-400: 231 163 181; --nlc-rose-500: 222 139 162;
+  --nlc-rose-600: 201 114 139; --nlc-rose-700: 163 89 110; --nlc-rose-800: 120 66 82;
+  --nlc-rose-900: 80 45 55; --nlc-rose-950: 45 25 31;
+
   /* Tokens propios del diseño */
   --nl-bg: #0B0B0C;
   --nl-surface: #151517;
@@ -376,15 +458,25 @@ html.nl-gold body {
 html.nl-gold :is(.bg-violet-400, .bg-violet-500, .bg-violet-600, .bg-violet-700,
   .bg-purple-500, .bg-purple-600, .bg-fuchsia-500, .bg-fuchsia-600,
   .bg-cyan-400, .bg-cyan-500, .bg-cyan-600,
+  .bg-amber-400, .bg-amber-500, .bg-amber-600, .bg-orange-400, .bg-orange-500, .bg-orange-600,
+  .bg-yellow-400, .bg-yellow-500, .bg-pink-400, .bg-pink-500, .bg-pink-600,
+  .bg-rose-400, .bg-rose-500, .bg-rose-600,
   .from-violet-400, .from-violet-500, .from-violet-600, .from-violet-700,
   .from-purple-500, .from-purple-600, .from-fuchsia-500, .from-fuchsia-600,
-  .from-cyan-500, .from-cyan-600):is(.text-white, .text-white *),
+  .from-cyan-500, .from-cyan-600, .from-amber-400, .from-amber-500, .from-amber-600,
+  .from-orange-400, .from-orange-500, .from-orange-600, .from-yellow-400, .from-yellow-500,
+  .from-pink-400, .from-pink-500, .from-pink-600, .from-rose-400, .from-rose-500, .from-rose-600):not(.text-transparent, .bg-clip-text):is(.text-white, .text-white *),
 html.nl-gold :is(.bg-violet-400, .bg-violet-500, .bg-violet-600, .bg-violet-700,
   .bg-purple-500, .bg-purple-600, .bg-fuchsia-500, .bg-fuchsia-600,
   .bg-cyan-400, .bg-cyan-500, .bg-cyan-600,
+  .bg-amber-400, .bg-amber-500, .bg-amber-600, .bg-orange-400, .bg-orange-500, .bg-orange-600,
+  .bg-yellow-400, .bg-yellow-500, .bg-pink-400, .bg-pink-500, .bg-pink-600,
+  .bg-rose-400, .bg-rose-500, .bg-rose-600,
   .from-violet-400, .from-violet-500, .from-violet-600, .from-violet-700,
   .from-purple-500, .from-purple-600, .from-fuchsia-500, .from-fuchsia-600,
-  .from-cyan-500, .from-cyan-600) .text-white {
+  .from-cyan-500, .from-cyan-600, .from-amber-400, .from-amber-500, .from-amber-600,
+  .from-orange-400, .from-orange-500, .from-orange-600, .from-yellow-400, .from-yellow-500,
+  .from-pink-400, .from-pink-500, .from-pink-600, .from-rose-400, .from-rose-500, .from-rose-600) .text-white {
   color: var(--nl-ink);
 }
 html.nl-gold [data-state='active']:is([class*='data-[state=active]:bg-violet'], [class*='data-[state=active]:from-violet'], [class*='data-[state=active]:bg-cyan']) {
@@ -468,5 +560,50 @@ html.nl-gold .nl-activity {
 }
 html.nl-gold .nl-activity :is(.bg-emerald-500, .bg-emerald-600, .from-emerald-500, .from-emerald-600):is(.text-white),
 html.nl-gold .nl-activity :is(.bg-emerald-500, .bg-emerald-600, .from-emerald-500, .from-emerald-600) :is(.text-white, svg) {
+  color: var(--nl-ink);
+}
+
+/* Pantallas del socio en el diseño nuevo: verdes, azules y turquesas
+   decorativos pasan a oro y champán (el rojo de errores y borrar no cambia).
+   También se aplica a las ventanas (diálogos) que se abren desde la vista del socio. */
+html.nl-gold .nl-gold-scope,
+html.nl-gold:has(.nl-bottomnav) :is([role='dialog'], [role='alertdialog']) {
+  --nlc-emerald-50: 251 247 237; --nlc-emerald-100: 245 236 214; --nlc-emerald-200: 236 219 178;
+  --nlc-emerald-300: 228 202 146; --nlc-emerald-400: 221 190 127; --nlc-emerald-500: 212 175 106;
+  --nlc-emerald-600: 191 154 87; --nlc-emerald-700: 156 124 66; --nlc-emerald-800: 112 89 49;
+  --nlc-emerald-900: 74 59 34; --nlc-emerald-950: 41 33 20;
+  --nlc-green-50: 251 247 237; --nlc-green-100: 245 236 214; --nlc-green-200: 236 219 178;
+  --nlc-green-300: 228 202 146; --nlc-green-400: 221 190 127; --nlc-green-500: 212 175 106;
+  --nlc-green-600: 191 154 87; --nlc-green-700: 156 124 66; --nlc-green-800: 112 89 49;
+  --nlc-green-900: 74 59 34; --nlc-green-950: 41 33 20;
+  --nlc-lime-50: 251 247 237; --nlc-lime-100: 245 236 214; --nlc-lime-200: 236 219 178;
+  --nlc-lime-300: 228 202 146; --nlc-lime-400: 221 190 127; --nlc-lime-500: 212 175 106;
+  --nlc-lime-600: 191 154 87; --nlc-lime-700: 156 124 66; --nlc-lime-800: 112 89 49;
+  --nlc-lime-900: 74 59 34; --nlc-lime-950: 41 33 20;
+  --nlc-teal-50: 252 249 242; --nlc-teal-100: 247 241 226; --nlc-teal-200: 239 228 200;
+  --nlc-teal-300: 233 216 176; --nlc-teal-400: 228 208 160; --nlc-teal-500: 222 199 146;
+  --nlc-teal-600: 199 175 124; --nlc-teal-700: 160 140 98; --nlc-teal-800: 116 101 71;
+  --nlc-teal-900: 77 67 47; --nlc-teal-950: 43 37 26;
+  --nlc-blue-50: 252 249 242; --nlc-blue-100: 247 241 226; --nlc-blue-200: 239 228 200;
+  --nlc-blue-300: 233 216 176; --nlc-blue-400: 228 208 160; --nlc-blue-500: 222 199 146;
+  --nlc-blue-600: 199 175 124; --nlc-blue-700: 160 140 98; --nlc-blue-800: 116 101 71;
+  --nlc-blue-900: 77 67 47; --nlc-blue-950: 43 37 26;
+  --nlc-sky-50: 252 249 242; --nlc-sky-100: 247 241 226; --nlc-sky-200: 239 228 200;
+  --nlc-sky-300: 233 216 176; --nlc-sky-400: 228 208 160; --nlc-sky-500: 222 199 146;
+  --nlc-sky-600: 199 175 124; --nlc-sky-700: 160 140 98; --nlc-sky-800: 116 101 71;
+  --nlc-sky-900: 77 67 47; --nlc-sky-950: 43 37 26;
+  --nlc-indigo-50: 252 249 242; --nlc-indigo-100: 247 241 226; --nlc-indigo-200: 239 228 200;
+  --nlc-indigo-300: 233 216 176; --nlc-indigo-400: 228 208 160; --nlc-indigo-500: 222 199 146;
+  --nlc-indigo-600: 199 175 124; --nlc-indigo-700: 160 140 98; --nlc-indigo-800: 116 101 71;
+  --nlc-indigo-900: 77 67 47; --nlc-indigo-950: 43 37 26;
+}
+html.nl-gold :is(.nl-gold-scope, :has(.nl-bottomnav) [role='dialog'], :has(.nl-bottomnav) [role='alertdialog']) :is(.bg-emerald-500, .bg-emerald-600, .bg-green-500, .bg-green-600,
+  .bg-blue-500, .bg-blue-600, .bg-teal-500, .bg-teal-600, .bg-lime-500,
+  .from-emerald-500, .from-emerald-600, .from-green-500, .from-green-600,
+  .from-blue-500, .from-blue-600, .from-teal-500, .from-teal-600):is(.text-white),
+html.nl-gold :is(.nl-gold-scope, :has(.nl-bottomnav) [role='dialog'], :has(.nl-bottomnav) [role='alertdialog']) :is(.bg-emerald-500, .bg-emerald-600, .bg-green-500, .bg-green-600,
+  .bg-blue-500, .bg-blue-600, .bg-teal-500, .bg-teal-600, .bg-lime-500,
+  .from-emerald-500, .from-emerald-600, .from-green-500, .from-green-600,
+  .from-blue-500, .from-blue-600, .from-teal-500, .from-teal-600) :is(.text-white, svg) {
   color: var(--nl-ink);
 }

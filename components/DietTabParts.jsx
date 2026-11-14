@@ -1,6 +1,7 @@
 'use client'
 
 import { Card, CardContent } from '@/components/ui/card'
+import { isGoldDesign } from '@/lib/design'
 import { Button } from '@/components/ui/button'
 import {
   Coffee, Sun, Moon, Apple, Clock, Flame,
@@ -169,6 +170,8 @@ export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
   if (!content) return null
 
   const meals = parseDietMeals(content)
+  // Diseño negro y oro: cabeceras de comida sobrias en vez de un color por comida.
+  const gold = isGoldDesign()
 
   if (meals.length === 0) {
     // Fallback if parsing fails or structure is different
@@ -189,7 +192,9 @@ export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
 
       {meals.map((meal, idx) => {
         const Icon = lookupMealStyle(MEAL_icons, meal.name) || Clock
-        const colorClass = lookupMealStyle(MEAL_COLORS, meal.name) || 'from-gray-500/20 to-gray-600/20 text-gray-400'
+        const colorClass = gold
+          ? 'from-white/[0.06] to-white/[0.02] text-amber-300'
+          : (lookupMealStyle(MEAL_COLORS, meal.name) || 'from-gray-500/20 to-gray-600/20 text-gray-400')
         const slot = lookupMealStyle(MEAL_NAME_TO_SLOT, meal.name)
         const isLogged = slot && loggedSlots?.includes(slot)
 
@@ -203,7 +208,7 @@ export function DietDailyView({ content, loggedSlots, onToggleMealLog }) {
                 <div className={`p-4 bg-gradient-to-r ${colorClass} flex items-center justify-between`}>
                   <div className="flex items-center gap-3">
                     <Icon className="w-5 h-5" />
-                    <h4 className="font-black tracking-tight text-white uppercase">{meal.name}</h4>
+                    <h4 className={gold ? 'nl-display text-[22px] text-white' : 'font-black tracking-tight text-white uppercase'}>{meal.name}</h4>
                   </div>
                   {meal.time && (
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-black/20 rounded-full text-xs font-bold text-white/90">

@@ -10,6 +10,7 @@ import {
   Star, CircleCheckBig as CheckCircle2, Clock, Users, Zap, Lock, Sparkles
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { isGoldDesign } from '@/lib/design'
 
 // Mapeo de iconos
 const iconMap = {
@@ -33,10 +34,21 @@ const colorMap = {
   orange: 'from-orange-500 to-red-400',
 }
 
+// Diseño negro y oro: bronce, plata, oro y platino de verdad; el resto, oro.
+const goldColorMap = {
+  bronze: 'from-[#C9956A] to-[#8C5E3C]',
+  silver: 'from-slate-200 to-slate-500',
+  gold: 'from-[#ECD6A4] to-[#B8934F]',
+  platinum: 'from-[#F4F0E8] to-[#B9B2A2]',
+  green: 'from-[#ECD6A4] to-[#B8934F]',
+  orange: 'from-[#ECD6A4] to-[#B8934F]',
+}
+
 // Componente de Badge individual
 export function BadgeCard({ badge, unlocked = false, awardedAt = null }) {
   const Icon = iconMap[badge.icon] || Trophy
-  const gradientClass = colorMap[badge.color] || colorMap.gold
+  const palette = isGoldDesign() ? goldColorMap : colorMap
+  const gradientClass = palette[badge.color] || palette.gold
   
   return (
     <div className={`relative group ${!unlocked ? 'opacity-50 grayscale' : ''}`}>
@@ -56,7 +68,7 @@ export function BadgeCard({ badge, unlocked = false, awardedAt = null }) {
       </div>
       
       {/* Tooltip */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 rounded-xl border border-[#2a2a2a] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+      <div className="hidden sm:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 rounded-xl border border-[#2a2a2a] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
         <p className="text-white font-bold text-sm">{badge.title}</p>
         <p className="text-gray-400 text-xs">{badge.description}</p>
         {unlocked && awardedAt && (

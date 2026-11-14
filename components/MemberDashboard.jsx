@@ -1051,7 +1051,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
           {/* HOY (solo diseño nuevo): resumen del día con accesos a cada sección */}
           {isGold && (
-            <TabsContent value="today" forceMount={visitedTabs.has('today') || undefined} className="mt-0 data-[state=inactive]:hidden">
+            <TabsContent value="today" forceMount={visitedTabs.has('today') || undefined} className="nl-gold-scope mt-0 data-[state=inactive]:hidden">
               <TodayView
                 user={user}
                 profile={profile}
@@ -1069,7 +1069,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
           )}
 
           {/* FEED TAB */}
-          <TabsContent value="feed" forceMount={visitedTabs.has('feed') || undefined} className="space-y-4 data-[state=inactive]:hidden">
+          <TabsContent value="feed" forceMount={visitedTabs.has('feed') || undefined} className="nl-gold-scope space-y-4 data-[state=inactive]:hidden">
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
               <CardContent className="p-5">
                 <form onSubmit={handleCreatePost} className="space-y-4">
@@ -1194,7 +1194,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
           </TabsContent>
 
           {/* ACTIVITY TAB - Step Counter */}
-          <TabsContent value="activity" forceMount={visitedTabs.has('activity') || undefined} className="space-y-4 data-[state=inactive]:hidden">
+          <TabsContent value="activity" forceMount={visitedTabs.has('activity') || undefined} className="nl-gold-scope space-y-4 data-[state=inactive]:hidden">
             {/* En el diseño nuevo, ciclo, mensaje, guía, racha y semana están en Hoy → Resumen */}
             {!isGold && (
               <>
@@ -1230,7 +1230,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
 
             {/* Bienestar Femenino (Strictly female) */}
             {profile?.sex === 'female' && (
-            <TabsContent value="bienestar" forceMount={visitedTabs.has('bienestar') || undefined} className="space-y-4 pb-48 min-h-[80vh] overflow-visible data-[state=inactive]:hidden">
+            <TabsContent value="bienestar" forceMount={visitedTabs.has('bienestar') || undefined} className="nl-gold-scope space-y-4 pb-48 min-h-[80vh] overflow-visible data-[state=inactive]:hidden">
               <LifeStageSelector userId={user.id} profile={profile} onUpdate={(updatedProfile) => setProfile(updatedProfile)} />
               {(!profile?.life_stage || profile.life_stage === 'cycle') && (
                 <CycleModule user={user} profile={profile} variant="full" onProfileUpdate={(updatedProfile) => setProfile(updatedProfile)} onThemeChange={setPageTheme} />
@@ -1248,17 +1248,17 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
           )}
 
           {/* CHALLENGES TAB */}
-          <TabsContent value="challenges" forceMount={visitedTabs.has('challenges') || undefined} className="space-y-4 data-[state=inactive]:hidden">
+          <TabsContent value="challenges" forceMount={visitedTabs.has('challenges') || undefined} className="nl-gold-scope space-y-4 data-[state=inactive]:hidden">
             <ChallengesSection userId={user.id} />
           </TabsContent>
 
           {/* BADGES TAB */}
-          <TabsContent value="badges" forceMount={visitedTabs.has('badges') || undefined} className="space-y-4 data-[state=inactive]:hidden">
+          <TabsContent value="badges" forceMount={visitedTabs.has('badges') || undefined} className="nl-gold-scope space-y-4 data-[state=inactive]:hidden">
             <BadgesGallery userId={user.id} />
           </TabsContent>
 
           {/* WORKOUT TAB */}
-          <TabsContent value="workout" forceMount={visitedTabs.has('workout') || undefined} className="space-y-4 data-[state=inactive]:hidden">
+          <TabsContent value="workout" forceMount={visitedTabs.has('workout') || undefined} className="nl-gold-scope space-y-4 data-[state=inactive]:hidden">
             {!dataLoaded && !myWorkouts.principal && !myWorkouts.alternativa && (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
                 <CardContent className="p-5 space-y-4">
@@ -1404,7 +1404,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
           </TabsContent>
 
           {/* DIET TAB */}
-          <TabsContent value="diet" forceMount={visitedTabs.has('diet') || undefined} className="space-y-6 data-[state=inactive]:hidden">
+          <TabsContent value="diet" forceMount={visitedTabs.has('diet') || undefined} className="nl-gold-scope space-y-6 data-[state=inactive]:hidden">
             {!dataLoaded && !myDiet && (
               <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl overflow-hidden">
                 <CardContent className="p-5 space-y-4">
@@ -1489,7 +1489,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
                         { label: 'Grasas', value: myDiet.diet?.fat_g ? `${myDiet.diet.fat_g}g` : '-', color: 'text-purple-400' },
                       ].map(m => (
                         <div key={m.label} className="bg-white/[0.03] border border-white/5 rounded-2xl p-3 text-center">
-                          <p className={`text-lg sm:text-2xl font-black ${m.color}`}>{m.value}</p>
+                          <p className={isGold ? `nl-display nl-tabular normal-case text-[26px] ${m.label === 'Kcal' ? 'text-amber-400' : 'text-white'}` : `text-lg sm:text-2xl font-black ${m.color}`}>{m.value}</p>
                           <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter sm:tracking-normal">{m.label}</p>
                         </div>
                       ))}
@@ -1540,7 +1540,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
           </TabsContent>
 
           {/* RECIPES TAB - Browse all recipes */}
-          <TabsContent value="recipes" forceMount={visitedTabs.has('recipes') || undefined} className="space-y-4 data-[state=inactive]:hidden">
+          <TabsContent value="recipes" forceMount={visitedTabs.has('recipes') || undefined} className="nl-gold-scope space-y-4 data-[state=inactive]:hidden">
             <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
@@ -1558,7 +1558,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
           </TabsContent>
 
           {/* STATS TAB - Advanced Charts */}
-          <TabsContent value="stats" forceMount={visitedTabs.has('stats') || undefined} className="space-y-4 data-[state=inactive]:hidden">
+          <TabsContent value="stats" forceMount={visitedTabs.has('stats') || undefined} className="nl-gold-scope space-y-4 data-[state=inactive]:hidden">
             <ProgressCharts 
               weightData={chartData.weight}
               workoutsData={chartData.workouts}
@@ -1568,7 +1568,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
           </TabsContent>
 
           {/* PROGRESS TAB */}
-          <TabsContent value="progress" forceMount={visitedTabs.has('progress') || undefined} className="space-y-4 data-[state=inactive]:hidden">
+          <TabsContent value="progress" forceMount={visitedTabs.has('progress') || undefined} className="nl-gold-scope space-y-4 data-[state=inactive]:hidden">
             {/* Revisión: formulario único (medidas + cómo te sientes + fotos) */}
             {showCheckInForm ? (
               <CheckInForm
@@ -1684,7 +1684,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
           </TabsContent>
 
           {/* NOTICES TAB */}
-          <TabsContent value="notices" forceMount={visitedTabs.has('notices') || undefined} className="space-y-4 data-[state=inactive]:hidden">
+          <TabsContent value="notices" forceMount={visitedTabs.has('notices') || undefined} className="nl-gold-scope space-y-4 data-[state=inactive]:hidden">
             {notices.length > 0 ? (
               notices.map(notice => (
                 <Card key={notice.id} className={`bg-gradient-to-br from-[#1a1a1a] to-[#151515] border-[#2a2a2a] rounded-3xl ${notice.priority === 'high' ? 'border-l-4 border-l-red-500' : notice.priority === 'normal' ? 'border-l-4 border-l-violet-500' : ''}`} onClick={() => markNoticeAsRead(notice.id)}>

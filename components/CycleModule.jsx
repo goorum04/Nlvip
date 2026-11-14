@@ -36,6 +36,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
 import { SymptomsTracker } from '@/components/SymptomsTracker'
+import { isGoldDesign } from '@/lib/design'
 
 const PHASE_CONFIG = {
   menstrual: {
@@ -89,6 +90,20 @@ const PHASE_CONFIG = {
     slogan: 'Personaliza tu experiencia elite.'
   }
 }
+
+// Diseño negro y oro: un único color de bienestar (rosa suave) para todas las
+// fases; la fase se distingue por su nombre e icono.
+const GOLD_PHASE_COLORS = {
+  gradient: 'from-pink-500/20 via-pink-500/5 to-transparent',
+  accent: 'bg-pink-400',
+  text: 'text-pink-300',
+  border: 'border-pink-400/30',
+  glow: 'shadow-pink-400/30',
+}
+// Clases que se montan dinámicamente (para que Tailwind las genere): bg-pink-400/20 bg-pink-400 text-pink-300
+const GOLD_PHASE_CONFIG = Object.fromEntries(
+  Object.entries(PHASE_CONFIG).map(([k, v]) => [k, k === 'unknown' ? v : { ...v, ...GOLD_PHASE_COLORS }])
+)
 
 function CycleWheel({ day, totalDays, phaseConfig }) {
   const radius = 80;
@@ -232,7 +247,8 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
       calculateSymptomAdjustedMacros(profile.weight_kg, baseCalories, phase, todaySymptoms)
     const macros = { protein, fat, carbs }
     const workout = getWorkoutRecommendation(phase)
-    const phaseConfig = PHASE_CONFIG[phase] || PHASE_CONFIG.unknown
+    const phases = isGoldDesign() ? GOLD_PHASE_CONFIG : PHASE_CONFIG
+    const phaseConfig = phases[phase] || phases.unknown
 
     return {
       phase,
@@ -245,7 +261,7 @@ export function CycleModule({ user, profile, onProfileUpdate, onThemeChange, var
       phaseConfig,
       cycleLength: profile.cycle_length_days || 28,
       periodLength: profile.period_length_days || 5,
-      theme: phaseConfig === PHASE_CONFIG.unknown ? 'default' : phase
+      theme: phaseConfig === phases.unknown ? 'default' : phase
     }
   }, [profile, stepsToday, todaySymptoms])
 

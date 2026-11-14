@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { isGoldDesign } from '@/lib/design'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -55,6 +56,8 @@ function MacroProgressBar({ label, icon: Icon, consumed, total, color, unit = 'g
 
 // Componente principal
 export default function FoodTracker({ userId }) {
+  // Diseño negro y oro: sin los degradados naranja/rojo decorativos.
+  const gold = isGoldDesign()
   const [macrosSummary, setMacrosSummary] = useState(null)
   const [foodLogs, setFoodLogs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -268,7 +271,7 @@ export default function FoodTracker({ userId }) {
       {/* Resumen de macros del día */}
       <Card className="bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border-violet-500/20 rounded-3xl overflow-hidden">
         <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-600/10 via-red-600/10 to-pink-600/10"></div>
+          <div className={`absolute inset-0 bg-gradient-to-r ${gold ? 'from-amber-500/10 via-transparent to-transparent' : 'from-orange-600/10 via-red-600/10 to-pink-600/10'}`}></div>
           <CardHeader className="relative pb-2">
             <CardTitle className="text-white flex items-center gap-2">
               <UtensilsCrossed className="w-5 h-5 text-orange-400" />
@@ -299,7 +302,7 @@ export default function FoodTracker({ userId }) {
               icon={Beef} 
               consumed={consumed.protein_g} 
               total={assigned.protein_g}
-              color="text-red-400"
+              color={gold ? 'text-amber-300' : 'text-red-400'}
             />
             <MacroProgressBar 
               label="Carbohidratos" 
@@ -322,7 +325,7 @@ export default function FoodTracker({ userId }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full h-14 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-semibold rounded-2xl shadow-lg shadow-orange-500/20"
+                className={gold ? 'w-full h-14 bg-amber-500 hover:bg-amber-400 text-black font-semibold rounded-2xl' : 'w-full h-14 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-semibold rounded-2xl shadow-lg shadow-orange-500/20'}
               >
                 <CameraIcon className="w-5 h-5 mr-2" />
                 Fotografiar
@@ -375,7 +378,7 @@ export default function FoodTracker({ userId }) {
                 </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={confirmAiConsentAndAnalyze}
-                  className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 rounded-xl"
+                  className={gold ? 'bg-amber-500 hover:bg-amber-400 text-black rounded-xl' : 'bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 rounded-xl'}
                 >
                   Aceptar y analizar
                 </AlertDialogAction>
@@ -387,7 +390,7 @@ export default function FoodTracker({ userId }) {
           {analyzing && (
             <div className="flex flex-col items-center justify-center py-8 space-y-3">
               <div className="relative">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-orange-500 to-red-500 animate-pulse"></div>
+                <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${gold ? 'from-amber-500 to-amber-300' : 'from-orange-500 to-red-500'} animate-pulse`}></div>
                 <Loader2 className="w-8 h-8 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin" />
               </div>
               <p className="text-gray-400">Analizando tu comida...</p>
@@ -438,7 +441,7 @@ export default function FoodTracker({ userId }) {
                   </div>
                   <div>
                     <Label className="text-gray-400 text-xs flex items-center gap-1">
-                      <Beef className="w-3 h-3 text-red-400" /> Proteína (g)
+                      <Beef className={`w-3 h-3 ${gold ? 'text-amber-300' : 'text-red-400'}`} /> Proteína (g)
                     </Label>
                     <Input
                       type="number"
