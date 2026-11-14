@@ -1168,7 +1168,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                   <div className="w-12 h-12 rounded-2xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-600/40">
                     <Dumbbell className="w-6 h-6 text-white" />
                   </div>
-                  <span className="font-bold">Nueva Rutina</span>
+                  <span className="font-bold text-white">Nueva Rutina</span>
                 </Button>
 
                 <Button
@@ -1178,7 +1178,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
                   <div className="w-12 h-12 rounded-2xl bg-green-600 flex items-center justify-center shadow-lg shadow-green-600/40">
                     <Apple className="w-6 h-6 text-white" />
                   </div>
-                  <span className="font-bold">Nueva Dieta</span>
+                  <span className="font-bold text-white">Nueva Dieta</span>
                 </Button>
               </CardContent>
             </Card>
