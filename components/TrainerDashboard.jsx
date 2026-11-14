@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import {
   Dumbbell, Users, Bell, LogOut, Plus, Apple, Sparkles, Eye, Send,
-  Video, Camera, TrendingUp, Trash2, Loader2, Calculator, Target, Trophy, UtensilsCrossed, MessageSquare, ChefHat, Heart, Search
+  Video, Camera, TrendingUp, Trash2, Loader2, Calculator, Target, Trophy, UtensilsCrossed, MessageSquare, ChefHat, Heart, Search, Bot, Edit
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
@@ -31,13 +31,19 @@ import { WorkoutBuilder } from './WorkoutBuilder'
 import { DietBuilder } from './DietBuilder'
 import { CheckInReviewPanel } from './CheckInReviewPanel'
 import { useMemberActivity, MemberActivityLine } from './MemberNudge'
+import { isGoldDesign } from '@/lib/design'
+import { GoldStaffBar, GoldStaffGreeting } from './GoldStaffBar'
 
 export default function TrainerDashboard({ user, profile, setProfile, onLogout }) {
+  // Diseño negro y oro (en pruebas, ver lib/design.js)
+  const [isGold] = useState(() => isGoldDesign())
   const [members, setMembers] = useState([])
   const [memberSearch, setMemberSearch] = useState('')
   const { activity: memberActivity, refresh: refreshMemberActivity } = useMemberActivity(members)
   const [households, setHouseholds] = useState({}) // member_id -> { household_id, roommates: [{id,name,email}] }
   const [workoutTemplates, setWorkoutTemplates] = useState([])
+  // Vídeos de cada rutina (id de rutina → lista), para la sección "Vídeos" de Rutinas.
+  const [workoutVideos, setWorkoutVideos] = useState({})
   const [dietTemplates, setDietTemplates] = useState([])
   const [notices, setNotices] = useState([])
   const [loading, setLoading] = useState(false)
@@ -367,6 +373,39 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
     }
   }
 
+  // Borrar una plantilla de rutina (con sus días y ejercicios) o de dieta.
+  // Misma lógica que en el panel de administración.
+  const handleDeleteWorkout = async (workoutId) => {
+    if (!confirm('¿Eliminar esta rutina? Se eliminarán también todos los días y ejercicios asociados.')) return
+    try {
+      const { data: days } = await supabase.from('workout_days').select('id').eq('workout_template_id', workoutId)
+      if (days && days.length > 0) {
+        await supabase.from('workout_exercises').delete().in('workout_day_id', days.map(d => d.id))
+      }
+      await supabase.from('workout_days').delete().eq('workout_template_id', workoutId)
+      const { data, error } = await supabase.from('workout_templates').delete().eq('id', workoutId).select()
+      if (error) throw error
+      if (!data || data.length === 0) throw new Error('Operación bloqueada por los permisos del servidor (RLS).')
+      toast({ title: 'Rutina eliminada' })
+      loadWorkoutTemplates()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
+  }
+
+  const handleDeleteDiet = async (dietId) => {
+    if (!confirm('¿Eliminar esta dieta?')) return
+    try {
+      const { data, error } = await supabase.from('diet_templates').delete().eq('id', dietId).select()
+      if (error) throw error
+      if (!data || data.length === 0) throw new Error('Operación bloqueada por los permisos del servidor (RLS).')
+      toast({ title: 'Dieta eliminada' })
+      loadDietTemplates()
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    }
+  }
+
   const loadDietTemplates = async () => {
     const { data } = await supabase.from('diet_templates').select('*').eq('trainer_id', user.id).order('created_at', { ascending: false })
     if (data) setDietTemplates(data)
@@ -687,61 +726,67 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a]">
-      {/* Navbar Estática */}
-      <header className="sticky top-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-violet-500/5 header-gradient opacity-50" />
+    <div className={isGold ? 'min-h-screen' : 'min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0B0B0B] to-[#0a0a0a]'} style={isGold ? { background: 'var(--nl-bg)' } : undefined}>
+      {isGold ? (
+        <GoldStaffBar profile={profile} roleLabel="Panel de entrenador" onAvatar={() => setShowProfileModal(true)} onLogout={onLogout} />
+      ) : (
+        <>
+        {/* Navbar Estática */}
+        <header className="sticky top-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/5 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-violet-500/5 header-gradient opacity-50" />
         
-        <div className="relative container mx-auto px-4 pt-12 pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img 
-                src="/logo-nl-vip.jpg" 
-                alt="NL VIP TEAM" 
-                className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-violet-500/20"
-              />
-              <div>
-                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP Team</h1>
-                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Trainer Panel</p>
+          <div className="relative container mx-auto px-4 pt-12 pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/logo-nl-vip.jpg" 
+                  alt="NL VIP TEAM" 
+                  className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-violet-500/20"
+                />
+                <div>
+                  <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-cyan-500 tracking-tight">NL VIP Team</h1>
+                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Trainer Panel</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <AvatarBubble 
+                  profile={profile} 
+                  size="md" 
+                  onClick={() => setShowProfileModal(true)} 
+                />
+                <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
+                  <LogOut className="w-5 h-5" />
+                </Button>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <AvatarBubble 
-                profile={profile} 
-                size="md" 
-                onClick={() => setShowProfileModal(true)} 
-              />
-              <Button variant="ghost" size="icon" className="rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10" onClick={onLogout}>
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Welcome Section (Scrollable) */}
-      <div className="relative overflow-hidden pt-4 pb-4 border-b border-white/5 bg-black/40">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
-        <div className="container mx-auto px-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-2xl font-black text-black shadow-xl shadow-violet-500/30 overflow-hidden">
-              {profile.avatar_url ? (
-                <AvatarBubble profile={profile} size="lg" onClick={() => setShowProfileModal(true)} />
-              ) : (
-                profile.name?.charAt(0)
-              )}
-            </div>
-            <div>
-              <p className="text-gray-400 text-sm font-medium">Panel de Gestión,</p>
-              <h2 className="text-2xl font-black text-white">{profile.name}</h2>
-              <div className="flex items-center gap-1 mt-1">
-                <Sparkles className="w-3 h-3 text-violet-400" />
-                <p className="text-xs text-violet-400 font-bold uppercase tracking-wider">Entrenador Oficial</p>
+        {/* Welcome Section (Scrollable) */}
+        <div className="relative overflow-hidden pt-4 pb-4 border-b border-white/5 bg-black/40">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
+          <div className="container mx-auto px-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-2xl font-black text-black shadow-xl shadow-violet-500/30 overflow-hidden">
+                {profile.avatar_url ? (
+                  <AvatarBubble profile={profile} size="lg" onClick={() => setShowProfileModal(true)} />
+                ) : (
+                  profile.name?.charAt(0)
+                )}
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm font-medium">Panel de Gestión,</p>
+                <h2 className="text-2xl font-black text-white">{profile.name}</h2>
+                <div className="flex items-center gap-1 mt-1">
+                  <Sparkles className="w-3 h-3 text-violet-400" />
+                  <p className="text-xs text-violet-400 font-bold uppercase tracking-wider">Entrenador Oficial</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+        </>
+      )}
 
       {/* Profile Modal */}
       <ProfileModal
@@ -756,6 +801,7 @@ export default function TrainerDashboard({ user, profile, setProfile, onLogout }
       />
 
       <main className="container mx-auto px-4 py-6">
+        {isGold && <GoldStaffGreeting profile={profile} kicker="Entrenador" />}
         <Tabs value={activeTab} onValueChange={(tab) => { setActiveTab(tab); if (tab === 'diets') markNotificationsRead() }} className="space-y-6">
           {activeTab !== 'members' && (
             <button
