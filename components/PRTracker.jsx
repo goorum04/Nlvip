@@ -12,12 +12,15 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { getApiUrl } from '@/lib/utils'
+import { isGoldDesign } from '@/lib/design'
 
 export default function PRTracker({ memberId }) {
   const [prs, setPrs] = useState([])
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [gold] = useState(() => isGoldDesign())
+  const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
     exercise_name: '',
     weight_kg: '',
@@ -94,6 +97,7 @@ export default function PRTracker({ memberId }) {
       // en vez de disparar otro fetch completo (GET) para volver a traer lo mismo.
       if (result.data) setPrs(prev => [result.data, ...prev])
       else loadPRs()
+      setShowForm(false)
     } catch (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
@@ -108,6 +112,111 @@ export default function PRTracker({ memberId }) {
     }
     return acc
   }, {})
+
+  const oneRmPreview = form.weight_kg && form.reps
+    ? (parseFloat(form.weight_kg) / (1.0278 - (0.0278 * parseInt(form.reps || 1)))).toFixed(1)
+    : null
+
+  // Diseño negro y oro: primero las marcas (lo que el socio quiere ver) y el
+  // formulario plegado debajo. Mismos datos y mismas acciones que el clásico.
+  if (gold) {
+    const list = Object.values(bestPrs).sort((a, b) => new Date(b.date) - new Date(a.date))
+    const fmtDate = (d) => new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).replace('.', '')
+    return (
+      <section className="space-y-3">
+        <div className="flex items-end justify-between gap-3 px-0.5">
+          <div>
+            <p className="nl-label">Tus marcas</p>
+            <h3 className="nl-display text-[30px] mt-1.5" style={{ color: 'var(--nl-text)' }}>Récords personales</h3>
+          </div>
+          <Trophy className="w-7 h-7 mb-1 shrink-0" style={{ color: 'var(--nl-accent)' }} />
+        </div>
+
+        {loading ? (
+          <div className="nl-card h-[120px] animate-pulse" />
+        ) : list.length === 0 ? (
+          <div className="nl-card px-5 py-7 text-center">
+            <History className="w-9 h-9 mx-auto" style={{ color: 'var(--nl-dim)' }} />
+            <p className="text-[14px] mt-3" style={{ color: 'var(--nl-text)' }}>Aún no has registrado ningún récord personal.</p>
+            <p className="text-[12.5px] mt-1" style={{ color: 'var(--nl-muted)' }}>Se apuntan solos cuando superas tu mejor peso en el modo entreno, o añádelos aquí.</p>
+          </div>
+        ) : (
+          <div className="nl-card overflow-hidden">
+            {list.map((pr, i) => (
+              <div key={pr.id} className="flex items-center gap-3 pl-4 pr-2 py-3.5" style={{ borderTop: i ? '1px solid var(--nl-line)' : 'none' }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14.5px] font-semibold truncate" style={{ color: 'var(--nl-text)' }}>{pr.exercise_name}</p>
+                  <p className="text-[12px] mt-0.5" style={{ color: 'var(--nl-muted)' }}>
+                    {fmtDate(pr.date)} · 1RM est. {String(pr.estimated_1rm).replace('.', ',')} kg
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="nl-display nl-tabular text-[26px]" style={{ color: 'var(--nl-accent)' }}>
+                    {String(pr.weight_kg).replace('.', ',')}<span className="text-[15px] ml-0.5">kg</span>
+                  </p>
+                  <p className="text-[12px]" style={{ color: 'var(--nl-muted)' }}>× {pr.reps} reps</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDeletePR(pr.id)}
+                  disabled={deletingId === pr.id}
+                  aria-label={`Eliminar el récord de ${pr.exercise_name}`}
+                  className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition-colors hover:text-red-400"
+                  style={{ color: 'var(--nl-dim)' }}
+                >
+                  {deletingId === pr.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {showForm ? (
+          <form onSubmit={handleAddPR} className="nl-card p-[18px] space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="nl-label">Nuevo récord</p>
+              <button type="button" onClick={() => setShowForm(false)} className="text-[12.5px] font-semibold" style={{ color: 'var(--nl-muted)' }}>Cancelar</button>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[12.5px]" style={{ color: 'var(--nl-muted)' }}>Ejercicio</Label>
+              <Input placeholder="Ej: Press de banca" value={form.exercise_name} onChange={e => setForm({ ...form, exercise_name: e.target.value })} className="h-11 bg-white/[0.04] border-white/10 text-white" required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-[12.5px]" style={{ color: 'var(--nl-muted)' }}>Peso (kg)</Label>
+                <Input type="number" step="0.5" inputMode="decimal" value={form.weight_kg} onChange={e => setForm({ ...form, weight_kg: e.target.value })} className="h-11 bg-white/[0.04] border-white/10 text-white" required />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[12.5px]" style={{ color: 'var(--nl-muted)' }}>Reps</Label>
+                <Input type="number" inputMode="numeric" value={form.reps} onChange={e => setForm({ ...form, reps: e.target.value })} className="h-11 bg-white/[0.04] border-white/10 text-white" required />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[12.5px]" style={{ color: 'var(--nl-muted)' }}>Fecha</Label>
+              <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="h-11 bg-white/[0.04] border-white/10 text-white" />
+            </div>
+            {oneRmPreview && (
+              <div className="flex items-center justify-between rounded-[14px] px-3.5 py-3" style={{ background: 'var(--nl-soft)' }}>
+                <span className="text-[13px]" style={{ color: 'var(--nl-muted)' }}>1RM estimado</span>
+                <span className="nl-display nl-tabular text-[24px]" style={{ color: 'var(--nl-accent)' }}>{oneRmPreview.replace('.', ',')} kg</span>
+              </div>
+            )}
+            <button type="submit" disabled={adding} className="nl-btn w-full disabled:opacity-60">
+              {adding ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Guardar récord'}
+            </button>
+            <p className="text-[11.5px] leading-relaxed flex gap-1.5" style={{ color: 'var(--nl-dim)' }}>
+              <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
+              El 1RM se estima con la fórmula de Brzycki: tu peso máximo a una repetición. Úsalo para progresar con seguridad.
+            </p>
+          </form>
+        ) : (
+          <button type="button" onClick={() => setShowForm(true)} className="nl-btn nl-btn-ghost w-full">
+            <Plus className="w-[18px] h-[18px]" style={{ color: 'var(--nl-accent)' }} /> Añadir un récord
+          </button>
+        )}
+      </section>
+    )
+  }
 
   return (
     <div className="space-y-6">

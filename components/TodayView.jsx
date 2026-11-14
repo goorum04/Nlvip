@@ -75,7 +75,7 @@ const shortNumber = (n) => {
 }
 
 // ───────────────── Entreno de hoy ─────────────────
-function TodayWorkoutCard({ memberId, workoutRow, hasCheckedInToday, onOpen }) {
+function TodayWorkoutCard({ memberId, workoutRow, hasCheckedInToday, onOpen, onStart }) {
   const workoutId = workoutRow?.workout?.id
   const [data, setData] = useState(null)
 
@@ -155,7 +155,7 @@ function TodayWorkoutCard({ memberId, workoutRow, hasCheckedInToday, onOpen }) {
           <Check className="w-[18px] h-[18px]" strokeWidth={2.4} style={{ color: C.accent }} /> Sesión de hoy completada
         </button>
       ) : day ? (
-        <button type="button" onClick={onOpen} className="nl-btn w-full">
+        <button type="button" onClick={onStart || onOpen} className="nl-btn w-full">
           <Play className="w-4 h-4" fill="currentColor" /> Empezar entreno
         </button>
       ) : (
@@ -231,7 +231,7 @@ function WellnessCard({ profile, onOpen }) {
 // ───────────────── Pantalla ─────────────────
 export default function TodayView({
   user, profile, hasPremium, myWorkouts, myDiet, dataLoaded, loggedMealSlots = [],
-  hasCheckedInToday, isActive, onNavigate, onLocked,
+  hasCheckedInToday, isActive, onNavigate, onLocked, onStartWorkout,
 }) {
   const [steps, setSteps] = useState(null)
   const streak = useStreak(user.id, loggedMealSlots.length + (hasCheckedInToday ? 1000 : 0))
@@ -263,6 +263,7 @@ export default function TodayView({
             workoutRow={workoutRow}
             hasCheckedInToday={hasCheckedInToday}
             onOpen={() => onNavigate('workout')}
+            onStart={onStartWorkout}
           />
         ) : dataLoaded ? (
           <div className="nl-card p-[18px]">
