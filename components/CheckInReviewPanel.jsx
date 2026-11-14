@@ -654,7 +654,9 @@ function CheckInQueue({ checkins, onRefresh }) {
   const nameOf = (c) => c.member?.name || c.member?.email?.split('@')[0] || 'Socio'
 
   return (
-    <div className="space-y-4">
+    // Ancho de lectura: en el ordenador las fotos y los textos de la revisión
+    // no se estiran a toda la pantalla.
+    <div className="space-y-4 max-w-[880px]">
       <div className="flex items-end justify-between gap-3">
         <p className="text-[13px]" style={{ color: 'var(--nl-muted)' }}>
           <b className="nl-tabular" style={{ color: 'var(--nl-text)' }}>{ready}</b> por revisar{analyzing > 0 ? ` · ${analyzing} analizándose` : ''}

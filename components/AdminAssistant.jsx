@@ -1200,19 +1200,19 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="absolute inset-0 bg-white/30 rounded-2xl blur-lg"></div>
-                <div className="relative w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center shadow-xl">
+                <div className="nl-assist-icon relative w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center shadow-xl">
                   <Wand2 className="w-7 h-7 text-white" />
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white shadow-lg shadow-emerald-400/50"></div>
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-white tracking-tight">NL VIP Assistant</h2>
-                  <div className="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full">
+                  <h2 className="nl-assist-title text-xl font-bold text-white tracking-tight">NL VIP Assistant</h2>
+                  <div className="nl-assist-pro px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full">
                     <span className="text-[10px] font-semibold text-white/90 uppercase tracking-wider">Pro</span>
                   </div>
                 </div>
-                <p className="text-sm text-white/70 mt-0.5">Tu asistente de gestión con IA</p>
+                <p className="nl-assist-sub text-sm text-white/70 mt-0.5">Tu asistente de gestión con IA</p>
               </div>
             </div>
 

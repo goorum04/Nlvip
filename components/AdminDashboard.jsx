@@ -1274,7 +1274,7 @@ export default function AdminDashboard({ user, profile, setProfile, onLogout }) 
       />
 
       <main
-        className={isGold ? 'container mx-auto px-4 pt-6 overflow-x-hidden' : 'container mx-auto px-4 py-8 overflow-x-hidden'}
+        className={isGold ? 'mx-auto w-full max-w-[1120px] px-4 md:px-8 pt-6 overflow-x-hidden' : 'container mx-auto px-4 py-8 overflow-x-hidden'}
         style={isGold ? { paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' } : undefined}
       >
         {isGold && (() => {

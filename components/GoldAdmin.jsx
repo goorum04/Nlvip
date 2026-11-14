@@ -77,15 +77,19 @@ function ActionTile({ icon: Icon, value, label, sub, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="nl-card text-left p-4 transition-transform active:scale-[0.98]"
+      className="nl-card text-left px-3.5 py-3 transition-transform active:scale-[0.98]"
       style={hot ? { borderColor: 'rgba(212,175,106,0.35)', background: 'linear-gradient(160deg,#211D14 0%,#151517 70%)' } : undefined}
     >
-      <span className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: hot ? C.soft : C.surface2, color: hot ? C.accent : C.dim }}>
-        <Icon className="w-[18px] h-[18px]" />
+      {/* Compacta: icono y número en la misma fila (antes un cuadro alto
+          con el número a 40 px, que en el ordenador quedaba enorme). */}
+      <span className="flex items-center justify-between gap-2">
+        <span className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: hot ? C.soft : C.surface2, color: hot ? C.accent : C.dim }}>
+          <Icon className="w-4 h-4" />
+        </span>
+        <span className="nl-display nl-tabular text-[30px] leading-none" style={{ color: hot ? C.text : C.dim }}>{value}</span>
       </span>
-      <p className="nl-display nl-tabular text-[40px] mt-3 leading-none" style={{ color: hot ? C.text : C.dim }}>{value}</p>
-      <p className="text-[13.5px] font-semibold mt-1.5" style={{ color: hot ? C.text : C.muted }}>{label}</p>
-      {sub && <p className="text-[11.5px] mt-0.5" style={{ color: C.dim }}>{sub}</p>}
+      <span className="block text-[13px] font-semibold mt-2" style={{ color: hot ? C.text : C.muted }}>{label}</span>
+      {sub && <span className="block text-[11px] mt-0.5 truncate" style={{ color: C.dim }}>{sub}</span>}
     </button>
   )
 }
@@ -108,14 +112,17 @@ export function GoldAdminToday({
 
   return (
     <div className="space-y-5 nl-stagger">
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
         <ActionTile icon={ClipboardCheck} value={pendingCheckinsCount} label="Revisiones" sub="por revisar" onClick={() => onGo('checkins')} />
         <ActionTile icon={FileCheck} value={pendingDietSubmissions} label="Cuestionarios" sub="nutricionales nuevos" onClick={() => onGo('diets')} />
         <ActionTile icon={Dumbbell} value={membersWithoutWorkout.length} label="Sin rutina" sub="socios sin asignar" onClick={() => onGo('members', 'sin_rutina')} />
         <ActionTile icon={Apple} value={membersWithoutDiet.length} label="Sin dieta" sub="socios sin asignar" onClick={() => onGo('members', 'sin_dieta')} />
       </div>
 
-      <section className="nl-card p-[18px]">
+      {/* En pantallas grandes: actividad y asistente a la izquierda,
+          "Necesita atención" a la derecha. En el móvil, una columna. */}
+      <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+      <section className="nl-card p-[18px] lg:col-start-1 lg:row-start-1">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="nl-label">Actividad de los socios</p>
@@ -139,7 +146,7 @@ export function GoldAdminToday({
         )}
       </section>
 
-      <section>
+      <section className="lg:col-start-2 lg:row-start-1 lg:row-span-2">
         <div className="flex items-end justify-between mb-2.5 px-0.5">
           <span className="nl-label flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" style={{ color: C.accent }} /> Necesita atención</span>
           {attention.length > 0 && <span className="text-[12.5px] nl-tabular" style={{ color: C.muted }}>{attention.length}</span>}
@@ -197,11 +204,11 @@ export function GoldAdminToday({
         )}
       </section>
 
-      <section className="nl-card relative overflow-hidden p-[18px]" style={{ background: 'linear-gradient(160deg,#211D14 0%,#151517 65%)', borderColor: 'rgba(212,175,106,0.22)' }}>
-        <Bot aria-hidden className="absolute -right-3 -bottom-4 w-28 h-28" style={{ color: 'rgba(212,175,106,0.07)' }} />
+      <section className="nl-card relative overflow-hidden p-[18px] lg:col-start-1 lg:row-start-2" style={{ background: 'linear-gradient(160deg,#211D14 0%,#151517 65%)', borderColor: 'rgba(212,175,106,0.22)' }}>
+        <Bot aria-hidden className="absolute -right-4 -top-5 w-28 h-28" style={{ color: 'rgba(212,175,106,0.07)' }} />
         <div className="relative">
           <p className="nl-label" style={{ color: C.accent }}>Asistente IA</p>
-          <p className="nl-display text-[28px] mt-1.5" style={{ color: C.text }}>Pídeselo por voz o por escrito</p>
+          <p className="nl-display text-[24px] mt-1.5" style={{ color: C.text }}>Pídeselo por voz o por escrito</p>
           <p className="text-[13.5px] mt-1.5 leading-relaxed" style={{ color: C.muted }}>Asignar rutinas y dietas, generar planes, buscar socios o crear códigos.</p>
           <div className="flex gap-2.5 mt-4">
             <button type="button" onClick={() => onAssistant(false)} className="nl-btn flex-1"><Sparkles className="w-[18px] h-[18px]" /> Abrir asistente</button>
@@ -211,6 +218,7 @@ export function GoldAdminToday({
           </div>
         </div>
       </section>
+      </div>
     </div>
   )
 }
@@ -292,7 +300,7 @@ export function GoldAdminMembers({
         </div>
       </div>
 
-      <div className="space-y-2.5">
+      <div className="grid gap-2.5 lg:grid-cols-2 lg:items-start">
         {list.map(m => {
           const trainerId = m.trainer_members?.[0]?.trainer_id || m.trainer_members?.[0]?.trainer?.id || ''
           const info = memberActivity[m.id]
