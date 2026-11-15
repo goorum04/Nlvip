@@ -121,7 +121,7 @@ export function GoldAdminToday({
 
       {/* En pantallas grandes: actividad y asistente a la izquierda,
           "Necesita atención" a la derecha. En el móvil, una columna. */}
-      <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:items-start">
       <section className="nl-card p-[18px] lg:col-start-1 lg:row-start-1">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -300,7 +300,7 @@ export function GoldAdminMembers({
         </div>
       </div>
 
-      <div className="grid gap-2.5 lg:grid-cols-2 lg:items-start">
+      <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2 lg:items-start">
         {list.map(m => {
           const trainerId = m.trainer_members?.[0]?.trainer_id || m.trainer_members?.[0]?.trainer?.id || ''
           const info = memberActivity[m.id]
