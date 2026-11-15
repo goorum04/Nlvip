@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { User, Camera as CameraIcon, Save, Trash2, LoaderCircle as Loader2, X, TriangleAlert as AlertTriangle, KeyRound, ChevronDown, ChevronUp, LogOut } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { authFetch } from '@/lib/utils'
+import { ReportProblem } from './ReportProblem'
 
 // Avatar Bubble Component - Para mostrar en el header
 export function AvatarBubble({ profile, size = 'md', onClick }) {
@@ -633,6 +634,11 @@ export function ProfileModal({ user, profile, isOpen, onClose, onProfileUpdate, 
                 </Button>
               </form>
             )}
+          </div>
+
+          {/* Avisar de un problema con la app (llega al equipo técnico) */}
+          <div className="pt-4 border-t border-white/10">
+            <ReportProblem />
           </div>
 
           {/* Cerrar sesión (diseño nuevo: ya no hay botón en la cabecera) */}
