@@ -4,6 +4,8 @@ import { z } from 'zod'
 import Anthropic from '@anthropic-ai/sdk'
 import { checkRateLimit } from '@/lib/rateLimit'
 import { callAboutProblem } from '@/lib/problemCall'
+import { sendNativePush } from '@/lib/push'
+import { sendPushToUser } from '@/lib/webpush'
 
 export const maxDuration = 30
 
@@ -59,7 +61,8 @@ Responde SOLO con JSON: {"severity":"alta|media|baja","spoken":"..."}.
 
 // POST /api/report-problem
 // Cualquier usuario con sesión informa de un problema con la app. Se guarda,
-// la IA lo resume y se avisa por llamada de voz al responsable.
+// la IA lo resume y se avisa al responsable por push y, si está configurada,
+// por llamada de voz.
 export async function POST(req) {
   const supabase = getSupabase()
   try {
@@ -89,6 +92,18 @@ export async function POST(req) {
       user_id: caller.id, message, context: ctx, summary: spoken, severity, call_status: callStatus,
     })
     if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 })
+
+    // Push a los responsables: PROBLEM_REPORT_USER_IDS (ids separados por comas).
+    try {
+      const ids = (process.env.PROBLEM_REPORT_USER_IDS || '').split(',').map(x => x.trim()).filter(Boolean)
+      const payload = { title: `🛠️ Problema en la app (${severity})`, body: spoken.slice(0, 240), url: '/' }
+      for (const id of ids) {
+        await sendNativePush(supabase, id, payload)
+        await sendPushToUser(supabase, id, { ...payload, icon: '/icons/icon-192x192.png' })
+      }
+    } catch (pushErr) {
+      console.warn('report-problem push:', pushErr.message)
+    }
 
     return NextResponse.json({ ok: true })
   } catch (e) {
