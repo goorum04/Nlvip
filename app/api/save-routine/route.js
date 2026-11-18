@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { checkRateLimit, getIdentifier } from '@/lib/rateLimit'
 import { persistRoutine } from '@/lib/routinePersistence'
+import { getLatestOnboardingResponses, onboardingHealthText } from '@/lib/onboardingResponses'
 import {
   detectInjuries,
   getBlockedMuscles,
@@ -108,15 +109,7 @@ export async function POST(request) {
 
     let memberConditions = null
     if (member_id) {
-      const { data: lastOnboarding } = await supabase
-        .from('diet_onboarding_requests')
-        .select('responses')
-        .eq('member_id', member_id)
-        .in('status', ['completed', 'reviewed'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      memberConditions = lastOnboarding?.responses?.extras?.condicion_medica || null
+      memberConditions = onboardingHealthText(await getLatestOnboardingResponses(supabase, member_id))
     }
 
     const injuries = detectInjuries(notes, memberConditions)

@@ -362,7 +362,7 @@ export async function POST(req) {
               .from('diet_onboarding_requests')
               .select('responses')
               .eq('member_id', memberId)
-              .in('status', ['completed', 'reviewed'])
+              .in('status', ['submitted', 'completed', 'reviewed'])
               .order('created_at', { ascending: false })
               .limit(1)
               .maybeSingle()
