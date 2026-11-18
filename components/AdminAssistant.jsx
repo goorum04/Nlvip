@@ -8,7 +8,7 @@ import {
   Mic, MicOff, Send, Bot, User, LoaderCircle as Loader2, CircleCheckBig as CheckCircle2, CircleX as XCircle, X,
   Volume2, VolumeX, Sparkles, TriangleAlert as AlertTriangle, Zap, Crown, WandSparkles as Wand2,
   ChefHat, Flame, Beef, Wheat, Droplets, Clock, ChartBar as BarChart3, Info,
-  Play, Pause, Dumbbell, ChevronDown, HeartPulse, Square
+  Play, Pause, Dumbbell, ChevronDown, HeartPulse, Square, Copy, Check
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { getApiUrl } from '@/lib/utils'
@@ -75,6 +75,86 @@ const AudioPlayer = ({ path }) => {
   )
 }
 
+// Copiar al portapapeles con respaldo para WebViews antiguos (en el móvil
+// mantener pulsado sobre un texto largo de una tarjeta no deja seleccionarlo
+// entero, y los admins lo copian para revisarlo fuera).
+async function copyText(text) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {}
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.setAttribute('readonly', '')
+    ta.style.position = 'fixed'
+    ta.style.top = '-1000px'
+    document.body.appendChild(ta)
+    ta.select()
+    ta.setSelectionRange(0, text.length)
+    const ok = document.execCommand('copy')
+    document.body.removeChild(ta)
+    return ok
+  } catch {
+    return false
+  }
+}
+
+function CopyButton({ getText, label = 'Copiar', className = '' }) {
+  const [state, setState] = useState('idle')
+  const onClick = async (e) => {
+    e.stopPropagation()
+    const text = typeof getText === 'function' ? getText() : getText
+    if (!text) return
+    const ok = await copyText(text)
+    setState(ok ? 'ok' : 'error')
+    setTimeout(() => setState('idle'), 2000)
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-medium text-gray-400 bg-white/5 border border-white/10 hover:text-white hover:bg-white/10 transition-colors ${className}`}
+    >
+      {state === 'ok' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+      {state === 'ok' ? 'Copiado' : state === 'error' ? 'No se pudo copiar' : label}
+    </button>
+  )
+}
+
+function routineToText(routineData, memberName) {
+  if (!routineData?.days?.length) return ''
+  const lines = [routineData.routine_name || 'Rutina']
+  if (memberName) lines.push(`Para ${memberName}`)
+  if (routineData.routine_description) lines.push(routineData.routine_description)
+  for (const day of routineData.days) {
+    lines.push('', `DÍA ${day.day_number || ''} — ${day.day_name || ''}`.trim())
+    for (const ex of day.exercises || []) {
+      const ss = ex.superset_group > 0 ? ` [bi-serie ${ex.superset_group}]` : ''
+      const rest = ex.rest_seconds != null ? ` · descanso ${ex.rest_seconds}s` : ''
+      const notes = ex.notes ? ` · ${ex.notes}` : ''
+      lines.push(`- ${ex.exercise_name}: ${ex.sets}x${ex.reps}${rest}${ss}${notes}`)
+    }
+  }
+  if (routineData.medical_rationale) lines.push('', routineData.medical_rationale)
+  return lines.join('\n')
+}
+
+function structuredDietToText(dietData) {
+  const { macros_diarios: m, tipo_dieta, member_name, notas, comidas } = dietData
+  const lines = [`Dieta ${tipo_dieta || ''} — ${member_name || ''}`.trim()]
+  if (m) lines.push(`${m.calorias} kcal | P ${m.proteinas_g}g | HC ${m.carbohidratos_g}g | G ${m.grasas_g}g`)
+  if (notas) lines.push(notas)
+  for (const [key, meal] of Object.entries(comidas || {})) {
+    if (!meal) continue
+    lines.push('', `${(meal.categoria_display || key).toUpperCase()}: ${meal.nombre || ''}`)
+    for (const ing of meal.ingredientes || []) lines.push(`- ${ing}`)
+  }
+  return lines.join('\n')
+}
+
 // Componente de mensaje individual
 function ChatMessage({ message, isUser, isLoading, audioPath, loadingText }) {
   return (
@@ -103,7 +183,12 @@ function ChatMessage({ message, isUser, isLoading, audioPath, loadingText }) {
         ) : (
           <>
             {audioPath && <AudioPlayer path={audioPath} />}
-            {message && <p className="whitespace-pre-wrap leading-relaxed">{message}</p>}
+            {message && <p className="whitespace-pre-wrap leading-relaxed select-text">{message}</p>}
+            {message && !isUser && message.length > 80 && (
+              <div className="mt-2 flex justify-end">
+                <CopyButton getText={message} />
+              </div>
+            )}
           </>
         )}
       </div>
@@ -173,6 +258,18 @@ function NLEliteDietPreview({ dietData }) {
           >
             {showFull ? '▲ Mostrar menos' : '▼ Ver dieta completa'}
           </button>
+        </div>
+      )}
+
+      {(previewContent || fullDietContent) && (
+        <div className="flex justify-end">
+          <CopyButton
+            label="Copiar dieta completa"
+            getText={() => {
+              const head = `Dieta ${tipo_dieta || ''} — ${member_name || ''}\n${macros?.calories} kcal | P ${macros?.protein_g}g | HC ${macros?.carbs_g}g | G ${macros?.fat_g}g\n\n`
+              return head + (fullDietContent || previewContent)
+            }}
+          />
         </div>
       )}
 
@@ -382,6 +479,10 @@ function DietCard({ dietData }) {
         })}
       </div>
 
+      <div className="flex justify-end">
+        <CopyButton label="Copiar dieta" getText={() => structuredDietToText(dietData)} />
+      </div>
+
       {/* Footer badge */}
       <div className="flex items-center justify-center gap-2 py-1">
         <Sparkles className="w-3 h-3 text-violet-400" />
@@ -516,6 +617,9 @@ function RoutineCard({ routineData, replaced = [], injuries = [], memberName }) 
             </div>
           )
         })}
+      </div>
+      <div className="flex justify-end">
+        <CopyButton label="Copiar rutina" getText={() => routineToText(routineData, memberName)} />
       </div>
     </div>
   )
