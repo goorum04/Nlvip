@@ -657,12 +657,30 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
     try { localStorage.removeItem(PENDING_JOB_KEY) } catch {}
   }
 
+  // Cada consulta tiene un límite de tiempo: en el móvil, al cambiar de wifi a
+  // datos o bloquear la pantalla, un fetch puede quedarse colgado para siempre
+  // sin fallar. Como el sondeo espera a que termine cada consulta antes de
+  // programar la siguiente, eso dejaba el chat "pensando" indefinidamente
+  // aunque el job ya hubiera terminado en el servidor (visto en producción).
+  const STATUS_TIMEOUT_MS = 10000
   const fetchJobStatus = async (jobId) => {
-    const { data: { session } } = await supabase.auth.getSession()
-    const res = await fetch(`${getApiUrl()}/api/admin-assistant?jobId=${jobId}`, {
-      headers: { 'Authorization': `Bearer ${session?.access_token}` },
-    })
-    return res.json()
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), STATUS_TIMEOUT_MS)
+    try {
+      const sessionResult = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('session timeout')), STATUS_TIMEOUT_MS)),
+      ])
+      const token = sessionResult?.data?.session?.access_token
+      const res = await fetch(`${getApiUrl()}/api/admin-assistant?jobId=${jobId}&t=${Date.now()}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        cache: 'no-store',
+        signal: controller.signal,
+      })
+      return await res.json()
+    } finally {
+      clearTimeout(timer)
+    }
   }
 
   // Sondea un job hasta que termine. Si falla la consulta por red (p.ej. la
@@ -671,10 +689,12 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
   // seguidos, para que un fallo inesperado no deje isLoading atascado en
   // true para siempre (lo que bloquearía silenciosamente cualquier envío
   // futuro).
-  const POLL_MAX_MS = 5 * 60 * 1000
+  // El servidor puede trabajar hasta 5 min (maxDuration 300): dejamos margen.
+  const POLL_MAX_MS = 7 * 60 * 1000
   const pollJob = (jobId, onStage) => new Promise((resolve, reject) => {
     let cancelled = false
     let timeoutId = null
+    let inFlight = false
     const startedAt = Date.now()
 
     const cleanup = () => {
@@ -684,26 +704,35 @@ export default function AdminAssistant({ userId, onClose, onInputReady }) {
     }
 
     const check = async () => {
-      if (cancelled) return
+      if (cancelled || inFlight) return
+      if (timeoutId) { clearTimeout(timeoutId); timeoutId = null }
       if (stoppedJobIdsRef.current.has(jobId)) {
         cleanup()
         reject(new Error('STOPPED_BY_USER'))
         return
       }
-      if (Date.now() - startedAt > POLL_MAX_MS) {
-        cleanup()
-        reject(new Error('El asistente está tardando demasiado. Inténtalo de nuevo en un momento.'))
-        return
-      }
+      // Pasado el límite se hace igualmente una última consulta: si la app
+      // estuvo en segundo plano más de la cuenta, el job puede llevar rato
+      // terminado y no hay que dar error en vez de mostrar la respuesta.
+      const overTime = Date.now() - startedAt > POLL_MAX_MS
+      inFlight = true
       try {
         const data = await fetchJobStatus(jobId)
+        if (cancelled) return
         if (data.stage) onStage?.(data.stage)
         if (data.status === 'done') { cleanup(); resolve(data.result); return }
         if (data.status === 'error') { cleanup(); reject(new Error(data.error || 'Error del asistente')); return }
       } catch {
-        // Fallo de red consultando el estado: reintentamos, no abortamos.
+        // Fallo de red o consulta caducada: reintentamos, no abortamos.
+      } finally {
+        inFlight = false
       }
-      if (!cancelled) timeoutId = setTimeout(check, 1200)
+      if (overTime) {
+        cleanup()
+        reject(new Error('El asistente está tardando demasiado. Inténtalo de nuevo en un momento.'))
+        return
+      }
+      if (!cancelled) timeoutId = setTimeout(check, 1500)
     }
 
     activeJobRef.current = { jobId, checkNow: check }
