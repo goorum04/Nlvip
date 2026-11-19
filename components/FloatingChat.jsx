@@ -307,15 +307,10 @@ export default function FloatingChat({ userId, userRole, trainerId, trainerName,
     // 2. Get or Create Admin Conversation
     // Admin real más antiguo (nunca cuentas de prueba/demo): con `limit(1)` a
     // secas salía la cuenta QA y el chat del socio con "el admin" se perdía.
-    const { data: adminUser } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('role', 'admin')
-      .not('email', 'like', '%@nlvipnutrition.internal')
-      .not('email', 'like', '%@example.com')
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle()
+    // Los socios no pueden leer fichas de admins (emails, teléfonos): la
+    // función devuelve solo id y nombre del admin real más antiguo.
+    const { data: adminRows } = await supabase.rpc('get_gym_admin')
+    const adminUser = adminRows?.[0] || null
 
     const targetAdminId = adminUser?.id || '64145053-45fd-473c-b2c4-7523d181aad3'
     const adminConv = await getOrCreateConversation('admin_member', [userId, targetAdminId])

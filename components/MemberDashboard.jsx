@@ -515,7 +515,7 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
     try {
       const { data, error } = await supabase
         .from('trainer_members')
-        .select(`trainer:profiles!trainer_members_trainer_id_fkey(id, name, email)`)
+        .select(`trainer:public_profiles!trainer_members_trainer_id_fkey(id, name)`)
         .eq('member_id', user.id)
         .maybeSingle()
       
@@ -531,16 +531,10 @@ export default function MemberDashboard({ user, profile, setProfile, onLogout })
     // El admin "del gimnasio" es el más antiguo de verdad: sin esto, el
     // `limit(1)` devolvía la cuenta de pruebas (@nlvipnutrition.internal) y
     // los mensajes de los socios al "admin" iban a un chat que nadie leía.
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, name, email')
-      .eq('role', 'admin')
-      .not('email', 'like', '%@nlvipnutrition.internal')
-      .not('email', 'like', '%@example.com')
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-    if (data) setGymAdmin(data)
+    // Vía función: los socios ya no pueden leer la ficha (email, teléfono)
+    // de los admins directamente.
+    const { data } = await supabase.rpc('get_gym_admin')
+    if (data?.[0]) setGymAdmin(data[0])
   }
 
   const loadFeed = async () => {
