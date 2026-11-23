@@ -460,10 +460,10 @@ export function DietViewer({ dietId }) {
                         )}
                     </div>
 
-                    <div className="space-y-0 relative border-l border-white/5 ml-3 pl-8">
+                    <div className="space-y-0 relative border-l border-white/5 ml-2 pl-6 sm:ml-3 sm:pl-8">
                         {meals.map((meal, idx) => (
                             <div key={idx} className="relative pb-8 last:pb-0">
-                                <div className="absolute -left-[41px] top-1 w-6 h-6 rounded-full bg-black border-2 border-green-500 flex items-center justify-center shadow-[0_0_10px_rgba(34,197,94,0.3)]">
+                                <div className="absolute -left-[37px] sm:-left-[41px] top-1 w-6 h-6 rounded-full bg-black border-2 border-green-500 flex items-center justify-center shadow-[0_0_10px_rgba(34,197,94,0.3)]">
                                     <div className="w-2 h-2 rounded-full bg-green-500" />
                                 </div>
 
@@ -475,12 +475,12 @@ export function DietViewer({ dietId }) {
                                             {meal.name}
                                         </h4>
                                     </div>
-                                    <div className="bg-white/5 rounded-3xl p-5 border border-white/5 transition-all hover:border-green-500/20 group">
+                                    <div className="bg-white/5 rounded-3xl p-3.5 sm:p-5 border border-white/5 transition-all hover:border-green-500/20 group">
                                         <div className="flex gap-4">
-                                            <div className="mt-1">
+                                            <div className="mt-1 hidden sm:block">
                                                 <UtensilsCrossed className="w-5 h-5 text-gray-600 group-hover:text-green-500/50 transition-colors" />
                                             </div>
-                                            <div className="flex-1 space-y-2">
+                                            <div className="flex-1 min-w-0 space-y-2">
                                                 {Array.isArray(meal.items) && meal.items.length > 0 ? (
                                                     <ul className="text-gray-300 leading-relaxed text-sm space-y-1">
                                                         {meal.items.map((it, i) => (

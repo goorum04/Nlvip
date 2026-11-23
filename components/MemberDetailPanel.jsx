@@ -526,7 +526,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allM
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-2xl max-h-[90vh] overflow-y-auto grid-cols-[minmax(0,1fr)]">
         <DialogHeader>
           <DialogTitle className="text-white text-xl flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center text-black font-bold text-lg">
@@ -824,8 +824,8 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allM
                     )}
                     {assignedDiet ? (
                       <div className="space-y-3">
-                        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-                          <div className="flex items-center justify-between">
+                        <div className="p-3 sm:p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+                          <div className="flex items-center justify-between gap-2">
                             <div>
                               <h4 className="font-semibold text-white">{assignedDiet.name}</h4>
                               <p className="text-xs text-gray-400 mt-1">
@@ -936,7 +936,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allM
 
         {showWorkoutDetailSlot && assignedWorkouts[showWorkoutDetailSlot] && (
           <Dialog open={!!showWorkoutDetailSlot} onOpenChange={() => setShowWorkoutDetailSlot(null)}>
-            <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-3xl max-h-[90vh] overflow-y-auto grid-cols-[minmax(0,1fr)]">
               <DialogHeader>
                 <DialogTitle className="text-white flex items-center gap-2">
                   <Dumbbell className="w-5 h-5 text-violet-400" />
@@ -950,7 +950,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allM
 
         {editingWorkoutSlot && assignedWorkouts[editingWorkoutSlot] && (
           <Dialog open onOpenChange={() => setEditingWorkoutSlot(null)}>
-            <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-4xl max-h-[90vh] overflow-y-auto grid-cols-[minmax(0,1fr)]">
               <DialogHeader>
                 <DialogTitle className="text-white flex items-center gap-2">
                   <Pencil className="w-5 h-5 text-amber-400" />
@@ -974,7 +974,7 @@ export function MemberDetailPanel({ member, isOpen, onClose, trainers = [], allM
 
         {editingDiet && dietDraft && assignedDiet && (
           <Dialog open onOpenChange={() => !savingDiet && setEditingDiet(false)}>
-            <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-[#1a1a1a] border-violet-500/20 rounded-3xl max-w-4xl max-h-[90vh] overflow-y-auto grid-cols-[minmax(0,1fr)]">
               <DialogHeader>
                 <DialogTitle className="text-white flex items-center gap-2">
                   <Pencil className="w-5 h-5 text-amber-400" />
