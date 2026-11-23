@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { refineDietDraft } from '@/lib/dietGeneration'
+import { getOtherPeopleNames, scrubNames } from '@/lib/memberNameGuard'
 
 function getSupabase() {
   return createClient(
@@ -98,7 +99,7 @@ export async function POST(req) {
       .insert({
         trainer_id: trainerId,
         name: `${profile.name} — Macros ajustados (${new Date().toLocaleDateString('es-ES')})`,
-        content,
+        content: scrubNames(content, await getOtherPeopleNames(supabase, memberId)),
         calories: macros.calories,
         protein_g: macros.protein_g,
         carbs_g: macros.carbs_g,

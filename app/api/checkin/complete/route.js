@@ -5,6 +5,7 @@ import { sendNativePush } from '@/lib/push'
 import { sendPushToUser } from '@/lib/webpush'
 import { persistRoutine } from '@/lib/routinePersistence'
 import { generateTrainerMessage, resolveTrainerName } from '@/lib/trainerVoice'
+import { getOtherPeopleNames, scrubNames } from '@/lib/memberNameGuard'
 
 function getSupabase() {
   return createClient(
@@ -70,7 +71,7 @@ export async function POST(req) {
         .insert({
           trainer_id: user.id,
           name: `Dieta adaptada (revisión) — ${name}`,
-          content: checkin.draft_diet_content,
+          content: scrubNames(checkin.draft_diet_content, await getOtherPeopleNames(supabase, checkin.member_id)),
           calories: checkin.draft_calories,
           protein_g: checkin.draft_protein_g,
           carbs_g: checkin.draft_carbs_g,
@@ -122,7 +123,7 @@ export async function POST(req) {
       const routineData = { ...checkin.draft_routine_data }
       if (!routineData.routine_name) routineData.routine_name = `Rutina adaptada (revisión) — ${name}`
 
-      const template = await persistRoutine(supabase, { trainerId: user.id, routine: routineData })
+      const template = await persistRoutine(supabase, { trainerId: user.id, routine: routineData, memberId: checkin.member_id })
 
       const { error: wError } = await supabase
         .from('member_workouts')

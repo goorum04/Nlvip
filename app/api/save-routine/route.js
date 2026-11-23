@@ -142,7 +142,8 @@ export async function POST(request) {
 
     const template = await persistRoutine(supabase, {
       trainerId: trainer_id || caller.id,
-      routine
+      routine,
+      memberId: member_id || null
     })
 
     if (member_id) {

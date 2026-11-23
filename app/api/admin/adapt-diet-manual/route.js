@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { adaptExistingDiet } from '@/lib/dietGeneration'
+import { getOtherPeopleNames, scrubNames } from '@/lib/memberNameGuard'
 
 // adaptExistingDiet ahora también analiza por visión las fotos de progreso
 // más recientes si no se le pasan ya calculadas (este endpoint no las pasa).
@@ -85,7 +86,7 @@ export async function POST(req) {
       .insert({
         trainer_id: trainerId,
         name: `${profile.name} — Con opciones (${new Date().toLocaleDateString('es-ES')})`,
-        content: adaptedContent,
+        content: scrubNames(adaptedContent, await getOtherPeopleNames(supabase, memberId)),
         calories: macros.calories,
         protein_g: macros.protein_g,
         carbs_g: macros.carbs_g,
