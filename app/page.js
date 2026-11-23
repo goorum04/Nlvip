@@ -12,6 +12,7 @@ import { Dumbbell, Sparkles, Shield, Gift, Lock } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { getApiUrl } from '@/lib/utils'
+import TurnstileWidget, { TURNSTILE_SITE_KEY } from '@/components/TurnstileWidget'
 
 // Lazy-load dashboards: keeps the initial JS bundle small so the iOS WebView can
 // paint the login screen fast and avoid the TestFlight startup watchdog.
@@ -41,6 +42,8 @@ export default function App() {
   const [regName, setRegName] = useState('')
   const [regSex, setRegSex] = useState('female')
   const [invitationCode, setInvitationCode] = useState('')
+  const [captchaToken, setCaptchaToken] = useState('')
+  const [captchaReset, setCaptchaReset] = useState(0)
   const [preparingAccount, setPreparingAccount] = useState(false)
   const [profileLoadFailed, setProfileLoadFailed] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
@@ -157,16 +160,29 @@ export default function App() {
     setLoading(true)
     try {
       const trimmedCode = invitationCode.trim()
-      const { data, error } = await supabase.auth.signUp({
-        email: regEmail,
+      // El alta pasa por el servidor (captcha + límite por IP): un programa
+      // automático estuvo creando cuentas directamente contra Supabase.
+      const regRes = await fetch(getApiUrl() + '/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: regEmail.trim().toLowerCase(),
+          password: regPassword,
+          name: regName,
+          sex: regSex,
+          invitationCode: trimmedCode || null,
+          captchaToken: captchaToken || null,
+        }),
+      })
+      const regData = await regRes.json().catch(() => ({}))
+      if (!regRes.ok) {
+        setCaptchaToken('')
+        setCaptchaReset(k => k + 1)
+        throw new Error(regData.error || 'No se pudo crear la cuenta')
+      }
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: regEmail.trim().toLowerCase(),
         password: regPassword,
-        options: {
-          data: {
-            name: regName,
-            sex: regSex,
-            invitation_code: trimmedCode || null
-          }
-        }
       })
       if (error) throw error
       if (data.user) {
@@ -584,9 +600,11 @@ export default function App() {
                       </div>
                     </div>
                     
+                    <TurnstileWidget onToken={setCaptchaToken} resetKey={captchaReset} />
+
                     <Button 
                       type="submit" 
-                      disabled={loading}
+                      disabled={loading || (!!TURNSTILE_SITE_KEY && !captchaToken)}
                       className="w-full h-12 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white font-bold rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-300 hover:scale-[1.02]"
                     >
                       {loading ? 'Creando...' : 'Crear Cuenta'}
