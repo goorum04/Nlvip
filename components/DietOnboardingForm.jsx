@@ -354,17 +354,28 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
         <div className="space-y-4">
           <div>
             <Label className="text-gray-400 text-xs">🍽️ Número de comidas al día</Label>
-            <Select value={meals.num_comidas} onValueChange={v => setMeals(p => ({ ...p, num_comidas: v }))}>
-              <SelectTrigger className="bg-white/5 border-white/10 text-white mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="3">3 comidas</SelectItem>
-                <SelectItem value="4">4 comidas</SelectItem>
-                <SelectItem value="5">5 comidas</SelectItem>
-                <SelectItem value="6">6 comidas</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Botones en vez de desplegable: el cuestionario se abre en una
+                ventana a pantalla completa (z-[100]) y la lista del Select
+                (z-50, en un portal) quedaba por detrás, sin poder elegir. */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1" role="radiogroup" aria-label="Número de comidas al día">
+              {['3', '4', '5', '6'].map(n => {
+                const active = meals.num_comidas === n
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setMeals(p => ({ ...p, num_comidas: n }))}
+                    className={`h-11 rounded-xl border text-sm font-semibold transition-colors ${active
+                      ? 'bg-violet-500/30 border-violet-400 text-white'
+                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'}`}
+                  >
+                    {n} comidas
+                  </button>
+                )
+              })}
+            </div>
           </div>
           <div>
             <Label className="text-gray-400 text-xs">⏰ Horario aproximado de tus comidas</Label>
