@@ -262,7 +262,7 @@ export function CheckInForm({ memberId, onSuccess, onCancel }) {
         <CardContent className="space-y-6">
           <div>
             <p className="text-white font-bold text-sm mb-1">Fotos (frente, ambos lados y espalda)</p>
-            <p className="text-gray-400 text-xs mb-3">Por las normas de la App Store, las fotos tienen que ser con ropa deportiva: top o sujetador deportivo y pantalón corto o mallas.</p>
+            <p className="text-gray-400 text-xs mb-3">Por las normas de la App Store, las chicas tienen que hacerse las fotos con top o sujetador deportivo.</p>
             <div className="grid grid-cols-4 gap-2">
               <PhotoSlot type="front" label="Frente" inputRef={frontInputRef} />
               <PhotoSlot type="side" label="Lado izq." inputRef={sideInputRef} />
