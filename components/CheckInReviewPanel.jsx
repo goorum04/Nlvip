@@ -331,7 +331,28 @@ function CheckInCard({ checkin, onRefresh, defaultExpanded = false }) {
   // Decisión por parte: 'apply' (aplicar la nueva) | 'keep' (mantener la actual) | null (sin decidir)
   const [dietChoice, setDietChoice] = useState(null)
   const [routineChoice, setRoutineChoice] = useState(null)
+  // Análisis de fotos: se puede rehacer si la IA se negó al enviar la revisión.
+  const [photoAnalysis, setPhotoAnalysis] = useState(checkin.photo_analysis || null)
+  const [reanalyzing, setReanalyzing] = useState(false)
   const { toast } = useToast()
+
+  const reanalyzePhotos = async () => {
+    setReanalyzing(true)
+    try {
+      const res = await authFetch('/api/checkin/reanalyze-photos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkinId: checkin.id }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'No se pudo analizar')
+      setPhotoAnalysis(data.photo_analysis)
+    } catch (e) {
+      toast({ title: 'Comparación de fotos', description: e.message, variant: 'destructive' })
+    } finally {
+      setReanalyzing(false)
+    }
+  }
 
   const dietPresent = !!checkin.draft_diet_content
   const routinePresent = !!checkin.draft_routine_data
@@ -507,10 +528,17 @@ function CheckInCard({ checkin, onRefresh, defaultExpanded = false }) {
             <PhotoCompare groupId={checkin.photo_group_id} previousGroupId={checkin.previous_photo_group_id} />
           </div>
 
-          {checkin.photo_analysis && (
+          {photoAnalysis ? (
             <div className="bg-violet-500/5 border border-violet-400/20 rounded-xl p-3">
               <p className="text-[10px] text-violet-400 uppercase font-bold mb-1">Análisis IA de fotos</p>
-              <p className="text-gray-300 text-xs whitespace-pre-wrap">{checkin.photo_analysis}</p>
+              <p className="text-gray-300 text-xs whitespace-pre-wrap">{photoAnalysis}</p>
+            </div>
+          ) : checkin.photo_group_id && checkin.status !== 'analyzing' && (
+            <div className="bg-white/[0.03] border border-white/10 rounded-xl p-3 flex items-center justify-between gap-3">
+              <p className="text-gray-400 text-xs">La IA no hizo la comparación de fotos de esta revisión.</p>
+              <Button size="sm" variant="outline" disabled={reanalyzing} onClick={reanalyzePhotos} className="shrink-0">
+                {reanalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Comparar fotos con IA'}
+              </Button>
             </div>
           )}
 
