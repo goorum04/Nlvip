@@ -558,7 +558,7 @@ export function DietOnboardingForm({ requestId, memberId, onComplete }) {
               <Label className="text-cyan-300 text-sm font-semibold">Fotos corporales <span className="text-gray-500 font-normal">(opcional)</span></Label>
             </div>
             <p className="text-gray-500 text-[11px] leading-relaxed">
-              Subir fotos ayuda a personalizar mejor tu plan. Son privadas y solo las verá tu entrenador. Si no quieres, déjalo en blanco y pulsa solicitar.
+              Subir fotos ayuda a personalizar mejor tu plan. Son privadas y solo las verá tu entrenador. Hazlas con ropa deportiva (top o sujetador deportivo y pantalón corto o mallas). Si no quieres, déjalo en blanco y pulsa solicitar.
             </p>
             <div className="grid grid-cols-4 gap-2">
               {[

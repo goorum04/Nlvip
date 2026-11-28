@@ -70,7 +70,7 @@ export async function POST(req) {
 
     const analysis = await compareProgressPhotos({ newPhotos, previousPhotos })
     if (!analysis) {
-      return NextResponse.json({ error: 'La IA no ha podido analizar las fotos. Puedes compararlas a mano con el deslizador.' }, { status: 502 })
+      return NextResponse.json({ error: 'La IA no ha podido analizar estas fotos. Suele pasar cuando están hechas sin ropa deportiva (los modelos de IA no analizan fotos sin ropa). Compáralas a mano con el deslizador y pide al socio que en la próxima revisión se haga las fotos con top y pantalón corto o mallas.' }, { status: 502 })
     }
 
     await supabase.from('member_checkins').update({ photo_analysis: analysis }).eq('id', checkin.id)

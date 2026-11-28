@@ -261,7 +261,8 @@ export function CheckInForm({ memberId, onSuccess, onCancel }) {
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <p className="text-white font-bold text-sm mb-3">Fotos (frente, ambos lados y espalda)</p>
+            <p className="text-white font-bold text-sm mb-1">Fotos (frente, ambos lados y espalda)</p>
+            <p className="text-gray-400 text-xs mb-3">Hazte las fotos con ropa deportiva: top o sujetador deportivo y pantalón corto o mallas. Las fotos sin ropa no se pueden analizar.</p>
             <div className="grid grid-cols-4 gap-2">
               <PhotoSlot type="front" label="Frente" inputRef={frontInputRef} />
               <PhotoSlot type="side" label="Lado izq." inputRef={sideInputRef} />

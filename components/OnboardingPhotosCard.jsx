@@ -116,7 +116,7 @@ export default function OnboardingPhotosCard({ memberId, onDone, onDismiss }) {
             <h3 className="text-white font-bold text-sm">Añade tus fotos iniciales</h3>
             <p className="text-gray-400 text-xs mt-1 leading-relaxed">
               Al rellenar el cuestionario no subiste fotos — puedes añadirlas ahora cuando quieras.
-              Son privadas y solo las ve tu entrenador.
+              Son privadas y solo las ve tu entrenador. Hazlas con ropa deportiva (top o sujetador deportivo y pantalón corto o mallas).
             </p>
           </div>
           {expanded

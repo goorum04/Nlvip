@@ -535,7 +535,7 @@ function CheckInCard({ checkin, onRefresh, defaultExpanded = false }) {
             </div>
           ) : checkin.photo_group_id && checkin.status !== 'analyzing' && (
             <div className="bg-white/[0.03] border border-white/10 rounded-xl p-3 flex items-center justify-between gap-3">
-              <p className="text-gray-400 text-xs">La IA no hizo la comparación de fotos de esta revisión.</p>
+              <p className="text-gray-400 text-xs">La IA no hizo la comparación de fotos de esta revisión. Si las fotos son sin ropa deportiva, la IA no las analiza: compáralas con el deslizador.</p>
               <Button size="sm" variant="outline" disabled={reanalyzing} onClick={reanalyzePhotos} className="shrink-0">
                 {reanalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Comparar fotos con IA'}
               </Button>
